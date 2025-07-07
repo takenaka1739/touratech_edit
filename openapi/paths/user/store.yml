@@ -1,0 +1,64 @@
+post:
+  tags:
+    - user
+  summary: 担当者を登録する
+  operationId: postUserStore
+  description: ''
+  parameters: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/postUserStoreRequest'
+        examples:
+          postUserStoreRequest:
+            value: { name: '山田太郎', login_id: 'login_id', password: 'password', role: 1 }
+  responses:
+    200:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/postUserStoreResponse'
+          examples:
+            postUserStoreResponse-success:
+              value: { success: true, data: {} }
+    401:
+      description: 403 Unahutorized
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorJsonResponse.yml'
+    500:
+      description: 500 Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorJsonResponse.yml'
+
+components:
+  schemas:
+    postUserStoreRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          required: true
+        login_id:
+          type: string
+          required: true
+        password:
+          type: string
+          required: true
+        role:
+          type: integer
+          enum: [0, 1]
+          required: true
+    postUserStoreResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object

@@ -1,0 +1,14 @@
+type: object
+properties:
+  currentPage:
+    type: integer
+  lastPage:
+    type: integer
+  perPage:
+    type: integer
+  from:
+    type: integer
+  to:
+    type: integer
+  total:
+    type: integer

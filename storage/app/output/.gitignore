@@ -1,0 +1,13 @@
+*
+!estimate/
+!hiden/
+!home_data_import/
+!inventory_import/
+!inventory_printing/
+!invoice/
+!item/
+!place_order/
+!receive_order/
+!sales/
+!shipment_plan/
+!.gitignore

@@ -1,0 +1,114 @@
+.table {
+  @apply mt-4 text-sm;
+
+  table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  tr {
+    &:hover {
+      background: $gray-100;
+    }
+  }
+
+  th,
+  td {
+    border: 1px solid $gray-500;
+
+    @apply px-2 py-1;
+
+    &.not-p {
+      padding: 0;
+
+      th,
+      td {
+        border-style: none;
+      }
+    }
+  }
+
+  th {
+    background-color: $gray-200;
+    font-weight: 400;
+    color: $gray-700;
+
+    @apply text-xs;
+
+    &.col-no {
+      @apply w-16;
+    }
+
+    &.col-date {
+      @apply w-24;
+    }
+
+    &.col-quantity {
+      @apply w-16;
+    }
+
+    &.col-amount {
+      @apply w-28;
+    }
+
+    &.col-btn {
+      @apply w-12;
+    }
+  }
+
+  td {
+    color: $gray-900;
+
+    @apply text-sm;
+
+    &.col-btn {
+      text-align: center;
+
+      a,
+      span {
+        color: $blue-600;
+        text-decoration: underline;
+        cursor: pointer;
+
+        @apply text-xs;
+      }
+    }
+
+    a,
+    span {
+      &.link {
+        color: $blue-600;
+        cursor: pointer;
+
+        @apply text-xs;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  &-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.box {
+  &-pager {
+    span {
+      display: block;
+      border: 1px solid $gray-500;
+      cursor: pointer;
+
+      @apply py-1 px-2;
+
+      &.current {
+        background-color: $base-yellow;
+        border-color: $base-yellow;
+      }
+    }
+  }
+}

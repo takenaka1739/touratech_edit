@@ -1,0 +1,35 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ],
+        // "module": "ESNext",
+        "target": "es5",
+
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "jsx": "react-jsx",
+        "moduleResolution": "node",
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "paths": {
+            "@/*": ["resources/ts/*"]
+        },
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "strict": true
+    },
+    "include": [
+        "./resources/ts/**/*.tsx",
+        "./resources/ts/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts",
+        // "**/*.stories.tsx",
+    ]
+}

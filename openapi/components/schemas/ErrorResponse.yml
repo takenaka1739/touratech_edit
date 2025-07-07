@@ -1,0 +1,6 @@
+status:
+  type: integer
+type:
+  type: string
+message:
+  type: string

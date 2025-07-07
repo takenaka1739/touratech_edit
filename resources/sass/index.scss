@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './components/variables';
+
+#app {
+  background-color: $gray-200;
+  min-height: 100vh;
+
+  @apply min-w-md;
+}
+
+@import './components/index';
+@import './pages/index';

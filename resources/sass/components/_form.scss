@@ -1,0 +1,223 @@
+.box-conditions {
+  border: 1px solid $gray-400;
+
+  @apply py-2 px-4;
+
+  &-title {
+    color: $gray-700;
+
+    @apply px-2 text-xs;
+  }
+
+  &-bottom {
+    display: flex;
+    justify-content: space-between;
+
+    @apply mt-4;
+  }
+
+  .form-group {
+    margin-top: 0;
+  }
+
+  .form-label {
+    width: 8rem;
+
+    &-removed {
+      width: 4rem;
+    }
+  }
+}
+
+.form {
+  &-group {
+    display: flex;
+    width: 100%;
+
+    &-wrapper {
+      position: relative;
+      border-width: 1px;
+
+      @apply my-2 py-6 px-4;
+    }
+  }
+
+  &-label {
+    width: 10rem;
+    flex-shrink: 0;
+    flex-grow: 0;
+    font-weight: 500;
+
+    @apply text-xs pr-2;
+
+    &.w-8 {
+      width: 8rem;
+    }
+    &.w-auto {
+      width: auto;
+    }
+
+    &__inner {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+
+      @apply mt-1;
+
+      &.mt-0 {
+        margin-top: 0;
+      }
+    }
+
+    &-text {
+      color: $gray-700;
+      text-align: right;
+
+      @apply break-words leading-tight;
+    }
+
+    .is-required {
+      align-self: flex-start;
+      background-color: $red-700;
+      border: 1px solid $red-700;
+      color: $white;
+      white-space: nowrap;
+
+      @apply ml-2 px-1 text-xs rounded-sm;
+    }
+
+    .is-optional {
+      align-self: flex-start;
+      background-color: $gray-500;
+      border: 1px solid $gray-500;
+      color: $white;
+      white-space: nowrap;
+
+      @apply ml-2 px-1 text-xs rounded-sm;
+    }
+  }
+
+  &-error {
+    color: $red-700;
+
+    @apply mt-1 text-xs;
+  }
+}
+
+.label {
+  display: block;
+  font-weight: 500;
+  color: $gray-700;
+
+  @apply text-xs;
+}
+
+.input,
+.select,
+.textarea {
+  display: block;
+  background-color: $white;
+  border: 1px solid $gray-500;
+  appearance: none;
+
+  @apply rounded-sm outline-none py-1 px-2 text-xs;
+
+  &:focus {
+    border-color: $blue-600;
+  }
+
+  &.is-invalid {
+    border-color: $red-700;
+  }
+
+  &.text-sm {
+    @apply text-sm;
+  }
+}
+
+.input,
+.textarea {
+  &:read-only {
+    background-color: $gray-200;
+  }
+}
+
+.input {
+  &:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 100px $white inset;
+  }
+}
+
+.textarea {
+  min-height: 10rem;
+}
+
+.invalid-feedback {
+  color: $red-700;
+
+  @apply mt-1 text-xs;
+}
+
+.btn {
+  background-color: $base-yellow;
+  border: 1px solid transparent;
+
+  @apply text-xs py-1 px-4 rounded-sm outline-none;
+
+  &:hover,
+  &:focus {
+    background-color: transparent;
+    border-color: $base-yellow;
+  }
+
+  &:disabled {
+    background-color: $gray-200;
+    border-color: $gray-200;
+    color: $gray-500;
+    cursor: not-allowed;
+  }
+
+  &-outline {
+    background-color: transparent;
+    border: 1px solid $base-yellow;
+
+    @apply text-xs py-1 px-4 rounded-sm outline-none;
+
+    &:hover,
+    &:focus {
+      background-color: $base-yellow;
+      border-color: transparent;
+
+      @apply border-transparent bg-base-yellow;
+    }
+
+    &:disabled {
+      background-color: $gray-200;
+      border-color: $gray-200;
+      color: $gray-500;
+      cursor: not-allowed;
+    }
+  }
+
+  &-delete {
+    background-color: transparent;
+    border: 1px solid $red-700;
+    color: $red-700;
+
+    @apply text-xs py-1 px-4 rounded-sm outline-none;
+
+    &:hover,
+    &:focus {
+      background-color: $red-700;
+      border-color: transparent;
+      color: $white;
+    }
+
+    &:disabled {
+      background-color: $gray-200;
+      border-color: $gray-200;
+      color: $gray-500;
+      cursor: not-allowed;
+    }
+  }
+}

@@ -1,0 +1,42 @@
+@import '../../components/variables';
+@import '../../components/mixins';
+
+.simple_search-page {
+  table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid $gray-500;
+    text-align: left;
+
+    @apply px-2 py-1;
+  }
+
+  th {
+    background-color: $gray-200;
+    font-weight: 400;
+    color: $gray-700;
+    width: 150px;
+
+    @apply text-xs;
+  }
+
+  td {
+    color: $gray-900;
+
+    @apply text-sm;
+
+    a {
+      color: $blue-600;
+      text-decoration: underline;
+
+      &:hover {
+        color: $blue-700;
+        text-decoration: none;
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+openapi: 3.0.0
+info:
+  title: ツアラテック受注管理システム
+  description: ''
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: TTSESSION
+    xsrfTokenAuth:
+      type: apiKey
+      in: cookie
+      name: XSRF-TOKEN
+
+security:
+  - cookieAuth: []
+  - XSRF-TOKEN: []
+
+paths:
+  /api/app:
+    $ref: ./paths/app/index.yml
+  /api/user/fetch:
+    $ref: ./paths/user/fetch.yml
+  /api/user/store:
+    $ref: ./paths/user/store.yml

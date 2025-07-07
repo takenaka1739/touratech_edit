@@ -1,0 +1,48 @@
+get:
+  tags:
+    - app
+  summary: アプリケーションの設定を取得する
+  operationId: getApp
+  description: ''
+  parameters: []
+  responses:
+    200:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/getApp'
+          examples:
+            getApp-success:
+              value: { success: true, data: { auth: { name: '山田太郎', role: 1 } } }
+    401:
+      description: 403 Unahutorized
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorJsonResponse.yml'
+    500:
+      description: 500 Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorJsonResponse.yml'
+
+components:
+  schemas:
+    getApp:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            auth:
+              type: object
+              properties:
+                name:
+                  type: string
+                role:
+                  type: integer
+                  enum: [0, 1]

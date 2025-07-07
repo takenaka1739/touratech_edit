@@ -1,0 +1,97 @@
+.header {
+  background-color: $white;
+
+  @apply shadow;
+
+  &__container {
+    display: flex;
+    justify-content: space-between;
+
+    @apply max-w-screen-xl mx-auto py-2 px-4;
+
+    @screen sm {
+      @apply px-6;
+    }
+
+    @screen lg {
+      @apply px-8;
+    }
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    color: $gray-900;
+
+    @apply text-xl leading-tight;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+  }
+
+  &__btn-nav {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+
+    @apply mr-4;
+
+    span,
+    span::before,
+    span::after {
+      content: '';
+      display: block;
+      position: absolute;
+      background-color: $base-yellow;
+      height: 3px;
+      width: 24px;
+      transition: all 0.3s;
+
+      @apply rounded-sm;
+    }
+
+    span::before {
+      top: 8px;
+    }
+
+    span::after {
+      bottom: 8px;
+    }
+
+    &.is-open {
+      span {
+        background-color: transparent;
+      }
+
+      span::before {
+        top: 0;
+        transform: rotate(45deg);
+      }
+
+      span::after {
+        top: 0;
+        transform: rotate(-45deg);
+      }
+    }
+  }
+
+  &__btn-logout {
+    background-color: $base-yellow;
+    border: 1px solid transparent;
+
+    @apply text-xs ml-4 py-1 px-4 rounded-xl;
+
+    &:hover,
+    &:focus,
+    &:active {
+      background-color: transparent;
+      border-color: $base-yellow;
+    }
+  }
+}

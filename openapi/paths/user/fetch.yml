@@ -1,0 +1,83 @@
+post:
+  tags:
+    - user
+  summary: 担当者マスタの一覧を取得する
+  operationId: postUserFetch
+  description: ''
+  parameters: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/postUserFetchRequest'
+        examples:
+          postUserFetch:
+            value: { c_keyword: 'キーワード', c_role: 1, page: 1 }
+  responses:
+    200:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/postUserFetchResponse'
+          examples:
+            postUserFetchResponse-success:
+              value:
+                {
+                  success: true,
+                  data:
+                    {
+                      rows: [{ id: 1, name: '山田太郎', login_id: 'login_id', role: 1 }],
+                      pager:
+                        { currentPage: 1, lastPage: 5, perPage: 20, from: 1, to: 1, total: 100 },
+                    },
+                }
+    401:
+      description: 403 Unahutorized
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorJsonResponse.yml'
+    500:
+      description: 500 Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorJsonResponse.yml'
+
+components:
+  schemas:
+    postUserFetchRequest:
+      type: object
+      properties:
+        c_keyword:
+          type: string
+          nullable: true
+        c_role:
+          type: string
+          nullable: true
+        page:
+          type: integer
+    postUserFetchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            rows:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                login_id:
+                  type: string
+                role:
+                  type: integer
+                  enum: [0, 1]
+            pager:
+              $ref: '../../components/schemas/pager.yml'

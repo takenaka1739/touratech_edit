@@ -1,0 +1,85 @@
+.nav {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  background-color: $gray-200;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  z-index: 999;
+
+  @apply shadow;
+
+  &.fade {
+    &-enter {
+      opacity: 0;
+      height: auto;
+
+      &-active {
+        opacity: 1;
+        height: auto;
+        transition: opacity 0.4s;
+      }
+
+      &-done {
+        opacity: 1;
+        height: auto;
+      }
+    }
+
+    &-exit {
+      opacity: 1;
+      height: auto;
+
+      &-active {
+        opacity: 0;
+        height: auto;
+        transition: opacity 0.4s;
+      }
+
+      &-done {
+        opacity: 0;
+        height: 0;
+      }
+    }
+  }
+
+  &__container {
+    display: flex;
+    justify-content: space-around;
+
+    @apply max-w-screen-xl text-sm mx-auto p-8;
+
+    @screen sm {
+      @apply px-6;
+    }
+
+    @screen lg {
+      @apply px-8;
+    }
+  }
+
+  &__h3 {
+    border-left-width: 4px;
+    border-color: $base-yellow;
+
+    @apply pl-3 text-lg;
+  }
+
+  &__menu {
+    &-box {
+      @apply mt-2;
+    }
+
+    a {
+      text-decoration: underline;
+
+      @apply text-base;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+  }
+}

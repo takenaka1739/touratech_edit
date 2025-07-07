@@ -1,0 +1,104 @@
+.loading-txt {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.bc {
+  @apply text-xs mb-3;
+
+  &__li {
+    &::before {
+      content: '>';
+
+      @apply mx-2;
+    }
+
+    &:first-child {
+      &::before {
+        display: none;
+      }
+    }
+  }
+}
+
+.page {
+  @apply max-w-screen-xl mx-auto pt-2 pb-4 px-4;
+
+  @screen sm {
+    @apply px-6;
+  }
+
+  @screen lg {
+    @apply px-8;
+  }
+
+  &-container {
+    background-color: $white;
+
+    @apply p-4;
+  }
+
+  &-title {
+    background-color: $base-yellow;
+
+    @apply mb-4 py-2 px-4 rounded-sm;
+  }
+
+  &-body {
+    position: relative;
+  }
+
+  &-loading {
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba($white, 0.2);
+      backdrop-filter: blur(2px);
+      z-index: 9;
+    }
+  }
+
+  &-enter {
+    opacity: 0;
+
+    &-active {
+      opacity: 1;
+      transition: opacity 0.8s;
+    }
+  }
+
+  &-exit {
+    display: hidden;
+  }
+}
+
+.fade {
+  &-enter {
+    opacity: 0;
+
+    &-active {
+      opacity: 1;
+      transition: opacity 0.4s;
+    }
+  }
+}
+
+div[aria-disabled='true'] {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba($white, 0.4);
+  }
+}
