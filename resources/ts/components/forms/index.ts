@@ -22,3 +22,4 @@ export { FormInputText } from './FormInputText';
 export { FormInputTel } from './FormInputTel';
 export { FormLabelSelector } from './FormLabelSelector';
 export { FormSelect } from './FormSelect';
+export { FormGroupInputTextRow } from './FormGroupInputTextRow';
