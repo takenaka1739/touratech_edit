@@ -83,7 +83,7 @@
     "typescript-fsa-redux-thunk": "^2.10.1"
   },
   "dependencies": {
-    "react-hook-form": "^7.43.1",
-    "react-sortable-hoc": "^2.0.0"
+    "react-draggable": "^4.5.0",
+    "scss": "^0.2.4"
   }
 }

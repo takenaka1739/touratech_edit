@@ -11,6 +11,7 @@ import { SupplierSearchDialog } from '@/app/Supplier/components/SupplierSearchDi
 import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
+import { Link } from 'react-router-dom';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -374,6 +375,227 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           onChange={onChange}
           maxLength={200}
         />
+        <div>
+          <hr className="border-dashed border-gray-400 mt-4 mb-4" />
+          <div>
+              <Link to={"/item/shop-image"}>{"ショップイメージ"}</Link>
+            <button className="btn px-2">他商品情報参照</button>
+          </div>
+          <Forms.FormGroup
+            labelText="ショップへの公開"
+            error={errors?.is_discontinued}
+            groupClassName="items-center mt-4"
+          >
+            <Forms.FormInputCheck
+              id="is_discontinued"
+              name="is_discontinued"
+              checked={state.is_discontinued}
+              onChange={onChange}
+            />
+          </Forms.FormGroup>
+          <Forms.FormGroup
+            labelText="バリエーションコード"
+            error={errors?.is_discontinued}
+            groupClassName="items-center mt-4"
+          />
+        <Forms.FormGroupInputTextRow
+          labelText="1"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupInputTextRow
+          labelText="2"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupInputTextRow
+          labelText="3"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupInputTextRow
+          labelText="4"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+          <Forms.FormGroup
+            labelText="バリエーション"
+            error={errors?.is_discontinued}
+            groupClassName="items-center mt-4"
+          />
+        <Forms.FormGroupInputTextRow
+          labelText="1"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupInputTextRow
+          labelText="2"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupInputTextRow
+          labelText="3"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupInputTextRow
+          labelText="4"
+          name="name_label"
+          value={state.name_label ?? ''}
+          error={errors?.name_label}
+          onChange={onChange}
+          className="group-style"
+          maxLength={36}
+        />
+        <Forms.FormGroupTextarea
+          labelText="商品説明"
+          name="remarks"
+          value={state.remarks ?? ''}
+          error={errors?.remarks}
+          className="max-w-lg"
+          onChange={onChange}
+          maxLength={200}
+        />
+        <Forms.FormGroupTextarea
+          labelText="商品説明（詳細）"
+          name="remarks"
+          value={state.remarks ?? ''}
+          error={errors?.remarks}
+          className="max-w-lg"
+          onChange={onChange}
+          maxLength={200}
+        />
+        <Forms.FromGroupInputItemNumber
+          labelText="標準価格"
+          name="item_number"
+          value={state.item_number}
+          error={errors?.item_number}
+          onChange={onChange}
+          groupClassName="mt-0"
+          className="max-w-8"
+          required
+          autoFocus
+        />
+        <Forms.FromGroupInputItemNumber
+          labelText="仕入価格"
+          name="item_number"
+          value={state.item_number}
+          error={errors?.item_number}
+          onChange={onChange}
+          groupClassName="mt-0"
+          className="max-w-8"
+          required
+          autoFocus
+        />
+        <Forms.FromGroupInputItemNumber
+          labelText="販売価格"
+          name="item_number"
+          value={state.item_number}
+          error={errors?.item_number}
+          onChange={onChange}
+          groupClassName="mt-0"
+          className="max-w-8"
+          required
+          autoFocus
+        />
+        <Forms.FormGroupInputNumber
+          labelText="会員価格"
+          name="sample_price"
+          value={state.sample_price}
+          error={errors?.sample_price}
+          onChange={onChange}
+          precision={2}
+          className="max-w-8"
+          min={0}
+        />
+        <Forms.FormGroupInputNumber
+          labelText="予約受付数"
+          name="sample_price"
+          value={state.sample_price}
+          error={errors?.sample_price}
+          onChange={onChange}
+          precision={2}
+          className="max-w-8"
+          min={0}
+        />
+        <Forms.FormGroup
+          labelText="送料適用"
+          error={errors?.is_discontinued}
+          groupClassName="items-center mt-4"
+        >
+          <Forms.FormInputCheck
+            id="is_discontinued"
+            name="is_discontinued"
+            checked={state.is_discontinued}
+            onChange={onChange}
+          />
+        </Forms.FormGroup>
+        <Forms.FormGroup
+          labelText="代引き手数料適用"
+          error={errors?.is_discontinued}
+          groupClassName="items-center mt-4"
+        >
+        <Forms.FormInputCheck
+          id="is_discontinued"
+          name="is_discontinued"
+          checked={state.is_discontinued}
+          onChange={onChange}
+        />
+        </Forms.FormGroup>
+        <Forms.FormGroup
+            labelText="特売期間のみ販売"
+            error={errors?.is_discontinued}
+            groupClassName="items-center mt-4"
+          >
+          <Forms.FormInputCheck
+            id="is_discontinued"
+            name="is_discontinued"
+            checked={state.is_discontinued}
+            onChange={onChange}
+          />
+        </Forms.FormGroup>
+        <Forms.FormGroup
+            labelText="ポイント還元"
+            error={errors?.is_discontinued}
+            groupClassName="items-center mt-4"
+          >
+          <Forms.FormInputCheck
+            id="is_discontinued"
+            name="is_discontinued"
+            checked={state.is_discontinued}
+            onChange={onChange}
+          />
+        </Forms.FormGroup>
+        </div>
+
         {id && (
           <>
             <hr className="border-dashed border-gray-400 mt-4" />
