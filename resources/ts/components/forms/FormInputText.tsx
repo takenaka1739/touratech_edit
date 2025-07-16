@@ -24,8 +24,16 @@ export const FormInputText: React.VFC<FormInputTextProps> = ({
   ...rest
 }) => {
   const [composing, setComposing] = useState(false);
-  const onChangeRaw: (e: ChangeEvent<HTMLInputElement>) => void = e => {
-    if (onChange) onChange(name, e.currentTarget.value);
+  const onChangeRaw: (e: ChangeEvent<HTMLInputElement>) => void = (e) => {
+    if (typeof onChange === 'function') {
+      if (onChange.length === 2 && name !== undefined) {
+        // 旧形式: onChange(name, value)
+        onChange(name, e.currentTarget.value);
+      } else {
+        // 新形式: onChange(value)
+        (onChange as unknown as (value: string) => void)(e.currentTarget.value);
+      }
+    }
   };
 
   return (

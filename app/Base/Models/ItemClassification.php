@@ -7,16 +7,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemClassification extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $fillable = [
-    'name',
-    'remarks',
-  ];
+    protected $table = 'm_categories';
 
-  protected $hidden = [
-    'created_at',
-    'updated_at',
-    'deleted_at',
-  ];
+    protected $fillable = [
+        'name',
+        'remarks',
+        'code',
+        'is_display',
+        'order_by',
+    ];
+    
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
 }

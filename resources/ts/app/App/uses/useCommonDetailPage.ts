@@ -198,6 +198,7 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
     isLoading,
     id,
     state,
+    setState,
     errors,
     isDisabled,
     history,
@@ -207,5 +208,6 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
     onClickSave,
     onClickDelete,
     onClickOutput,
+    get,
   };
 };

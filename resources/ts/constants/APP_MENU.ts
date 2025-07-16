@@ -42,6 +42,8 @@ export const APP_MENU: {
     { name: '商品分類マスタ', url: '/item_classification' },
     { name: '商品マスタ', url: '/item' },
     { name: 'セット品マスタ', url: '/set_item' },
+    { name: 'クーポンマスタ', url: '/coupon' },
+    { name: 'トップ画像マスタ', url: '/TopImage' },
     { name: '環境設定', url: '/config', className: 'pt-4' },
   ],
 };

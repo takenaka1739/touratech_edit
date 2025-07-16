@@ -81,5 +81,9 @@
     "typescript-fsa": "^3.0.0",
     "typescript-fsa-reducers": "^1.2.2",
     "typescript-fsa-redux-thunk": "^2.10.1"
+  },
+  "dependencies": {
+    "react-hook-form": "^7.43.1",
+    "react-sortable-hoc": "^2.0.0"
   }
 }

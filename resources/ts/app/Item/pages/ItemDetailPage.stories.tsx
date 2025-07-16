@@ -41,7 +41,7 @@ const Template: Story<ItemDetailPageProps> = args => {
         name: '商品名01',
         name_jp: '商品名JP01',
         name_label: '商品label名01',
-        item_classification_id: 2,
+        category_id: 2,
         sales_unit_price: 1001,
         purchase_unit_price: 2001,
         sample_price: 3001,

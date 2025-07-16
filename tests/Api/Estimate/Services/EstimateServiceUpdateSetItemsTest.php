@@ -125,6 +125,5 @@ class EstimateServiceUpdateSetItemsTest extends TestCase
     $this->method->invoke($this->service, $parent);
 
     $actual1 = DB::table('estimate_details')->where('id', "=", 3)->first()->toArray();
-    Log::debug($actual1);
   }
 }

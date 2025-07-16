@@ -1,0 +1,187 @@
+import React from 'react';
+import { Controller, useFormContext, useFieldArray } from 'react-hook-form';
+import { Forms } from '@/components';
+import { CouponFormData } from '../types/CouponFormData';
+
+type PartialForm = Pick<CouponFormData, 'code' | 'name' | 'details' | 'start_at' | 'end_at' | 'rules'>;
+
+export const CouponDetailForm: React.FC = () => {
+  const {
+    control,
+    formState: { errors },
+    register,
+  } = useFormContext<PartialForm>();
+  const { fields, append, remove } = useFieldArray({ control, name: 'rules' });
+
+  return (
+    <div className="space-y-4">
+      <Controller
+        name="code"
+        control={control}
+        rules={{ required: 'コードは必須です' }}
+        render={({ field }) => (
+          <Forms.FormGroupInputText
+            labelText="クーポンコード"
+            name={field.name}
+            value={field.value}
+            onChange={(_, val) => field.onChange(val)}
+            onBlur={field.onBlur}
+            error={typeof errors.code?.message === 'string' ? errors.code.message : undefined}
+          />
+        )}
+      />
+
+      <Controller
+        name="name"
+        control={control}
+        rules={{ required: '名称は必須です' }}
+        render={({ field }) => (
+          <Forms.FormGroupInputText
+            labelText="クーポン名"
+            name={field.name}
+            value={field.value}
+            onChange={(_, val) => field.onChange(val)}
+            onBlur={field.onBlur}
+            error={typeof errors.name?.message === 'string' ? errors.name.message : undefined}
+          />
+        )}
+      />
+
+      <Controller
+        name="details"
+        control={control}
+        render={({ field }) => (
+          <Forms.FormGroupTextarea
+            labelText="内容（空欄の場合は自動生成）"
+            rows={2}
+            name={field.name}
+            value={field.value}
+            onChange={(_, val) => field.onChange(val)}
+            error={typeof errors.details?.message === 'string' ? errors.details.message : undefined}
+          />
+        )}
+      />
+
+      <Forms.FormGroup labelText="開始日" error={typeof errors.start_at?.message === 'string' ? errors.start_at.message : undefined}>
+        <input
+          type="date"
+          className="form-control"
+          {...register('start_at', { required: '開始日は必須です' })}
+        />
+      </Forms.FormGroup>
+
+      <Forms.FormGroup labelText="終了日" error={typeof errors.end_at?.message === 'string' ? errors.end_at.message : undefined}>
+        <input
+          type="date"
+          className="form-control"
+          {...register('end_at', { required: '終了日は必須です' })}
+        />
+      </Forms.FormGroup>
+
+      <div>
+        <label className="font-semibold">特典ルール</label>
+        {fields.map((field, index) => (
+          <div key={field.id} className="border p-3 mt-2 space-y-2 bg-gray-50 rounded">
+            <Controller
+              name={`rules.${index}.condition_type` as `rules.${number}.condition_type`}
+              control={control}
+              render={({ field }) => (
+                <Forms.FormGroupSelect
+                  labelText="条件タイプ"
+                  name={field.name}
+                  value={field.value}
+                  onChange={(_, val) => field.onChange(val)}
+                  options={[
+                    { name: '商品ID', value: 'item_id' },
+                    { name: 'カテゴリID', value: 'category_id' },
+                    { name: 'ブランドID', value: 'brand_id' },
+                    { name: '金額', value: 'price' },
+                  ]}
+                />
+              )}
+            />
+
+            <Controller
+              name={`rules.${index}.condition_value` as `rules.${number}.condition_value`}
+              control={control}
+              render={({ field }) => {
+                const value = Array.isArray(field.value)
+                  ? (field.value as string[]).join(',')
+                  : field.value || '';
+
+                return (
+                  <Forms.FormGroupInputText
+                    labelText="条件値（カンマ区切り）"
+                    name={field.name}
+                    value={value}
+                    onChange={(_, val) =>
+                      field.onChange(
+                        typeof val === 'string'
+                          ? val.split(',').map((v) => v.trim()).filter((v) => v !== '')
+                          : []
+                      )
+                    }
+                  />
+                );
+              }}
+            />
+
+            <Controller
+              name={`rules.${index}.benefit_type` as `rules.${number}.benefit_type`}
+              control={control}
+              render={({ field }) => (
+                <Forms.FormGroupSelect
+                  labelText="特典タイプ"
+                  name={field.name}
+                  value={field.value}
+                  onChange={(_, val) => field.onChange(val)}
+                  options={[
+                    { name: '送料無料', value: 'free_shipping' },
+                    { name: '割引', value: 'discount' },
+                    { name: '無料商品', value: 'free_item' },
+                  ]}
+                />
+              )}
+            />
+
+            <Controller
+              name={`rules.${index}.benefit_value` as `rules.${number}.benefit_value`}
+              control={control}
+              render={({ field }) => (
+                <Forms.FormGroupInputText
+                  labelText="特典値"
+                  name={field.name}
+                  value={field.value}
+                  onChange={(_, val) => field.onChange(val)}
+                />
+              )}
+            />
+
+            <button type="button" className="btn-sm btn-red" onClick={() => remove(index)}>
+              削除
+            </button>
+          </div>
+        ))}
+
+        <div className="mt-2">
+          <button
+            type="button"
+            className="btn"
+            onClick={() =>
+              append({
+                condition_type: 'item_id',
+                condition_value: [],
+                benefit_type: 'free_shipping',
+                benefit_value: '',
+              })
+            }
+          >
+            ルールを追加
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CouponDetailForm;

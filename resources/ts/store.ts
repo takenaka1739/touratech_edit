@@ -1,4 +1,5 @@
 import { combineReducers, createStore, compose, applyMiddleware } from 'redux';
+import { useDispatch } from 'react-redux';
 import thunk from 'redux-thunk';
 import * as AppModule from '@/app/App/modules/appModule';
 import { UserListPageState, UserListPageReducer } from '@/app/User/modules/userListPageModule';
@@ -52,7 +53,13 @@ import {
   ReceiptListPageState,
   ReceiptListPageReducer,
 } from '@/app/Receipt/modules/receiptListPageModule';
+import {
+  CouponListPageState,
+  CouponListPageReducer,
+} from '@/app/Coupon/modules/couponListPageModule';
 
+
+export const useAppDispatch: () => typeof store.dispatch = useDispatch;
 const storeEnhancers = (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
 export type RootState = {
@@ -72,6 +79,7 @@ export type RootState = {
   purchaseListPage: PurchaseListPageState;
   invoiceListPage: InvoiceListPageState;
   receiptListPage: ReceiptListPageState;
+  couponListPage: CouponListPageState;
 };
 
 const store = createStore(
@@ -92,6 +100,7 @@ const store = createStore(
     purchaseListPage: PurchaseListPageReducer,
     invoiceListPage: InvoiceListPageReducer,
     receiptListPage: ReceiptListPageReducer,
+    couponListPage: CouponListPageReducer,
   }),
   storeEnhancers(applyMiddleware(thunk))
 );

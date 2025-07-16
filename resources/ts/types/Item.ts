@@ -6,7 +6,7 @@
  * @param name - 商品名
  * @param name_jp - 商品名（納品書）
  * @param name_label - 商品名（ラベル用）
- * @param item_classification_id - 商品分類ID
+ * @param category_id - 商品分類ID
  * @param item_classification_name - 商品分類名
  * @param sales_unit_price - 売上単価
  * @param purchase_unit_price - 仕入単価
@@ -28,7 +28,7 @@ export interface Item {
   name?: string | undefined;
   name_jp: string | undefined;
   name_label?: string | undefined;
-  item_classification_id?: number | undefined;
+  category_id?: number | undefined;
   item_classification_name?: string | undefined;
   sales_unit_price: number | undefined;
   purchase_unit_price?: number | undefined;

@@ -127,7 +127,6 @@ class ReadMailServiceTest extends TestCase
       $data = Storage::get($file);
       try {
         $mail = $this->service->parse($data);
-        Log::debug($mail);
         $order = [];
         if ($this->service->isPatternA($mail)) {
           $order = $this->service->createReceiveOrderA($mail);
@@ -139,7 +138,6 @@ class ReadMailServiceTest extends TestCase
           $this->service->store($order);
         }
       } catch (Exception $e) {
-        Log::debug($e);
       }
     }
   }

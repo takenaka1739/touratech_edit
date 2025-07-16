@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="70.00" height="50.00" viewBox="0.00 0.00 70.00 50.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g stroke-linecap="round" id="ハンバーガーメニュー">
+<path d="M5.38,11.50 L64.50,11.88" fill="none" stroke="rgb(50, 50, 50)" stroke-width="5.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M5.38,25.50 L64.50,25.88" fill="none" stroke="rgb(50, 50, 50)" stroke-width="5.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M5.38,39.50 L64.50,39.88" fill="none" stroke="rgb(50, 50, 50)" stroke-width="5.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+</g>
+</svg>

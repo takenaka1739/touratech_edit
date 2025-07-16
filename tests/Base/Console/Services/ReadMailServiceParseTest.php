@@ -48,7 +48,6 @@ class ReadMailServiceParseTest extends TestCase
     foreach ($files as $file) {
       $data = Storage::get($file);
       $result = $this->service->parse($data);
-      Log::debug($result);
     }
   }
 

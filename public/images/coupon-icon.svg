@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="70.00" height="50.00" viewBox="0.00 0.00 70.00 50.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g stroke-linecap="round" id="レイヤー_4">
+<path d="M26.67,25.83 C26.85,25.67 27.26,26.13 27.08,26.29 C26.90,26.45 26.49,26.00 26.67,25.83 Z" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M26.67,45.83 C26.85,45.67 27.26,46.13 27.08,46.29 C26.90,46.45 26.49,46.00 26.67,45.83 Z" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M26.67,38.83 C26.85,38.67 27.26,39.13 27.08,39.29 C26.90,39.45 26.49,39.00 26.67,38.83 Z" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M15.50,24.50 L64.50,24.50 L64.50,47.50 L15.50,47.50 L15.50,24.50 Z" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="miter"/>
+<path d="M26.67,31.83 C26.85,31.67 27.26,32.13 27.08,32.29 C26.90,32.45 26.49,32.00 26.67,31.83 Z" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M18.62,17.17 C18.62,17.17 16.48,17.31 16.48,17.31" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M15.03,41.10 L14.66,40.13 L6.65,20.85 L51.89,2.03 L60.72,23.27 L60.25,23.46" fill="none" stroke="rgb(50, 50, 50)" stroke-width="3.00" stroke-opacity="1.00" stroke-linejoin="miter"/>
+</g>
+</svg>

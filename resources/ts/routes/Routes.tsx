@@ -27,6 +27,8 @@ const RouteShipmentPlanImport = React.lazy(() => import('./RouteShipmentPlanImpo
 const RouteShipmentPlan = React.lazy(() => import('./RouteShipmentPlan'));
 const RouteSupplier = React.lazy(() => import('./RouteSupplier'));
 const RouteUser = React.lazy(() => import('./RouteUser'));
+const RouteCoupon = React.lazy(() => import('./RouteCoupon'));
+const RouteTopimage = React.lazy(() => import('./RouteTopimage'));
 
 const Routes: React.VFC = () => {
   const isOther = useIsOther();
@@ -41,6 +43,7 @@ const Routes: React.VFC = () => {
       <Switch>
         <Route exact path="/" component={TopPage} />
         <Route path="/config" component={RouteConfig} />
+        <Route path="/coupon" component={RouteCoupon} />
         <Route path="/customer" component={RouteCustomer} />
         <Route path="/estimate" component={RouteEstimate} />
         <Route path="/hiden" component={RouteHiden} />
@@ -61,6 +64,7 @@ const Routes: React.VFC = () => {
         <Route path="/shipment_plan_import" component={RouteShipmentPlanImport} />
         <Route path="/shipment_plan" component={RouteShipmentPlan} />
         <Route path="/supplier" component={RouteSupplier} />
+        <Route path="/TopImage" component={RouteTopimage} />
         <Route path="/user" component={RouteUser} />
         <Route component={NotFound} />
       </Switch>

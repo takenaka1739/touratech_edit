@@ -18,31 +18,36 @@ export const FormSelect: React.VFC<FormSelectProps> = ({
   error,
   options,
   onChange,
+  multiple,
   ...rest
 }) => {
-  const onChangeRaw: (e: ChangeEvent<HTMLSelectElement>) => void = e => {
-    if (onChange) {
-      if (typeof rest.value === 'number') {
-        onChange(name, toNumber(e.currentTarget.value));
-      } else {
-        onChange(name, e.currentTarget.value);
-      }
+  const onChangeRaw = (e: ChangeEvent<HTMLSelectElement>) => {
+    if (!onChange) return;
+
+    if (multiple) {
+      // multiple時は string[] に変換
+      const selectedValues = Array.from(e.target.selectedOptions).map(o => o.value);
+      onChange(name, selectedValues as unknown as string); // ← TS上は string として渡す
+    } else if (typeof rest.value === 'number') {
+      onChange(name, toNumber(e.currentTarget.value));
+    } else {
+      onChange(name, e.currentTarget.value);
     }
   };
 
   return (
     <select
       name={name}
+      multiple={multiple}
       className={classNames(error ? 'is-invalid' : '', className)}
       onChange={onChangeRaw}
       {...rest}
     >
-      {options &&
-        options.map((o, i) => (
-          <option key={i} value={o.value}>
-            {o.name}
-          </option>
-        ))}
+      {options?.map((o, i) => (
+        <option key={i} value={o.value}>
+          {o.name}
+        </option>
+      ))}
     </select>
   );
 };

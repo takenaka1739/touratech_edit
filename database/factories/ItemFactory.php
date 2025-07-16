@@ -15,7 +15,7 @@ $factory->define(Item::class, function (Faker $faker, $attributes) {
         'name' => 'ITEM ' . $number,
         'name_jp' => '商品' . $number,
         'name_label' => '商品（ラベル）' . $number,
-        'item_classification_id' => function() {
+        'category_id' => function() {
             return ItemClassification::select('id')->inRandomOrder()->first()->id;
         },
         'sales_unit_price' => $faker->numberBetween(1000, 3000),
@@ -40,7 +40,7 @@ $factory->define(Item::class, function (Faker $faker, $attributes) {
     return [
         'item_number' => $number,
         'name_jp' => 'セット品 ' . $number,
-        'item_classification_id' => null,
+        'category_id' => null,
         'sales_unit_price' => $faker->numberBetween(1000, 3000),
         'purchase_unit_price' => null,
         'sample_price' => null,

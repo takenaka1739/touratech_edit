@@ -29,3 +29,4 @@ export { ShipmentPlan } from './ShipmentPlan';
 export { Purchase } from './Purchase';
 export { PurchaseDetail } from './PurchaseDetail';
 export { Receipt } from './Receipt';
+export { Coupon } from './Coupon';

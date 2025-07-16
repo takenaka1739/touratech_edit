@@ -2,15 +2,17 @@ import React, { ComponentProps } from 'react';
 import { FormGroup } from './FormGroup';
 import { FormTextarea } from './FormTextarea';
 
-type Props = ComponentProps<typeof FormGroup> & {};
-
-type FormGroupTextareaProps = Omit<ComponentProps<typeof FormTextarea>, keyof Props> & Props;
+type FormGroupTextareaProps = {
+  helpText?: string;
+} & ComponentProps<typeof FormGroup> &
+  ComponentProps<typeof FormTextarea>;
 
 export const FormGroupTextarea: React.VFC<FormGroupTextareaProps> = ({
   error,
   groupClassName,
   labelText,
   removeOptionalLabel,
+  helpText,
   ...rest
 }) => {
   return (

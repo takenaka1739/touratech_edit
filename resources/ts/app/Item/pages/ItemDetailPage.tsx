@@ -44,7 +44,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     name: '',
     name_jp: '',
     name_label: '',
-    item_classification_id: undefined,
+    category_id: undefined,
     item_classification_name: '',
     sales_unit_price: undefined,
     purchase_unit_price: undefined,
@@ -67,7 +67,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   } = useCommonSearchDialogProps<ItemClassification>('item_classification', async props => {
     const { id, name } = props;
     updateState({
-      item_classification_id: id,
+      category_id: id,
       item_classification_name: name,
     });
     return true;
@@ -198,19 +198,19 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           maxLength={36}
         />
         <div>
-          <Forms.FormGroup labelText="商品分類" error={errors?.item_classification_id}>
+          <Forms.FormGroup labelText="商品分類" error={errors?.category_id}>
             <div className="flex">
               <Forms.FormInputText
                 name="item_classification_name"
                 value={state.item_classification_name ?? ''}
-                error={errors?.item_classification_id}
+                error={errors?.category_id}
                 className="max-w-lg"
                 readOnly
               />
               <input
                 type="hidden"
-                name="item_classification_id"
-                value={state.item_classification_id ?? ''}
+                name="category_id"
+                value={state.category_id ?? ''}
               />
               <button className="btn ml-2 py-0 px-2" onClick={openItemClassDialog}>
                 ...

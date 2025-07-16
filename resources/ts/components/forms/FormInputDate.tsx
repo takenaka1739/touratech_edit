@@ -6,7 +6,7 @@ import { parse, getYear, getMonth, format } from 'date-fns';
 import 'react-datepicker/dist/react-datepicker.css';
 
 type FormInputDateProps = FormProps & {
-  value?: string | undefined;
+  value?: string | Date | null | undefined;
   placeholder?: string | undefined;
   readOnly?: boolean | undefined;
   autoFocus?: boolean | undefined;
@@ -22,7 +22,15 @@ export const FormInputDate: React.VFC<FormInputDateProps> = ({
   onChange,
   ...props
 }) => {
-  const selected = value ? parse(value, 'yyyy/MM/dd', new Date()) : null;
+  const selected = (() => {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    if (typeof value === 'string') {
+      const parsed = parse(value, 'yyyy/MM/dd', new Date());
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  })();
 
   const handleChange = (date: Date | null) => {
     if (name && onChange) {
@@ -41,7 +49,7 @@ export const FormInputDate: React.VFC<FormInputDateProps> = ({
       placeholderText={placeholder}
       readOnly={readOnly}
       autoFocus={autoFocus}
-      renderCustomHeader={props => (
+      renderCustomHeader={(props) => (
         <div>
           <button
             type="button"

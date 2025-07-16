@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="200.00" height="200.00" viewBox="0.00 0.00 200.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g stroke-linecap="round" id="レイヤー_2_のコピー">
+<path d="M60.00,70.00 C59.92,54.36 59.81,33.75 60.00,33.02 C60.28,32.03 78.57,11.77 79.25,11.25 C80.87,10.05 84.27,10.17 89.69,10.18 C107.46,10.13 140.39,10.00 155.55,9.92 C158.46,9.92 160.48,11.43 164.81,15.74 C171.36,22.39 179.65,31.16 179.88,32.39 C179.94,32.75 179.77,71.09 179.78,79.51" fill="none" stroke="rgb(38, 38, 38)" stroke-width="12.00" stroke-opacity="1.00" stroke-linejoin="miter"/>
+<path d="M178.75,170.75 C173.49,176.05 159.88,189.67 158.46,190.11 C158.44,190.11 84.29,190.09 84.01,190.10 C80.92,190.18 78.98,188.80 74.88,184.76 C69.12,178.87 60.32,169.75 60.07,168.99 C59.79,168.13 59.98,135.09 60.00,132.25" fill="none" stroke="rgb(38, 38, 38)" stroke-width="12.00" stroke-opacity="1.00" stroke-linejoin="miter"/>
+<path d="M9.50,100.25 L111.25,100.25" fill="none" stroke="rgb(38, 38, 38)" stroke-width="12.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M111.25,100.00 L81.00,71.00" fill="none" stroke="rgb(38, 38, 38)" stroke-width="12.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+<path d="M111.75,100.25 L79.75,127.25" fill="none" stroke="rgb(38, 38, 38)" stroke-width="12.00" stroke-opacity="1.00" stroke-linejoin="round"/>
+</g>
+</svg>
