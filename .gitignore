@@ -16,3 +16,4 @@ yarn-error.log
 # /public/assets/js/*
 /public/mix-manifest.json
 /public/.htaccess
+/public/assets/js/index.js
