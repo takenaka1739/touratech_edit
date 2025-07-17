@@ -108,6 +108,7 @@ class HomeDataImportService
 
     // 現在の商品データを取得する（セット品を除く）
     $items = DB::table('items')->where('is_set_item', false)->get()->keyBy('item_number');
+    //$items = DB::table('m_items')->where('is_set_item', false)->get()->keyBy('item_number');
 
     $rows = [];
     foreach ($tmps as $tmp) {
