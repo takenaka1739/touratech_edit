@@ -11,7 +11,7 @@ import { SupplierSearchDialog } from '@/app/Supplier/components/SupplierSearchDi
 import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
-import { Link } from 'react-router-dom';
+//import { Link } from 'react-router-dom';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -377,11 +377,158 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         />
         <div>
           <hr className="border-dashed border-gray-400 mt-4 mb-4" />
-          <div>
-              <Link to={"/item/shop-image"}>{"ショップイメージ"}</Link>
-            <button className="btn px-2">他商品情報参照</button>
+          <div className="button-erea">
+            <a className="shop-image" href={"/item/shop-image"}>ショップイメージ</a>
+            <a className="ref-items" href={"/item/shop-image"}>他商品情報参照</a>
           </div>
-          <Forms.FormGroup
+          <div className="is-public">
+            <label>ショップへの公開</label>
+            <label className="label-required">必須</label>
+            <input type="checkbox"/>
+          </div>
+          <div>
+            <div className="vari-code">
+              <label>バリエーションコード</label>
+              <label className="label-optional">任意</label>
+            </div>
+            <div className="vari-code-row">
+              <div className="vari-row">
+                <label>1</label>
+                <input className="input-text"/>
+              </div>
+              <div className="vari-row">
+                <label>2</label>
+                <input className="input-text"/>
+              </div>
+              <div className="vari-row">
+                <label>3</label>
+                <input className="input-text"/>
+              </div>
+              <div className="vari-row">
+                <label>4</label>
+                <input className="input-text"/>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="vari-name">
+              <label>バリエーション</label>
+              <label className="label-optional">任意</label>
+            </div>
+            <div className="vari-name-row">
+              <div className="vari-row">
+                <label>1</label>
+                <input className="input-text"/>
+                <button>＋</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+                <input className="vari-row-input"/>
+                <button>✕</button>
+              </div>
+              <div className="vari-row">
+                <label>2</label>
+                <input className="input-text"/>
+                <button>＋</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+              </div>
+              <div className="vari-row">
+                <label>3</label>
+                <input className="input-text"/>
+                <button>＋</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+              </div>
+              <div className="vari-row">
+                <label>4</label>
+                <input className="input-text"/>
+                <button>＋</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+                <input className="vari-row-input"/>
+                <button className="cross-button">✕</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="item-explanation">
+              <label>商品説明</label>
+              <label className="label-optional">任意</label>
+              <input className="item-detail"/>
+            </div>
+            <div className="item-explanation-detail">
+              <label>商品説明（詳細）</label>
+              <label className="label-optional">任意</label>
+              <input className="item-detail"/>
+            </div>
+            <div className="price-erea">
+              <label>標準価格</label>
+              <label className="label-required">必須</label>
+              <input className="input-text"/>
+            </div>
+            <div className="price-erea">
+              <label>仕入価格</label>
+              <label className="label-required">必須</label>
+              <input className="input-text"/>
+            </div>
+            <div className="pre-order">
+              <label>予約受付数</label>
+              <label className="label-optional">任意</label>
+              <input className="input-text"/>
+            </div>
+            <div className="shipping-fee">
+              <label>送料適用</label>
+              <label className="label-optional">任意</label>
+              <input type="checkbox"/>
+            </div>
+            <div className="handling-fee">
+              <label>代引手数料適用</label>
+              <label className="label-optional">任意</label>
+              <input type="checkbox"/>
+            </div>
+            <div className="special-sale">
+              <label>特売期間のみ販売</label>
+              <label className="label-optional">任意</label>
+              <input type="checkbox"/>
+            </div>
+            <div className="point-reductive">
+              <label>ポイント還元</label>
+              <label className="label-optional">任意</label>
+              <input type="checkbox"/>
+            </div>
+            <div className="payment-how">
+              <div>
+                <label>支払い方法適用</label>
+                <label className="label-required">必須</label>
+              </div>
+              <div className="payment-kind">
+                <input type="checkbox"></input>
+                <label>現金</label>
+              </div>
+              <div className="payment-kind">
+                <input type="checkbox"></input>
+                <label>掛売</label>
+              </div>
+              <div className="payment-kind">
+                <input type="checkbox"></input>
+                <label>宅配代引</label>
+              </div>
+              <div className="payment-kind">
+                <input type="checkbox"></input>
+                <label>銀行振込</label>
+              </div>
+              <div className="payment-kind">
+                <input type="checkbox"></input>
+                <label>クレジットカード</label>
+              </div>
+            </div>
+          </div>
+        </div>
+          {/*<Forms.FormGroup
             labelText="ショップへの公開"
             error={errors?.is_discontinued}
             groupClassName="items-center mt-4"
@@ -392,8 +539,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               checked={state.is_discontinued}
               onChange={onChange}
             />
-          </Forms.FormGroup>
-          <Forms.FormGroup
+          </Forms.FormGroup>*/}
+          {/*<Forms.FormGroup
             labelText="バリエーションコード"
             error={errors?.is_discontinued}
             groupClassName="items-center mt-4"
@@ -433,8 +580,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           onChange={onChange}
           className="group-style"
           maxLength={36}
-        />
-          <Forms.FormGroup
+        />*/}
+          {/*<Forms.FormGroup
             labelText="バリエーション"
             error={errors?.is_discontinued}
             groupClassName="items-center mt-4"
@@ -474,8 +621,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           onChange={onChange}
           className="group-style"
           maxLength={36}
-        />
-        <Forms.FormGroupTextarea
+        />*/}
+        {/*<Forms.FormGroupTextarea
           labelText="商品説明"
           name="remarks"
           value={state.remarks ?? ''}
@@ -483,8 +630,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           className="max-w-lg"
           onChange={onChange}
           maxLength={200}
-        />
-        <Forms.FormGroupTextarea
+        />*/}
+        {/*<Forms.FormGroupTextarea
           labelText="商品説明（詳細）"
           name="remarks"
           value={state.remarks ?? ''}
@@ -492,17 +639,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           className="max-w-lg"
           onChange={onChange}
           maxLength={200}
-        />
-        <Forms.FromGroupInputItemNumber
-          labelText="標準価格"
-          name="item_number"
-          value={state.item_number}
-          error={errors?.item_number}
-          onChange={onChange}
-          groupClassName="mt-0"
-          className="max-w-8"
-          required
-          autoFocus
         />
         <Forms.FromGroupInputItemNumber
           labelText="仕入価格"
@@ -514,8 +650,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           className="max-w-8"
           required
           autoFocus
-        />
-        <Forms.FromGroupInputItemNumber
+        />*/}
+        {/*<Forms.FromGroupInputItemNumber
           labelText="販売価格"
           name="item_number"
           value={state.item_number}
@@ -527,16 +663,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           autoFocus
         />
         <Forms.FormGroupInputNumber
-          labelText="会員価格"
-          name="sample_price"
-          value={state.sample_price}
-          error={errors?.sample_price}
-          onChange={onChange}
-          precision={2}
-          className="max-w-8"
-          min={0}
-        />
-        <Forms.FormGroupInputNumber
           labelText="予約受付数"
           name="sample_price"
           value={state.sample_price}
@@ -545,8 +671,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           precision={2}
           className="max-w-8"
           min={0}
-        />
-        <Forms.FormGroup
+        />*/}
+        {/*<Forms.FormGroup
           labelText="送料適用"
           error={errors?.is_discontinued}
           groupClassName="items-center mt-4"
@@ -593,8 +719,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             checked={state.is_discontinued}
             onChange={onChange}
           />
-        </Forms.FormGroup>
-        </div>
+        </Forms.FormGroup>*/}
 
         {id && (
           <>

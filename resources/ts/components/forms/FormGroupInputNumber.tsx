@@ -23,7 +23,7 @@ export const FormGroupInputNumber: React.VFC<FormGroupInputNumberProps> = ({
       removeOptionalLabel={removeOptionalLabel}
       required={rest.required}
     >
-      <div className="flex items-center">
+      <div className="flex items-center" >
         <FormInputNumber {...rest} />
         {labelUnitText && <div className="ml-2 text-xs">{labelUnitText}</div>}
       </div>

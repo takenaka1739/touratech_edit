@@ -21641,6 +21641,218 @@ div[aria-disabled=true]::after {
   border: 1px solid #000000;
 }
 
+.is-public {
+  margin-left: 10px;
+  margin-top: 0.25rem;
+}
+
+.vari-code {
+  margin-top: 10px;
+  margin-left: 30px;
+}
+
+.vari-code-row {
+  margin-top: 1px;
+  margin-left: 150px;
+}
+
+.vari-name {
+  margin-top: 1px;
+  margin-left: 63px;
+}
+
+.vari-name-row {
+  margin-top: 1px;
+  margin-left: 150px;
+}
+
+.item-explanation {
+  display: flex;
+  margin-top: 5px;
+  margin-left: 57px;
+}
+
+.item-explanation-detail {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 8px;
+}
+
+.vari-row-input {
+  width: 70px;
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.cross-button {
+  margin-right: 15px;
+}
+
+.price-erea {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 57px;
+}
+
+.pre-order {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 45px;
+}
+
+.shipping-fee {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 57px;
+}
+
+.handling-fee {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 20px;
+}
+
+.special-sale {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 5px;
+}
+
+.point-reductive {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 30px;
+}
+
+.payment-how {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 17px;
+}
+
+.payment-kind {
+  margin-right: 10px;
+}
+
+.button-erea {
+  display: flex;
+}
+
+.button-erea .shop-image {
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.button-erea .ref-items {
+  margin-left: auto;
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+label {
+  font-size: 12px;
+  margin-right: 2px;
+  color: #4a5568;
+  text-align: right;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.25;
+}
+
+.label-optional {
+  align-self: flex-start;
+  background-color: #a0aec0;
+  border: 1px solid #a0aec0;
+  color: #fff;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+  margin-right: 10px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.label-required {
+  align-self: flex-start;
+  background-color: #c53030;
+  border: 1px solid #c53030;
+  color: #fff;
+  white-space: nowrap;
+  margin-right: 10px;
+  margin-left: 0.5rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.input-text {
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.vari-row {
+  display: flex;
+  margin-top: 5px;
+}
+
+.item-row {
+  display: flex;
+  margin-top: 10px;
+}
+
+.item-detail {
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
 @media (min-width: 640px){
   .sm\:container{
     width: 100%;
