@@ -1,19 +1,7 @@
 import { useState } from 'react';
-//import Draggable from "react-draggable";
-//import { Breadcrumbs } from '@/pages/';
-//import AppLayout from '@/Layouts/AppLayout';
-//import { usePage, router } from '@inertiajs/react';
-//import ReactPlayer from 'react-player';
-//import {useDropzone} from 'react-dropzone';
-//import { DragEvent } from "react";
-//import Image from "next/image";
-//import { useCallback, useMemo } from 'react';
-//import { useCallback} from 'react';
-//import { useDropzone, FileWithPath } from 'react-dropzone';
-//import { useDropzone } from 'react-dropzone';
 import { useCallback, useRef } from 'react';
-//import Image from './Image';
 import { useMemo } from 'react';
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 export const ShopImagePage = () => {
 
@@ -26,9 +14,11 @@ export const ShopImagePage = () => {
   const [priceText, setpriceText] = useState("金額を入力して下さい");
   const [detailText, setDetailText] = useState("説明文を入力して下さい");
   const [variKindItem, setVariKind] = useState(variKind);
+  const [pointText, setpoint] = useState("  ");
   const [dropErea, setDropErea] = useState("ここにファイルをドロップして下さい");
   const [selectImage, setselectImage] = useState("");
 
+  // 各入力欄の値設定
   const inputNameClick = () => {
     if(nameText == "商品名を入力して下さい"){
       setNameText("");
@@ -47,6 +37,8 @@ export const ShopImagePage = () => {
   const inputPriceFocusOut = () => {
     if(priceText == ""){
       setpriceText("金額を入力して下さい");
+    }else{
+      Number(priceText) > 100 ? setpoint(String(Number(priceText) / 100)) : setpoint("  ");
     }
   }
   const inputDetailClick = () => {
@@ -120,14 +112,12 @@ export const ShopImagePage = () => {
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    //setDragging((current) => current + 1);
     setDropErea("");
   }, []);
 
   const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropErea("");
-    //setDragging((current) => current - 1);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -153,8 +143,7 @@ export const ShopImagePage = () => {
       if (file === undefined) return; // ファイルでない場合は処理終了
       setFiles((current) => current.concat(file));
       setDropErea("");
-    },
-    []
+    },[]
   );
 
   const handleClick = (src:string) => {
@@ -163,9 +152,19 @@ export const ShopImagePage = () => {
 
   const Image = ({ file }: Props) => {
     const src = useMemo(() => URL.createObjectURL(file), [file]);
-    return<img src={src} onClick={() => handleClick(src)} alt={file.name} style={{height: '80px', width: '80px'}}></img>;
+    return (
+    <img className="" src={src} onClick={() => handleClick(src)} alt={file.name} style={{height: '80px', width: '80px'}} ></img>);
   };
 
+    const onDragEnd = (result: any) => {
+     //console.log('発火');
+    // drag時のindexの値
+     //console.log(result.source.index);
+    // drag終了後のindexの値
+     //console.log(result.destination.index);
+    const remove = files.splice(result.source.index, 1);
+    files.splice(result.destination.index, 0, remove[0]);
+  };
 
   return (
     <div id="shop-image">
@@ -179,7 +178,6 @@ export const ShopImagePage = () => {
             <div className="image-input-erea">
               <input type="file" style={{ display: 'none' }} ref={attachRef} multiple onChange={handleInpuFileChange}></input>
               <div
-                //style={{ border: 'dashed 1px #000', padding: 20, backgroundColor: dragging > 0 ? '#ccc' : undefined }}
                 style={{ height: '100px', width: '450px' }}
                 tabIndex={0}
                 onDragEnter={onDragEnter}
@@ -190,29 +188,34 @@ export const ShopImagePage = () => {
               >
                 <p style={{fontSize: '20px', color: '#c9d7e8f8', textAlign: 'center'}}>{dropErea}</p>
                 <div style={{display: 'flex'}}>
-                  {files.map((f) => (
-                    <div key={f.name} style={{padding:'10px'}}>
-                      {/*{f.name}*/}
-                      <Image file={f}></Image>
-                      {/*{setDropErea("")}*/}
-                    </div>
-                  ))}
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="droppable" direction="horizontal">
+                      {(provided) => (
+                        <div style={{display: 'flex'}} {...provided.droppableProps} ref={provided.innerRef}>
+                          {files.map((f, index) => (
+                            <Draggable draggableId={String(index)} index={index} key={String(f)}>
+                              {/* Droppableで指定した引数をそのまま指定する */}
+                              {(provided) => (
+                                // この中で静的なdivタグなどを指定できる
+                                //  <div {...provided.draggableProps} ref={provided.innerRef}>もお作法
+                                // 実際に掴んで移動させるpropsに{...provided.dragHandleProps}をつける
+                                <div style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
+                                  <div key={f.name} style={{padding:'10px'}} {...provided.dragHandleProps}>
+                                    <Image file={f}></Image>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 </div>
               </div>
-              {/*<p>{imageItem}</p>
-              <input className="a" onDrop={() => onDrop}/>*/}
-              {/*<div>
-                <div {...getRootProps()}>
-                  <input type="file" onDrop={() => onDrop} className="b"/>
-                  {imageItems.map((imageItem) => {
-                    return (
-                    <img src={imageItem} className="img"></img>
-                    )})}
-                </div>
-              </div>*/}
             </div>
           </div>
-          <img src="/defbe5d2e16490334ffd8c22f1469ce6_t.jpg"/>
+          <img src={"./c111583894027.jpg"} style={{width: '70px', height: '70px'}}/>
         <div id="item-info">
           <input id="item-name" value={nameText}
                  onClick={() => inputNameClick()}
@@ -227,7 +230,7 @@ export const ShopImagePage = () => {
                    onChange={(event) => setpriceText(event.target.value)}/>
             <label className="label-basic">（税込み）</label>
           </div>
-          <label className="point-label">ポイント：〇〇pt</label>
+          <label className="point-label">ポイント：{pointText}pt</label>
           <hr/>
           <div id="item-detail-erea">
             <label className="label-basic">この商品について</label>

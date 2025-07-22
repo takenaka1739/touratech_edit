@@ -21623,6 +21623,8 @@ div[aria-disabled=true]::after {
 #shop-image #input-area #item-info #price-col {
   margin-top: 20px;
   display: flex;
+  vertical-align: middle;
+  text-align: center;
 }
 
 #shop-image #input-area #item-info #price-col #input-price {

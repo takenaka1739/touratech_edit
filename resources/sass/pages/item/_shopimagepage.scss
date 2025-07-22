@@ -98,6 +98,8 @@
       #price-col {
         margin-top: 20px;
         display: flex;
+        vertical-align: middle;   //縦方向に中央寄せ
+        text-align:center;        //横方向に中央寄せ
 
         #input-price {
           border:1px solid #ffffffff;
