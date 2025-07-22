@@ -21560,13 +21560,24 @@ div[aria-disabled=true]::after {
   height: 500px;
 }
 
-#shop-image #input-area #image-area p {
+#shop-image #input-area #image-area .image-input-erea {
   border: 1px solid #333;
   margin-top: 20px;
   margin-left: auto;
   margin-right: auto;
   width: 450px;
   height: 100px;
+}
+
+#shop-image #input-area #image-area .image-input-erea .b {
+  background-color: yellow;
+  width: 450px;
+  height: 100px;
+}
+
+#shop-image #input-area #image-area .image-input-erea .b .img {
+  width: 10px;
+  height: 10px;
 }
 
 #shop-image #input-area #item-info {
@@ -21581,9 +21592,22 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #item-name {
-  border: 1px solid #000000;
+  border: 1px solid #ffffffff;
+  border-radius: 5px;
   width: 450px;
   height: 70px;
+  font-size: 40px;
+  color: #c9d7e8f8;
+}
+
+#shop-image #input-area #item-info #item-name:hover {
+  border: 1px solid #c9d7e8f8;
+  border-radius: 5px;
+}
+
+#shop-image #input-area #item-info #item-name:focus {
+  border: 1px solid #c9d7e8f8;
+  border-radius: 5px;
 }
 
 #shop-image #input-area #item-info hr {
@@ -21601,44 +21625,114 @@ div[aria-disabled=true]::after {
   display: flex;
 }
 
-#shop-image #input-area #item-info #item-detail {
+#shop-image #input-area #item-info #price-col #input-price {
+  border: 1px solid #ffffffff;
+  border-radius: 5px;
+  color: #c9d7e8f8;
+}
+
+#shop-image #input-area #item-info #price-col #input-price:hover {
+  border: 1px solid #c9d7e8f8;
+  border-radius: 5px;
+}
+
+#shop-image #input-area #item-info #price-col #input-price:focus {
+  border: 1px solid #c9d7e8f8;
+  border-radius: 5px;
+}
+
+#shop-image #input-area #item-info #price-col .label-basic {
+  font-size: 20px;
+}
+
+#shop-image #input-area #item-info .point-label {
+  display: inline-block;
+  padding: 5px;
+  font-size: 20px;
+  text-align: left;
+  background-color: #E4E8ED;
+}
+
+#shop-image #input-area #item-info #item-detail-erea {
+  display: flex;
+  flex-direction: column;
+}
+
+#shop-image #input-area #item-info #item-detail-erea #item-detail {
+  font-size: 40px;
+  border: 1px solid #ffffffff;
+  border-radius: 5px;
+  color: #c9d7e8f8;
   margin-top: 20px;
   width: 450px;
   height: 300px;
 }
 
-#shop-image #input-area #item-info input {
-  border: 1px solid #000000;
+#shop-image #input-area #item-info #item-detail-erea #item-detail:hover {
+  font-size: 40px;
+  border: 1px solid #c9d7e8f8;
+  border-radius: 5px;
+}
+
+#shop-image #input-area #item-info #item-detail-erea #item-detail:focus {
+  font-size: 40px;
+  border: 1px solid #c9d7e8f8;
+  border-radius: 5px;
+}
+
+#shop-image #input-area #item-info #item-detail-erea .label-basic {
+  font-size: 20px;
+  text-align: left;
 }
 
 #shop-image #input-area #vari-info {
   display: flex;
   flex-direction: column;
   margin-left: 30px;
-}
-
-#shop-image #input-area #vari-info .vari-name {
   margin-top: 20px;
-  display: flex;
 }
 
-#shop-image #input-area #vari-info .vari-name input {
-  border: 1px solid #000000;
+#shop-image #input-area #vari-info .vari-item {
+  margin-bottom: 25px;
 }
 
-#shop-image #input-area #vari-info .vari-kind-list {
+#shop-image #input-area #vari-info .vari-item .vari-name-row .input-text {
+  color: #c9d7e8f8;
+  border: 1px solid #c9d7e8f8;
+  height: 30px;
+  width: 350px;
+}
+
+#shop-image #input-area #vari-info .vari-item .vari-name-row .plus-button {
+  color: #c9d7e8f8;
+  height: 30px;
+  width: 30px;
+  margin-left: 5px;
+  border: 1px solid #c9d7e8f8;
+  border-radius: 100px;
+}
+
+#shop-image #input-area #vari-info .vari-item .vari-kind-list {
   display: flex;
   margin-top: 10px;
 }
 
-#shop-image #input-area #vari-info .vari-kind-list .vari-kind {
+#shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind {
+  border: 1px solid #c9d7e8f8;
   display: flex;
   margin-right: 10px;
+  margin-left: 10px;
 }
 
-#shop-image #input-area #vari-info .vari-kind-list .vari-kind input {
-  width: 50px;
-  border: 1px solid #000000;
+#shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .vari-row-input {
+  color: #c9d7e8f8;
+  border: #FFFFFFFF;
+}
+
+#shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .dele-button {
+  color: #c9d7e8f8;
+  border-left: 1px solid #c9d7e8f8;
+  padding: 2px 5px 2px 5px;
 }
 
 .is-public {
@@ -21662,8 +21756,7 @@ div[aria-disabled=true]::after {
 }
 
 .vari-name-row {
-  margin-top: 1px;
-  margin-left: 150px;
+  display: flex;
 }
 
 .item-explanation {
@@ -21676,6 +21769,10 @@ div[aria-disabled=true]::after {
   display: flex;
   margin-top: 10px;
   margin-left: 8px;
+}
+
+.vari-row {
+  display: flex;
 }
 
 .vari-row-input {

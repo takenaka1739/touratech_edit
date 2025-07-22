@@ -10,6 +10,8 @@ class Item extends Model
 {
   use SoftDeletes;
 
+  protected $table = 'items';
+
   protected $fillable = [
     'item_number',
     'name',
@@ -27,10 +29,8 @@ class Item extends Model
     'domestic_stock',
     'overseas_stock',
     'stock_display',
-    'remarks',
+    'remarks'
   ];
-
-    //protected $table = 'm_items';
 
     //protected $fillable = [
     //  'supplier_id',
