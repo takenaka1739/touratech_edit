@@ -185,6 +185,56 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     []  // 依存配列は空です
   );
 
+  let variKind:{[key: string] : string[]} = 
+  {"1":["1", "1"],
+   "2":["2", "2"],
+   "3":["3", "3"],
+   "4":["4", "4"]};
+
+     const [variKindItem, setVariKind] = useState(variKind);
+
+  const addNewVari = (name:string) => {
+    let variKind:{[key: string] : string[]} = {};
+
+    // 連想配列の要素取り出し
+    for (let key in variKindItem) {
+      let arr:string[] = [];
+      let strKey: string = `${key}`;
+      // 連想配列内の配列要素の取り出し
+      for (let i = 0; i < variKindItem[key].length; i++) {
+        // 新しく定義した配列に既存のデータを保存
+        arr.push(variKindItem[key][i]);
+      }
+
+      if(strKey === name){
+        // 押されたボタンの配列に要素を一つ追加
+        arr.push("");
+      }
+
+      variKind[strKey] = arr;
+    }
+    setVariKind(variKind);
+  }
+
+  const deleVari = (name:string, index:number) => {
+    let variKind:{[key: string] : string[]} = {};
+
+    // 連想配列の要素取り出し
+    for (let key in variKindItem) {
+      let arr:string[] = [];
+      let strKey: string = `${key}`;
+      // 連想配列内の配列要素の取り出し
+      for (let i = 0; i < variKindItem[key].length; i++) {
+        if((strKey === name && i != index) || (strKey != name)){
+        // 新しく定義した配列に既存のデータを保存
+          arr.push(variKindItem[key][i]);
+        }
+      }
+      variKind[strKey] = arr;
+    }
+    setVariKind(variKind);
+  }
+
   return (
     <PageWrapper
       prefix={`${slug}-detail`}
@@ -451,70 +501,32 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               <label className="label-optional">任意</label>
             </div>
             <div className="vari-name-row">
-              <div className="vari-row">
-                <label>1</label>
-                <input className="input-text"/>
-                <button onClick={addForm}>＋</button>
-                {forms.map(form => (
-                  <div key={form.id} className="vari-row">
-                    <input className="vari-row-input"
-                      type="text"
-                      placeholder="タイトル"
-                      value={form.title}
-                      onChange={handleInputChange(form.id, 'title')}
-                    />
-                    <button onClick={() => deleteForm(form.id)}>✕</button>
-                  </div>
-                ))}
+        <div id="vari-info">{ 
+          Object.keys(variKindItem).map((name, index) => {
+            return (
+              <div className="vari-item">
+                <div className="vari-name-row">
+                  <label>{index + 1}</label>
+                  <input className="input-text" value={name}/>
+                  <button className="plus-button" onClick={() => addNewVari(name)}>＋</button>
+                </div>
+                <div className="vari-kind-list"> {
+                  variKindItem[name].map((value, index) => {
+                    return (
+                      <div className="vari-kind">
+                        <input className="vari-row-input"
+                          type="text"
+                          value={value}
+                        />
+                        <button className="dele-button" onClick={() => deleVari(name, index)}>✕</button>
+                      </div>
+                    )}
+                  )}
+                </div>
               </div>
-              <div className="vari-row">
-                <label>2</label>
-                <input className="input-text"/>
-                <button onClick={addForm}>＋</button>
-                {forms.map(form => (
-                  <div key={form.id} className="vari-row">
-                    <input className="vari-row-input"
-                      type="text"
-                      placeholder="タイトル"
-                      value={form.title}
-                      onChange={handleInputChange(form.id, 'title')}
-                    />
-                    <button onClick={() => deleteForm(form.id)}>✕</button>
-                  </div>
-                ))}
-              </div>
-              <div className="vari-row">
-                <label>3</label>
-                <input className="input-text"/>
-                <button onClick={addForm}>＋</button>
-                {forms.map(form => (
-                  <div key={form.id} className="vari-row">
-                    <input className="vari-row-input"
-                      type="text"
-                      placeholder="タイトル"
-                      value={form.title}
-                      onChange={handleInputChange(form.id, 'title')}
-                    />
-                    <button onClick={() => deleteForm(form.id)}>✕</button>
-                  </div>
-                ))}
-              </div>
-              <div className="vari-row">
-                <label>4</label>
-                <input className="input-text"/>
-                <button onClick={addForm}>＋</button>
-                {forms.map(form => (
-                  <div key={form.id} className="vari-row">
-                    <input className="vari-row-input"
-                      type="text"
-                      placeholder="タイトル"
-                      value={form.title}
-                      onChange={handleInputChange(form.id, 'title')}
-                    />
-                    <button onClick={() => deleteForm(form.id)}>✕</button>
-                  </div>
-                ))}
-              </div>
+            );
+          })
+        }</div>
                 {/*<input className="vari-row-input"/>
                 <button className="cross-button">✕</button>
                 <input className="vari-row-input"/>
