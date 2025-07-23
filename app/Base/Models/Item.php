@@ -13,23 +13,23 @@ class Item extends Model
   protected $table = 'm_items';
 
   //protected $fillable = [
-    //'item_number',
-    //'name',
-    //'name_jp',
-    //'name_label',
-    //'item_classification_id',
-    //'sales_unit_price',
-    //'purchase_unit_price',
-    //'sample_price',
-    //'supplier_id',
-    //'is_discontinued',
-    //'discontinued_date',
-    //'is_display',
-    //'is_set_item',
-    //'domestic_stock',
-    //'overseas_stock',
-    //'stock_display',
-    //'remarks'
+  //  'item_number',
+  //  'name',
+  //  'name_jp',
+  //  'name_label',
+  //  'item_classification_id',
+  //  'sales_unit_price',
+  //  'purchase_unit_price',
+  //  'sample_price',
+  //  'supplier_id',
+  //  'is_discontinued',
+  //  'discontinued_date',
+  //  'is_display',
+  //  'is_set_item',
+  //  'domestic_stock',
+  //  'overseas_stock',
+  //  'stock_display',
+  //  'remarks'
   //];
 
     //protected $table = 'm_items';

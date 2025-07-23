@@ -21757,8 +21757,24 @@ div[aria-disabled=true]::after {
   margin-left: 63px;
 }
 
-.vari-name-row {
+.vari-item {
+  margin-top: 10px;
+  margin-left: 153px;
+}
+
+.vari-item .vari-name-row {
   display: flex;
+}
+
+.vari-item .vari-name-row .plus-button {
+  color: #a0aec0;
+  text-align: center;
+  height: 20px;
+  width: 20px;
+  margin-left: 5px;
+  margin-right: 10px;
+  border: 1px solid #a0aec0;
+  border-radius: 100px;
 }
 
 .item-explanation {
@@ -21777,13 +21793,16 @@ div[aria-disabled=true]::after {
   display: flex;
 }
 
-.vari-row-input {
-  width: 70px;
-  display: block;
+.vari-item-row {
   background-color: #fff;
   border: 1px solid #a0aec0;
-  appearance: none;
   border-radius: 0.125rem;
+}
+
+.vari-item-row .vari-row-input {
+  width: 70px;
+  display: block;
+  appearance: none;
   outline: 2px solid transparent;
   outline-offset: 2px;
   padding-top: 0.25rem;
@@ -21793,8 +21812,10 @@ div[aria-disabled=true]::after {
   font-size: 0.75rem;
 }
 
-.cross-button {
-  margin-right: 15px;
+.vari-item-row .dele-button {
+  color: #a0aec0;
+  border-left: 1px solid #a0aec0;
+  padding: 2px 5px 2px 5px;
 }
 
 .price-erea {

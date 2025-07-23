@@ -3,6 +3,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Item, ItemClassification, Supplier } from '@/types';
+//import { Item, Category, Supplier } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
@@ -12,15 +13,9 @@ import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
 //import { Link } from 'react-router-dom';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
-
-type Form = {
-  id: number;
-  title: string;
-  name: string;
-};
 
 /**
  * 商品マスタ（詳細）画面 Component
@@ -73,6 +68,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     open: openItemClassDialog,
     searchDialogProps: itemClassSearchDialogProps,
   } = useCommonSearchDialogProps<ItemClassification>('item_classification', async props => {
+  //} = useCommonSearchDialogProps<Category>('category', async props => {
     const { id, name } = props;
     updateState({
       category_id: id,
@@ -157,41 +153,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
   const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
 
-  const [forms, setForms] = useState<Form[]>([]);
-  const [idCounter, setIdCounter] = useState<number>(1);
-  const addForm = () => {
-    const formBody: Form = {
-      id: idCounter,
-      title: "",
-      name: "",
-    };
-    setIdCounter(prevId => prevId + 1);
-    setForms(prevForms => [...prevForms, formBody]);
-  };
-
-    const deleteForm = (id: number) => {
-    setForms(prevForms => prevForms.filter(form => form.id !== id));
-  };
-
-  const handleInputChange = useCallback(
-    (id: number, key: keyof Form) => 
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForms(prevForms => 
-          prevForms.map(form => 
-            form.id === id ? {...form, [key]: e.target.value} : form
-          )
-        );
-    },
-    []  // 依存配列は空です
-  );
-
   let variKind:{[key: string] : string[]} = 
   {"1":["1", "1"],
    "2":["2", "2"],
    "3":["3", "3"],
    "4":["4", "4"]};
 
-     const [variKindItem, setVariKind] = useState(variKind);
+  const [variKindItem, setVariKind] = useState(variKind);
 
   const addNewVari = (name:string) => {
     let variKind:{[key: string] : string[]} = {};
@@ -495,71 +463,34 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               </div>
             </div>
           </div>
-          <div>
+          <div className="vari-erea" style={{ marginTop: '10px'}}>
             <div className="vari-name">
               <label>バリエーション</label>
               <label className="label-optional">任意</label>
             </div>
-            <div className="vari-name-row">
-        <div id="vari-info">{ 
-          Object.keys(variKindItem).map((name, index) => {
-            return (
-              <div className="vari-item">
-                <div className="vari-name-row">
-                  <label>{index + 1}</label>
-                  <input className="input-text" value={name}/>
-                  <button className="plus-button" onClick={() => addNewVari(name)}>＋</button>
-                </div>
-                <div className="vari-kind-list"> {
-                  variKindItem[name].map((value, index) => {
-                    return (
-                      <div className="vari-kind">
-                        <input className="vari-row-input"
-                          type="text"
-                          value={value}
-                        />
-                        <button className="dele-button" onClick={() => deleVari(name, index)}>✕</button>
-                      </div>
-                    )}
-                  )}
-                </div>
-              </div>
-            );
-          })
-        }</div>
-                {/*<input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button>✕</button>
-              </div>
-              <div className="vari-row">
-                <label>2</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-              </div>
-              <div className="vari-row">
-                <label>3</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-              </div>
-              <div className="vari-row">
-                <label>4</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-              </div>*/}
-            </div>
+            <div className="vari-item">{
+              Object.keys(variKindItem).map((name, index) => {
+                return (
+                  <div key={index} style={{display: 'flex', marginTop: '10px'}}>
+                    <div className="vari-name-row">
+                      <label>{index + 1}</label>
+                      <input className="input-text" value={name}/>
+                      <button className="plus-button" onClick={() => addNewVari(name)}>＋</button>
+                    </div>
+                    <div key={index} style={{display: 'flex'}}> {
+                      variKindItem[name].map((value, index) => {
+                        return (
+                          <div key={index} className="vari-item-row" style={{display: 'flex', marginRight: '15px'}}>
+                            <input className="vari-row-input" type="text" value={value}/>
+                            <button className="dele-button" onClick={() => deleVari(name, index)}>✕</button>
+                          </div>
+                        )}
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            }</div>
           </div>
           <div>
             <div className="item-explanation">

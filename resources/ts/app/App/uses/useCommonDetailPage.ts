@@ -47,11 +47,14 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
 
   const get: (id: number) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
+    console.log("res取得の前");
+    console.log(`/api/${slug}/edit/${id}`);
     const res = await axios.get(`/api/${slug}/edit/${id}`);
+    console.log('resの中身：');
+    console.log(res);
 
     if (res.status === 200) {
       setState(res.data.data);
-
       dispatch(AppActions.success());
       return true;
     } else {

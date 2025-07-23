@@ -10,6 +10,7 @@ export { Invoice } from './Invoice';
 export { InvoiceDetail } from './InvoiceDetail';
 export { Item } from './Item';
 export { ItemClassification } from './ItemClassification';
+export { Category } from './Category';
 export { PageErrors } from './PageErrors';
 export { Pager } from './Pager';
 export { Supplier } from './Supplier';
