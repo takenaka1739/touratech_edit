@@ -34,6 +34,7 @@ class Sales extends Model
         'order_no',
         'remarks',
         'send_flg',
+        'is_send',
     ];
 
     protected $hidden = [

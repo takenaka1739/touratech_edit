@@ -287,8 +287,8 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             </thead>
             <tbody>
               {state.details.map(r => (
-                <tr key={r.no}>
-                  <td className="text-center">{r.no}</td>
+                <tr key={r.id}>
+                  <td className="text-center">{r.id}</td>
                   <td>{getItemKindName(r.item_kind)}</td>
                   <td>
                     <div className="text-xs">{r.item_number}</div>
@@ -301,14 +301,14 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                   <td
                     className={classNames(
                       'text-right',
-                      errors && `quantity_${r.no}` in errors ? 'bg-red-200' : ''
+                      errors && `quantity_${r.id}` in errors ? 'bg-red-200' : ''
                     )}
                   >
                     {r.quantity}
                   </td>
                   <td className="text-right">{numberFormat(r.amount, 0)}</td>
                   <td className="col-btn">
-                    <span onClick={onClickEditDetail} data-no={r.no}>
+                    <span onClick={onClickEditDetail} data-no={r.id}>
                       編集
                     </span>
                   </td>
