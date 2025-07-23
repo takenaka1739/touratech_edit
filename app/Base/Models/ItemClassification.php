@@ -9,13 +9,11 @@ class ItemClassification extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'm_categories';
+    //protected $table = 'm_categories';
 
     protected $fillable = [
         'name',
         'remarks',
-        'code',
-        'is_display',
         'order_by',
     ];
     

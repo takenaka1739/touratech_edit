@@ -3,6 +3,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Item, ItemClassification, Supplier } from '@/types';
+//import { Item, Category, Supplier } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
@@ -12,6 +13,7 @@ import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
 //import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -66,6 +68,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     open: openItemClassDialog,
     searchDialogProps: itemClassSearchDialogProps,
   } = useCommonSearchDialogProps<ItemClassification>('item_classification', async props => {
+  //} = useCommonSearchDialogProps<Category>('category', async props => {
     const { id, name } = props;
     updateState({
       category_id: id,
@@ -149,6 +152,56 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
   const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
+
+  let variKind:{[key: string] : string[]} = 
+  {"1":["1", "1"],
+   "2":["2", "2"],
+   "3":["3", "3"],
+   "4":["4", "4"]};
+
+  const [variKindItem, setVariKind] = useState(variKind);
+
+  const addNewVari = (name:string) => {
+    let variKind:{[key: string] : string[]} = {};
+
+    // 連想配列の要素取り出し
+    for (let key in variKindItem) {
+      let arr:string[] = [];
+      let strKey: string = `${key}`;
+      // 連想配列内の配列要素の取り出し
+      for (let i = 0; i < variKindItem[key].length; i++) {
+        // 新しく定義した配列に既存のデータを保存
+        arr.push(variKindItem[key][i]);
+      }
+
+      if(strKey === name){
+        // 押されたボタンの配列に要素を一つ追加
+        arr.push("");
+      }
+
+      variKind[strKey] = arr;
+    }
+    setVariKind(variKind);
+  }
+
+  const deleVari = (name:string, index:number) => {
+    let variKind:{[key: string] : string[]} = {};
+
+    // 連想配列の要素取り出し
+    for (let key in variKindItem) {
+      let arr:string[] = [];
+      let strKey: string = `${key}`;
+      // 連想配列内の配列要素の取り出し
+      for (let i = 0; i < variKindItem[key].length; i++) {
+        if((strKey === name && i != index) || (strKey != name)){
+        // 新しく定義した配列に既存のデータを保存
+          arr.push(variKindItem[key][i]);
+        }
+      }
+      variKind[strKey] = arr;
+    }
+    setVariKind(variKind);
+  }
 
   return (
     <PageWrapper
@@ -410,49 +463,34 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               </div>
             </div>
           </div>
-          <div>
+          <div className="vari-erea" style={{ marginTop: '10px'}}>
             <div className="vari-name">
               <label>バリエーション</label>
               <label className="label-optional">任意</label>
             </div>
-            <div className="vari-name-row">
-              <div className="vari-row">
-                <label>1</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button>✕</button>
-              </div>
-              <div className="vari-row">
-                <label>2</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-              </div>
-              <div className="vari-row">
-                <label>3</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-              </div>
-              <div className="vari-row">
-                <label>4</label>
-                <input className="input-text"/>
-                <button>＋</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-                <input className="vari-row-input"/>
-                <button className="cross-button">✕</button>
-              </div>
-            </div>
+            <div className="vari-item">{
+              Object.keys(variKindItem).map((name, index) => {
+                return (
+                  <div key={index} style={{display: 'flex', marginTop: '10px'}}>
+                    <div className="vari-name-row">
+                      <label>{index + 1}</label>
+                      <input className="input-text" value={name}/>
+                      <button className="plus-button" onClick={() => addNewVari(name)}>＋</button>
+                    </div>
+                    <div key={index} style={{display: 'flex'}}> {
+                      variKindItem[name].map((value, index) => {
+                        return (
+                          <div key={index} className="vari-item-row" style={{display: 'flex', marginRight: '15px'}}>
+                            <input className="vari-row-input" type="text" value={value}/>
+                            <button className="dele-button" onClick={() => deleVari(name, index)}>✕</button>
+                          </div>
+                        )}
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            }</div>
           </div>
           <div>
             <div className="item-explanation">
@@ -528,199 +566,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             </div>
           </div>
         </div>
-          {/*<Forms.FormGroup
-            labelText="ショップへの公開"
-            error={errors?.is_discontinued}
-            groupClassName="items-center mt-4"
-          >
-            <Forms.FormInputCheck
-              id="is_discontinued"
-              name="is_discontinued"
-              checked={state.is_discontinued}
-              onChange={onChange}
-            />
-          </Forms.FormGroup>*/}
-          {/*<Forms.FormGroup
-            labelText="バリエーションコード"
-            error={errors?.is_discontinued}
-            groupClassName="items-center mt-4"
-          />
-        <Forms.FormGroupInputTextRow
-          labelText="1"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />
-        <Forms.FormGroupInputTextRow
-          labelText="2"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />
-        <Forms.FormGroupInputTextRow
-          labelText="3"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />
-        <Forms.FormGroupInputTextRow
-          labelText="4"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />*/}
-          {/*<Forms.FormGroup
-            labelText="バリエーション"
-            error={errors?.is_discontinued}
-            groupClassName="items-center mt-4"
-          />
-        <Forms.FormGroupInputTextRow
-          labelText="1"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />
-        <Forms.FormGroupInputTextRow
-          labelText="2"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />
-        <Forms.FormGroupInputTextRow
-          labelText="3"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />
-        <Forms.FormGroupInputTextRow
-          labelText="4"
-          name="name_label"
-          value={state.name_label ?? ''}
-          error={errors?.name_label}
-          onChange={onChange}
-          className="group-style"
-          maxLength={36}
-        />*/}
-        {/*<Forms.FormGroupTextarea
-          labelText="商品説明"
-          name="remarks"
-          value={state.remarks ?? ''}
-          error={errors?.remarks}
-          className="max-w-lg"
-          onChange={onChange}
-          maxLength={200}
-        />*/}
-        {/*<Forms.FormGroupTextarea
-          labelText="商品説明（詳細）"
-          name="remarks"
-          value={state.remarks ?? ''}
-          error={errors?.remarks}
-          className="max-w-lg"
-          onChange={onChange}
-          maxLength={200}
-        />
-        <Forms.FromGroupInputItemNumber
-          labelText="仕入価格"
-          name="item_number"
-          value={state.item_number}
-          error={errors?.item_number}
-          onChange={onChange}
-          groupClassName="mt-0"
-          className="max-w-8"
-          required
-          autoFocus
-        />*/}
-        {/*<Forms.FromGroupInputItemNumber
-          labelText="販売価格"
-          name="item_number"
-          value={state.item_number}
-          error={errors?.item_number}
-          onChange={onChange}
-          groupClassName="mt-0"
-          className="max-w-8"
-          required
-          autoFocus
-        />
-        <Forms.FormGroupInputNumber
-          labelText="予約受付数"
-          name="sample_price"
-          value={state.sample_price}
-          error={errors?.sample_price}
-          onChange={onChange}
-          precision={2}
-          className="max-w-8"
-          min={0}
-        />*/}
-        {/*<Forms.FormGroup
-          labelText="送料適用"
-          error={errors?.is_discontinued}
-          groupClassName="items-center mt-4"
-        >
-          <Forms.FormInputCheck
-            id="is_discontinued"
-            name="is_discontinued"
-            checked={state.is_discontinued}
-            onChange={onChange}
-          />
-        </Forms.FormGroup>
-        <Forms.FormGroup
-          labelText="代引き手数料適用"
-          error={errors?.is_discontinued}
-          groupClassName="items-center mt-4"
-        >
-        <Forms.FormInputCheck
-          id="is_discontinued"
-          name="is_discontinued"
-          checked={state.is_discontinued}
-          onChange={onChange}
-        />
-        </Forms.FormGroup>
-        <Forms.FormGroup
-            labelText="特売期間のみ販売"
-            error={errors?.is_discontinued}
-            groupClassName="items-center mt-4"
-          >
-          <Forms.FormInputCheck
-            id="is_discontinued"
-            name="is_discontinued"
-            checked={state.is_discontinued}
-            onChange={onChange}
-          />
-        </Forms.FormGroup>
-        <Forms.FormGroup
-            labelText="ポイント還元"
-            error={errors?.is_discontinued}
-            groupClassName="items-center mt-4"
-          >
-          <Forms.FormInputCheck
-            id="is_discontinued"
-            name="is_discontinued"
-            checked={state.is_discontinued}
-            onChange={onChange}
-          />
-        </Forms.FormGroup>*/}
-
         {id && (
           <>
             <hr className="border-dashed border-gray-400 mt-4" />
