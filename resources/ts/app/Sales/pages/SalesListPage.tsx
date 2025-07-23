@@ -28,9 +28,9 @@ export const SalesListPage: React.VFC = () => {
   const tables = useMemo(() => {
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
-        <td className="text-center">{r.sales_date}</td>
+        <td className="text-center">{r.sales_at}</td>
         <td>{r.customer_name ?? '上様'}</td>
-        <td>{r.user_name}</td>
+        <td>{r.personnel_name}</td>
         <td className="text-right">{numberFormat(r.total_amount, 0)}</td>
         <td className="text-center">{r.has_invoice ? '〇' : ''}</td>
         <td className="col-btn">

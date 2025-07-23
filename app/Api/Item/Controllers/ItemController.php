@@ -61,7 +61,6 @@ class ItemController extends BaseController
   public function fetch(Request $request)
   {
     $input = $request->all();
-    print_r($input);
     $data = $this->service->fetch($input);
 
     return $this->success($data);

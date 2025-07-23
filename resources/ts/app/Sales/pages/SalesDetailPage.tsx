@@ -91,9 +91,11 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           <div className="w-2/5">
             <Forms.FormGroupInputDate
               labelText="売上日"
-              name="sales_date"
-              value={state.sales_date ?? ''}
-              error={errors?.sales_date}
+              name="sales_at"
+              value={
+                state.sales_at ? state.sales_at.substring(0, 10).replace(/-/g, '/') : ''
+              }
+              error={errors?.sales_at}
               onChange={onChange}
               groupClassName="mt-0"
               required

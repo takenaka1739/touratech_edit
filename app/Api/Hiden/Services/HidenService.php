@@ -116,8 +116,8 @@ class HidenService
       'tel',
       'corporate_class',
     ])
-      ->where('sales_date', '>=', $sales_date_from)
-      ->where('sales_date', '<', $sales_date_to->addDay())
+      ->where('sales_at', '>=', $sales_date_from)
+      ->where('sales_at', '<', $sales_date_to->addDay())
       ->where('send_flg', 1)
       ->orderBy('id')
       ->get();
@@ -252,8 +252,8 @@ class HidenService
       'tel',
       'corporate_class',
     ])
-      ->where('sales_date', '>=', $sales_date_from)
-      ->where('sales_date', '<', $sales_date_to->addDay())
+      ->where('sales_at', '>=', $sales_date_from)
+      ->where('sales_at', '<', $sales_date_to->addDay())
       ->where('send_flg', 1)
       ->orderBy('id')
       ->get();

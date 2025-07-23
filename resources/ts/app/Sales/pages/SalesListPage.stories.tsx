@@ -41,7 +41,7 @@ const Template: Story = args => {
     rows = [
       {
         id: 1,
-        sales_date: '2021/02/24',
+        sales_at: '2021/02/24',
         delivery_date: '2021/03/24',
         customer_id: 11,
         customer_name: '得意先01',

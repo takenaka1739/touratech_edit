@@ -98,8 +98,8 @@ export const usePlaceOrderDetailPage = (slug: string, from_receive: boolean) => 
 
   const backPage = () => history.push(state.prev_url);
 
-  const getRate: (sales_date: string | undefined) => number = sales_date => {
-    return getSalesTaxRate(sales_date, config);
+  const getRate: (sales_at: string | undefined) => number = sales_at => {
+    return getSalesTaxRate(sales_at, config);
   };
 
   const updateDetails: (details: PlaceOrderDetail[], details_amount: number) => void = (

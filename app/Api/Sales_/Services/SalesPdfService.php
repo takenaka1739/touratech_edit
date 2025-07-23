@@ -163,7 +163,7 @@ class SalesPdfService
     $y = "";
     $m = "";
     $d = "";
-    $date = $data->get('sales_date');
+    $date = $data->get('sales_at');
     if ($date) {
       $dt = new Carbon($date);
       $y = $dt->year;

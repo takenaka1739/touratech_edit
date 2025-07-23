@@ -30,7 +30,7 @@ class Item extends Model
     'remarks',
   ];
 
-    //protected $table = 'm_items';
+    protected $table = 'm_items';
 
     //protected $fillable = [
     //  'supplier_id',

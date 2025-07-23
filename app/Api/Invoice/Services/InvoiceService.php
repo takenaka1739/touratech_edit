@@ -282,7 +282,7 @@ class InvoiceService
         $query->select(DB::raw(1))
           ->from('sales')
           ->whereRaw('sales.customer_id = customers.id')
-          ->where('sales.sales_date', '>=', $tmp_dt);
+          ->where('sales.sales_at', '>=', $tmp_dt);
       })
       ->orWhere(function($query) use ($tmp_dt) {
         $query->whereExists(function ($query) use ($tmp_dt) {
@@ -333,8 +333,8 @@ class InvoiceService
     $data = new Collection();
     foreach ($range as $r) {
       $rows = Sales::where('customer_id', '=', $r['customer_id'])
-        ->where('sales_date', '>=', $r['date_from'])
-        ->where('sales_date', '<=', $r['date_to'])
+        ->where('sales_at', '>=', $r['date_from'])
+        ->where('sales_at', '<=', $r['date_to'])
         ->where('corporate_class', '=', 2)
         ->get();
       $data = $data->merge($rows);
@@ -415,7 +415,7 @@ class InvoiceService
 
       foreach ($ds as $d) {
         $details[] = [
-          'job_date' => $s->sales_date,
+          'job_date' => $s->sales_at,
           'detail_kind' => 1,
           'item_kind' => $d->item_kind,
           'item_id' => $d->item_id,
@@ -430,7 +430,7 @@ class InvoiceService
 
       // 送料
       $details[] = [
-        'job_date' => $s->sales_date,
+        'job_date' => $s->sales_at,
         'detail_kind' => 1,
         'item_kind' => null,
         'item_id' => null,
@@ -444,7 +444,7 @@ class InvoiceService
 
       // 手数料
       $details[] = [
-        'job_date' => $s->sales_date,
+        'job_date' => $s->sales_at,
         'detail_kind' => 1,
         'item_kind' => null,
         'item_id' => null,
@@ -458,7 +458,7 @@ class InvoiceService
 
       // 値引額
       $details[] = [
-        'job_date' => $s->sales_date,
+        'job_date' => $s->sales_at,
         'detail_kind' => 1,
         'item_kind' => null,
         'item_id' => null,

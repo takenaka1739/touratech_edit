@@ -53,7 +53,7 @@ class SalesExcelService
     {
       $row = new Collection($row);
 
-      $sheet->setCellValue('A'.$y, $row->get("sales_date"));
+      $sheet->setCellValue('A'.$y, $row->get("sales_at"));
       $sheet->setCellValue('B'.$y, $row->get("customer_name", ''));
       $sheet->setCellValue('C'.$y, $row->get("user_name", ''));
       $sheet->setCellValue('D'.$y, $row->get('total_amount'));

@@ -39,7 +39,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     slug,
     {
       id: undefined,
-      sales_date: '',
+      sales_at: '',
       delivery_date: '',
       customer_id: undefined,
       customer_name: initCustomer?.name,
@@ -148,12 +148,22 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     } else {
       url = `/api/${slug}/edit/${id ?? ''}`;
     }
-    const res = await axios.get(url);
 
+    const res = await axios.get(url);
     if (res.status === 200) {
       const st = toState(res.data.data);
-      const sales_tax_rate = getRate(st.sales_date);
+      const sales_tax_rate = getRate(st.sales_at);
       const has_invoice = st.has_invoice == 1 ? true : false;
+
+      // ✅ 配送先情報を state に取り込む
+      const delivery = res.data.data.delivery;
+      if (delivery) {
+        st.name = delivery.recipient_name;
+        st.zip_code = delivery.zip_code;
+        st.address1 = `${delivery.prefectures ?? ''}${delivery.municipality ?? ''}`; // 都道府県＋市区町村
+        st.address2 = delivery.number ?? ''; // 番地のみ
+        st.tel = delivery.tel;
+      }
       if (from_receive) {
         setState({ ...state, ...st, sales_tax_rate, has_invoice, receive_order_id });
       } else {
@@ -163,10 +173,10 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       dispatch(AppActions.success());
       return true;
     } else {
-      // dispatch(AppActions.failed('データの取得に失敗しました。'));
       dispatch(AppActions.success());
       history.push('/404');
     }
+
     return false;
   };
 
