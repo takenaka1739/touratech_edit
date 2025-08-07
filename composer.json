@@ -10,7 +10,7 @@
     "require": {
     "php": "^8.2",
     "hisamu/php-xbase": "^2.0",
-    "laravel/framework": "^12.0",
+    "laravel/framework": "12.19.3",
     "laravel/tinker": "^2.5",
     "laravel/ui": "^4.0",
     "phpoffice/phpspreadsheet": "^1.17",
