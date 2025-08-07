@@ -43,6 +43,17 @@ class ItemController extends BaseController
     return $this->success($data);
   }
 
+    /**
+   * 検索画面
+   */
+  public function refdialog(Request $request)
+  {
+    $input = $request->all();
+    $data = $this->service->dialog($input);
+
+    return $this->success($data);
+  }
+
   /**
    * 選択
    *
@@ -74,7 +85,6 @@ class ItemController extends BaseController
   public function edit(int $id)
   {
     $data = $this->service->get($id);
-
     return $this->success($data);
   }
 

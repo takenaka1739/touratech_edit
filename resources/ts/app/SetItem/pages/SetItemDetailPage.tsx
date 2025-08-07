@@ -41,7 +41,8 @@ export const SetItemDetailPage: React.VFC<SetItemDetailPageProps> = () => {
         <Forms.FromGroupInputItemNumber
           labelText="セット品番"
           name="item_number"
-          value={state.item_number ?? ''}
+          //value={state.item_number ?? ''}
+          value={state.code ?? ''}
           error={errors?.item_number}
           onChange={onChange}
           groupClassName="mt-0"
@@ -52,8 +53,10 @@ export const SetItemDetailPage: React.VFC<SetItemDetailPageProps> = () => {
         <Forms.FormGroupInputText
           labelText="セット品名"
           name="name_jp"
-          value={state.name_jp}
-          error={errors?.name_jp}
+          //value={state.name_jp}
+          value={state.name_note}
+          //error={errors?.name_jp}
+          error={errors?.name_note}
           onChange={onChange}
           className="max-w-lg"
           required
@@ -74,8 +77,10 @@ export const SetItemDetailPage: React.VFC<SetItemDetailPageProps> = () => {
             <Forms.FormGroupInputDate
               labelText="廃盤日"
               name="discontinued_date"
-              value={state.discontinued_date ?? ''}
-              error={errors?.discontinued_date}
+              //value={state.discontinued_date ?? ''}
+              value={state.discontinued_at ?? ''}
+              //error={errors?.discontinued_date}
+              error={errors?.discontinued_at}
               onChange={onChange}
             />
           </div>

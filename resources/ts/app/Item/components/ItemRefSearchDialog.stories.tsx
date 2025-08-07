@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, ComponentProps } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { Story, Meta } from '@storybook/react';
@@ -6,11 +6,13 @@ import MockAdapter from 'axios-mock-adapter';
 import axios from 'axios';
 import store from '@/store';
 import { Item } from '@/types';
-import { ItemListPage } from './ItemListPage';
+import { ItemRefSearchDialog } from './ItemRefSearchDialog';
+
+type ItemSearchDialogProps = ComponentProps<typeof ItemRefSearchDialog>;
 
 export default {
-  title: 'app/Item/pages/ItemListPage',
-  component: ItemListPage,
+  title: 'app/Item/components/ItemSearchDialog',
+  component: ItemRefSearchDialog,
   decorators: [
     (story: () => React.ReactNode) => (
       <Provider store={store}>
@@ -33,23 +35,26 @@ export default {
   },
 } as Meta;
 
-const Template: Story = args => {
+const Template: Story<ItemSearchDialogProps & { props: number }> = args => {
   const mock = new MockAdapter(axios);
 
   let rows: Item[] = [];
   if (!args.props) {
-    rows = [
-      {
-        id: 1,
-        name: 'テスト01',
-        //name_jp: 'テスト01',
-        name_note: 'テスト01',
-        itemNumberItem: ['00-0000-0000-0'],
-        code: '00-0000-0000-0',
-        sales_unit_price: 32000.5,
-        salesPriceItem: [],
-        purchase_unit_price: 30000,
+    rows = Array.from(new Array(20)).map((v, i) => {
+      return {
+        id: i + 1,
+        //item_number: `01-000-0000-${i + 1}`,
+        //item_number: [`01-000-0000-${i + 1}`],
+        code: `01-000-0000-${i + 1}`,
+        name: `商品名${i + 1}`,
+        //name_jp: `商品名JP${i + 1}`,
+        name_note: `商品名JP${i + 1}`,
+        sales_unit_price: 123456789.12,
+        purchase_unit_price: 4200,
         //discontinued_date: undefined,
+        //sales_price: [],
+        itemNumberItem: [],
+        salesPriceItem: [],
         discontinued_at: undefined,
         is_display: true,
         is_set_item: false,
@@ -60,12 +65,13 @@ const Template: Story = args => {
         variations5: [],
         display_status: 0,
         testArra: [],
-      },
-    ];
+        v,
+      };
+    });
   }
 
   useEffect(() => {
-    mock.onPost('/api/item/fetch').reply(200, {
+    mock.onPost('/api/item/refdialog').reply(200, {
       success: true,
       data: {
         rows,
@@ -83,8 +89,11 @@ const Template: Story = args => {
       mock.reset();
     };
   });
-  return <ItemListPage {...args} />;
+
+  return <ItemRefSearchDialog {...args} />;
 };
 
-export const showPage = Template.bind({});
-showPage.args = {};
+export const showSearchDialog = Template.bind({});
+showSearchDialog.args = {
+  isShown: true,
+};

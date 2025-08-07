@@ -9,6 +9,7 @@ Route::group([
   'middleware' => ['api', 'auth', 'check.general']
 ], function() {
   Route::post('dialog', [ItemController::class, 'dialog']);
+  Route::post('refdialog', [ItemController::class, 'refdialog']);
   Route::get('selected/{id}', [ItemController::class, 'selected']);
   Route::post('get_detail', [ItemController::class, 'get_detail']);
 

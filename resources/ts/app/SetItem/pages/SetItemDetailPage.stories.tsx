@@ -45,10 +45,11 @@ const Template: Story<SetItemDetailPageProps> = args => {
       success: true,
       data: {
         id: 1,
-        item_number: 'A0001',
+        //item_number: 'A0001',
         name: '商品名01',
         sales_unit_price: 1001,
-        discontinued_date: undefined,
+        //discontinued_date: undefined,
+        discontinued_at: undefined,
         details: [
           {
             id: 1,
