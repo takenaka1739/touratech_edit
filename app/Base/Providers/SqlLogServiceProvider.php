@@ -40,16 +40,27 @@ class SqlLogServiceProvider extends ServiceProvider
         }
 
         $db::listen(function ($query, $bindings = null, $time = null, $connectionName = null) use ($logOutPut, $db, $queryCollector) {
+            // 型・プロパティチェック
             if ($query instanceof QueryExecuted) {
                 $bindings = $query->bindings;
                 $time = $query->time;
                 $connection = $query->connection;
-                $query = $query->sql;
+                $queryString = $query->sql;
+            } elseif (is_object($query) && property_exists($query, 'sql')) {
+                // 旧来のオブジェクトにも対応
+                $queryString = $query->sql;
+                $connection = $db->connection($connectionName);
+            } elseif (is_string($query)) {
+                // すでに文字列の場合はそのまま
+                $queryString = $query;
+                $connection = $db->connection($connectionName);
             } else {
+                // 不明な型の場合は空に
+                $queryString = '';
                 $connection = $db->connection($connectionName);
             }
 
-            $queryCollector->addQuery((string) $query, $bindings, $time, $connection);
+            $queryCollector->addQuery((string) $queryString, $bindings, $time, $connection);
 
             $sqlExecCollect = $queryCollector->collect();
             foreach ($sqlExecCollect['statements'] as $sqlStatement) {
