@@ -141,8 +141,10 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+        'code' => [
+            'max' => 'クーポンコードは12桁以内で入力してください。',
+        ],
     ],
-
     /*
     |--------------------------------------------------------------------------
     | Custom Validation Attributes
@@ -158,6 +160,11 @@ return [
         'name' => '氏名',
         'email' => 'メールアドレス',
         'password' => 'パスワード',
+        'code' => 'クーポンコード',
+        'name' => 'クーポン名',
+        'details' => '詳細',
+        'start_at' => '開始日',
+        'end_at' => '終了日',
     ],
 
 ];

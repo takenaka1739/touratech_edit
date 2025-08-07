@@ -23,14 +23,10 @@ class TopImageRequest extends FormRequest
 
     public function prepareForValidation(): void
     {
-        Log::debug('📥 TopImageRequest raw input:', $this->all());
-
         $this->merge([
             'image_id' => (int) $this->input('image_id'),
             'is_enabled' => filter_var($this->input('is_enabled'), FILTER_VALIDATE_BOOLEAN),
         ]);
-
-        Log::debug('🛠 TopImageRequest after merge:', $this->all());
     }
 
     public function attributes(): array

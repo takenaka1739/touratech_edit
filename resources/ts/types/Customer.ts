@@ -33,4 +33,5 @@ export interface Customer {
   cutoff_date: number | undefined;
   rate: number | undefined;
   remarks: string | undefined;
+  distinguish: number | undefined;
 }

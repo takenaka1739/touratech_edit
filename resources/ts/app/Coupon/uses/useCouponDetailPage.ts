@@ -15,7 +15,11 @@ export const useCouponDetailPage = (slug: string) => {
       condition_value: string[];
       price_operator?: 'gte' | 'lte';
       benefit_type: string;
-      benefit_value: string;
+      benefit_value: {
+      type?: string;
+      value?: string;
+      description?: string;
+    };
     }[];
   }>(slug, {
     id: 0,
@@ -27,6 +31,7 @@ export const useCouponDetailPage = (slug: string) => {
     benefit_type: '',
     discount_rate: '',
     benefit_details: '',
+    is_active: true,
     rules: [
       {
         id: undefined,
@@ -34,7 +39,7 @@ export const useCouponDetailPage = (slug: string) => {
         condition_value: [],
         price_operator: 'gte',
         benefit_type: '',
-        benefit_value: '',
+         benefit_value: {},
       },
     ],
   });
@@ -46,6 +51,7 @@ export const useCouponDetailPage = (slug: string) => {
     id,
     state,
     errors,
+    setErrors,
     isDisabled,
     setState,
     onClickSave: originalSave,
@@ -54,6 +60,19 @@ export const useCouponDetailPage = (slug: string) => {
 
   const onClickSave = useCallback(async () => {
     try {
+      if (!state.code || state.code.length > 12) {
+        dispatch(AppActions.failed('クーポンコードは必須で、12桁以内で入力してください'));
+        return;
+      }
+      if (!state.name) {
+        dispatch(AppActions.failed('クーポン名は必須です'));
+        return;
+      }
+      if (!state.start_at || !state.end_at) {
+        dispatch(AppActions.failed('開始日・終了日は必須です'));
+        return;
+      }
+
       const fixedState = {
         ...state,
         rules: state.rules.map((r) => {
@@ -68,10 +87,14 @@ export const useCouponDetailPage = (slug: string) => {
         }),
       };
 
-      // ✅ 修正：state を更新してから保存する
       setState(fixedState);
       await originalSave();
     } catch (error: any) {
+      if (error?.response?.status === 422 && error.response.data?.errors) {
+        setErrors(error.response.data.errors); // ✅ バリデーションエラーセット
+        return;
+      }
+
       const message = error?.response?.data?.message;
       const fullMessage = message
         ? `データの保存に失敗しました。\n${message}`
@@ -79,7 +102,8 @@ export const useCouponDetailPage = (slug: string) => {
 
       dispatch(AppActions.failed(fullMessage));
     }
-  }, [state, originalSave, dispatch, setState]);
+  }, [state, originalSave, dispatch, setState, setErrors]);
+
 
 
   const onChange = useCallback(
@@ -96,18 +120,51 @@ export const useCouponDetailPage = (slug: string) => {
     (index: number) =>
       (name: string, value: any) => {
         const key = name.split('.').pop() as string;
+
         setState(prev => {
           const newRules = [...prev.rules];
           const oldRule = newRules[index];
-          newRules[index] = {
-            ...oldRule,
-            [key]: Array.isArray(value) ? value : value ?? '',
-          };
+
+          const benefitValueObj = typeof oldRule.benefit_value === 'object' && oldRule.benefit_value !== null
+            ? oldRule.benefit_value
+            : {};
+
+          const updatedRule = { ...oldRule };
+
+          if (name.startsWith('benefit_value.')) {
+            updatedRule.benefit_value = {
+              ...benefitValueObj,
+              [key]: value,
+            };
+          } else {
+            switch (key) {
+              case 'condition_type':
+                updatedRule.condition_type = value;
+                break;
+              case 'condition_value':
+                updatedRule.condition_value = value;
+                break;
+              case 'price_operator':
+                updatedRule.price_operator = value;
+                break;
+              case 'benefit_type':
+                updatedRule.benefit_type = value;
+                break;
+              case 'benefit_value':
+                updatedRule.benefit_value = value;
+                break;
+              default:
+                console.warn('未定義のkeyです', key);
+            }
+          }
+
+          newRules[index] = updatedRule;
           return { ...prev, rules: newRules };
         });
       },
     [setState]
   );
+
 
   
   const addRule = useCallback(() => {
@@ -121,7 +178,7 @@ export const useCouponDetailPage = (slug: string) => {
           condition_value: [],
           price_operator: 'gte',
           benefit_type: '',
-          benefit_value: '',
+          benefit_value: {},
         },
       ],
     }));

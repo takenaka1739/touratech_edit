@@ -18,6 +18,7 @@ Route::group([
     Route::post('fetch', [CouponController::class, 'fetch']);
     Route::post('store', [CouponController::class, 'store']);
     Route::get('edit/{id}', [CouponController::class, 'edit']);
+    Route::post('/coupon/toggle-active/{id}', [CouponController::class, 'toggleActive']);
     Route::put('edit/{id}', [CouponController::class, 'update']);
     Route::delete('delete/{id}', [CouponController::class, 'delete']);
     Route::get('options/items', [CouponOptionController::class, 'items']);

@@ -13,8 +13,7 @@ class ItemClassificationController
         $perPage = 12;
 
         $query = ItemClassification::query()
-            ->where('is_display', 1)
-            ->orderBy('order_by');
+            ->where('is_display', 1);
 
         if ($request->filled('keyword')) {
             $keyword = $request->input('keyword');

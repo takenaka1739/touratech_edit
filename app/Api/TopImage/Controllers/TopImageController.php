@@ -23,8 +23,6 @@ class TopImageController extends BaseController
 
     public function store(TopImageRequest $request)
     {
-        \Log::debug('📝 TopImageController@store called');
-    \Log::debug($request->all()); // 明示的に確認
         return $this->service->create($request->validated());
     }
 

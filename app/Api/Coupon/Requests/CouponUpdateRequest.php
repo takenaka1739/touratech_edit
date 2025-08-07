@@ -5,7 +5,7 @@ namespace App\Api\Coupon\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
 
-class CouponUpdateRequest extends FormRequest
+class CouponUpdateRequest extends CouponRequest
 {
     public function authorize(): bool
     {
@@ -14,6 +14,7 @@ class CouponUpdateRequest extends FormRequest
 
     public function rules(): array
     {
+        \Log::debug('🧪 CouponUpdateRequest::rules() 呼び出し');
         $rules = [
             'code' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
@@ -26,11 +27,10 @@ class CouponUpdateRequest extends FormRequest
             'rules.*.condition_type' => ['required', 'string'],
             'rules.*.condition_value' => ['nullable'],
             'rules.*.price_operator' => ['nullable', 'in:gte,lte,eq'],
-            'rules.*.benefit_type' => ['required', 'in:discount,free_item,free_shipping'],
+            'rules.*.benefit_type' => ['required', 'in:discount,free_item,free_shipping,special_item'],
             'rules.*.benefit_value' => ['required'],
         ];
 
-        // 動的に benefit_type に応じたルールを追加
         $inputRules = $this->input('rules', []);
         foreach ($inputRules as $index => $rule) {
             $benefitType = $rule['benefit_type'] ?? null;
@@ -40,9 +40,12 @@ class CouponUpdateRequest extends FormRequest
                 $rules["$prefix.type"] = ['required', 'in:yen,percent'];
                 $rules["$prefix.value"] = ['required', 'regex:/^\d+(\.\d+)?$/'];
             } elseif ($benefitType === 'free_item') {
-                $rules["$prefix.description"] = ['required', 'string'];
+                $rules["$prefix.value"] = ['required', 'string'];
             } elseif ($benefitType === 'free_shipping') {
-                // 空オブジェクト {} の場合、追加バリデーションは不要
+                // 追加バリデーションなし
+            } elseif ($benefitType === 'special_item') {
+                $rules["$prefix.type"] = ['required', 'in:special_item'];
+                $rules["$prefix.value"] = ['required', 'string'];
             }
         }
 
@@ -53,41 +56,42 @@ class CouponUpdateRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $rules = $this->input('rules', []);
-
-            foreach ($rules as $index => $rule) {
-                $type = $rule['condition_type'] ?? null;
-                $value = $rule['condition_value'] ?? null;
-                $benefitType = $rule['benefit_type'] ?? null;
-                $benefitValue = $rule['benefit_value'] ?? null;
-
-                // condition_value の型チェック
-                if ($type === 'price' && !is_numeric($value)) {
-                    $validator->errors()->add("rules.$index.condition_value", '価格条件の値は数値である必要があります。');
+            foreach ($rules as $i => $rule) {
+                // ✅ condition_value の decode 処理を追加
+                if (
+                    isset($rule['condition_value']) &&
+                    is_string($rule['condition_value']) &&
+                    $this->isJsonArray($rule['condition_value'])
+                ) {
+                    $rules[$i]['condition_value'] = json_decode($rule['condition_value'], true);
                 }
 
-                if ($type !== 'price' && $type !== 'all_items') {
-                    if (!is_array($value)) {
-                        $validator->errors()->add("rules.$index.condition_value", 'condition_value は配列である必要があります。');
-                    }
+                // ✅ 配列バリデーション（再評価）
+                if (
+                    in_array($rule['condition_type'], ['category_id', 'item_id']) &&
+                    !is_array($rules[$i]['condition_value'])
+                ) {
+                    Log::error('❌ condition_valueが配列ではない', ['index' => $i]);
+                    $validator->errors()->add("rules.$i.condition_value", '値が配列である必要があります');
                 }
 
-                if ($type === 'all_items' && !($value === 'All' || $value === [])) {
-                    $validator->errors()->add("rules.$index.condition_value", '全商品指定の場合は "All" または空配列を指定してください。');
-                }
-
-                // benefit_value の型チェック
-                if ($benefitType === 'free_item') {
-                    if (!is_array($benefitValue) || !isset($benefitValue['description'])) {
-                        $validator->errors()->add("rules.$index.benefit_value", '無料商品の特典値は {description: 内容} を含む必要があります。');
-                    }
-                }
-
-                if ($benefitType === 'free_shipping') {
-                    if (!is_array($benefitValue)) {
-                        $validator->errors()->add("rules.$index.benefit_value", '送料無料の特典値は空のオブジェクト {} としてください。');
-                    }
-                }
+                Log::debug("🔍 Rule #{$i}", [
+                    'type'         => $rule['condition_type'] ?? '',
+                    'value'        => $rule['condition_value'] ?? '',
+                    'benefitType'  => $rule['benefit_type'] ?? '',
+                    'benefitValue' => $rule['benefit_value'] ?? '',
+                ]);
             }
+
+            // 再セット（必要に応じて）
+            $this->merge(['rules' => $rules]);
         });
     }
-}
+
+    // ✅ ヘルパー関数を追加
+    private function isJsonArray(string $json): bool
+    {
+        $decoded = json_decode($json, true);
+        return json_last_error() === JSON_ERROR_NONE && is_array($decoded);
+    }
+    }

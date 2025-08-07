@@ -189,6 +189,7 @@ return [
         App\Api\SetItem\SetItemServiceProvider::class,
         App\Api\Coupon\CouponServiceProvider::class,
         App\Api\TopImage\TopImageServiceProvider::class,
+        App\Api\info\InfoServiceProvider::class,
 
         App\Api\Estimate\EstimateServiceProvider::class,
         App\Api\Hiden\HidenServiceProvider::class,

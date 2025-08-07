@@ -29,6 +29,7 @@ const RouteSupplier = React.lazy(() => import('./RouteSupplier'));
 const RouteUser = React.lazy(() => import('./RouteUser'));
 const RouteCoupon = React.lazy(() => import('./RouteCoupon'));
 const RouteTopimage = React.lazy(() => import('./RouteTopimage'));
+const RouteInfoManagement = React.lazy(() => import('./RouteInfoManagement'));
 
 const Routes: React.VFC = () => {
   const isOther = useIsOther();
@@ -66,6 +67,7 @@ const Routes: React.VFC = () => {
         <Route path="/supplier" component={RouteSupplier} />
         <Route path="/TopImage" component={RouteTopimage} />
         <Route path="/user" component={RouteUser} />
+        <Route path="/info_management" component={RouteInfoManagement} />
         <Route component={NotFound} />
       </Switch>
     </React.Suspense>

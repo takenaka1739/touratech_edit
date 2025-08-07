@@ -5,6 +5,7 @@ import {
   CouponListPageActions,
 } from '@/app/Coupon/modules/couponListPageModule';
 import { RootState } from '@/store';
+import { AppActions } from '@/app/App/modules/appModule';
 
 export const useCouponListPage = (slug: string) => {
   const dispatch = useDispatch();
@@ -33,6 +34,7 @@ export const useCouponListPage = (slug: string) => {
       dispatch(CouponListPageActions.setLoading(false));
     }
   }, [dispatch, state.conditions]);
+
   const onClickSearchButton = useCallback(() => {
     fetchList();
   }, [fetchList]);
@@ -73,6 +75,16 @@ export const useCouponListPage = (slug: string) => {
     location.href = `/${slug}/detail/new`;
   }, [slug]);
 
+  const onClickToggle = useCallback(async (id: number, enable: boolean) => {
+    try {
+      await axios.post(`/api/coupon/coupon/toggle-active/${id}`, { is_active: enable });
+      fetchList();
+    } catch (e) {
+      console.error('状態切り替えエラー:', e);
+      dispatch(AppActions.failed('状態の切り替えに失敗しました'));
+    }
+  }, [fetchList, dispatch]);
+
   return {
     isLoading: state.isLoading,
     state,
@@ -82,5 +94,6 @@ export const useCouponListPage = (slug: string) => {
     onClickSearchButton,
     onClickClearButton,
     onChangePage,
+    onClickToggle,
   };
 };

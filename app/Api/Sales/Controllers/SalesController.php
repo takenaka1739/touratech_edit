@@ -17,7 +17,6 @@ class SalesController extends BaseController
     public function edit($id)
     {
         $data = $this->service->getEditData($id);
-         \Log::debug('SalesController@edit response', $data);
         if (!$data) {
             return response()->json(['message' => '該当データが見つかりません'], 404);
         }

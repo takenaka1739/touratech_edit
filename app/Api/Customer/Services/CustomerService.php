@@ -20,15 +20,15 @@ class CustomerService
    */
   public function dialog(array $cond)
   {
-    $query = Customer::select(
-      'id',
-      'name',
-      'zip_code',
-      'address1',
-      'address2',
-      'tel',
-      'fax',
-    );
+    $query = Customer::selectRaw("
+      id,
+      name,
+      zip_code,
+      CONCAT(prefectures, municipality) AS address1,
+      number AS address2,
+      tel,
+      fax
+    ");
     $query = $this->setCondition($query, $cond);
     $query->orderBy('name', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -42,15 +42,16 @@ class CustomerService
    */
   public function fetch(array $cond)
   {
-    $query = Customer::select(
-      'id',
-      'name',
-      'zip_code',
-      'address1',
-      'address2',
-      'tel',
-      'fax',
-    );
+    $query = Customer::selectRaw("
+      id,
+      name,
+      zip_code,
+      CONCAT(prefectures, municipality) AS address1,
+      number AS address2,
+      tel,
+      fax,
+      distinguish
+    ");
     $query = $this->setCondition($query, $cond);
     $query->orderBy('name', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -64,7 +65,27 @@ class CustomerService
    */
   public function get(int $id)
   {
-    return Customer::find($id)->toArray();
+      $customer = Customer::selectRaw("
+          id,
+          name,
+          kana,
+          zip_code,
+          CONCAT(prefectures, municipality) AS address1,
+          number AS address2,
+          prefectures,
+          municipality,
+          number,
+          tel,
+          fax,
+          distinguish,
+          rate,
+          fraction
+      ")->find($id);
+
+      if (!$customer) {
+          return [];
+      }
+      return $customer->toArray();
   }
 
   /**
@@ -104,6 +125,7 @@ class CustomerService
       $m->cutoff_date = $data->get('cutoff_date');
       $m->rate = $data->get('rate');
       $m->remarks = $data->get('remarks');
+      $m->distinguish = $data->get('distinguish');
       $m->save();
     });
   }
@@ -154,15 +176,15 @@ class CustomerService
    */
   public function getExcelData(array $cond)
   {
-    $query = Customer::select(
-      'id',
-      'name',
-      'zip_code',
-      'address1',
-      'address2',
-      'tel',
-      'fax',
-    );
+    $query = Customer::selectRaw("
+      id,
+      name,
+      zip_code,
+      CONCAT(prefectures, municipality) AS address1,
+      number AS address2,
+      tel,
+      fax
+    ");
     $query = $this->setCondition($query, $cond);
     return $query->get();
   }
@@ -185,8 +207,8 @@ class CustomerService
           $query->where('name', 'like', '%' . escape_like($key) . '%')
             ->orWhere('kana', 'like', '%' . escape_like($key) . '%')
             ->orWhere('zip_code', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('address1', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('address2', 'like', '%' . escape_like($key) . '%')
+            ->orWhereRaw("CONCAT(prefectures, municipality) LIKE ?", ['%' . escape_like($key) . '%'])
+            ->orWhere('number', 'like', '%' . escape_like($key) . '%')
             ->orWhere('tel', 'like', '%' . escape_like($key) . '%')
             ->orWhere('fax', 'like', '%' . escape_like($key) . '%')
             ->orWhere('email', 'like', '%' . escape_like($key) . '%');

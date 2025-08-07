@@ -1,0 +1,69 @@
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+th, td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+th.col-btn, td.col-btn {
+  width: 130px !important;
+  min-width: 120px !important;
+  max-width: 160px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+// ボタンカラム
+.col-btn {
+  width: 110px;
+  min-width: 110px;
+  max-width: 160px;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+
+  .btn-toggle {
+    background-color: #ff0;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-right: 6px;
+  }
+
+  .btn-edit {
+    background-color: #ccc;
+    color: #000;
+    border-radius: 4px;
+    text-decoration: none;
+    padding: 4px 8px;
+    font-size: 12px;
+    display: inline-block;
+  }
+}
+
+
+// グレーアウト（最優先）
+.row-inactive {
+  background: #ddd !important;   // 例：グレー
+  color: #aaa;
+  opacity: 0.7;
+}
+
+// 開始～終了の背景色（有効な行のみ）
+.row-is-current {
+  background: #d4ffd4 !important;  // 緑
+}
+.row-is-expired {
+  background: #ffd4d4 !important;  // 赤
+}
+.row-is-future {
+  background: #d4e4ff !important;  // 青
+}

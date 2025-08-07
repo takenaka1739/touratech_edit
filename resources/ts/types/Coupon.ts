@@ -10,6 +10,7 @@ export type Coupon = {
   benefit_type: string;
   discount_rate: string;
   benefit_details: string;
+  is_active: boolean;
 };
 
 export type CouponRule = {

@@ -1,6 +1,6 @@
 import { actionCreatorFactory } from 'typescript-fsa';
 import { reducerWithInitialState } from 'typescript-fsa-reducers';
-import { Pager } from '@/types/Pager'; // ← パスに注意（必要に応じて調整）
+import { Pager } from '@/types/Pager';
 
 const create = actionCreatorFactory();
 

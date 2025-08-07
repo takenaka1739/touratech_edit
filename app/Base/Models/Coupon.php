@@ -27,6 +27,7 @@ class Coupon extends Model
 
     protected $casts = [
         'condition_value' => 'array',
+        'is_active' => 'boolean',
     ];
 
     

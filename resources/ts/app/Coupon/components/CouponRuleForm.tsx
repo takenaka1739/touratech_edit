@@ -29,6 +29,33 @@ export const CouponRuleForm: React.FC<Props> = ({
   onOpenItemModal,
   onOpenItemClassificationModal,
 }) => {
+  // benefit_typeがspecial_itemなら常にitem_idに固定
+  const effectiveConditionTypeOptions =
+    rule.benefit_type === 'special_item'
+      ? [{ value: 'item_id', name: '商品ID（特別商品）' }]
+      : conditionTypeOptions;
+
+  // 選択不可時はdisabled
+  const isSpecialItem = rule.benefit_type === 'special_item';
+
+  // benefit_typeがspecial_itemになった瞬間にcondition_typeとvalueもリセット
+  const handleBenefitTypeChange = (name: string, value: any) => {
+    onChangeRule(index)(name, value);
+    if (value === 'discount') {
+      onChangeRule(index)('benefit_value', { type: 'yen', value: '' });
+    } else if (value === 'free_item') {
+      onChangeRule(index)('benefit_value', { value: '' });
+    } else if (value === 'free_shipping') {
+      onChangeRule(index)('benefit_value', { type: 'yen', value: '' });
+    } else if (value === 'special_item') {
+      // benefit_typeをspecial_itemにしたらcondition_typeも強制的に'item_id'に
+      onChangeRule(index)('condition_type', 'item_id');
+      onChangeRule(index)('condition_value', []);
+      onChangeRule(index)('benefit_value', { type: 'special_item', value: '' });
+    } else {
+      onChangeRule(index)('benefit_value', null);
+    }
+  };
 
   const renderConditionInput = () => {
     switch (rule.condition_type) {
@@ -43,6 +70,7 @@ export const CouponRuleForm: React.FC<Props> = ({
                   const selectedIds = rule.condition_value?.map((v: string) => Number(v)).filter((v: number) => !isNaN(v)) ?? [];
                   onOpenItemModal(selectedIds, index);
                 }}
+                // special_item以外の時だけ選択可能、特別商品時は選択必須
               >
                 商品を選択
               </button>
@@ -63,6 +91,7 @@ export const CouponRuleForm: React.FC<Props> = ({
                   const selectedIds = rule.condition_value?.map((v: string) => Number(v)).filter((v: number) => !isNaN(v)) ?? [];
                   onOpenItemClassificationModal(selectedIds, index);
                 }}
+                disabled={isSpecialItem} // special_itemのときカテゴリ選択ボタンを無効に
               >
                 商品分類を選択
               </button>
@@ -87,6 +116,7 @@ export const CouponRuleForm: React.FC<Props> = ({
               ]}
               required
               groupClassName="mb-0"
+              disabled={isSpecialItem}
             />
             <Forms.FormGroupInputText
               labelText="金額"
@@ -95,6 +125,7 @@ export const CouponRuleForm: React.FC<Props> = ({
               onChange={onChangeRule(index)}
               required
               groupClassName="mb-0"
+              disabled={isSpecialItem}
             />
           </div>
         );
@@ -108,6 +139,7 @@ export const CouponRuleForm: React.FC<Props> = ({
             value={rule.condition_value}
             onChange={onChangeRule(index)}
             required
+            disabled={isSpecialItem}
           />
         );
     }
@@ -124,9 +156,10 @@ export const CouponRuleForm: React.FC<Props> = ({
           onChangeRule(index)('condition_value', []);
           onChangeRule(index)('price_operator', value === 'price' ? 'gte' : undefined);
         }}
-        options={conditionTypeOptions}
+        options={effectiveConditionTypeOptions}
         required
         groupClassName="mb-2"
+        disabled={isSpecialItem} // ★ benefit_typeがspecial_itemならcondition_typeのセレクトはdisable
       />
 
       {renderConditionInput()}
@@ -135,22 +168,12 @@ export const CouponRuleForm: React.FC<Props> = ({
         labelText="特典タイプ"
         name={`rules[${index}].benefit_type`}
         value={rule.benefit_type}
-        onChange={(name, value) => {
-          onChangeRule(index)(name, value);
-          if (value === 'discount') {
-            onChangeRule(index)('benefit_value', { type: 'yen', value: '' });
-          } else if (value === 'free_item') {
-            onChangeRule(index)('benefit_value', { description: '' });
-          } else if (value === 'free_shipping') {
-            onChangeRule(index)('benefit_value', { type: 'yen', value: '' });
-          } else {
-            onChangeRule(index)('benefit_value', null);
-          }
-        }}
+        onChange={handleBenefitTypeChange}
         options={[
           { value: '', name: '選択してください' },
           { value: 'discount', name: '割引' },
           { value: 'free_item', name: '無料商品' },
+          { value: 'special_item', name: '特別な商品' },
           { value: 'free_shipping', name: '送料無料' },
         ]}
         required
@@ -179,7 +202,7 @@ export const CouponRuleForm: React.FC<Props> = ({
             labelText="割引値"
             name={`rules[${index}].benefit_value.value`}
             value={rule.benefit_value?.value ?? ''}
-            onChange={(value) => {
+            onChange={(_, value) => {
               onChangeRule(index)('benefit_value', {
                 ...rule.benefit_value,
                 value,
@@ -193,12 +216,12 @@ export const CouponRuleForm: React.FC<Props> = ({
       {rule.benefit_type === 'free_item' && (
         <Forms.FormGroupTextarea
           labelText="おまけ商品内容"
-          name={`rules[${index}].benefit_value.description`}
-          value={rule.benefit_value?.description ?? ''}
+          name={`rules[${index}].benefit_value.value`}
+          value={rule.benefit_value?.value ?? ''}
           onChange={(_, value) => {
             onChangeRule(index)('benefit_value', {
-              ...rule.benefit_value,
-              description: value,
+              type: 'description',
+              value,
             });
           }}
           required
@@ -209,6 +232,23 @@ export const CouponRuleForm: React.FC<Props> = ({
         <div className="mb-2 text-sm text-gray-700">
           ※ 送料無料の特典が適用されます
         </div>
+      )}
+
+      {rule.benefit_type === 'special_item' && (
+        <>
+          <Forms.FormGroupInputText
+          labelText="特別な商品名"
+          name={`rules[${index}].benefit_value.value`}
+          value={rule.benefit_value?.value ?? ''}
+          onChange={(_, value) => {
+            onChangeRule(index)('benefit_value', {
+              ...rule.benefit_value,
+              value,
+            });
+          }}
+          required
+        />
+        </>
       )}
 
       <button

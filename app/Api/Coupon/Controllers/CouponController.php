@@ -46,9 +46,8 @@ class CouponController extends BaseController
      */
     public function store(CouponStoreRequest $request)
     {
-
+        Log::debug('📦 登録データ:');
         $data = $request->validated();
-
         if (Coupon::where('code', $data['code'])->exists()) {
             return response()->json([
                 'success' => false,
@@ -73,25 +72,29 @@ class CouponController extends BaseController
      */
     public function update(CouponUpdateRequest $request, int $id)
     {
-        $data = $request->validated();
-
-        // --- 重複チェック（他のIDで同じコードが使われていないか）---
-        if (Coupon::where('code', $data['code'])->where('id', '!=', $id)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'このクーポンコードは他のクーポンで使用されています。',
-            ], 422);
-        }
-
         try {
+            Log::debug('📦 update() 開始');
+
+            $data = $request->validated(); // ← ここで例外が出てる可能性が高い
+
+            Log::debug('📦 更新データ:', $data);
+
+            if (Coupon::where('code', $data['code'])->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'このクーポンコードは他のクーポンで使用されています。',
+                ], 422);
+            }
+
             $this->service->update($id, $data);
+
             return $this->success();
-        } catch (\Exception $e) {
-            Log::error('【クーポン更新エラー】', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => '更新に失敗しました。',
-            ], 500);
+        } catch (\Throwable $e) {
+            Log::error('❌ update例外発生', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['message' => '内部エラー'], 500);
         }
     }
 
@@ -100,4 +103,25 @@ class CouponController extends BaseController
         $this->service->delete($id);
         return $this->success();
     }
+
+    public function toggleActive(int $id)
+    {
+        try {
+            $coupon = Coupon::findOrFail($id);
+            $coupon->is_active = !$coupon->is_active;
+            $coupon->save();
+
+            return response()->json([
+                'success' => true,
+                'is_active' => $coupon->is_active,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('❌ クーポン有効切替エラー', ['message' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => '切り替えに失敗しました',
+            ], 500);
+        }
+    }
+
 }

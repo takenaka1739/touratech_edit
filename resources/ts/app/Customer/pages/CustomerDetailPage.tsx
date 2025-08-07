@@ -37,6 +37,7 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     cutoff_date: 31,
     rate: 100,
     remarks: '',
+    distinguish: 0,
   });
 
   return (
@@ -46,7 +47,29 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
       breadcrumb={[{ name: title, url: `/${slug}` }, { name: `${title}詳細` }]}
       isLoading={isLoading}
     >
+
       <div className="form-group-wrapper">
+        <Forms.FormGroupInputRadio
+          labelText="区分"
+          name="distinguish"
+          value={state.distinguish}
+          error={errors?.distinguish}
+          onChange={onChange}
+          items={[
+            {
+              labelText: '一般',
+              id: 'distinguish_0',
+              value: 0,
+            },
+            {
+              labelText: '業販',
+              id: 'distinguish_1',
+              value: 1,
+            },
+          ]}
+          required
+        />
+
         <Forms.FormGroupInputText
           labelText="得意先名"
           name="name"
