@@ -17,3 +17,7 @@ yarn-error.log
 /public/mix-manifest.json
 /public/.htaccess
 /public/assets/js/index.js
+
+# build artifacts
+/public/assets/js/*
+!/public/assets/js/.gitkeep
