@@ -30,7 +30,7 @@
       margin-right: 20px;
       margin-bottom: 20px;
 
-      img {
+      .image-size {
         border: 1px solid #333;
         width: 450px;
         height: 500px;
@@ -53,6 +53,34 @@
           width: 10px;
           height: 10px;
           }
+        }
+
+        .a {
+          margin-top: 10px;
+          height: 40px;
+          width: 448px;
+          position: absolute;
+          background-color:transparent;
+          color: transparent;
+        }
+
+        .a:hover {
+          margin-top: 10px;
+          height: 40px;
+          width: 448px;
+          visibility:visible;
+          opacity: 0.5;
+          color: #000000;
+          background-color: #C9C9C9;
+        }
+
+        .b {
+          margin-top: 10px;
+          height: 40px;
+          width: 448px;
+          position: absolute;
+          background-color:transparent;
+          color: transparent;
         }
       }
     }
@@ -203,6 +231,7 @@
             .vari-row-input {
               color: #c9d7e8f8;
               border: #FFFFFFFF;
+              width: 50px;
             }
 
             .dele-button {

@@ -176,7 +176,7 @@ return [
         // App\Base\Providers\BroadcastServiceProvider::class,
         App\Base\Providers\EventServiceProvider::class,
         App\Base\Providers\RouteServiceProvider::class,
-        App\Base\Providers\SqlLogServiceProvider::class,
+        //App\Base\Providers\SqlLogServiceProvider::class,
 
         // Api
         App\Api\App\AppServiceProvider::class,

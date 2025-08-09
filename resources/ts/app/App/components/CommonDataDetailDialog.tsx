@@ -59,9 +59,11 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     async props => {
       const {
         id,
-        item_number,
+        //item_number,
+        //itemNumberItem,
         name,
-        name_jp,
+        //name_jp,
+        name_note,
         sales_unit_price,
         is_set_item,
         domestic_stock,
@@ -76,9 +78,11 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       updateState({
         item_kind: is_set_item ? 2 : 1,
         item_id: id,
-        item_number,
+        //item_number,
+        //itemNumberItem,
         item_name: name,
-        item_name_jp: name_jp,
+        //item_name_jp: name_jp,
+        item_name_jp: name_note,
         sales_unit_price,
         unit_price,
         quantity: 1,

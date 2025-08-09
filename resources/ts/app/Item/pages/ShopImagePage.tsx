@@ -1,9 +1,18 @@
-import { useState } from 'react';
-import { useCallback, useRef } from 'react';
-import { useMemo } from 'react';
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+//import { useState } from 'react';
+import { RouteComponentProps } from 'react-router-dom';
+import { useCallback, useRef, useMemo, useState } from 'react';
+//import { useMemo } from 'react';
+import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
+//import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
+//import { Item } from '@/types';
+//import SimpleBar from 'simplebar';
+import { ItemDetailPage } from './ItemDetailPage';
 
-export const ShopImagePage = () => {
+export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
+
+export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
+
+  console.log(`ItemDetailPage:${ItemDetailPage}`);
 
   let variKind:{[key: string] : string[]} = 
   {"1":["1", "1"],
@@ -16,7 +25,14 @@ export const ShopImagePage = () => {
   const [variKindItem, setVariKind] = useState(variKind);
   const [pointText, setpoint] = useState("  ");
   const [dropErea, setDropErea] = useState("ここにファイルをドロップして下さい");
-  const [selectImage, setselectImage] = useState("");
+  //const [selectImage, setselectImage] = useState({src:'', type:-1, pTag:'visible', imgvisible:'hidden', vdovisible:'hidden'});
+  //const [selectImage, setselectImage] = useState({pTag:'visible', imgvisible:'hidden', vdovisible:'hidden'});
+  const [selectImageSrc, setImageSrc] = useState('');
+  const [selectImageType, setImageType] = useState(-1);
+  //const [visible, setVisibility] = useState(false);
+  //const [opacity, setOpacity] = useState(0);
+  //const [backgroundColor, setBackgroundColor] = useState('transparent');
+
 
   // 各入力欄の値設定
   const inputNameClick = () => {
@@ -146,17 +162,34 @@ export const ShopImagePage = () => {
     },[]
   );
 
-  const handleClick = (src:string) => {
-    setselectImage(src);
+  const handleClick = (src:string, type:number) => {
+    setImageSrc(src);
+    setImageType(type);
+    //setselectImage({pTag:'hidden', imgvisible:imgvisible, vdovisible:vdovisible});
   };
 
   const Image = ({ file }: Props) => {
+    console.log(`file${file}`);
     const src = useMemo(() => URL.createObjectURL(file), [file]);
-    return (
-    <img className="" src={src} onClick={() => handleClick(src)} alt={file.name} style={{height: '80px', width: '80px'}} ></img>);
+    let type = file.type.indexOf('video');
+    if(type == -1){
+      return (
+        <div>
+          <img key={src} src={src} onClick={() => handleClick(src, type)} alt={file.name} style={{height: '80px', width: '80px', margin: '10px'}} ></img>
+        </div>
+      );
+    }else{
+      return (
+        <div>
+          <video onClick={() => handleClick(src, type)} style={{height: '80px', width: '80px', margin: '10px'}}>
+            <source src={src} type="video/mp4"/>
+          </video>
+        </div>
+      );
+    }
   };
 
-    const onDragEnd = (result: any) => {
+  const onDragEnd = (result: any) => {
      //console.log('発火');
     // drag時のindexの値
      //console.log(result.source.index);
@@ -174,48 +207,58 @@ export const ShopImagePage = () => {
       </div>
       <div id="input-area">
         <div id="image-area">
-          <img src={selectImage}></img>
-            <div className="image-input-erea">
-              <input type="file" style={{ display: 'none' }} ref={attachRef} multiple onChange={handleInpuFileChange}></input>
-              <div
-                style={{ height: '100px', width: '450px' }}
-                tabIndex={0}
-                onDragEnter={onDragEnter}
-                onDragLeave={onDragLeave}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onPaste={onPaste}
-              >
-                <p style={{fontSize: '20px', color: '#c9d7e8f8', textAlign: 'center'}}>{dropErea}</p>
-                <div style={{display: 'flex'}}>
-                  <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="droppable" direction="horizontal">
-                      {(provided) => (
-                        <div style={{display: 'flex'}} {...provided.droppableProps} ref={provided.innerRef}>
-                          {files.map((f, index) => (
-                            <Draggable draggableId={String(index)} index={index} key={String(f)}>
-                              {/* Droppableで指定した引数をそのまま指定する */}
-                              {(provided) => (
-                                // この中で静的なdivタグなどを指定できる
-                                //  <div {...provided.draggableProps} ref={provided.innerRef}>もお作法
-                                // 実際に掴んで移動させるpropsに{...provided.dragHandleProps}をつける
-                                <div style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
-                                  <div key={f.name} style={{padding:'10px'}} {...provided.dragHandleProps}>
-                                    <Image file={f}></Image>
-                                  </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                </div>
+          {console.log(`selectImageSrc：${selectImageSrc}`)}
+          <div>{ selectImageType === -1 ? 
+              (<img key={selectImageType} className="image-size" src={selectImageSrc}/>) : 
+              (<video className="image-size" controls>
+                <source src={selectImageSrc} type="video/mp4"/>
+              </video>)
+          }</div>
+          <div className="image-input-erea">
+            <input type="file" style={{ display: 'none'}} ref={attachRef} multiple onChange={handleInpuFileChange}/>
+            <div
+              style={{ height: '100px', width: '450px' }}
+              tabIndex={0}
+              onDragEnter={onDragEnter}
+              onDragLeave={onDragLeave}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onPaste={onPaste}
+            >
+              <p style={{height: '30px', fontSize: '20px', color: '#c9d7e8f8', textAlign: 'center', position: 'absolute'}}>{dropErea}</p>
+              <DragDropContext onDragEnd={onDragEnd}> 
+                <Droppable droppableId="droppable" direction="horizontal">
+                  {(provided) => (
+                    <div style={{display: 'flex', position: 'absolute'}} {...provided.droppableProps} ref={provided.innerRef}>
+                      {files.map((f, index) => (
+                        <Draggable draggableId={String(index)} index={index} key={String(f)}>
+                          {/* Droppableで指定した引数をそのまま指定する */}
+                          {(provided) => (
+                            // この中で静的なdivタグなどを指定できる
+                            //  <div {...provided.draggableProps} ref={provided.innerRef}>もお作法
+                            // 実際に掴んで移動させるpropsに{...provided.dragHandleProps}をつける
+                            <div style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
+                              <div key={f.name} {...provided.dragHandleProps}>
+                                  <Image file={f}/>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+              {/*<input className="a" style={{visibility: visible ? "visible" : "hidden", opacity: opacity, backgroundColor: backgroundColor}} onClick={() => addUrl()}/>*/}
+              <div className="a" style={{display: 'flex', padding: '0px'}}>
+                <input style={{width: '370px', backgroundColor: 'transparent'}}/>
+                <button style={{width: '80px'}} onClick={() => Image}>追加</button>
               </div>
+              {/*</button>*/}
             </div>
           </div>
-          <img src={"./c111583894027.jpg"} style={{width: '70px', height: '70px'}}/>
+        </div>
+        <img src={"./c111583894027.jpg"} style={{width: '80px', height: '90px', marginTop: '551px'}}/>
         <div id="item-info">
           <input id="item-name" value={nameText}
                  onClick={() => inputNameClick()}
@@ -234,25 +277,25 @@ export const ShopImagePage = () => {
           <hr/>
           <div id="item-detail-erea">
             <label className="label-basic">この商品について</label>
-            <input id="item-detail" value={detailText}
+            <input id="item-detail" value={""}
                    onClick={() => inputDetailClick()}
                    onBlur={() => inputDetailFocusOut()}
                    onChange={(event) => setDetailText(event.target.value)}/>
           </div>
         </div>
-        <div id="vari-info">{ 
+        <div key={"variation"} id="vari-info">{ 
           Object.keys(variKindItem).map((name, index) => {
             return (
-              <div className="vari-item">
-                <div className="vari-name-row">
+              <div key={name+index+"vari-item"} className="vari-item">
+                <div key={name+index+"vari-name-row"} className="vari-name-row">
                   <label>{index + 1}</label>
                   <input className="input-text" value={name}/>
-                  <button className="plus-button" onClick={() => addNewVari(name)}>＋</button>
+                  <button key={index} className="plus-button" onClick={() => addNewVari(name)}>＋</button>
                 </div>
-                <div className="vari-kind-list"> {
+                <div key={index+index+"vari-kind-list"} className="vari-kind-list"> {
                   variKindItem[name].map((value, index) => {
                     return (
-                      <div className="vari-kind">
+                      <div key={value+index+"vari-kind"} className="vari-kind">
                         <input className="vari-row-input"
                           type="text"
                           value={value}

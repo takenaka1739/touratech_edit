@@ -4,6 +4,7 @@ import { TableWrapper, BoxConditions, DialogWrapper, Forms } from '@/components'
 import { useCommonSearchDialog } from '@/app/App/uses/useCommonSearchDialog';
 import { numberFormat } from '@/utils/numberFormat';
 import { useComposing } from '@/uses';
+import axios from 'axios';
 
 type ItemSearchDialogProps = {
   isShown: boolean;
@@ -24,7 +25,7 @@ type ItemSearchDialogConditionsState = {
  *
  * @param props
  */
-export const ItemSearchDialog: React.VFC<ItemSearchDialogProps> = ({
+export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
   isShown,
   isSetItem,
   onSelected,
@@ -47,19 +48,27 @@ export const ItemSearchDialog: React.VFC<ItemSearchDialogProps> = ({
       c_is_set_item: isSetItem,
       page: 1,
     },
-    '/api/item/dialog',
+    '/api/item/refdialog',
     isShown,
     onSelected,
     onCancel
   );
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
+  const onClickDetail:(id : number | undefined) => Promise<void> = async id => {
+    console.log('onClickDetailの中');
+    console.log(id);
+    await axios.get(`/api/item/edit/${id}`);
+  }
+
   const tables = useMemo(() => {
+    {console.log(`Itemstate.rows:${state.rows.length}`)}
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
         <td>
           <span data-id={r.id} onClick={onClickSelect} className="link">
             {/*<div className="text-xs">{r.item_number}</div>*/}
+            {console.log(`state.rows:${state.rows}`)}
             <div className="text-xs">{r.itemNumberItem}</div>
             <div>{r.name}</div>
             {/*<div>{r.name_jp}</div>*/}
@@ -71,7 +80,7 @@ export const ItemSearchDialog: React.VFC<ItemSearchDialogProps> = ({
         <td className="text-right">{numberFormat(r.domestic_stock ?? 0, 0)}</td>
         <td className="text-right">{numberFormat(r.overseas_stock ?? 0, 0)}</td>
         <td className="col-btn">
-          <span data-id={r.id} onClick={onClickSelect}>
+          <span data-id={r.id} onClick={() => onClickDetail(r.id)}>
             選択
           </span>
         </td>

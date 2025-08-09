@@ -21,26 +21,114 @@
  * @param overseas_stock - 国外在庫数
  * @param stock_display - 在庫表示 1:非表示、2:表示、3:表示（業者のみ）
  * @param remarks - 備考
+ * 
+ * @param id
+ * @param supplier_id
+ * @param consumption_tax_id
+ * @param code
+ * @param name
+ * @param variation_code1
+ * @param variation_code2
+ * @param variation_code3
+ * @param variation_code4
+ * @param variations1
+ * @param variations2
+ * @param variations3
+ * @param variations4
+ * @param explanation
+ * @param explanation_details
+ * @param name_note
+ * @param name_label
+ * @param is_sell
+ * @param purchase_price
+ * @param sales_price
+ * @param sales_unit_price
+ * @param purchase_unit_price
+ * @param sample_price
+ * @param is_discontinued
+ * @param discontinued_at
+ * @param is_display
+ * @param is_point_rebates
+ * @param number_reservations
+ * @param is_shipping_fee
+ * @param is_cash_delivery_fee
+ * @param additional_shipping_fee
+ * @param is_special_sale
+ * @param is_payment_id1
+ * @param is_payment_id2
+ * @param is_payment_id3
+ * @param is_payment_id4
+ * @param is_payment_id5
  */
+
 export interface Item {
+  //id: number | undefined;
+  //item_number?: string | undefined;
+  //name?: string | undefined;
+  //name_jp: string | undefined;
+  //name_label?: string | undefined;
+  //category_id?: number | undefined;
+  //item_classification_name?: string | undefined;
+  //sales_unit_price: number | undefined;
+  //purchase_unit_price?: number | undefined;
+  //sample_price?: number | undefined;
+  //supplier_id?: number | undefined;
+  //supplier_name?: string | undefined;
+  //is_discontinued?: boolean | undefined;
+  //discontinued_date: string | undefined;
+  //is_display: boolean | undefined;
+  //is_set_item: boolean | undefined;
+  //domestic_stock?: number | undefined;
+  //overseas_stock?: number | undefined;
+  //stock_display?: number | undefined;
+  //remarks?: string | undefined;
+
   id: number | undefined;
-  item_number?: string | undefined;
-  name?: string | undefined;
-  name_jp: string | undefined;
+  supplier_id?: number | undefined;
+  consumption_tax_id?: number | undefined;
+  code: string | undefined;
+  name: string | undefined;
+  //item_number: string[];
+  itemNumberItem: string[];
+  variations1: string[];
+  variations2: string[];
+  variations3: string[];
+  variations4: string[];
+  variations5: string[];
+  explanation?: string | undefined;
+  explanation_details?: string | undefined;
+  name_note?: string | undefined;
   name_label?: string | undefined;
-  category_id?: number | undefined;
-  item_classification_name?: string | undefined;
-  sales_unit_price: number | undefined;
+  is_sell?: boolean | undefined;
+  purchase_price?: number | undefined;
+  //sales_price: string[];
+  salesPriceItem: string[];
+  sales_unit_price?: number | undefined;
   purchase_unit_price?: number | undefined;
   sample_price?: number | undefined;
-  supplier_id?: number | undefined;
-  supplier_name?: string | undefined;
   is_discontinued?: boolean | undefined;
-  discontinued_date: string | undefined;
-  is_display: boolean | undefined;
-  is_set_item: boolean | undefined;
+  discontinued_at: string | undefined;
+  is_display?: boolean | undefined;
+  is_point_rebates?: boolean | undefined;
+  number_reservations?: number | undefined;
+  is_shipping_fee?: boolean | undefined;
+  is_cash_delivery_fee?: boolean | undefined;
+  additional_shipping_fee?: number | undefined;
+  is_special_sale?: boolean | undefined;
+  is_payment_id1?: boolean | undefined;
+  is_payment_id2?: boolean | undefined;
+  is_payment_id3?: boolean | undefined;
+  is_payment_id4?: boolean | undefined;
+  is_payment_id5?: boolean | undefined;
+  testArra: [];
+
+  stock_display?: number | undefined;
+  category_id?: number | undefined;
+  category_name?: string | undefined;
+  supplier_name?: string | undefined;
   domestic_stock?: number | undefined;
   overseas_stock?: number | undefined;
-  stock_display?: number | undefined;
+  display_status: number |undefined;
   remarks?: string | undefined;
+  is_set_item: boolean | undefined;
 }

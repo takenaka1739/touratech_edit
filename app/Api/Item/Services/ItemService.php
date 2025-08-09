@@ -20,14 +20,47 @@ class ItemService
   public function dialog(array $cond)
   {
     $query = Item::select(
+      'm_items.id',
+      'm_items.code',
+      'm_items.name',
+      //'name',
+      'm_items.sales_unit_price',
+      'm_items.purchase_unit_price',
+
+      //'id',
+      //'code',
+      //'name',
+      //'name',
+      //'sales_unit_price',
+      //'purchase_unit_price',
+    );
+    //$query = $this->setCondition($query, $cond);
+    $query->orderBy('code', 'asc');
+    return $query->paginate(config('const.paginate.per_page'))->toArray();
+  }
+
+  /**
+   * 検索画面用の一覧データを取得する
+   *
+   * @return array
+   */
+  public function refDialog()
+  {
+    $query = Item::select(
       'id',
       'code',
       'name',
-      'name',
       'sales_unit_price',
       'purchase_unit_price',
+
+      //'id',
+      //'code',
+      //'name',
+      //'name',
+      //'sales_unit_price',
+      //'purchase_unit_price',
     );
-    $query = $this->setCondition($query, $cond);
+    //$query = $this->setCondition($query, $cond);
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
@@ -43,6 +76,8 @@ class ItemService
     $query = Item::select(
       'id',
       'code',
+      //'variation_code1',
+      'item_number',
       'name',
       'name',
       'sales_unit_price',
@@ -53,6 +88,15 @@ class ItemService
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
+  function group_by(array $table, string $key): array
+  {
+  	$groups = [];
+  	foreach ($table as $row) {
+  		$groups[$row[$key]][] = $row;
+  	}
+  	return $groups;
+  }
+
   /**
    * 詳細データを取得する
    *
@@ -61,30 +105,164 @@ class ItemService
    */
   public function get(int $id)
   {
-    return Item::select(
-      'items.id',
-      'items.code',
-      'items.name',
-      'items.name',
-      'items.name_label',
-      'items.category_id',
-      'items.sales_unit_price',
-      'items.purchase_unit_price',
-      'items.sample_price',
-      'items.supplier_id',
-      'items.is_discontinued',
-      'items.discontinued_at',
-      'items.is_display',
-      'items.stock_display',
-      'items.remarks',
-      'item_classifications.name AS item_classification_name',
+    //return 
+    $selectItems = Item::select(
+      'm_items.id',
+      'm_items.supplier_id',
+      'm_items.consumption_tax_id',
+      'm_items.code',
+      'm_items.name',
+      'm_items.item_number',
+      'm_items.variations1',
+      'm_items.variations2',
+      'm_items.variations3',
+      'm_items.variations4',
+      'm_items.explanation',
+      'm_items.explanation_details',
+      'm_items.name_note',
+      'm_items.name_label',
+      'm_items.is_sell',
+      'm_items.purchase_price',
+      'm_items.sales_price',
+      'm_items.sales_unit_price',
+      'm_items.purchase_unit_price',
+      'm_items.sample_price',
+      'm_items.is_discontinued',
+      'm_items.discontinued_at',
+      'm_items.is_display',
+      'm_items.domestic_stocks',
+      'm_items.overseas_stocks',
+      'm_items.display_status',
+      'm_items.is_point_rebates',
+      'm_items.number_reservations',
+      'm_items.is_shipping_fee',
+      'm_items.is_cash_delivery_fee',
+      'm_items.additional_shipping_fee',
+      'm_items.is_special_sale',
+      'm_items.is_payment_id1',
+      'm_items.is_payment_id2',
+      'm_items.is_payment_id3',
+      'm_items.is_payment_id4',
+      'm_items.is_payment_id5',
+      //'m_categories.name',
+      //'suppliers.name'
+      //'item_classifications.name',
+      //'suppliers.name',
+      'm_categories.name AS category_name',
       'suppliers.name AS supplier_name',
+      't_stocks.domestic_stocks AS domestic_stock',
+      't_stocks.overseas_stocks AS overseas_stock'
+      
+      //'id',
+      //'code',
+      //'name',
+      //'name',
+      //'name_label',
+      //'category_id',
+      //'sales_unit_price',
+      //'purchase_unit_price',
+      //'sample_price',
+      //'supplier_id',
+      //'is_discontinued',
+      //'discontinued_at',
+      //'is_display',
+      //'stock_display',
+      //'remarks',
+
+      //'items.id',
+      //'items.code',
+      //'items.name',
+      //'items.name',
+      //'items.name_label',
+      //'items.category_id',
+      //'items.sales_unit_price',
+      //'items.purchase_unit_price',
+      //'items.sample_price',
+      //'items.supplier_id',
+      //'items.is_discontinued',
+      //'items.discontinued_at',
+      //'items.is_display',
+      //'items.stock_display',
+      //'items.remarks',
+      //'item_classifications.name AS item_classification_name',
+      //'suppliers.name AS supplier_name',
     )
-      ->leftJoin('item_classifications', 'item_classifications.id', '=', 'items.category_id')
-      ->leftJoin('suppliers', 'suppliers.id', '=', 'items.supplier_id')
-      ->where('items.id', $id)
-      ->first()
-      ->toArray();
+      //->leftJoin('item_classifications', 'item_classifications.id', '=', 'items.category_id')
+      //->leftJoin('suppliers', 'suppliers.id', '=', 'items.supplier_id')
+      //->where('items.id', $id)
+      //->first()
+      //->get()
+      //->toArray();
+
+    ->leftJoin('t_category_item_combinations', 'm_items.id', '=', 't_category_item_combinations.item_id')
+    ->leftJoin('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
+    //->leftJoin('item_classifications', 'item_classifications.id', '=', 'items.category_id')
+    ->leftJoin('suppliers', 'm_items.supplier_id', '=', 'suppliers.id')
+    ->leftJoin('t_stocks', 'm_items.id', '=', 't_stocks.item_id')
+    ->where('m_items.id', '=', $id)
+    ->first()
+    //->get()
+    ->toArray();
+    //$a = Item::select('variations1')->where('code', '=', $selectItems['code'])->first();
+
+    $testArra = array();
+
+    $variItems = [];
+    $item1 = [];
+    $item2 = [];
+    $item3 = [];
+    $item4 = [];
+    $itemNumberItem = [];
+    $salesPriceItem = [];
+
+    foreach(Item::where('code', '=', $selectItems['code'])->get() as $item){
+      $testArra = [
+        'vari1' => $item['variations1'],
+        'vari2' => $item['variations2'],
+        'vari3' => $item['variations3'],
+        'vari4' => $item['variations4'],
+        'itemNumber' => $item['item_number'],
+        'salesPrice' => $item['sales_price']
+      ];
+
+      //array_push($test, $testArra);
+    }
+
+    //$test = group_by($test, 'vari1');
+
+    foreach(Item::select('variations1')->where('code', '=', $selectItems['code'])->get() as $item){
+      array_push($item1, $item['variations1']);
+    }
+
+    foreach(Item::select('variations2')->where('code', '=', $selectItems['code'])->get() as $item){
+      array_push($item2, $item['variations2']);
+    }
+
+    foreach(Item::select('variations3')->where('code', '=', $selectItems['code'])->get() as $item){
+      array_push($item3, $item['variations3']);
+    }
+
+    foreach(Item::select('variations4')->where('code', '=', $selectItems['code'])->get() as $item){
+      array_push($item4, $item['variations4']);
+    }
+
+    foreach(Item::select('item_number')->where('code', '=', $selectItems['code'])->get() as $item){
+      array_push($itemNumberItem, $item['item_number']);
+    }
+
+    foreach(Item::select('sales_price')->where('code', '=', $selectItems['code'])->get() as $item){
+      array_push($salesPriceItem, $item['sales_price']);
+    }
+
+    $selectItems['variations1'] = $item1;
+    $selectItems['variations2'] = $item2;
+    $selectItems['variations3'] = $item3;
+    $selectItems['variations4'] = $item4;
+    $selectItems['itemNumberItem'] = $itemNumberItem;
+    $selectItems['salesPriceItem'] = $salesPriceItem;
+    $selectItems['testArra'] = $testArra;
+
+    return $selectItems;
   }
 
   /**

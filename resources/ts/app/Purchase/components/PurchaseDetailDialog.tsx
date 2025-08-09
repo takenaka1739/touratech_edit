@@ -46,14 +46,16 @@ export const PurchaseDetailDialog: React.VFC<PurchaseDetailDialogProps> = ({
   } = useCommonSearchDialogProps<Item>(
     'item',
     async props => {
-      const { id, item_number, name, name_jp, sales_unit_price, is_set_item } = props;
+      //const { id, item_number, name, name_jp, sales_unit_price, is_set_item } = props;
+      const { id, name, name_note, sales_unit_price, is_set_item } = props;
       const ret = calcAmount(sales_unit_price, 1, salesTaxRate, fraction);
       updateState({
         item_kind: is_set_item ? 2 : 1,
         item_id: id,
-        item_number,
+        //item_number,
         item_name: name,
-        item_name_jp: name_jp,
+        //item_name_jp: name_jp,
+        item_name_jp: name_note,
         unit_price: sales_unit_price,
         quantity: 1,
         sales_tax_rate: salesTaxRate,

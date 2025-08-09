@@ -5,80 +5,51 @@
   margin-top: 0.25rem;
 }
 
-.vari-code {
-  margin-top: 10px;
-  margin-left: 30px;
-}
-
-.vari-code-row {
-  margin-top: 1px;
-  margin-left: 150px;
-}
-
-.vari-name {
-  margin-top: 1px;
-  margin-left: 63px;
-}
-
-.vari-item {
-  margin-top: 10px;
-  margin-left: 153px;
-
-  .vari-name-row {
-    display: flex;
-
-    .plus-button {
-      color: #a0aec0;
-      text-align: center;
-      height: 20px;
-      width: 20px;
-      margin-left: 5px;
-      margin-right: 10px;
-      border: 1px solid #a0aec0;
-      border-radius: 100px;
-    }
-  }
+.plus-button {
+  color: #a0aec0;
+  text-align: center;
+  height: 20px;
+  width: 20px;
+  margin-right: 10px;
+  margin-bottom: 5px;
+  border: 1px solid #a0aec0;
+  border-radius: 100px;
 }
 
 .item-explanation {
   display: flex;
-  margin-top: 5px;
-  margin-left: 57px;
+  margin-top: 10px;
+  margin-left: 49px;
 }
 
 .item-explanation-detail {
   display: flex;
   margin-top: 10px;
-  margin-left: 8px;
+  margin-left: 1px;
 }
 
 .vari-row {
   display: flex;
 }
 
-.vari-item-row {
-  background-color: #fff;
+.vari-row-input {
   border: 1px solid #a0aec0;
-  border-radius: 0.125rem;
+  width: 120px;
+  display: block;
+  appearance: none;
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+  margin-right: 5px;
+}
 
-  .vari-row-input {
-    width: 70px;
-    display: block;
-    appearance: none;
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  .dele-button {
-    color: #a0aec0;
-    border-left:1px solid #a0aec0;
-    padding: 2px 5px 2px 5px;
-  }
+.dele-button {
+  border: 1px solid #a0aec0;
+  color: #a0aec0;
+  padding: 1px;
 }
 
 .price-erea {
@@ -204,16 +175,12 @@ label {
   border-radius: 0.125rem;
   outline: 2px solid transparent;
   outline-offset: 2px;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  font-size: 0.75rem;
+  width: 150px;
+  height: 30px;
 }
 
 .vari-row {
   display: flex;
-  margin-top: 5px;
 }
 
 .item-row {
@@ -234,4 +201,6 @@ label {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   font-size: 0.75rem;
+  width: 400px;
+  height: 150px;
 }

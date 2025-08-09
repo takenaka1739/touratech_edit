@@ -27,8 +27,10 @@ export const SetItemListPage: React.VFC = () => {
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
         <td>
-          <div className="text-xs">{r.item_number}</div>
-          <div>{r.name_jp}</div>
+          {/*<div className="text-xs">{r.item_number}</div>*/}
+          <div className="text-xs">{r.code}</div>
+          {/*<div>{r.name_jp}</div>*/}
+          <div>{r.name_note}</div>
         </td>
         <td className="text-right">{numberFormat(r.sales_unit_price)}</td>
         <td className="text-right">{numberFormat(r.total_quantity, 0)}</td>

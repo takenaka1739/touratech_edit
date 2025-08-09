@@ -68,6 +68,14 @@ class SqlLogServiceProvider extends ServiceProvider
                 'connection_class' => is_object($connection) ? get_class($connection) : gettype($connection),
             ]);
 
+        Log::debug('SQL Log Debug', [
+                'queryString' => $queryString,
+                'bindings'    => $bindings,
+                'time'        => $time,
+                'connection'  => $connection,
+                'connection_class' => is_object($connection) ? get_class($connection) : gettype($connection),
+            ]);
+
             $queryCollector->addQuery((string) $queryString, $bindings, $time, $connection);
 
             $sqlExecCollect = $queryCollector->collect();

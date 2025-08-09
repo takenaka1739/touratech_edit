@@ -21563,7 +21563,7 @@ div[aria-disabled=true]::after {
   margin-bottom: 20px;
 }
 
-#shop-image #input-area #image-area img {
+#shop-image #input-area #image-area .image-size {
   border: 1px solid #333;
   width: 450px;
   height: 500px;
@@ -21587,6 +21587,34 @@ div[aria-disabled=true]::after {
 #shop-image #input-area #image-area .image-input-erea .b .img {
   width: 10px;
   height: 10px;
+}
+
+#shop-image #input-area #image-area .image-input-erea .a {
+  margin-top: 10px;
+  height: 40px;
+  width: 448px;
+  position: absolute;
+  background-color: transparent;
+  color: transparent;
+}
+
+#shop-image #input-area #image-area .image-input-erea .a:hover {
+  margin-top: 10px;
+  height: 40px;
+  width: 448px;
+  visibility: visible;
+  opacity: 0.5;
+  color: #000000;
+  background-color: #C9C9C9;
+}
+
+#shop-image #input-area #image-area .image-input-erea .b {
+  margin-top: 10px;
+  height: 40px;
+  width: 448px;
+  position: absolute;
+  background-color: transparent;
+  color: transparent;
 }
 
 #shop-image #input-area #item-info {
@@ -21738,6 +21766,7 @@ div[aria-disabled=true]::after {
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .vari-row-input {
   color: #c9d7e8f8;
   border: #FFFFFFFF;
+  width: 50px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .dele-button {
@@ -21751,80 +21780,51 @@ div[aria-disabled=true]::after {
   margin-top: 0.25rem;
 }
 
-.vari-code {
-  margin-top: 10px;
-  margin-left: 30px;
-}
-
-.vari-code-row {
-  margin-top: 1px;
-  margin-left: 150px;
-}
-
-.vari-name {
-  margin-top: 1px;
-  margin-left: 63px;
-}
-
-.vari-item {
-  margin-top: 10px;
-  margin-left: 153px;
-}
-
-.vari-item .vari-name-row {
-  display: flex;
-}
-
-.vari-item .vari-name-row .plus-button {
+.plus-button {
   color: #a0aec0;
   text-align: center;
   height: 20px;
   width: 20px;
-  margin-left: 5px;
   margin-right: 10px;
+  margin-bottom: 5px;
   border: 1px solid #a0aec0;
   border-radius: 100px;
 }
 
 .item-explanation {
   display: flex;
-  margin-top: 5px;
-  margin-left: 57px;
+  margin-top: 10px;
+  margin-left: 49px;
 }
 
 .item-explanation-detail {
   display: flex;
   margin-top: 10px;
-  margin-left: 8px;
+  margin-left: 1px;
 }
 
 .vari-row {
   display: flex;
 }
 
-.vari-item-row {
-  background-color: #fff;
+.vari-row-input {
   border: 1px solid #a0aec0;
-  border-radius: 0.125rem;
-}
-
-.vari-item-row .vari-row-input {
-  width: 70px;
+  width: 120px;
   display: block;
   appearance: none;
-  outline: 2px solid transparent;
   outline-offset: 2px;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   font-size: 0.75rem;
+  margin-right: 5px;
 }
 
-.vari-item-row .dele-button {
+.dele-button {
+  border: 1px solid #a0aec0;
   color: #a0aec0;
-  border-left: 1px solid #a0aec0;
-  padding: 2px 5px 2px 5px;
+  padding: 1px;
 }
 
 .price-erea {
@@ -21950,16 +21950,12 @@ label {
   border-radius: 0.125rem;
   outline: 2px solid transparent;
   outline-offset: 2px;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  font-size: 0.75rem;
+  width: 150px;
+  height: 30px;
 }
 
 .vari-row {
   display: flex;
-  margin-top: 5px;
 }
 
 .item-row {
@@ -21980,6 +21976,8 @@ label {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   font-size: 0.75rem;
+  width: 400px;
+  height: 150px;
 }
 
 table {
