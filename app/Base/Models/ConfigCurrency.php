@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ConfigCurrency extends Model
 {
+
+  protected $table = 't_config_currencies';
   protected $fillable = [
     'name',
     'rate',

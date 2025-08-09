@@ -12,7 +12,7 @@ class ConfigTest extends TestCase
     $m = new Config([
       'sales_tax_rate' => 25.3,
       'pre_tax_rate' => 18.4,
-      'tax_rate_change_date' => '2021/01/02'
+      'tax_rate_change_at' => '2021/01/02'
     ]);
     $date = '2021/01/02';
 
@@ -27,7 +27,7 @@ class ConfigTest extends TestCase
     $m = new Config([
       'sales_tax_rate' => 25.3,
       'pre_tax_rate' => 18.4,
-      'tax_rate_change_date' => '2021/01/02'
+      'tax_rate_change_at' => '2021/01/02'
     ]);
     $date = '2021/01/01';
 

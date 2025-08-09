@@ -13,10 +13,10 @@ export const getSalesTaxRate: (date: string | undefined, config: Config | undefi
   date,
   config
 ) => {
-  if (config != undefined && config.tax_rate_change_date != undefined) {
+  if (config != undefined && config.tax_rate_change_at != undefined) {
     if (date) {
       const currentDate = parse(date, 'yyyy/MM/dd', new Date());
-      const changeDate = parse(config.tax_rate_change_date, 'yyyy/MM/dd', new Date());
+      const changeDate = parse(config.tax_rate_change_at, 'yyyy/MM/dd', new Date());
 
       if (currentDate >= changeDate) {
         return config.sales_tax_rate ?? 0;

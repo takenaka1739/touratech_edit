@@ -34,7 +34,7 @@ export const useConfigDetailPage = () => {
     account_number2: '',
     sales_tax_rate: undefined,
     pre_tax_rate: undefined,
-    tax_rate_change_date: undefined,
+    tax_rate_change_at: undefined,
     currencies: [],
     cods: [],
   });

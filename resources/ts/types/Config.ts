@@ -24,7 +24,7 @@ import { ConfigCod } from '@/types';
  * @param account_number2 - 口座番号②
  * @param sales_tax_rate - 消費税率
  * @param pre_tax_rate - 変更前消費税
- * @param tax_rate_change_date - 税率変更日
+ * @param tax_rate_change_at - 税率変更日
  * @param send_trader - 送料（業者）
  * @param send_personal - 送料（個人）
  * @param send_price - 送料
@@ -53,7 +53,7 @@ export interface Config {
   account_number2: string | undefined;
   sales_tax_rate: number | undefined;
   pre_tax_rate: number | undefined;
-  tax_rate_change_date: string | undefined;
+  tax_rate_change_at: string | undefined;
   send_trader?: number | undefined;
   send_personal?: number | undefined;
   send_price?: number | undefined;

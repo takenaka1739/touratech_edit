@@ -8,6 +8,7 @@ use App\Base\Models\ConfigCurrency;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 /**
  * 環境設定サービス
@@ -21,13 +22,24 @@ class ConfigService
    * @param int $id 見積ID
    * @return array
    */
-  public function get()
-  {
-    $data = Config::getSelf()->toArray();
-    $data['currencies'] = ConfigCurrency::orderBy('id')->get()->toArray();
-    $data['cods'] = ConfigCod::orderBy('id')->get()->toArray();
+public function get()
+{
+    $m = \App\Base\Models\Config::getSelf();
+    $data = $m->toArray();
+
+    // ここで画面向けに yyyy/MM/dd で上書き
+    $data['tax_rate_change_at'] = $m->tax_rate_change_at
+        ? Carbon::parse((string)$m->tax_rate_change_at)->format('Y/m/d')
+        : null;
+
+    // ついでに別名も残すなら
+    $data['tax_rate_change_date'] = $data['tax_rate_change_at'];
+
+    $data['currencies'] = \App\Base\Models\ConfigCurrency::orderBy('id')->get()->toArray();
+    $data['cods']       = \App\Base\Models\ConfigCod::orderBy('id')->get()->toArray();
+
     return $data;
-  }
+}
 
   /**
    * 更新
@@ -59,7 +71,9 @@ class ConfigService
       $m->company_level = $data->get('company_level');
       $m->sales_tax_rate = $data->get('sales_tax_rate');
       $m->pre_tax_rate = $data->get('pre_tax_rate');
-      $m->tax_rate_change_date = $data->get('tax_rate_change_date');
+      $m->tax_rate_change_at = $data->get('tax_rate_change_at');
+      $m->send_trader        = is_numeric($data->get('send_trader')) ? (int)$data->get('send_trader') : null;
+      $m->send_personal      = is_numeric($data->get('send_personal')) ? (int)$data->get('send_personal') : null;
       $m->save();
 
       $currencies = $data->get('currencies');

@@ -50,7 +50,7 @@ const Template: Story = () => {
         account_number2: '口座番号②',
         sales_tax_rate: 10,
         pre_tax_rate: 8,
-        tax_rate_change_date: '2019/05/01',
+        tax_rate_change_at: '2019/05/01',
         currencies: [
           { id: 1, name: 'ドル', rate: 120.143 },
           { id: 2, name: 'ポンド', rate: 140.5 },

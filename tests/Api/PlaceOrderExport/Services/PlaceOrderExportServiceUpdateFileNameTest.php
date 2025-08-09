@@ -78,7 +78,7 @@ class PlaceOrderExportServiceUpdateFileNameTest extends TestCase
         'company_level' => 'C',
         'sales_tax_rate' => 10,
         'pre_tax_rate' => 8,
-        'tax_rate_change_date' => '2019-10-01',
+        'tax_rate_change_at' => '2019-10-01',
         'supplier_id' => 102,
         'send_trader' => 33000,
         'send_personal' => 11000,

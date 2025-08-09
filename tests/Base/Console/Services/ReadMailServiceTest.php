@@ -54,7 +54,7 @@ class ReadMailServiceTest extends TestCase
       'company_level' => '',
       'sales_tax_rate' => 10,
       'pre_tax_rate' => 8,
-      'tax_rate_change_date' => '2019-10-01',
+      'tax_rate_change_at' => '2019-10-01',
     ]]);
     DB::table("customers")->delete();
     DB::table('customers')->insert([

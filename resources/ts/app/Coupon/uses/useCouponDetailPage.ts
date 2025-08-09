@@ -21,6 +21,7 @@ export const useCouponDetailPage = (slug: string) => {
       description?: string;
     };
     }[];
+    
   }>(slug, {
     id: 0,
     code: '',

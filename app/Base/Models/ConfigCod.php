@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ConfigCod extends Model
 {
-  protected $table = 'config_cods';
+  protected $table = 't_config_cods';
 
   protected $fillable = [
     'border',
