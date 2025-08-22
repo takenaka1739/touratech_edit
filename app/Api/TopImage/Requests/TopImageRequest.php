@@ -15,9 +15,10 @@ class TopImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'image_id'   => ['required', 'numeric', 'exists:m_images,id'],
-            'url'        => ['nullable', 'string', 'max:255'],
-            'is_enabled' => ['required'],
+            'image_id'   => [$this->isMethod('post') ? 'required' : 'sometimes', 'numeric', 'exists:m_images,id'],
+            'url'        => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_enabled' => ['sometimes', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -35,6 +36,7 @@ class TopImageRequest extends FormRequest
             'image_id'   => '画像',
             'url'        => 'リンク先URL',
             'is_enabled' => '表示/非表示',
+            'sort_order' => '並び順',
         ];
     }
 }

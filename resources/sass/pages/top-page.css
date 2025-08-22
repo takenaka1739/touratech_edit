@@ -1,0 +1,103 @@
+.top-page__row {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+}
+.top-page__col {
+  width: 50%;
+  @apply p-3;
+}
+.top-page__h3::before {
+  content: "<";
+  @apply mr-1;
+}
+.top-page__h3::after {
+  content: ">";
+  @apply ml-1;
+}
+.top-page__menu {
+  @apply mb-6;
+}
+.top-page__menu-box {
+  background-color: #fff;
+  border: 1px solid #718096;
+  @apply rounded-sm my-2 py-4 px-4 text-sm;
+}
+@screen sm {
+  .top-page__menu-box {
+    @apply px-8;
+  }
+}
+.top-page__menu li {
+  @apply my-3;
+}
+.top-page__menu li.pt-4 {
+  @apply pt-4;
+}
+.top-page__menu a {
+  position: relative;
+  display: inline-block;
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  min-width: 250px;
+  text-align: center;
+  @apply text-xl py-2 px-4 rounded-sm outline-none;
+}
+.top-page__menu a:hover, .top-page__menu a:focus {
+  background-color: transparent;
+  border-color: #f9dc06;
+}
+
+.image-picker__card {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  min-height: 300px;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+.image-picker__thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+.image-picker__thumb img {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: contain;
+     object-fit: contain;
+  display: block;
+}
+.image-picker__caption {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  text-align: center;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+.image-picker__actions {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}

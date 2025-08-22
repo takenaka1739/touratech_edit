@@ -1,21 +1,49 @@
 // resources/ts/app/TopImage/uses/useTopImageListPage.ts
-import { useEffect, useState } from 'react';
-import { TopImage } from '@/types/TopImage';
+import { useState } from 'react';
 import axios from 'axios';
+import { TopImage as BaseTopImage } from '@/types/TopImage';
+
+// API返却に合わせて“ゆるく”型を受ける（フラット or ネストの両対応）
+export type TopImageRow = BaseTopImage & {
+  // フラットで返る場合
+  image_name?: string;
+  image_url?: string;
+  sort_order: number;
+  is_enabled?: boolean;
+  url?: string;
+  // ネストで返る場合（with('image')）
+  image?: {
+    id: number;
+    name?: string;
+    image_name?: string;
+  };
+};
+
+type CreatePayload = {
+  image_id: number;
+  sort_order: number;
+  is_enabled?: boolean; // ← 追加
+  url?: string;         // ← urlは送らないなら削除してOK
+};
 
 export const useTopImageListPage = () => {
-  const [slideItems, setSlideItems] = useState<TopImage[]>([]);
-
-  useEffect(() => {
-    fetchSlideItems();
-  }, []);
+  const [slideItems, setSlideItems] = useState<TopImageRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchSlideItems = async () => {
+    setIsLoading(true);
     try {
       const res = await axios.get('/api/TopImage');
-      setSlideItems(res.data);
+      const rows: TopImageRow[] = (res.data as TopImageRow[]).map((row) => ({
+        ...row,
+        is_enabled: row.is_enabled ?? false, // null/undefined を防ぐ
+      }));
+
+      setSlideItems(rows);
     } catch (err) {
       console.error('一覧取得に失敗しました', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -42,20 +70,22 @@ export const useTopImageListPage = () => {
     }
   };
 
-  // ✅ 新規追加（仮：後でAPI登録に切り替え）
-  const addSlideItem = (item: Omit<TopImage, 'id'> & { id?: number }) => {
-    const newItem: TopImage = {
-      ...item,
-      id: item.id ?? Date.now(), // 仮ID
-    };
-    setSlideItems((prev) => [...prev, newItem]);
+const createTopImage = async (data: CreatePayload) => {
+  return axios.post('/api/TopImage', data);
+};
+
+
+  const bulkCreateTopImages = async (items: CreatePayload[]) => {
+    return axios.post('/api/TopImage/bulk', { items });
   };
 
   return {
     slideItems,
+    isLoading,
+    fetchSlideItems,
     onToggleVisible,
     onDelete,
-    addSlideItem,
-    fetchSlideItems,
+    createTopImage,
+    bulkCreateTopImages,
   };
 };

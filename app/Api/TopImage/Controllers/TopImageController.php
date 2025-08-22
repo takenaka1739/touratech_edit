@@ -45,4 +45,11 @@ class TopImageController extends BaseController
     {
         return $this->service->reorder($request->input('ids', []));
     }
+
+
+    public function sync(Request $request)
+    {
+        $items = $request->input('items', []);
+        return $this->service->sync($items);
+    }
 }

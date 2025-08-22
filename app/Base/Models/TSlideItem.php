@@ -15,6 +15,7 @@ class TSlideItem extends Model
     protected $fillable = [
         'image_id',
         'url',
+        'sort_order',
         'is_enabled',
     ];
 

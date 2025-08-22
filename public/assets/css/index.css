@@ -21492,6 +21492,50 @@ div[aria-disabled=true]::after {
   border-color: #f9dc06;
 }
 
+.image-picker__card {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  box-sizing: border-box;
+}
+
+.image-picker__thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+.image-picker__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.image-picker__caption {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  text-align: center;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+.image-picker__actions {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
 .simple_search-page table {
   table-layout: fixed;
   width: 100%;

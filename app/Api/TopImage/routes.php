@@ -11,7 +11,9 @@ Route::prefix('TopImage')->group(function () {
     Route::delete('/{id}', [TopImageController::class, 'destroy']);
     Route::patch('/{id}/toggle', [TopImageController::class, 'toggle']);
     Route::post('/reorder', [TopImageController::class, 'reorder']);
+    Route::post('/sync', [TopImageController::class, 'sync']);
 });
 
-// ← prefix外で追加
+// 画像一覧
 Route::get('/images', [ImageController::class, 'index']);
+Route::post('/images/upload', [ImageController::class, 'upload']);
