@@ -42,6 +42,7 @@ class ConfigUpdateRequest extends BaseRequest
       'currencies.*.rate'   => 'bail|required|numeric|between:0,1000|currency',
       'cods.*.id'           => 'required|integer',
       'cods.*.amount'       => 'bail|required|numeric|price',
+      'delivery_eta_comment' => ['nullable','string','max:2000'],
     ];
   }
 
@@ -76,5 +77,14 @@ class ConfigUpdateRequest extends BaseRequest
       'cods.*.id'          => '代引手数料',
       'cods.*.amount'      => '代引手数料',
     ];
+  }
+
+  public function passedValidation()
+  {
+      \Log::info('[ConfigUpdateRequest] validated', [
+          'has_delivery_eta_comment' => array_key_exists('delivery_eta_comment', $this->validated()),
+          'delivery_eta_comment_len' => isset($this->validated()['delivery_eta_comment'])
+              ? mb_strlen((string)$this->validated()['delivery_eta_comment']) : null,
+      ]);
   }
 }

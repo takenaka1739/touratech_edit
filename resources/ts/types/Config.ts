@@ -30,6 +30,7 @@ import { ConfigCod } from '@/types';
  * @param send_price - 送料
  * @param currencies - 通貨換算
  * @param cods - 代引手数料
+ * @param delivery_eta_comment - お届け予定コメント
  */
 export interface Config {
   company_name: string | undefined;
@@ -59,4 +60,5 @@ export interface Config {
   send_price?: number | undefined;
   currencies: ConfigCurrency[];
   cods: ConfigCod[];
+  delivery_eta_comment?: string;
 }

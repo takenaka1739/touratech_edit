@@ -85,8 +85,6 @@ class ImageController extends BaseController
             ];
         }
 
-        Log::info('[ImageController@upload] uploaded', ['count' => count($created)]);
-
         return response()->json([
             'created' => $created,
         ]);

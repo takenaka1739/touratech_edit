@@ -34,7 +34,7 @@ public function get()
 
     // ついでに別名も残すなら
     $data['tax_rate_change_date'] = $data['tax_rate_change_at'];
-
+    $data['delivery_eta_comment'] = (string)($m->delivery_eta_comment ?? '');
     $data['currencies'] = \App\Base\Models\ConfigCurrency::orderBy('id')->get()->toArray();
     $data['cods']       = \App\Base\Models\ConfigCod::orderBy('id')->get()->toArray();
 
@@ -74,6 +74,7 @@ public function get()
       $m->tax_rate_change_at = $data->get('tax_rate_change_at');
       $m->send_trader        = is_numeric($data->get('send_trader')) ? (int)$data->get('send_trader') : null;
       $m->send_personal      = is_numeric($data->get('send_personal')) ? (int)$data->get('send_personal') : null;
+      $m->delivery_eta_comment = $data->get('delivery_eta_comment');
       $m->save();
 
       $currencies = $data->get('currencies');

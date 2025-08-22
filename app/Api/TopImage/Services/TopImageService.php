@@ -32,9 +32,6 @@ class TopImageService
 
     public function create(array $data)
     {
-        \Log::info('[TopImageService] create raw request', request()->all());
-        \Log::info('[TopImageService] create data', $data);
-
         return DB::transaction(function () use ($data) {
             return TSlideItem::create($data);
         });
@@ -65,11 +62,6 @@ class TopImageService
     public function update(int $id, array $data)
     {
         $payload = Arr::only($data, ['image_id', 'sort_order', 'is_enabled', 'url']);
-
-        \Log::info('[TopImageService@update] called', [
-            'id' => $id,
-            'payload' => $payload,
-        ]);
 
         return DB::transaction(function () use ($id, $payload) {
             $item = TSlideItem::findOrFail($id);
@@ -118,8 +110,6 @@ class TopImageService
             $keepIds = [];
             $now = now();
 
-            \Log::info('[TopImageService@sync] received items', $items);
-
             foreach (array_values($items) as $index => $row) {
                 $sortOrder = $index + 1;
                 $id        = Arr::get($row, 'id');
@@ -154,10 +144,8 @@ class TopImageService
             if (count($keepIds) === 0) {
                 // SoftDeletes のため論理削除。物理削除にしたいなら forceDelete() を検討
                 TSlideItem::query()->delete();
-                \Log::info('[TopImageService@sync] deleted all (keepIds empty)');
             } else {
                 TSlideItem::whereNotIn('id', $keepIds)->delete();
-                \Log::info('[TopImageService@sync] deleted others not in keepIds', $keepIds);
             }
 
             return response()->json(['ok' => true]);

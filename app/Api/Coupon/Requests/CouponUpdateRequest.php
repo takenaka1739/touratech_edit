@@ -14,7 +14,6 @@ class CouponUpdateRequest extends CouponRequest
 
     public function rules(): array
     {
-        \Log::debug('🧪 CouponUpdateRequest::rules() 呼び出し');
         $rules = [
             'code' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
@@ -75,12 +74,6 @@ class CouponUpdateRequest extends CouponRequest
                     $validator->errors()->add("rules.$i.condition_value", '値が配列である必要があります');
                 }
 
-                Log::debug("🔍 Rule #{$i}", [
-                    'type'         => $rule['condition_type'] ?? '',
-                    'value'        => $rule['condition_value'] ?? '',
-                    'benefitType'  => $rule['benefit_type'] ?? '',
-                    'benefitValue' => $rule['benefit_value'] ?? '',
-                ]);
             }
 
             // 再セット（必要に応じて）
@@ -94,4 +87,4 @@ class CouponUpdateRequest extends CouponRequest
         $decoded = json_decode($json, true);
         return json_last_error() === JSON_ERROR_NONE && is_array($decoded);
     }
-    }
+}

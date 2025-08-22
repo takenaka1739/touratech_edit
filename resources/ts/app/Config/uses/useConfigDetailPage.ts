@@ -37,6 +37,7 @@ export const useConfigDetailPage = () => {
     tax_rate_change_at: undefined,
     currencies: [],
     cods: [],
+    delivery_eta_comment: '',
   });
   const [errors, setErrors] = useState<PageErrors>(undefined);
   const [isDisabled, setDisabled] = useState(false);
@@ -46,13 +47,14 @@ export const useConfigDetailPage = () => {
   const backPage = () => history.push(`/`);
 
   const toState: (data: Config) => Config = data => {
-    const { cods, ...props } = data;
+    const { cods, delivery_eta_comment, ...props } = data;
     const _cods = cods.map(x => {
       return { ...x, border: toNumber(x.border), amount: toNumber(x.amount) };
     });
     return {
       ...props,
       cods: _cods,
+      delivery_eta_comment: delivery_eta_comment ?? '',
     };
   };
 

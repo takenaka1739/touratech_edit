@@ -46,7 +46,6 @@ class CouponController extends BaseController
      */
     public function store(CouponStoreRequest $request)
     {
-        Log::debug('📦 登録データ:');
         $data = $request->validated();
         if (Coupon::where('code', $data['code'])->exists()) {
             return response()->json([
@@ -73,11 +72,8 @@ class CouponController extends BaseController
     public function update(CouponUpdateRequest $request, int $id)
     {
         try {
-            Log::debug('📦 update() 開始');
 
             $data = $request->validated(); // ← ここで例外が出てる可能性が高い
-
-            Log::debug('📦 更新データ:', $data);
 
             if (Coupon::where('code', $data['code'])->where('id', '!=', $id)->exists()) {
                 return response()->json([

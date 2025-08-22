@@ -387,6 +387,16 @@ export const ConfigDetailPage: React.VFC = () => {
             </tbody>
           </table>
         </div>
+        <hr className="border-dashed border-gray-400 mt-6" />
+          <Forms.FormGroupTextarea
+            labelText="配送日コメント"
+            name="delivery_eta_comment"
+            value={state.delivery_eta_comment ?? ''}
+            error={errors?.delivery_eta_comment}
+            onChange={onChange}
+            rows={6}
+            placeholder={`例）\n在庫確認後の発送となります。\n通常は2〜5営業日でのお届けとなります。\n土日・祝日は出荷業務をお休みしております。`}
+          />
       </div>
 
       <div className="mt-4 flex justify-between">

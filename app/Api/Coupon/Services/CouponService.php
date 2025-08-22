@@ -174,8 +174,6 @@ class CouponService
             DB::transaction(function () use ($id, $data) {
                 $rules = $data['rules'] ?? [];
 
-                Log::debug('🧪 [update] 受信ルール一覧');
-
                 if (!empty($rules)) {
                     $data['details'] = $this->generateDetailsFromRules($rules);
                 }
