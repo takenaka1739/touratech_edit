@@ -1,37 +1,40 @@
 //import { useState } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+//import { RouteComponentProps } from 'react-router-dom';
+//import { forEach } from 'lodash';
 import { useCallback, useRef, useMemo, useState } from 'react';
 //import { useMemo } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 //import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 //import { Item } from '@/types';
-//import SimpleBar from 'simplebar';
-import { ItemDetailPage } from './ItemDetailPage';
+//import SimpleBar from 'simplebar-react';
+import { useLocation } from 'react-router-dom';
+//import { TableScrollbar } from 'react-table-scrollbar';
+//import { ScrollView} from 'react-native';
 
-export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
+export type ItemDetailPageProps = {};
 
 export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
 
-  console.log(`ItemDetailPage:${ItemDetailPage}`);
+  type Props = {
+    file: File;
+  };
 
-  let variKind:{[key: string] : string[]} = 
-  {"1":["1", "1"],
-   "2":["2", "2"],
-   "3":["3", "3"],
-   "4":["4", "4"]};
-  const [nameText, setNameText] = useState("商品名を入力して下さい");
-  const [priceText, setpriceText] = useState("金額を入力して下さい");
-  const [detailText, setDetailText] = useState("説明文を入力して下さい");
-  const [variKindItem, setVariKind] = useState(variKind);
+  const location = useLocation<any>();
+  const attachRef = useRef<HTMLInputElement>(null);
+
+  const [nameText, setNameText] = useState(location.state.itemName ?? "商品名を入力して下さい");
+  const [priceText, setpriceText] = useState(location.state.salesPriceItem ?? "金額を入力して下さい");
+  const [detailText, setDetailText] = useState(location.state.exDetail ?? "説明文を入力して下さい");
+  const [movieUrl, setMovieUrl] = useState('');
+  const variKindItem = location.state.variItems;
   const [pointText, setpoint] = useState("  ");
-  const [dropErea, setDropErea] = useState("ここにファイルをドロップして下さい");
-  //const [selectImage, setselectImage] = useState({src:'', type:-1, pTag:'visible', imgvisible:'hidden', vdovisible:'hidden'});
-  //const [selectImage, setselectImage] = useState({pTag:'visible', imgvisible:'hidden', vdovisible:'hidden'});
+  const [dropErea, setDropErea] = useState("ファイルドロップまたはURLを入力して下さい");
   const [selectImageSrc, setImageSrc] = useState('');
   const [selectImageType, setImageType] = useState(-1);
-  //const [visible, setVisibility] = useState(false);
-  //const [opacity, setOpacity] = useState(0);
-  //const [backgroundColor, setBackgroundColor] = useState('transparent');
+  const [files, setFiles] = useState<any[]>(location.state.imageItems[0]);
+  //const [selectVari, setSelectVari] = useState(0);
+
+  console.log(`typeof：${typeof files}`);
 
 
   // 各入力欄の値設定
@@ -68,60 +71,11 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
     }
   }
 
-  const addNewVari = (name:string) => {
-    let variKind:{[key: string] : string[]} = {};
-
-    // 連想配列の要素取り出し
-    for (let key in variKindItem) {
-      let arr:string[] = [];
-      let strKey: string = `${key}`;
-      // 連想配列内の配列要素の取り出し
-      for (let i = 0; i < variKindItem[key].length; i++) {
-        // 新しく定義した配列に既存のデータを保存
-        arr.push(variKindItem[key][i]);
-      }
-
-      if(strKey === name){
-        // 押されたボタンの配列に要素を一つ追加
-        arr.push("");
-      }
-
-      variKind[strKey] = arr;
-    }
-    setVariKind(variKind);
-  }
-
-  const deleVari = (name:string, index:number) => {
-    let variKind:{[key: string] : string[]} = {};
-
-    // 連想配列の要素取り出し
-    for (let key in variKindItem) {
-      let arr:string[] = [];
-      let strKey: string = `${key}`;
-      // 連想配列内の配列要素の取り出し
-      for (let i = 0; i < variKindItem[key].length; i++) {
-        if((strKey === name && i != index) || (strKey != name)){
-        // 新しく定義した配列に既存のデータを保存
-          arr.push(variKindItem[key][i]);
-        }
-      }
-      variKind[strKey] = arr;
-    }
-    setVariKind(variKind);
-  }
-
-  type Props = {
-    file: File;
-  };
-
   // 画像ドロップの処理
- const [files, setFiles] = useState<File[]>([]);
-  const attachRef = useRef<HTMLInputElement>(null);
-  //const [dragging, setDragging] = useState<number>(0);
-
   const handleInpuFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files == null) return;
     const files = Array.from(e.target.files);
+    console.log(`files：${files}`);
     setFiles((current) => current.concat(files));
     if (attachRef.current) attachRef.current.value = '';
   }, []);
@@ -168,24 +122,67 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
     //setselectImage({pTag:'hidden', imgvisible:imgvisible, vdovisible:vdovisible});
   };
 
+  const addMovie = () => {
+    console.log('url追加');
+    setFiles((current) => current.concat(movieUrl));
+    setMovieUrl('');
+  }
+
   const Image = ({ file }: Props) => {
-    console.log(`file${file}`);
-    const src = useMemo(() => URL.createObjectURL(file), [file]);
-    let type = file.type.indexOf('video');
-    if(type == -1){
-      return (
-        <div>
-          <img key={src} src={src} onClick={() => handleClick(src, type)} alt={file.name} style={{height: '80px', width: '80px', margin: '10px'}} ></img>
-        </div>
-      );
+    let fileType = typeof file; // { id: number; name: string; }
+    console.log(`fileType：${fileType}`);
+
+    if(fileType == 'object'){
+      let type = file.type.indexOf('video');
+      const src = useMemo(() => URL.createObjectURL(file), [file]);
+      if(type == -1){
+        console.log(`img：${type}`);
+        return (
+          <div style={{height: '80px', width: '80px', margin: '10px'}}>
+            <img key={src} src={src} onClick={() => handleClick(src, type)} alt={file.name}></img>
+          </div>
+        );
+      }else{
+        const src = useMemo(() => URL.createObjectURL(file), [file]);
+        return (
+          <div style={{height: '80px', width: '80px', margin: '10px'}}>
+            <video onClick={() => handleClick(src, type)}>
+              <source src={src} type="video/mp4"/>
+            </video>
+          </div>
+        );
+      }
     }else{
-      return (
-        <div>
-          <video onClick={() => handleClick(src, type)} style={{height: '80px', width: '80px', margin: '10px'}}>
-            <source src={src} type="video/mp4"/>
-          </video>
-        </div>
-      );
+      const src = String(file);
+      if(((src.indexOf('jpg')) || (src.indexOf('gif')) || (src.indexOf('png'))) != -1 ){
+        return (
+          <div style={{height: '80px', width: '80px', margin: '10px'}}>
+            <img key={src} src={src} onClick={() => handleClick(src, -1)}/>
+          </div>
+        );
+      }else if(((src.indexOf('mp4')) || (src.indexOf('mov'))) != -1){
+        return (
+          <div style={{height: '80px', width: '80px', margin: '10px'}}>
+            <video onClick={() => handleClick(src, 3)}>
+              <source src={src} type="video/mp4"/>
+            </video>
+          </div>
+        );
+      }else{
+        return (
+          <div style={{margin: "10px"}} onClick={() => handleClick(src, 2)}>
+            <iframe
+              width="80px"
+              height="80px"
+              src={src}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          </div>
+        )
+      }
     }
   };
 
@@ -199,25 +196,43 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
     files.splice(result.destination.index, 0, remove[0]);
   };
 
+  const clickVariItem = (index:number) => {
+    setpriceText(variKindItem[index][5]);
+    setFiles(location.state.imageItems[index]);
+    if(Number(variKindItem[index][5]) >= 100) setpoint(String(Number(variKindItem[index][5]) / 100))
+    else setpoint('0');
+  }
+
+  location.state.imageItems.forEach((value:string) => {
+    console.log(value);
+  });
+
+  console.log(`files：${files}`);
+
   return (
     <div id="shop-image">
       <div id="button-area">
         <a id="back-button">← 受注管理システム</a>
-        <a id="ref-button">他商品情報参照</a>
       </div>
       <div id="input-area">
         <div id="image-area">
           {console.log(`selectImageSrc：${selectImageSrc}`)}
-          <div>{ selectImageType === -1 ? 
-              (<img key={selectImageType} className="image-size" src={selectImageSrc}/>) : 
-              (<video className="image-size" controls>
-                <source src={selectImageSrc} type="video/mp4"/>
-              </video>)
+          <div>{ selectImageType === -1 ? (<img key={selectImageType} className="image-size" src={selectImageSrc}/>) : 
+                 selectImageType === 2 ? (<iframe key={selectImageType} className="image-size" src={selectImageSrc}
+                                                  style={{width: '100px', height: '100px'}}
+                                                  title="YouTube video player"
+                                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;
+                                                         web-share"
+                                                  referrerPolicy="strict-origin-when-cross-origin"
+                                                  allowFullScreen/>) : 
+                                         (<video className="image-size" controls>
+                                           <source src={selectImageSrc} type="video/mp4"/>
+                                         </video>)
           }</div>
           <div className="image-input-erea">
-            <input type="file" style={{ display: 'none'}} ref={attachRef} multiple onChange={handleInpuFileChange}/>
-            <div
-              style={{ height: '100px', width: '450px' }}
+            <input type="file" style={{ display: 'none' }} ref={attachRef} multiple onChange={handleInpuFileChange}/>
+            <div 
+              style={{ height: '115px', width: '450px'}}
               tabIndex={0}
               onDragEnter={onDragEnter}
               onDragLeave={onDragLeave}
@@ -229,7 +244,7 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
               <DragDropContext onDragEnd={onDragEnd}> 
                 <Droppable droppableId="droppable" direction="horizontal">
                   {(provided) => (
-                    <div style={{display: 'flex', position: 'absolute'}} {...provided.droppableProps} ref={provided.innerRef}>
+                    <div className="scllowDiv" {...provided.droppableProps} ref={provided.innerRef}>
                       {files.map((f, index) => (
                         <Draggable draggableId={String(index)} index={index} key={String(f)}>
                           {/* Droppableで指定した引数をそのまま指定する */}
@@ -237,11 +252,16 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
                             // この中で静的なdivタグなどを指定できる
                             //  <div {...provided.draggableProps} ref={provided.innerRef}>もお作法
                             // 実際に掴んで移動させるpropsに{...provided.dragHandleProps}をつける
-                            <div style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
-                              <div key={f.name} {...provided.dragHandleProps}>
-                                  <Image file={f}/>
+                            //<SimpleBar style={{ width: 500, height: 300 }}>
+                                                    //<section style={{overflowX: 'scroll'}}>
+                              <div key={index} style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
+                                <div key={f.name} {...provided.dragHandleProps}>
+                                  {/*<section style={{overflowX: 'scroll'}}>*/}
+                                    <Image file={f}/>
+                                  {/*</section>*/}
+                                </div>
                               </div>
-                            </div>
+                                              //</section>
                           )}
                         </Draggable>
                       ))}
@@ -251,14 +271,17 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
               </DragDropContext>
               {/*<input className="a" style={{visibility: visible ? "visible" : "hidden", opacity: opacity, backgroundColor: backgroundColor}} onClick={() => addUrl()}/>*/}
               <div className="a" style={{display: 'flex', padding: '0px'}}>
-                <input style={{width: '370px', backgroundColor: 'transparent'}}/>
-                <button style={{width: '80px'}} onClick={() => Image}>追加</button>
+                <input value={movieUrl} onChange={(event) => setMovieUrl(event.target.value)} style={{width: '370px', backgroundColor: 'transparent'}}/>
+                <button style={{width: '80px'}} onClick={() => addMovie()}>追加</button>
               </div>
               {/*</button>*/}
             </div>
           </div>
         </div>
-        <img src={"./c111583894027.jpg"} style={{width: '80px', height: '90px', marginTop: '551px'}}/>
+        {/*<img src={"c111583894027.jpg"} style={{width: '80px', height: '90px', marginTop: '551px'}}/>*/}
+        <div id="dust-box-icon">
+          <img src={"/images/defbe5d2e16490334ffd8c22f1469ce6_t.jpg"}/>
+        </div>
         <div id="item-info">
           <input id="item-name" value={nameText}
                  onClick={() => inputNameClick()}
@@ -277,38 +300,22 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
           <hr/>
           <div id="item-detail-erea">
             <label className="label-basic">この商品について</label>
-            <input id="item-detail" value={""}
+            <textarea id="item-detail" value={detailText}
                    onClick={() => inputDetailClick()}
                    onBlur={() => inputDetailFocusOut()}
                    onChange={(event) => setDetailText(event.target.value)}/>
           </div>
         </div>
-        <div key={"variation"} id="vari-info">{ 
-          Object.keys(variKindItem).map((name, index) => {
-            return (
-              <div key={name+index+"vari-item"} className="vari-item">
-                <div key={name+index+"vari-name-row"} className="vari-name-row">
-                  <label>{index + 1}</label>
-                  <input className="input-text" value={name}/>
-                  <button key={index} className="plus-button" onClick={() => addNewVari(name)}>＋</button>
-                </div>
-                <div key={index+index+"vari-kind-list"} className="vari-kind-list"> {
-                  variKindItem[name].map((value, index) => {
-                    return (
-                      <div key={value+index+"vari-kind"} className="vari-kind">
-                        <input className="vari-row-input"
-                          type="text"
-                          value={value}
-                        />
-                        <button className="dele-button" onClick={() => deleVari(name, index)}>✕</button>
-                      </div>
-                    )}
-                  )}
-                </div>
-              </div>
-            );
-          })
-        }</div>
+        <div style={{marginLeft: '60px', marginTop: '10px'}}>{variKindItem.map((item:any, index:number) => {
+                console.log(`item.map：${item}}`);
+                return (
+                  <div key={'vari-erea-key'}>
+                    <button id="vari-erea" onClick={() => clickVariItem(index)}>
+                      {item[0] + '/' + item[1] + '/' + item[2] + '/' + item[3]}
+                    </button>
+                  </div> 
+                )
+              })}</div> 
       </div>
     </div>
   );

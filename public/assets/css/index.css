@@ -21614,7 +21614,6 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #image-area .image-input-erea {
-  border: 1px solid #333;
   margin-top: 20px;
   margin-left: auto;
   margin-right: auto;
@@ -21661,6 +21660,26 @@ div[aria-disabled=true]::after {
   color: transparent;
 }
 
+#shop-image #input-area #image-area .image-input-erea .scllowDiv {
+  overflow-y: hidden;
+  overflow-x: scroll;
+  display: flex;
+  position: absolute;
+  height: 115px;
+  width: 450px;
+  border: 1px solid #333;
+}
+
+#shop-image #input-area #dust-box-icon {
+  width: 60px;
+  height: 70px;
+  margin-top: 551px;
+}
+
+#shop-image #input-area #dust-box-icon:hover {
+  color: #C9C9C9;
+}
+
 #shop-image #input-area #item-info {
   display: flex;
   /*コレ*/
@@ -21702,7 +21721,7 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #price-col {
-  margin-top: 20px;
+  margin-top: 30px;
   display: flex;
   vertical-align: middle;
   text-align: center;
@@ -21742,7 +21761,11 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail {
-  font-size: 40px;
+  word-wrap: break-word;
+  /* 長い単語を折り返す */
+  white-space: normal;
+  /* テキストを通常の折り返しにする */
+  font-size: 20px;
   border: 1px solid #ffffffff;
   border-radius: 5px;
   color: #c9d7e8f8;
@@ -21752,13 +21775,11 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:hover {
-  font-size: 40px;
   border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:focus {
-  font-size: 40px;
   border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
@@ -21766,6 +21787,15 @@ div[aria-disabled=true]::after {
 #shop-image #input-area #item-info #item-detail-erea .label-basic {
   font-size: 20px;
   text-align: left;
+}
+
+#shop-image #input-area #vari-erea {
+  padding: 5px;
+  border-radius: 5px;
+  margin-top: 20px;
+  color: #a0aec0;
+  border: 1px solid #a0aec0;
+  font-size: 30px;
 }
 
 #shop-image #input-area #vari-info {

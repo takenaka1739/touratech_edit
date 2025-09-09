@@ -71,7 +71,6 @@ export const useCommonSearchDialog = <T extends DefaultCondition, U extends Defa
       if (res.status === 200) {
         setConditions({ ...conditions, ...props });
         setState(res.data.data);
-
         dispatch(AppActions.success());
         return true;
       } else {
@@ -121,6 +120,8 @@ export const useCommonSearchDialog = <T extends DefaultCondition, U extends Defa
   const onClickSelect = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
     const id = toNumber(e.currentTarget.dataset.id);
     const row = state.rows.find(x => x.id === id);
+    console.log(`id${id}`);
+    console.log(`row：${row}`);
     if (row) {
       onSelected(row);
     }

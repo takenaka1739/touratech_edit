@@ -35,6 +35,7 @@ export const SupplierDetailPage: React.VFC<SupplierDetailPageProps> = () => {
     fax: '',
     email: '',
     foreign_currency_type: '',
+    personnel_id: undefined,
     fraction: 3,
     output_no: '',
     remarks: '',

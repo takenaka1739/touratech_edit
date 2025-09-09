@@ -21,6 +21,7 @@ class ItemClassificationController extends BaseController
    */
   public function __construct(ItemClassificationService $service)
   {
+    \Log::debug('デバッグ：ItemClassification.__construct');
     $this->service = $service;
   }
 
@@ -87,6 +88,8 @@ class ItemClassificationController extends BaseController
    */
   public function update(ItemClassificationUpdateRequest $request, int $id)
   {
+    \Log::debug('デバッグ：ItemClassification.update');
+
     $this->service->update($id, $request->validated());
 
     return $this->success();

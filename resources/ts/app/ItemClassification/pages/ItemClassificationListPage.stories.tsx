@@ -41,8 +41,14 @@ const Template: Story = args => {
     rows = [
       {
         id: 1,
+        is_display: false,
+        code:'',
+        parent_code:'',
+        parent_name: '',
         name: 'テスト01',
         remarks: '備考',
+        image: '',
+        image_id: undefined
       },
     ];
   }

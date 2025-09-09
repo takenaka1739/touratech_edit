@@ -4,6 +4,8 @@ namespace App\Api\ItemClassification\Controllers;
 
 use Illuminate\Support\Facades\Route;
 
+  \Log::debug('デバッグ：ItemClassification.Route');
+
 Route::group([
   'prefix' => 'api/item_classification',
   'middleware' => ['api', 'auth', 'check.general']
@@ -19,5 +21,8 @@ Route::group([
     Route::get('edit/{id}', [ItemClassificationController::class, 'edit']);
     Route::put('edit/{id}', [ItemClassificationController::class, 'update']);
     Route::delete('delete/{id}', [ItemClassificationController::class, 'delete']);
+
+    Route::post('image_store', [ImageController::class, 'store']);
+    Route::put('image_edit/{id}', [ImageController::class, 'update']);
   });
 });

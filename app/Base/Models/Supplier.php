@@ -9,6 +9,8 @@ class Supplier extends Model
 {
   use SoftDeletes;
 
+  protected $table = 'm_suppliers';
+
   protected $fillable = [
     'name',
     'zip_code',
@@ -17,6 +19,7 @@ class Supplier extends Model
     'tel',
     'fax',
     'email',
+    'personnel_id',
     'foreign_currency_type',
     'fraction',
     'output_no',

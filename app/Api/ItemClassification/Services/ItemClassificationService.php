@@ -3,6 +3,7 @@
 namespace App\Api\ItemClassification\Services;
 
 use App\Base\Models\ItemClassification;
+use App\Base\Models\Image;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -54,7 +55,38 @@ class ItemClassificationService
    */
   public function get(int $id)
   {
-    return ItemClassification::find($id)->toArray();
+    //$selectItems = ItemClassification::find($id)->toArray();
+
+    $selectItems = ItemClassification::select(
+      'm_categories.id',
+      'm_categories.is_display',
+      'm_categories.code',
+      'm_categories.parent_code',
+      'm_categories.name',
+      'm_categories.remarks',
+
+      'm_images.id AS image_id',
+      'm_images.name AS image'
+    )
+    ->leftJoin('m_images', 'm_categories.id', '=', 'm_images.category_id')
+    ->where('m_categories.id', '=', $id)
+    ->first()
+    ->toArray();
+
+    $parentName = (($selectItems['parent_code'] != null) && ($selectItems['parent_code'] != '')) ?
+                  ItemClassification::where('code', '=', $selectItems['parent_code'])->first()->name : $selectItems['name'];
+    $parentCode = (($selectItems['parent_code'] != null) && ($selectItems['parent_code'] != '')) ?
+                    $selectItems['parent_code'] : $selectItems['code'];
+    $code = (($selectItems['parent_code'] != null) && ($selectItems['parent_code'] != '')) ?
+              $selectItems['code'] : '';
+              
+    $selectItems['parent_name'] = $parentName;
+    $selectItems['parent_code'] = $parentCode;
+    $selectItems['code'] = $code;
+
+
+    //return ItemClassification::find($id)->toArray();
+    return $selectItems;
   }
 
   /**
@@ -64,9 +96,31 @@ class ItemClassificationService
    */
   public function store(array $data)
   {
+    $categoryMaxId = ItemClassification::max('id') + 1;
+    $imageMaxId = Image::max('id') + 1;
+    $data['id'] = $categoryMaxId;
+
     DB::transaction(function () use ($data) {
       ItemClassification::create($data);
+      $categoryMaxId = ItemClassification::max('id');
+      //Image::create([
+      //        //'id' => $imageMaxId,
+      //        'category_id' => $categoryMaxId,
+      //        'item_id' => null,
+      //        'name' => $data->image,
+      //        'order_by' => 0
+      //    ]);
     });
+
+
+
+    //Image::create([
+    //        'id' => $imageMaxId,
+    //        'category_id' => $categoryMaxId,
+    //        'item_id' => null,
+    //        //'name' => $data['image'],
+    //        'order_by' => 0
+    //    ]);
   }
 
   /**
@@ -77,10 +131,17 @@ class ItemClassificationService
    */
   public function update(int $id, array $data)
   {
+    \Log::debug('デバッグ：ItemClassificationService.update');
+    \Log::debug('$data');
+    \Log::debug($data);
+    
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = ItemClassification::find($id);
       $m->name = $data->get('name');
+      $m->is_display = $data->get('is_display');
+      $m->code = $data->get('code');
+      $m->parent_code = $data->get('parent_code');
       $m->remarks = $data->get('remarks');
       $m->save();
     });

@@ -90,11 +90,11 @@ export interface Item {
   name: string | undefined;
   //item_number: string[];
   itemNumberItem: string[];
-  variations1: string[];
-  variations2: string[];
-  variations3: string[];
-  variations4: string[];
-  variations5: string[];
+  variations1: string | undefined;
+  variations2: string | undefined;
+  variations3: string | undefined;
+  variations4: string | undefined;
+  variations5: string | undefined;
   explanation?: string | undefined;
   explanation_details?: string | undefined;
   name_note?: string | undefined;
@@ -120,7 +120,7 @@ export interface Item {
   is_payment_id3?: boolean | undefined;
   is_payment_id4?: boolean | undefined;
   is_payment_id5?: boolean | undefined;
-  testArra: [];
+  testArra: string[][];
 
   stock_display?: number | undefined;
   category_id?: number | undefined;
@@ -131,4 +131,15 @@ export interface Item {
   display_status: number |undefined;
   remarks?: string | undefined;
   is_set_item: boolean | undefined;
+  imageItem: string[][];
+  image_name: any;
+
+  is_sales_members_only: boolean | undefined;
+  start_at?: string | undefined;
+  end_at?: string | undefined;
+  special_sale_price?: number | undefined;
+  refund_rate?: number | undefined;
+
+  codeList: any[];
+  specialSalesList: any[];
 }

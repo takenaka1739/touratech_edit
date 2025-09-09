@@ -13,6 +13,8 @@ class ItemClassificationStoreRequest extends BaseRequest
 
   public function rules()
   {
+    //\Log::debug('デバッグ：ItemClassificationStoreRequest');
+
     return $this->commonRules();
   }
 

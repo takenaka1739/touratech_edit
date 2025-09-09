@@ -62,7 +62,7 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
         </td>
       </tr>
     ));
-
+    
     return (
       <table>
         <thead>

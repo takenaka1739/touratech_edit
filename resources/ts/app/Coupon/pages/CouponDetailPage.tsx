@@ -6,7 +6,6 @@ import { CouponRuleForm } from '@/app/Coupon/components/CouponRuleForm';
 import { ItemSelectModal } from '@/app/Coupon/components/ItemSelectModal';
 import { ItemClassificationSelectModal } from '@/app/Coupon/components/ItemClassificationSelectModal';
 
-
 export type CouponDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
 export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) => {

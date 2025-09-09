@@ -21,6 +21,13 @@ class SupplierService
   public function dialog(array $cond)
   {
     $query = Supplier::select(
+      //'id',
+      //'name',
+      //'zip_code',
+      //'address1',
+      //'address2',
+      //'tel',
+      //'fax',
       'id',
       'name',
       'zip_code',
@@ -28,6 +35,12 @@ class SupplierService
       'address2',
       'tel',
       'fax',
+      'email',
+      'personnel_id',
+      'foreign_currency_type',
+      'fraction',
+      'output_no',
+      'remarks',
   );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('name', 'asc');
@@ -43,6 +56,13 @@ class SupplierService
   public function fetch(array $cond)
   {
     $query = Supplier::select(
+      //'id',
+      //'name',
+      //'zip_code',
+      //'address1',
+      //'address2',
+      //'tel',
+      //'fax',
       'id',
       'name',
       'zip_code',
@@ -50,6 +70,12 @@ class SupplierService
       'address2',
       'tel',
       'fax',
+      'email',
+      'personnel_id',
+      'foreign_currency_type',
+      'fraction',
+      'output_no',
+      'remarks',
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('name', 'asc');

@@ -37,7 +37,6 @@
       }
 
       .image-input-erea {
-        border: 1px solid #333;
         margin-top: 20px;
         margin-left: auto;
         margin-right: auto;
@@ -82,7 +81,27 @@
           background-color:transparent;
           color: transparent;
         }
+
+        .scllowDiv {
+          overflow-y: hidden;
+          overflow-x: scroll;
+          display: flex;
+          position: absolute;
+          height: 115px;
+          width: 450px;
+          border: 1px solid #333;
+        }
       }
+    }
+
+    #dust-box-icon {
+      width: 60px;
+      height: 70px;
+      margin-top: 551px;
+    }
+
+    #dust-box-icon:hover {
+      color: #C9C9C9;
     }
 
     #item-info {
@@ -124,7 +143,7 @@
       }
 
       #price-col {
-        margin-top: 20px;
+        margin-top: 30px;
         display: flex;
         vertical-align: middle;   //縦方向に中央寄せ
         text-align:center;        //横方向に中央寄せ
@@ -163,7 +182,9 @@
         flex-direction:column;
 
         #item-detail {
-          font-size: 40px;
+          word-wrap: break-word; /* 長い単語を折り返す */
+          white-space: normal;  /* テキストを通常の折り返しにする */
+          font-size: 20px;
           border:1px solid #ffffffff;
           border-radius: 5px;
           color: #c9d7e8f8;
@@ -173,13 +194,11 @@
         }
 
         #item-detail:hover {
-          font-size: 40px;
           border:1px solid #c9d7e8f8;
           border-radius: 5px;
         }
 
         #item-detail:focus {
-          font-size: 40px;
           border:1px solid #c9d7e8f8;
           border-radius: 5px;
         }
@@ -189,6 +208,15 @@
           text-align: left;
         }
       }
+    }
+
+    #vari-erea {
+      padding: 5px;
+      border-radius: 5px;
+      margin-top: 20px;
+      color: #a0aec0;
+      border: 1px solid #a0aec0;
+      font-size: 30px;
     }
 
     #vari-info {

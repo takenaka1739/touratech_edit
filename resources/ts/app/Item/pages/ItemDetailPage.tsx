@@ -2,16 +2,20 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
+//import { Item, ItemClassification, Supplier, SpecialSale } from '@/types';
+import { Item, ItemClassification, Supplier, SpecialSale } from '@/types';
 //import { Item, ItemClassification, Supplier } from '@/types';
-import { Item, Category, Supplier } from '@/types';
+//import { Item, Category, Supplier } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 //import { CategorySearchDialog } from '@/app/Category/components/CategorySearchDialog';
-//import { ItemClassificationSearchDialog } from '@/app/ItemClassification_change/components/ItemClassificationSearchDialog';
+import { ItemClassificationSearchDialog } from '@/app/ItemClassification/components/ItemClassificationSearchDialog';
 import { SupplierSearchDialog } from '@/app/Supplier/components/SupplierSearchDialog';
 //import { ItemSearchDialog } from '@/app/Item/components/ItemSearchDialog';
 import { ItemRefSearchDialog } from '@/app/Item/components/ItemRefSearchDialog';
+import { SpecialSalesDialog } from '@/app/Item/components/SpecialSalesDialog';
+import { useSpecialSalesPage } from '@/app/Item/uses/useSpecialSalesPage';
 import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
@@ -19,6 +23,7 @@ import { AppActions } from '@/app/App/modules/appModule';
 import { useState, useEffect } from 'react';
 //import { forEach } from 'lodash';
 //import { ShopImagePage } from './ShopImagePage';
+import { useHistory  } from 'react-router-dom';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -32,12 +37,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const title = '商品マスタ';
   const slug = 'item';
 
-  //const [explanation, setexplanation] = useState(String | undefined);
-  //const [explanation_details, setExplanDetail] = useState(undefined);
-  //const [sales_price, setSalesPrice] = useState(0);
-  //const [purchase_price, setPurchasePricee] = useState(0);
-  //const [number_reservations, setnumberReservations] = useState(0);
-
   const {
     isLoading,
     id,
@@ -49,22 +48,18 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     onChange,
     onClickSave,
     onClickDelete,
-  } = useCommonDetailPage<
-    Item & {
-      selected: number[] | undefined;
-    }
-  >(slug, {
+  } = useCommonDetailPage<Item & {selected: number[] | undefined;}>(slug, {
     id: undefined,
     supplier_id: undefined,
     consumption_tax_id: undefined,
     code: '',
     name: '',
     itemNumberItem: [],
-    variations1: [],
-    variations2: [],
-    variations3: [],
-    variations4: [],
-    variations5: [],
+    variations1: '',
+    variations2: '',
+    variations3: '',
+    variations4: '',
+    variations5: '',
     //explanation: '',
     explanation_details: '',
     name_note: '',
@@ -91,7 +86,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     is_payment_id4: false,
     is_payment_id5: false,
     display_status: 0,
-    testArra: [],
+    testArra: [[]],
+    image_name: undefined,
 
     category_id: undefined,
     category_name: '',
@@ -99,6 +95,16 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     domestic_stock: undefined,
     overseas_stock: undefined,
     is_set_item: false,
+    imageItem:[[]],
+
+    is_sales_members_only: false,
+    start_at: '',
+    end_at: '',
+    special_sale_price: 0,
+    refund_rate:  0,
+    codeList: [],
+    specialSalesList: [],
+    
     //$variItems: undefined,
 
     //item_number: '',
@@ -124,10 +130,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
     selected: undefined,
   });
+
   const {
     open: openItemClassDialog,
-    //searchDialogProps: itemClassSearchDialogProps,
-  } = useCommonSearchDialogProps<Category>('category', async props => {
+    searchDialogProps: itemClassSearchDialogProps,
+  } = useCommonSearchDialogProps<ItemClassification>('item_classification', async props => {
   //} = useCommonSearchDialogProps<Category>('category', async props => {
     const { id, name } = props;
     updateState({
@@ -137,10 +144,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     });
     return true;
   });
+
   const {
     open: openSupplierDialog,
     searchDialogProps: supplierSearchDialogProps,
-  } = useCommonSearchDialogProps<Supplier>('supplier', async props => {
+  } = useCommonSearchDialogProps<Supplier>('m_suppliers', async props => {
     const { id, name } = props;
     updateState({
       supplier_id: id,
@@ -151,20 +159,36 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     });
     return true;
   });
+
   const {
     open: openItemListDialog,
     searchDialogProps: itemListSearchDialogProps,
   } = useCommonSearchDialogProps<Item>('m_items', async props => {
     const { id, name } = props;
-    updateState({
+    {updateState({
       id: id,
       name: name,
     });
     updateErrors({
       id: '',
     });
+
     return true;
-  });
+  }});
+
+const {
+  open: openSpecialSalesDialog,
+  searchDialogProps: specialSalesProps,
+} = useSpecialSalesPage<SpecialSale>({
+  id: state.id,
+  item_id: undefined,
+  is_sales_members_only: true,
+  start_at: state.start_at,
+  end_at: state.end_at,
+  special_sale_price: state.special_sale_price,
+  refund_rate: state.refund_rate,
+})
+
   const onSelected = (no: number) => {
     let selected: number[] = [];
     if (state.selected?.includes(no)) {
@@ -175,10 +199,22 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
     updateState({ selected });
   };
+
   const dispatch = useDispatch();
+
+  const changeState = (value: any) => {
+    console.log(`value['id']：${value['id']}`);
+    setItemName(value['name']);
+    setVariItems(value['testArra']);
+    setsalesPriceItems(value['salesPriceItem']);
+    setexplanation(value['explanation']);
+    setExplanDetail(value['explanation_details']);
+    setPurchasePricee(value['purchase_price']);
+    setnumberReservations(value['number_reservations']);
+  }
+
   const onClickPrint = async () => {
     dispatch(AppActions.request());
-
     const res = await axios.post(`/api/${slug}/output`, { ...state, isPrintPrice: true });
     if (res.status === 200) {
       dispatch(AppActions.success());
@@ -200,6 +236,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
     return false;
   };
+
   const onClickPrintNoPrice = async () => {
     dispatch(AppActions.request());
 
@@ -233,11 +270,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   //let variItem:string[] = [];
   //const [variKindItem, setVariKind] = useState(variItem);
 
-  const [variItems1, setVariItems1] = useState(state.variations1);
-  const [variItems2, setVariItems2] = useState(state.variations2);
-  const [variItems3, setVariItems3] = useState(state.variations3);
-  const [variItems4, setVariItems4] = useState(state.variations4);
-  const [itemNumberItems, setitemNumberItems] = useState(state.itemNumberItem);
+  const [itemName, setItemName] = useState(state.name);
+  const [variItems, setVariItems] = useState(state.testArra);
   const [salesPriceItems, setsalesPriceItems] = useState(state.salesPriceItem);
   const [explanation, setexplanation] = useState(state.explanation);
   const [explanation_details, setExplanDetail] = useState(state.explanation_details);
@@ -258,11 +292,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   // 初期値設定
   useEffect(() => {
     console.log(`useEffect実行 ： ${state.explanation}`);
-    setVariItems1(state.variations1);
-    setVariItems2(state.variations2);
-    setVariItems3(state.variations3);
-    setVariItems4(state.variations4);
-    setitemNumberItems(state.itemNumberItem);
+    setItemName(state.name);
+    setVariItems(state.testArra);
     setsalesPriceItems(state.salesPriceItem);
     setexplanation(state.explanation);
     setExplanDetail(state.explanation_details);
@@ -278,140 +309,84 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     //setPaymentId3(state.is_payment_id3);
     //setPaymentId4(state.is_payment_id4);
     //setPaymentId5(state.is_payment_id5);
-  }, [state.explanation, state.explanation_details, state.variations1, state.variations2, state.variations3, state.variations4,
+  }, [state.name, state.explanation, state.testArra, state.explanation_details, state.variations1, state.variations2, state.variations3, state.variations4,
       state.itemNumberItem, state.salesPriceItem, state.purchase_price, state.number_reservations,
       state.is_shipping_fee, state.is_cash_delivery_fee, state.is_special_sale, state.is_point_rebates, 
       state.is_payment_id1, state.is_payment_id2, state.is_payment_id3, state.is_payment_id4, state.is_payment_id5]);
 
+  //const {
+  //  open: openSpecialSalesDialog,
+  //  searchDialogProps: specialSalesProps,
+  //} = useSpecialSalesPage<SpecialSale>({
+  //  id: state.id,
+  //  item_id: undefined,
+  //  is_sales_members_only: true,
+  //  start_at: state.start_at,
+  //  end_at: state.end_at,
+  //  special_sale_price: state.special_sale_price,
+  //  refund_rate: state.refund_rate,
+  //})
+
+  //const {
+  //  open: openSpecialSalesDialog,
+  //  searchDialogProps: specialSalesProps,
+  //} = useSpecialSalesPage<SpecialSale>({
+  //  id: state.id,
+  //  item_id: undefined,
+  //  is_sales_members_only: true,
+  //  start_at: state.start_at,
+  //  end_at: state.end_at,
+  //  special_sale_price: state.special_sale_price,
+  //  refund_rate: state.refund_rate,
+  //})
+
   // バリエーションの行追加
-  // select:選択されたItem、index:選択されたボタン
-  const addNewVari = (select:number, index:number) => {
-    //setVariItems1(variItems1.splice(index + 1, 0, ""));
-    let itemsList:any[] = [variItems1, variItems2, variItems3, variItems4, itemNumberItems, salesPriceItems];
-    //let itemsList:any[] = [variItems1];
+  // select:選択された行、index:選択された列
+  const addNewVari = (selectRow:number, selctIndex:number) => {
+    console.log(`selectRow：${selectRow}`);
+    let array:string[][] = [[]];
+    let arr:any = [null, null, null, null, null, null];
+    // 値のコピー
+    variItems.forEach(value => {
+      array.push(value);
+    });
 
-    // variItems1から配列のコピー
-    for (let i = 0; i < itemsList.length; i++) {
-      let items = itemsList[i];
-      let setItems:any[] = [];
-
-      console.log(`i：${i}`);
-
-      for(let ii = 0; ii < itemsList[0].length; ii++) {
-        console.log(`ii：${ii}`);
-
-        if(items[ii] != null){
-          // 新しい配列にコピー
-          setItems.push(items[ii]);
-        }else{
-          setItems.push('nullだよ');
-        }
-
-        console.log(`items[ii]：${items[ii]}`);
+    // 選択されたバリエーション以下に空白設定
+    for (let i = 0; i < arr.length; i++) {
+      if(selctIndex <= i){
+        arr[i] = '';
       }
-
-      if( i < 4) {
-        if(select > i) {
-          setItems.splice(index, 0, 'nullだよ');
-        } else {
-          setItems.splice(index, 0, '空白だよ2');
-        }
-      }else{
-        setItems.splice(index + 1, 0, '');
-      }
-
-      console.log(`コピー後の追加：${setItems}`);
-
-
-      // 配列の要素分ループ
-      //for(let ii = 0; ii < items.length; ii++) {
-      //  // 新しい配列にコピー
-      //  setItems.push(items[ii]);
-//
-      //  // 押された＋ボタンのインデックスの時に
-      //  if(ii === index) {
-      //    if(i < select){
-      //      setItems.push(null);
-      //    }else{
-      //      setItems.push('');
-      //    }
-//
-      //    //setItems.push('');
-      //  }
-      //}
-
-      if(i == 0) setVariItems1(setItems);
-      else if(i == 1) setVariItems2(setItems);
-      else if(i == 2) setVariItems3(setItems);
-      else if(i == 3) setVariItems4(setItems);
-      else if(i == 4) setitemNumberItems(setItems);
-      else if(i == 5) setsalesPriceItems(setItems);
-      
-     //item.splice(index + 1, 0, "");
-     //else item.push("");
-//
-    //  console.log(`i:${i}`);
-    //  console.log(`i:${item}`);
-//
-      //if(i == 0) setVariItems1(setItems);
-      //else if(i == 1) setVariItems2(setItems);
-      //else if(i == 2) setVariItems3(setItems);
-      //else if(i == 3) setVariItems4(setItems);
     }
 
-    //setVariItems1(setItems);
+    let addRow = selectRow + 2;
+
+    for(let i = selectRow; i < array.length; i++){
+      if(array[i][selctIndex] == null){
+        addRow = i + 1;
+      }
+    }
+
+    array.splice(addRow, 0, arr);
+    setVariItems(array);
   }
 
-  //const [a, seta] = useState();
   const onChangeValue = (event:any, select:number, selectIndex:number) => {
-    //let itemsList:any[] = [variItems1, variItems2, variItems3, variItems4];
-    //let item = itemsList[select - 1];
-    //let setItems:any[] = [];
+    let array:string[][] = [[]];
+    let arr:string[] = [];
 
-    if(select == 1){
-      setVariItems1(
-        variItems1.map((fruit, index) => (index === selectIndex ? event.target.value : fruit))
-      )
-    }
+    variItems[select].forEach(value => {
+      arr.push(value);
+    });
 
-    //for(let i = 0; i < item.length; i++) {
-    //  setItems.push(item[i]);
-    //  if(index == i) {
-    //    setItems[i] = event.target.value;
-    //  }
-    //}
+    arr[selectIndex] = event.target.value;
 
-    //item[index] = 'test value';
-    //seta(variItems1.map((value, index) => (index === 2 ? 'ドリアン' : value)));
+    variItems.forEach(value => {
+      array.push(value);
+    });
+
+    array.splice(select + 1, 1, arr);
+    setVariItems(array);
   }
-
-// バリエーションの行削除
-//const deleVari = (inx:Number) => {
-//  let variKind:string[] = [];
-//
-//  for (let i = 0; i < variItems1.length; i++) {
-//    if(i != inx) {
-//      variKind.push(variItems1[i]);
-//    }
-//  }
-//  setVariItems1(variKind);
-//  //let variKind:string[] = [];
-////
-//    //// 連想配列の要素取り出し
-//    //for (let key in variKindItem) {
-//    //  let arr:string[] = [];
-//    //  let strKey: string = `${key}`;
-//    //  // 連想配列内の配列要素の取り出し
-//    //  for (let i = 0; i < variKindItem[key].length; i++) {
-//    //    if((strKey === name && i != index) || (strKey != name)){
-//    //    // 新しく定義した配列に既存のデータを保存
-//    //      arr.push(variKindItem[key][i]);
-//    //    }
-//    //  }
-//    //  variKind[strKey] = arr;
-//    //}
-//    //setVariKind(variKind);
-//  }
 
   const [checkBock, setCheckBock] = useState({color:'#EDF2F7', flag:false});
   const [backColor, setbackColor] = useState('#ffffff');
@@ -433,6 +408,77 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       setbackColor('#ffffff');
     }
   };
+
+  const navigation = useHistory();
+  // 遷移用ボタンアクション
+  const useMovePage = () => {
+    //const { file_id } = res.data.data;
+    console.log(`variItems：${variItems}`);
+    navigation.push({ pathname: '/item/shop-image',
+                      state: { itemName:itemName,
+                               exDetail:explanation_details,
+                               variItems:variItems,
+                               imageItems: state.image_name,}});
+                               //page: `item/detail/${file_id}`}});
+  }
+
+  const a = () => {
+    state.codeList.map(value => {
+      //console.log(`specialSalesList.is_sales_members_only：${value.specialSalesList.is_sales_members_only}`);
+      //console.log(`specialSalesList.start_at：${value.specialSalesList.start_at}`);
+      if(value.id == String(state.id)){
+        //console.log(`value.name：${value.name}`);
+        //console.log(`value.category_id：${value.category_id}`);
+
+        value.id = state.id;
+        value.supplier_id = state.supplier_id;
+        value.consumption_tax_id = state.consumption_tax_id;
+        value.code = state.code;
+        value.name = itemName;
+        //value.item_number = state.item_number;
+        value.variations1 = state.variations1;
+        value.variations1 = state.variations1;
+        value.variations3 = state.variations3;
+        value.variations4 = state.variations4;
+        value.explanation = state.explanation;
+        value.explanation_details = state.explanation_details;
+        value.name_note = state.name_note;
+        value.name_label = state.name_label;
+        value.is_sell = state.is_sell;
+        value.purchase_price = state.purchase_price;
+        //value.sales_price = state.sales_price;
+        value.sales_unit_price = state.sales_unit_price;
+        value.purchase_unit_price = state.purchase_unit_price;
+        value.sample_price = state.sample_price;
+        value.is_discontinued = state.is_discontinued;
+        value.discontinued_at = state.discontinued_at;
+        value.is_display = state.is_display;
+        //value.overseas_stocks = state.overseas_stocks;
+        value.display_status = state.display_status;
+        value.remarks = state.remarks;
+        value.is_point_rebates = state.is_point_rebates;
+        value.number_reservations = state.number_reservations;
+        value.is_shipping_fee = state.is_shipping_fee;
+        value.is_cash_delivery_fee = state.is_cash_delivery_fee;
+        value.additional_shipping_fee = state.additional_shipping_fee;
+        value.is_special_sale = state.is_special_sale;
+        value.is_payment_id1 = state.is_payment_id1;
+        value.is_payment_id2 = state.is_payment_id2;
+        value.is_payment_id3 = state.is_payment_id3;
+        value.is_payment_id4 = state.is_payment_id4;
+        value.is_payment_id5 = state.is_payment_id5;
+
+        value.category_id = state.category_id;
+        value.supplier_id = state.supplier_id;
+
+        console.log(`value.name：${value.name}`);
+        console.log(`value.category_id：${value.category_id}`);
+      }
+    });
+    onClickSave();
+  }
+
+  console.log('return前');
 
   return (
     <PageWrapper
@@ -458,7 +504,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         <Forms.FormGroupInputText
           labelText="商品名"
           name="name"
-          value={state.name}
+          value={itemName}
           error={errors?.name}
           onChange={onChange}
           className="max-w-lg"
@@ -507,7 +553,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               </button>
             </div>
           </Forms.FormGroup>
-          {/*<CategorySearchDialog {...itemClassSearchDialogProps} />*/}
+          <ItemClassificationSearchDialog {...itemClassSearchDialogProps} />
         </div>
         <div className="flex flex-wrap max-w-2xl">
           <div className="w-1/2">
@@ -669,15 +715,28 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         <div>
           <hr className="border-dashed border-gray-400 mt-4 mb-4" />
           <div className="button-erea">
-            <a className="shop-image" href={"/item/shop-image"}>ショップイメージ</a>
+            <button onClick={useMovePage} className="shop-image">ショップイメージ</button>
+            {/*<a className="shop-image" href={"/item/shop-image"}>ショップイメージ</a>*/}
+            {/*<Route path="/Senni" element={<Senni id={1} text={'ID1'} />} />*/}
+            {console.log('ボタン前')}
             <button className="ref-items" onClick={openItemListDialog}>
               他商品情報参照
             </button>
-            <ItemRefSearchDialog {...itemListSearchDialogProps}/>
-            <button className="ref-items" onClick={openItemListDialog}>
+            <ItemRefSearchDialog selectId={state.id} {...itemListSearchDialogProps} onChangeState={changeState}/>
+            <button className="ref-items" onClick={openSpecialSalesDialog}>
+            {/*<button className="ref-items" onClick={clickSpecialSalesDialog}>*/}
               特売設定
             </button>
-            <ItemRefSearchDialog {...itemListSearchDialogProps}/>
+            <SpecialSalesDialog {...specialSalesProps}
+              id={state.id}
+              item_id={undefined}
+              is_sales_members_only={true}
+              start_at={state.start_at}
+              end_at={state.end_at}
+              special_sale_price={state.special_sale_price}
+              refund_rate={state.refund_rate}/>
+            {/*<SpecialSalesDialog isShown={true}/>*/}
+
           </div>
           <div className="is-public">
             <label>ショップへの公開</label>
@@ -692,115 +751,31 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             </div>
             <div style={{marginLeft: '10px'}}>
               <label style={{marginLeft: "145px"}}>バリエーション1</label>
-              <label style={{marginLeft: "54px"}}>バリエーション2</label>
-              <label style={{marginLeft: "91px"}}>バリエーション3</label>
-              <label style={{marginLeft: "30px"}}>バリエーション4</label>
-              <label style={{marginLeft: "40px"}}>品番</label>
-              <label style={{marginLeft: "40px"}}>金額</label>
+              <label style={{marginLeft: "56px"}}>バリエーション2</label>
+              <label style={{marginLeft: "65px"}}>バリエーション3</label>
+              <label style={{marginLeft: "65px"}}>バリエーション4</label>
+              <label style={{marginLeft: "60px"}}>品番</label>
+              <label style={{marginLeft: "130px"}}>金額</label>
             </div>
             <div style={{display: 'flex', marginLeft: "150px"}}>
-              <div>{
-                variItems1.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: value == null ? 'hidden':'visible'}}>
-                      <input className="vari-row-input" type={value == null ? 'hidden' : 'text'} style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={value} onChange={(event) => onChangeValue(event, 1, index)}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(0, index)}>＋</button>
-                    </div>
-                  )
-                })
-              }</div>
-              <div>{
-                variItems2.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: (value == null) && (index != 0) ? 'hidden':'visible'}}>
-                      <input className="vari-row-input" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={value} onChange={(event) => onChangeValue(event, 2, index)}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(1, index)}>＋</button>
-                    </div>
-                  )
-                })
-              }</div>
-              <div>{
-                variItems3.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: (value == null) && (index != 0) ? 'hidden':'visible'}}>
-                      <input className="vari-row-input" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={value} onChange={(event) => onChangeValue(event, 3, index)}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(2, index)}>＋</button>
-                    </div>
-                  )
-                })
-              }</div>
-              <div>{
-                variItems4.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: (value == null) && (index != 0) ? 'hidden':'visible'}}>
-                      <input className="vari-row-input" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={value} onChange={(event) => onChangeValue(event, 4, index)}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(3, index)}>＋</button>
-                    </div>
-                  )
-                })
-              }</div>
-              <div>{
-                variItems1.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: (value == null) && (index != 0) ? 'hidden':'visible'}}>
-                      <input className="vari-row-input" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={index > itemNumberItems.length ? '' : itemNumberItems[index]} onChange={(event) => onChangeValue(event, 4, index)}/>
-                    </div>
-                  )
-                })
-              }</div>
-              <div>{
-                variItems1.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: (value == null) && (index != 0) ? 'hidden':'visible'}}>
-                      <input className="vari-row-input" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={index > salesPriceItems.length ? '' : salesPriceItems[index]} onChange={(event) => onChangeValue(event, 4, index)}/>
-                    </div>
-                  )
-                })
-              }</div>
-              <div>{
-                variItems1.map((value, index) => {
-                  return (
-                    <div key={value} style={{display: 'flex', marginBottom: '5px', visibility: (value == null) && (index != 0) ? 'hidden':'visible'}}>
-                      <button className="dele-button" style={{backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag}>✕</button>
-                    </div>
-                  )
-                })
-              }</div>
-            </div>
-                      {/*<input className="vari-row-input" type="text" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={state.variations2[index]}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(2, index)}>＋</button>
-                      <input className="vari-row-input" type="text" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={state.variations3[index]}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(3, index)}>＋</button>
-                      <input className="vari-row-input" type="text" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={state.variations4[index]}/>
-                      <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
-                              className="plus-button" onClick={() => addNewVari(4, index)}>＋</button>
-                      <input className="vari-row-input" type="text" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={state.variations5[index]}/>
-                      <input className="vari-row-input" type="text" style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} value={state.variations5[index]}/>*/}
-                      {/*<button className="dele-button" style={{backgroundColor: checkBock.color}}
-                             disabled={!checkBock.flag} onClick={() => deleVari(index)}>✕</button>*/}
-                    {/*</div>*/}
-                 {/*  )
-                })*/}
-              {/*<button className="dele-button" style={{backgroundColor: checkBock.color}}
-                     disabled={!checkBock.flag} onClick={() => deleVari(index)}>✕</button>*/}
+              <div>{variItems.map((item, itemIndex) => {
+                return (
+                  <div key={itemIndex} style={{display: 'flex'}}>{
+                    item.map((value, index) => {
+                      return (
+                        <div key={index} style={{display: 'flex', marginBottom: '5px', visibility: value == null ? 'hidden':'visible'}}>
+                          <input className="vari-row-input" /*type={value == null ? 'hidden' : 'text'}*/
+                                 style={{borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color}}
+                                 disabled={!checkBock.flag} value={value} onChange={(event) => onChangeValue(event, itemIndex, index)}/>
+                          <button disabled={!checkBock.flag} style={{backgroundColor: checkBock.color}}
+                                  className="plus-button" onClick={() => addNewVari(itemIndex, index)}>＋</button>
+                        </div>
+                      )
+                    })
+                  }</div>
+                )
+              })}</div> 
+            </div> 
           </div>
           <div>
             <div className="item-explanation">
@@ -818,7 +793,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             <div className="price-erea">
               <label>販売価格</label>
               <label className="label-required">必須</label>
-              <input className="input-text" value={checkBock.flag ? '0' : salesPriceItems[0]}
+              <input className="input-text"
+                     value={salesPriceItems.length < 1 ? !checkBock.flag ? '0' : salesPriceItems[0] : salesPriceItems[0]}
                      disabled={checkBock.flag} style={{backgroundColor: backColor}}/>
             </div>
             <div className="price-erea">
@@ -831,10 +807,17 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               <label className="label-optional">任意</label>
               <input className="input-text" value={number_reservations ?? '0'} onChange={(event) => setnumberReservations(Number(event.target.value))}/>
             </div>
-            <div className="shipping-fee">
-              <label>送料適用</label>
-              <label className="label-optional">任意</label>
-              <input type="checkbox"/>
+            <div style={{display: 'flex'}}>
+              <div className="shipping-fee">
+                <label>送料適用</label>
+                <label className="label-optional">任意</label>
+                <input type="checkbox"/>
+              </div>
+              <div className="shipping-fee">
+                <label>送料</label>
+                <label className="label-optional">任意</label>
+                <input className="input-text"/>
+              </div>
             </div>
             <div className="handling-fee">
               <label>代引手数料適用</label>
@@ -933,7 +916,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       </div>
       <div className="flex justify-between">
         <div>
-          <button className="btn" onClick={onClickSave} disabled={isDisabled}>
+          {/*<button className="btn" onClick={onClickSave} disabled={isDisabled}>*/}
+          <button className="btn" onClick={() => a()} disabled={isDisabled}>
             保存
           </button>
         </div>

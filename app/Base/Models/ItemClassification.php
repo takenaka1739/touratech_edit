@@ -12,9 +12,13 @@ class ItemClassification extends Model
     protected $table = 'm_categories';
 
     protected $fillable = [
+        'is_display',
+        'code',
+        'parent_code',
         'name',
         'remarks',
-        'order_by',
+        'image'
+        //'order_by',
     ];
     
     protected $hidden = [

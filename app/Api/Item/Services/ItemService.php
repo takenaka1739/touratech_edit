@@ -3,6 +3,7 @@
 namespace App\Api\Item\Services;
 
 use App\Base\Models\Item;
+use App\Base\Models\Image;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -133,12 +134,13 @@ class ItemService
       'm_items.domestic_stocks',
       'm_items.overseas_stocks',
       'm_items.display_status',
-      'm_items.is_point_rebates',
+      'm_items.remarks',
       'm_items.number_reservations',
       'm_items.is_shipping_fee',
       'm_items.is_cash_delivery_fee',
       'm_items.additional_shipping_fee',
       'm_items.is_special_sale',
+      'm_items.is_point_rebates',
       'm_items.is_payment_id1',
       'm_items.is_payment_id2',
       'm_items.is_payment_id3',
@@ -148,10 +150,20 @@ class ItemService
       //'suppliers.name'
       //'item_classifications.name',
       //'suppliers.name',
+      'm_categories.id AS category_id',
       'm_categories.name AS category_name',
-      'suppliers.name AS supplier_name',
+      'm_suppliers.id AS supplier_id',
+      'm_suppliers.name AS supplier_name',
       't_stocks.domestic_stocks AS domestic_stock',
-      't_stocks.overseas_stocks AS overseas_stock'
+      't_stocks.overseas_stocks AS overseas_stock',
+      't_special_sales.is_sales_members_only AS is_sales_members_only',
+      't_special_sales.start_at AS start_at',
+      't_special_sales.end_at AS end_at',
+      't_special_sales.special_sale_price AS special_sale_price',
+      't_special_sales.refund_rate AS refund_rate'
+
+      //'m_images.name AS image_name',
+
       
       //'id',
       //'code',
@@ -187,6 +199,7 @@ class ItemService
       //'item_classifications.name AS item_classification_name',
       //'suppliers.name AS supplier_name',
     )
+
       //->leftJoin('item_classifications', 'item_classifications.id', '=', 'items.category_id')
       //->leftJoin('suppliers', 'suppliers.id', '=', 'items.supplier_id')
       //->where('items.id', $id)
@@ -197,13 +210,18 @@ class ItemService
     ->leftJoin('t_category_item_combinations', 'm_items.id', '=', 't_category_item_combinations.item_id')
     ->leftJoin('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
     //->leftJoin('item_classifications', 'item_classifications.id', '=', 'items.category_id')
-    ->leftJoin('suppliers', 'm_items.supplier_id', '=', 'suppliers.id')
+    ->leftJoin('m_suppliers', 'm_items.supplier_id', '=', 'm_suppliers.id')
     ->leftJoin('t_stocks', 'm_items.id', '=', 't_stocks.item_id')
+    ->leftJoin('t_special_sales', 'm_items.id', '=', 't_special_sales.item_id')
+    //->leftJoin('m_images', 'm_items.id', '=', 'm_images.item_id')
     ->where('m_items.id', '=', $id)
     ->first()
     //->get()
     ->toArray();
     //$a = Item::select('variations1')->where('code', '=', $selectItems['code'])->first();
+
+    \log::debug('デバッグ：$selectItems');
+    \log::debug($selectItems);
 
     $testArra = array();
 
@@ -214,19 +232,109 @@ class ItemService
     $item4 = [];
     $itemNumberItem = [];
     $salesPriceItem = [];
+    $test = [];
 
+    $a = [];
+    $idList = [];
+    $codeList = [];
+    $specialSalesList = [];
     foreach(Item::where('code', '=', $selectItems['code'])->get() as $item){
-      $testArra = [
-        'vari1' => $item['variations1'],
-        'vari2' => $item['variations2'],
-        'vari3' => $item['variations3'],
-        'vari4' => $item['variations4'],
-        'itemNumber' => $item['item_number'],
-        'salesPrice' => $item['sales_price']
-      ];
+      $b = [];
+      $c = [];
+      $b['id'] = $item->id;
+      $b['supplier_id'] = $item->supplier_id;
+      $b['consumption_tax_id'] = $item->consumption_tax_id;
+      $b['code'] = $item->code;
+      $b['name'] = $item->name;
+      $b['item_number'] = $item->item_number;
+      $b['variations1'] = $item->variations1;
+      $b['variations2'] = $item->variations2;
+      $b['variations3'] = $item->variations3;
+      $b['variations4'] = $item->variations4;
+      $b['explanation'] = $item->explanation;
+      $b['explanation_details'] = $item->explanation_details;
+      $b['name_note'] = $item->name_note;
+      $b['name_label'] = $item->name_label;
+      $b['is_sell'] = $item->is_sell;
+      $b['purchase_price'] = $item->purchase_price;
+      $b['sales_price'] = $item->sales_price;
+      $b['sales_unit_price'] = $item->sales_unit_price;
+      $b['purchase_unit_price'] = $item->purchase_unit_price;
+      $b['sample_price'] = $item->sample_price;
+      $b['is_discontinued'] = $item->is_discontinued;
+      $b['discontinued_at'] = $item->discontinued_at;
+      $b['is_display'] = $item->is_display;
+      $b['overseas_stocks'] = $item->overseas_stocks;
+      $b['display_status'] = $item->display_status;
+      $b['remarks'] = $item->remarks;
+      $b['is_point_rebates'] = $item->is_point_rebates;
+      $b['number_reservations'] = $item->number_reservations;
+      $b['is_shipping_fee'] = $item->is_shipping_fee;
+      $b['is_cash_delivery_fee'] = $item->is_cash_delivery_fee;
+      $b['additional_shipping_fee'] = $item->additional_shipping_fee;
+      $b['is_special_sale'] = $item->is_special_sale;
+      $b['is_payment_id1'] = $item->is_payment_id1;
+      $b['is_payment_id2'] = $item->is_payment_id2;
+      $b['is_payment_id3'] = $item->is_payment_id3;
+      $b['is_payment_id4'] = $item->is_payment_id4;
+      $b['is_payment_id5'] = $item->is_payment_id5;
 
-      //array_push($test, $testArra);
+      $b['category_id'] = $item->category_id;
+      $b['supplier_id'] = $item->supplier_id;
+      $b['domestic_stock'] = $item->domestic_stock;
+      $b['overseas_stock'] = $item->overseas_stock;
+
+      $c['is_sales_members_only'] = $item->is_sales_members_only;
+      $c['is_sales_members_only'] = 't_special_sales.is_sales_members_only';
+      $c['start_at'] = $item->start_at;
+      $c['end_at'] = $item->end_at;
+      $c['special_sale_price'] = $item->special_sale_price;
+      $c['refund_rate'] = $item->refund_rate;
+      \log::debug('デバッグ：$b');
+      \log::debug($b);
+      array_push($codeList, $b);
+      array_push($specialSalesList, $c);
+
+      array_push($idList, $item->id);
+      $a = [];
+      $index = array_search($item->variations1, array_column($test, 0));
+
+      if($index === false){
+        array_push($a, $item->variations1,
+                       $item->variations2 === null ? '' : $item->variations2, 
+                       $item->variations3 === null ? '' : $item->variations3,
+                       $item->variations4 === null ? '' : $item->variations4,
+                       $item->item_number === null ? '' : $item->item_number,
+                       $item->sales_price === null ? '' : $item->sales_price);
+        array_push($test, $a);
+      }else{
+        array_push($a, null,
+                       $item->variations2 === null ? '' : $item->variations2, 
+                       $item->variations3 === null ? '' : $item->variations3,
+                       $item->variations4 === null ? '' : $item->variations4,
+                       $item->item_number === null ? '' : $item->item_number,
+                       $item->sales_price === null ? '' : $item->sales_price);
+        array_splice($test, $index + 1, 0, [$a]);
+      //array_push($a, $item->variations1,
+      //               $item->variations2, 
+      //               $item->variations3,
+      //               $item->variations4,
+      //               $item->sales_price);
+      }
+    //  //$testArra = [
+    //  //  'vari1' => $item['variations1'],
+    //  //  'vari2' => $item['variations2'],
+    //  //  'vari3' => $item['variations3'],
+    //  //  'vari4' => $item['variations4'],
+    //  //  'itemNumber' => $item['item_number'],
+    //  //  'salesPrice' => $item['sales_price']
+    //  //];
+//
+      //array_push($test, $item);
+      //array_push($test, $a);
     }
+
+    //array_push($test, $a);
 
     //$test = group_by($test, 'vari1');
 
@@ -254,14 +362,56 @@ class ItemService
       array_push($salesPriceItem, $item['sales_price']);
     }
 
-    $selectItems['variations1'] = $item1;
-    $selectItems['variations2'] = $item2;
-    $selectItems['variations3'] = $item3;
-    $selectItems['variations4'] = $item4;
+    $ss = [];
+    $sss = [[]];
+    $preId = -1;
+    //foreach($idList as $id){
+    //  $imageItem = Image::where('id', '=', '1')->get();
+    //}
+
+    foreach($idList as $id){
+      foreach(Image::where('id', '=', $id)->get() as $item){
+        if($item->name != null && $item->name != ''){
+          if(strpos($item->image_name,'youtube')){
+            array_push($ss, $item->name);
+          }else{
+            array_push($ss, '/images/' . $item->name);
+          }
+          array_push($sss, $ss);
+        }
+      }
+    }
+
+    //foreach(Item::select('m_images.name AS image_name')->leftJoin('m_images', 'm_items.id', '=', 'm_images.item_id')->get() as $item){
+    //  $id = $item->item_id;
+//
+    //  if(strpos($item->image_name,'youtube')){
+    //    array_push($ss, $item->image_name);
+    //  }else{
+    //    array_push($ss, '/images/' . $item->image_name);
+    //  }
+//
+    //  if($id != $preId) {
+    //  //array_push($sss, $ss);
+    //  //array_push($ss, $id);
+    //  //$ss = [];
+    //  }
+//
+    //$preId = $id;
+    //}
+    //$selectItems['imageItem'] = $ss;
+
+    $selectItems['codeList'] = $codeList;
+    $selectItems['specialSalesList'] = $specialSalesList;
+    $selectItems['variations1'] = '';
+    $selectItems['variations2'] = '';
+    $selectItems['variations3'] = '';
+    $selectItems['variations4'] = '';
     $selectItems['itemNumberItem'] = $itemNumberItem;
     $selectItems['salesPriceItem'] = $salesPriceItem;
-    $selectItems['testArra'] = $testArra;
-
+    //$selectItems['testArra'] = $testArra;
+    $selectItems['testArra'] = $test;
+    $selectItems['image_name'] = $sss;
     return $selectItems;
   }
 
@@ -309,6 +459,8 @@ class ItemService
    */
   public function update(int $id, array $data)
   {
+    \log::debug('ItemService.update');
+
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = Item::find($id);

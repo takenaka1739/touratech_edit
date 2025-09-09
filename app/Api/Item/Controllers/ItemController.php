@@ -29,6 +29,8 @@ class ItemController extends BaseController
    */
   public function __construct(ItemService $service)
   {
+    \log::debug('デバッグ：ItemController.__construct');
+
     $this->service = $service;
   }
 
@@ -84,6 +86,8 @@ class ItemController extends BaseController
    */
   public function edit(int $id)
   {
+    \log::debug('デバッグ：ItemController.edit');
+
     $data = $this->service->get($id);
     return $this->success($data);
   }

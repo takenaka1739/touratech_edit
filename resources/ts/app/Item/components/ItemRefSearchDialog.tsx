@@ -5,10 +5,17 @@ import { useCommonSearchDialog } from '@/app/App/uses/useCommonSearchDialog';
 import { numberFormat } from '@/utils/numberFormat';
 import { useComposing } from '@/uses';
 import axios from 'axios';
+import { useDispatch } from 'react-redux';
+import { AppActions } from '@/app/App/modules/appModule';
+//import { Link } from 'react-router-dom';
+//import { useState } from 'react';
+//import { useHistory  } from 'react-router-dom';
 
 type ItemSearchDialogProps = {
+  selectId:number | undefined;
   isShown: boolean;
   isSetItem?: boolean | undefined;
+  onChangeState: (value: any) => void;
   onSelected: (props: Item) => Promise<boolean>;
   onCancel: () => void;
 };
@@ -26,6 +33,8 @@ type ItemSearchDialogConditionsState = {
  * @param props
  */
 export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
+  onChangeState,
+  selectId,
   isShown,
   isSetItem,
   onSelected,
@@ -53,16 +62,29 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
     onSelected,
     onCancel
   );
+
+  console.log(`id：${selectId}`);
+  //const [restate, setstate] = useState(state.rows);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
+  const dispatch = useDispatch();
+  //const navigation = useHistory();
+  //const [reState, setState] = useState(state);
 
   const onClickDetail:(id : number | undefined) => Promise<void> = async id => {
-    console.log('onClickDetailの中');
-    console.log(id);
-    await axios.get(`/api/item/edit/${id}`);
+    const res = await axios.get(`/api/item/edit/${id}`);
+    console.log(`res.status：${res.status}`);
+    if (res.status === 200) {
+      dispatch(AppActions.success());
+      onChangeState(res.data.data);
+      onClickCancel();
+    } else {
+      // dispatch(AppActions.failed('データの取得に失敗しました。'));
+      dispatch(AppActions.success());
+      //history.push('/404');
+    }
   }
 
   const tables = useMemo(() => {
-    {console.log(`Itemstate.rows:${state.rows.length}`)}
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
         <td>
@@ -80,6 +102,7 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
         <td className="text-right">{numberFormat(r.domestic_stock ?? 0, 0)}</td>
         <td className="text-right">{numberFormat(r.overseas_stock ?? 0, 0)}</td>
         <td className="col-btn">
+          {/*<span data-id={r.id} onClick={() => onClickDetail(r.id)}>*/}
           <span data-id={r.id} onClick={() => onClickDetail(r.id)}>
             選択
           </span>

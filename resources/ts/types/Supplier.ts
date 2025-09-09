@@ -23,6 +23,7 @@ export interface Supplier {
   tel: string | undefined;
   fax: string | undefined;
   email: string | undefined;
+  personnel_id: number | undefined;
   foreign_currency_type: string | undefined;
   fraction: number | undefined;
   output_no: string | undefined;
