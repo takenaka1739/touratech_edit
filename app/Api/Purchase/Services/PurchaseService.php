@@ -32,7 +32,7 @@ class PurchaseService
       'purchases.id',
       'purchase_date',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('purchase_date', 'desc');
@@ -49,10 +49,10 @@ class PurchaseService
   {
     $data = Purchase::select(
       'purchases.*',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       'link_p_order_purchase.place_order_id',
     )
-      ->leftJoin('users', 'users.id', '=', 'purchases.user_id')
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'purchases.user_id')
       ->leftJoin('link_p_order_purchase', 'link_p_order_purchase.purchase_id', '=', 'purchases.id')
       ->where('purchases.id', $purchase_id)
       ->first()
@@ -171,7 +171,7 @@ class PurchaseService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('users', 'users.id', '=', 'purchases.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'purchases.user_id');
 
     $cond = new Collection($cond);
 
@@ -187,7 +187,7 @@ class PurchaseService
 
     $c_customer_name = $cond->get('c_user_name');
     if ($c_customer_name) {
-      $query->where('users.name', 'like', '%' . escape_like($c_customer_name) . '%');
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');

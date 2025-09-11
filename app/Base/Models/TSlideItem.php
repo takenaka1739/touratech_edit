@@ -16,11 +16,11 @@ class TSlideItem extends Model
         'image_id',
         'url',
         'sort_order',
-        'is_enabled',
+        'is_published',
     ];
 
     protected $casts = [
-        'is_enabled' => 'boolean',
+        'is_published' => 'boolean',
     ];
 
     /**

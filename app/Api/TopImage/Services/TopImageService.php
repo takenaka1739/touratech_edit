@@ -24,7 +24,7 @@ class TopImageService
                 'image_name'  => $name,
                 'image_url'   => $name ? asset("images/{$name}") : null,
                 'url'         => $r->url,
-                'is_enabled'  => (bool) $r->is_enabled,
+                'is_published'  => (bool) $r->is_published,
                 'sort_order'  => (int) $r->sort_order,
             ];
         });
@@ -46,7 +46,7 @@ class TopImageService
                 $insert[] = [
                     'image_id'   => Arr::get($row, 'image_id'),
                     'sort_order' => Arr::get($row, 'sort_order', $i + 1),
-                    'is_enabled' => 1,
+                    'is_published' => 1,
                     'url'        => Arr::get($row, 'url', $item->url),
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -61,7 +61,7 @@ class TopImageService
 
     public function update(int $id, array $data)
     {
-        $payload = Arr::only($data, ['image_id', 'sort_order', 'is_enabled', 'url']);
+        $payload = Arr::only($data, ['image_id', 'sort_order', 'is_published', 'url']);
 
         return DB::transaction(function () use ($id, $payload) {
             $item = TSlideItem::findOrFail($id);
@@ -74,12 +74,12 @@ class TopImageService
     {
         return DB::transaction(function () use ($id) {
             $item = TSlideItem::findOrFail($id);
-            $item->is_enabled = !$item->is_enabled;
+            $item->is_published = !$item->is_published;
             $item->save();
 
             return [
                 'id'         => (int) $item->id,
-                'is_enabled' => (bool) $item->is_enabled,
+                'is_published' => (bool) $item->is_published,
             ];
         });
     }
@@ -113,13 +113,13 @@ class TopImageService
             foreach (array_values($items) as $index => $row) {
                 $sortOrder = $index + 1;
                 $id        = Arr::get($row, 'id');
-                $enabled   = Arr::get($row, 'is_enabled', 1);
+                $enabled   = Arr::get($row, 'is_published', 1);
 
                 if ($id) {
                     if ($item = TSlideItem::find($id)) {
                         $item->update([
                             'sort_order' => $sortOrder,
-                            'is_enabled' => $enabled,
+                            'is_published' => $enabled,
                             'url'        => Arr::get($row, 'url', $item->url),
                             'updated_at' => $now,
                         ]);
@@ -131,7 +131,7 @@ class TopImageService
                         $item = TSlideItem::create([
                             'image_id'   => $imageId,
                             'sort_order' => $sortOrder,
-                            'is_enabled' => $enabled,
+                            'is_published' => $enabled,
                             'url'        => Arr::get($row, 'url'),
                             'created_at' => $now,
                             'updated_at' => $now,

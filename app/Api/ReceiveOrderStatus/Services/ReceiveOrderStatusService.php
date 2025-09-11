@@ -77,7 +77,7 @@ class ReceiveOrderStatusService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('users', 'users.id', '=', 'r.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'r.user_id');
 
     $cond = new Collection($cond);
 
@@ -98,7 +98,7 @@ class ReceiveOrderStatusService
 
     $c_customer_name = $cond->get('c_user_name');
     if ($c_customer_name) {
-      $query->where('users.name', 'like', '%' . escape_like($c_customer_name) . '%');
+      $query->where('usm_personnelsers.name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');

@@ -33,7 +33,7 @@ class ReceiveOrderService
       'receive_order_date',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       'receive_order_has_sales.has_sales',
     );
     $query = $this->setCondition($query, $cond);
@@ -55,7 +55,7 @@ class ReceiveOrderService
       'receive_order_date',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       'receive_order_has_sales.has_sales',
     );
     $query = $this->setCondition($query, $cond);
@@ -74,12 +74,12 @@ class ReceiveOrderService
   {
     $data = ReceiveOrder::select(
       'receive_orders.*',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       'link_estimate_receive_order.estimate_id',
       'receive_order_has_sales.has_sales',
       'receive_order_has_p_order.has_p_order as has_place',
     )
-      ->leftJoin('users', 'users.id', '=', 'receive_orders.user_id')
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'receive_orders.user_id')
       ->leftJoin('link_estimate_receive_order', 'link_estimate_receive_order.receive_order_id', '=', 'receive_orders.id')
       ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 'receive_orders.id')
       ->leftJoin('receive_order_has_p_order', 'receive_order_has_p_order.receive_order_id', '=', 'receive_orders.id')
@@ -251,7 +251,7 @@ class ReceiveOrderService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('users', 'users.id', '=', 'receive_orders.user_id')
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'receive_orders.user_id')
       ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 'receive_orders.id');
 
     $cond = new Collection($cond);
@@ -273,7 +273,7 @@ class ReceiveOrderService
 
     $c_customer_name = $cond->get('c_user_name');
     if ($c_customer_name) {
-      $query->where('users.name', 'like', '%' . escape_like($c_customer_name) . '%');
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');

@@ -34,7 +34,7 @@ class SalesService
       'sales_at',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_sales_invoice x WHERE x.sales_id = sales.id) AS has_invoice')
     );
     $query = $this->setCondition($query, $cond);
@@ -57,7 +57,7 @@ class SalesService
       'sales_at',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_sales_invoice x WHERE x.sales_id = sales.id) AS has_invoice')
     );
     $query = $this->setCondition($query, $cond);
@@ -76,11 +76,11 @@ class SalesService
   {
     $data = Sales::select(
       'sales.*',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_sales_invoice x WHERE x.sales_id = sales.id) AS has_invoice'),
       'link_r_order_sales.receive_order_id',
     )
-      ->leftJoin('users', 'users.id', '=', 't_sales.personnel_id')
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_sales.personnel_id')
       ->leftJoin('link_r_order_sales', 'link_r_order_sales.sales_id', '=', 'sales.id')
       ->where('sales.id', $sales_id)
       ->first()
@@ -100,10 +100,10 @@ class SalesService
   {
     $query = ReceiveOrder::select(
       'receive_orders.*',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       'receive_order_has_sales.has_sales',
     )
-      ->leftJoin('users', 'users.id', '=', 'receive_orders.user_id')
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'receive_orders.user_id')
       ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 'receive_orders.id')
       ->where('receive_orders.id', $receive_order_id)
       ->first();
@@ -406,7 +406,7 @@ class SalesService
       'sales_at',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('sales_at', 'desc')
@@ -423,7 +423,7 @@ class SalesService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('users', 'users.id', '=', 't_sales.personnel_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 't_sales.personnel_id');
 
     $cond = new Collection($cond);
     $c_keyword = $cond->get('c_keyword');
@@ -432,7 +432,7 @@ class SalesService
       foreach ($keywords as $key) {
         $query->where(function($query) use ($key) {
           $query->where('customer_name', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('users.name', 'like', '%' . escape_like($key) . '%');
+            ->orWhere('m_personnels.name', 'like', '%' . escape_like($key) . '%');
         });
       }
     }
@@ -454,7 +454,7 @@ class SalesService
 
     $c_customer_name = $cond->get('c_user_name');
     if ($c_customer_name) {
-      $query->where('users.name', 'like', '%' . escape_like($c_customer_name) . '%');
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');

@@ -4,6 +4,7 @@ namespace App\Api\User\Requests;
 
 use App\Base\Http\Requests\Api\BaseRequest;
 use Illuminate\Validation\Rule;
+use App\Base\Models\User;
 
 /**
  * 担当者マスタ更新フォームバリデーション
@@ -19,7 +20,7 @@ class UserUpdateRequest extends BaseRequest
         'required',
         'string',
         'max:10',
-        Rule::unique('users', 'login_id')
+        Rule::unique((new User)->getTable(), 'login_id')
           ->ignore($this->id, 'id'),
       ],
       'password' => 'bail|nullable|required_if:is_update_password,true|string|max:20|ex_password',

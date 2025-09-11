@@ -6,8 +6,14 @@ use App\Base\Models\ItemClassification;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * 商品分類の一覧取得
+ */
 class ItemClassificationController
 {
+    /**
+     * 一覧
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = 12;
@@ -23,15 +29,15 @@ class ItemClassificationController
         $paginator = $query->paginate($perPage);
 
         return response()->json([
-        'rows' => $paginator->items(),
-        'pager' => [
-            'currentPage' => $paginator->currentPage(),
-            'lastPage' => $paginator->lastPage(),
-            'perPage' => $paginator->perPage(),
-            'from' => $paginator->firstItem(),
-            'to' => $paginator->lastItem(),
-            'total' => $paginator->total(),
-        ],
-    ]);
+            'rows' => $paginator->items(),
+            'pager' => [
+                'currentPage' => $paginator->currentPage(),
+                'lastPage'    => $paginator->lastPage(),
+                'perPage'     => $paginator->perPage(),
+                'from'        => $paginator->firstItem(),
+                'to'          => $paginator->lastItem(),
+                'total'       => $paginator->total(),
+            ],
+        ]);
     }
 }

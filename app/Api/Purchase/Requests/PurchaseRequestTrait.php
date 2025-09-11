@@ -13,7 +13,7 @@ trait PurchaseRequestTrait
   {
     return [
       'purchase_date' => 'required|date',
-      'user_id' => 'required|integer|exists:users,id',
+      'user_id' => 'required|integer|exists:m_personnels,id',
       'total_amount' => 'required|numeric',
       'remarks' => 'nullable|string|max:200',
       'details' => 'required',

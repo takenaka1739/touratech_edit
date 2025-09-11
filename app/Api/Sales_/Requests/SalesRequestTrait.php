@@ -15,7 +15,7 @@ trait SalesRequestTrait
       'delivery_date' => 'nullable|date',
       'customer_id' => 'required|integer|exists:t_customers,id',
       'send_flg' => 'required|boolean',
-      'personnel_id' => 'nullable|integer|exists:users,id',
+      'personnel_id' => 'nullable|integer|exists:m_personnels,id',
       'order_no' => 'nullable|string|max:20',
       'shipping_amount' => 'nullable|numeric|price',
       'fee' => 'nullable|numeric|price',

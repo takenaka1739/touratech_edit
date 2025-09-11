@@ -28,7 +28,7 @@ trait EstimateRequestTrait
         'integer',
         Rule::in([1, 2, 3, 4, 5]),
       ],
-      'user_id' => 'nullable|integer|exists:users,id',
+      'user_id' => 'nullable|integer|exists:m_personnels,id',
       'order_no' => 'nullable|string|max:20',
       'shipping_amount' => 'nullable|numeric|price',
       'fee' => 'nullable|numeric|price',

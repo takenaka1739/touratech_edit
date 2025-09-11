@@ -28,7 +28,7 @@ class ReceiptService
       'receipt_date',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('receipt_date', 'asc');
@@ -45,9 +45,9 @@ class ReceiptService
   {
     $data = Receipt::select(
       'receipts.*',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
     )
-      ->leftJoin('users', 'users.id', '=', 'receipts.user_id')
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'receipts.user_id')
       ->where('receipts.id', $receipt_id)
       ->first();
 
@@ -180,7 +180,7 @@ class ReceiptService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('users', 'users.id', '=', 'receipts.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'receipts.user_id');
 
     $cond = new Collection($cond);
 
@@ -201,7 +201,7 @@ class ReceiptService
 
     $c_customer_name = $cond->get('c_user_name');
     if ($c_customer_name) {
-      $query->where('users.name', 'like', '%' . escape_like($c_customer_name) . '%');
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
     return $query;

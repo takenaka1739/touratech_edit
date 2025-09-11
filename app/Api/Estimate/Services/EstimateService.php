@@ -30,7 +30,7 @@ class EstimateService
       'estimate_date',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_estimate_receive_order x WHERE x.estimate_id = estimates.id) AS has_receive_order')
     );
     $query = $this->setCondition($query, $cond);
@@ -52,7 +52,7 @@ class EstimateService
       'estimate_date',
       'customer_name',
       'total_amount',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_estimate_receive_order x WHERE x.estimate_id = estimates.id) AS has_receive_order')
     );
     $query = $this->setCondition($query, $cond);
@@ -71,10 +71,10 @@ class EstimateService
   {
     $data = Estimate::select(
       'estimates.*',
-      'users.name AS user_name',
+      'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_estimate_receive_order x WHERE x.estimate_id = estimates.id) AS has_receive_order')
     )
-      ->leftJoin('users', 'users.id', '=', 'estimates.user_id')
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'estimates.user_id')
       ->where('estimates.id', $estimate_id)
       ->first()
       ->toArray();
@@ -212,7 +212,7 @@ class EstimateService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('users', 'users.id', '=', 'estimates.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'estimates.user_id');
 
     $cond = new Collection($cond);
 
@@ -233,7 +233,7 @@ class EstimateService
 
     $c_user_name = $cond->get('c_user_name');
     if ($c_user_name) {
-      $query->where('users.name', 'like', '%' . escape_like($c_user_name) . '%');
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_user_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');

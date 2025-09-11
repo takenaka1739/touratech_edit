@@ -13,7 +13,7 @@ trait PlaceOrderRequestTrait
   {
     return [
       'place_order_date' => 'required|date',
-      'user_id' => 'nullable|integer|exists:users,id',
+      'user_id' => 'nullable|integer|exists:m_personnels,id',
       'delivery_day' => 'nullable|string',
       'total_amount' => 'required|numeric',
       'remarks' => 'nullable|string|max:200',

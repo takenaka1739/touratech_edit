@@ -1,44 +1,19 @@
-//import React, { ChangeEvent } from 'react';
-import { FormProps } from './FormProps';
+// resources/ts/components/forms/FormImage.tsx
+import React from 'react';
 
-type FormImagePops = {
-  imageSrc: any;
-  value: string;
-}
+type FormImageProps = {
+  imageSrc: string;
+  /** 呼び出し側互換のため任意にしておく */
+  name?: string;
+  onChange?: (name: string, value: string | number | boolean | undefined) => void;
+};
 
-export const FormImage: React.VFC<FormProps & FormImagePops> = ({
-  imageSrc,
-  value,
-  //name,
-  //onChange,
-}) => {
-
-  //const onChangeRaw: (e: ChangeEvent<HTMLInputElement>) => void = (e) => {
-  //  if (typeof onChange === 'function') {
-  //    if (onChange.length === 2 && name !== undefined) {
-  //      // 旧形式: onChange(name, value)
-  //      onChange(name, e.currentTarget.value);
-  //    } else {
-  //      // 新形式: onChange(value)
-  //      (onChange as unknown as (value: string) => void)(e.currentTarget.value);
-  //    }
-  //  }
-  //};
-
-const a = () => {
-  
-}
-
-  console.log(`value：${value}`);
-
+export const FormImage: React.VFC<FormImageProps> = ({ imageSrc }) => {
   return (
     <img
-           src={imageSrc}
-           onChange={a}
-           //name={value}
-           //onChange={onChangeRaw}
-           style={{border: '0.5px solid #BCC6D3', width: '275px', height: '275px', marginTop: '10px'}}/>
-    //<img src={imageSc} onChange={onChangeRaw} style={{border: '0.5px solid #BCC6D3', width: '275px', height: '275px', marginTop: '10px'}}/>
+      src={imageSrc}
+      alt=""
+      style={{ border: '0.5px solid #BCC6D3', width: '275px', height: '275px', marginTop: '10px' }}
+    />
   );
-  //console.log(`imageSrc：${imageSrc}`);
-}
+};

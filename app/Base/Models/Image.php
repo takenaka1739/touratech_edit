@@ -4,30 +4,24 @@ namespace App\Base\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 
 class Image extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $table = 'm_images';
+    protected $table = 'm_images';
 
-  protected $fillable = [
-    //'id',
-    'category_id',
-    'item_id',
-    'name',
-    'order_by',
-  ];
+    protected $fillable = [
+        'category_id',
+        'item_id',
+        'name',
+        'order_by',
+    ];
 
-  protected $hidden = [
-    'created_at',
-    'updated_at',
-    'deleted_at',
-  ];
+    protected $hidden = ['created_at','updated_at','deleted_at'];
 
-    public function getDiscontinuedDateAttribute($value)
+    public function getPublicUrlAttribute()
     {
-        return $value ? Carbon::parse($value)->format('Y/m/d') : null;
+        return $this->name ? '/images/' . $this->name : null; // 運用パスに合わせて変更可
     }
 }

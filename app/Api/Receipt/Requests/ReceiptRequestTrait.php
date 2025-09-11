@@ -13,7 +13,7 @@ trait ReceiptRequestTrait
       'receipt_date' => 'required|date',
       'customer_id' => 'nullable|integer|exists:customers,id',
       'customer_name' => 'required|string|max:30',
-      'user_id' => 'required|integer|exists:users,id',
+      'user_id' => 'required|integer|exists:m_personnels,id',
       'total_amount' => 'required|numeric',
       'remarks' => 'nullable|string|max:200',
     ];

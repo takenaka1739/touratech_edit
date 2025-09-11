@@ -11,7 +11,7 @@ trait UserRequestTrait
   {
     return [
       'name' => 'required|string|max:30',
-      'login_id' => 'bail|required|string|max:10|unique:users',
+      'login_id' => 'bail|required|string|max:10|unique:m_personnels',
       'password' => 'bail|required|string|max:20|ex_password',
       'role' => 'required|integer',
     ];
