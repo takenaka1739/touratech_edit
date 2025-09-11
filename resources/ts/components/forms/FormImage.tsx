@@ -1,10 +1,11 @@
 // resources/ts/components/forms/FormImage.tsx
 import React from 'react';
 
-type FormImageProps = {
+export type FormImageProps = {
   imageSrc: string;
-  /** 呼び出し側互換のため任意にしておく */
+  // 互換用（呼び出し元で渡していても無視する）
   name?: string;
+  value?: string;
   onChange?: (name: string, value: string | number | boolean | undefined) => void;
 };
 
