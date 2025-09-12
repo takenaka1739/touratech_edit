@@ -18,10 +18,17 @@ class Image extends Model
         'order_by',
     ];
 
-    protected $hidden = ['created_at','updated_at','deleted_at'];
+    protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
 
+    /** 画像の属するカテゴリ */
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    /** 公開URL（public/images 配下想定） */
     public function getPublicUrlAttribute()
     {
-        return $this->name ? '/images/' . $this->name : null; // 運用パスに合わせて変更可
+        return $this->name ? '/images/' . $this->name : null;
     }
 }

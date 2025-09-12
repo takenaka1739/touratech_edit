@@ -7,60 +7,65 @@ use App\Api\ItemClassification\Requests\ImageStoreRequest;
 use App\Api\ItemClassification\Requests\ImageUpdateRequest;
 use App\Api\ItemClassification\Services\ImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
- * 商品分類マスタ
+ * 商品分類マスタ（画像）
  */
 class ImageController extends BaseController
 {
-  /** @var \App\Api\ItemClassification\Services\ImageService */
-  protected $service;
+    /** @var \App\Api\ItemClassification\Services\ImageService */
+    protected $service;
 
-  /**
-   * @param \App\Api\ItemClassification\Services\ImageService $service
-   */
-  public function __construct(ImageService $service)
-  {
-    \Log::debug('デバッグ：ImageController.__construct');
+    /**
+     * @param \App\Api\ItemClassification\Services\ImageService $service
+     */
+    public function __construct(ImageService $service)
+    {
+        Log::debug('ImageController::__construct');
+        $this->service = $service;
+    }
 
-    $this->service = $service;
-  }
+    /**
+     * 画像一覧（既存画像の検索・ページング）
+     * GET /api/item_classification/images?keyword=xxx&page=1
+     */
+    public function index(Request $request)
+    {
+        Log::info('ImageController@index:start', ['input' => $request->all()]);
+        $data = $this->service->list($request->all());
+        return $this->success($data);
+    }
 
-  /**
-   * 登録
-   */
-  public function store(ImageStoreRequest $request)
-  {
-    \Log::debug('ImageStoreRequest');
-    \Log::debug('$request->validated()');
-    \Log::debug($request->validated());
+    /**
+     * 登録（新規）
+     */
+    public function store(ImageStoreRequest $request)
+    {
+        Log::debug('ImageStoreRequest');
+        Log::debug('validated', $request->validated());
 
-    $this->service->store($request->validated());
+        $this->service->store($request->validated());
 
-    return $this->success();
-  }
+        return $this->success();
+    }
 
-  /**
-   * 更新
-   *
-   * @param int $id 商品分類ID
-   */
-  public function update(ImageUpdateRequest $request, int $id)
-  {
-    $this->service->update($id, $request->validated());
+    /**
+     * 更新（名前変更／紐付け変更／差し替え）
+     *
+     * @param int $id m_images.id
+     */
+    public function update(ImageUpdateRequest $request, int $id)
+    {
+        Log::debug('ImageUpdateRequest');
+        Log::info('ImageController@update:start', [
+            'id'    => $id,
+            'input' => $request->validated(),
+            'has_file' => $request->hasFile('file'),
+        ]);
 
-    return $this->success();
-  }
-//
-//  /**
-//   * 削除
-//   *
-//   * @param int $id 商品分類ID
-//   */
-//  public function delete(int $id)
-//  {
-//    $this->service->delete($id);
-//
-//    return $this->success();
-//  }
+        $this->service->update($id, $request->validated());
+
+        return $this->success();
+    }
 }
