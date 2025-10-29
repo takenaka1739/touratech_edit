@@ -21,10 +21,10 @@ class SetItemService
   public function dialog(array $cond)
   {
     $query = Item::select(
-      'items.item_number',
-      'items.id',
-      'items.name_jp',
-      'items.sales_unit_price',
+      'm_items.item_number',
+      'm_items.id',
+      'm_items.name_jp',
+      'm_items.sales_unit_price',
       'set_items.total_quantity',
     );
     $query = $this->setCondition($query, $cond);
@@ -41,10 +41,10 @@ class SetItemService
   public function fetch(array $cond)
   {
     $query = Item::select(
-      'items.item_number',
-      'items.id',
-      'items.name_jp',
-      'items.sales_unit_price',
+      'm_items.item_number',
+      'm_items.id',
+      'm_items.name_jp',
+      'm_items.sales_unit_price',
       'set_items.total_quantity',
     );
     $query = $this->setCondition($query, $cond);
@@ -61,14 +61,14 @@ class SetItemService
   public function get(int $id)
   {
     $data = Item::select(
-      'items.id',
-      'items.item_number',
-      'items.name_jp',
-      'items.sales_unit_price',
-      'items.discontinued_date',
-      'items.is_display',
+      'm_items.id',
+      'm_items.item_number',
+      'm_items.name_jp',
+      'm_items.sales_unit_price',
+      'm_items.discontinued_date',
+      'm_items.is_display',
     )
-      ->where('items.id', $id)
+      ->where('m_items.id', $id)
       ->first()
       ->toArray();
 
@@ -141,7 +141,7 @@ class SetItemService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('set_items', 'set_items.set_item_id', '=', 'items.id');
+    $query->leftJoin('set_items', 'set_items.set_item_id', '=', 'm_items.id');
 
     $cond = new Collection($cond);
     $c_keyword = $cond->get('c_keyword');
@@ -182,13 +182,13 @@ class SetItemService
   private function getDetails(int $id)
   {
     return DB::table('set_item_details')
-      ->join('items', 'items.id', '=', 'set_item_details.item_id')
+      ->join('m_items', 'm_items.id', '=', 'set_item_details.item_id')
       ->select(
         'set_item_details.*',
-        'items.name AS item_name',
-        'items.name_jp AS item_name_jp',
-        'items.item_number',
-        'items.sales_unit_price'
+        'm_items.name AS item_name',
+        'm_items.name_jp AS item_name_jp',
+        'm_items.item_number',
+        'm_items.sales_unit_price'
         )
       ->where('set_item_id', $id)
       ->get()

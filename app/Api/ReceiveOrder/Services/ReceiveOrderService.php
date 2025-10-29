@@ -29,7 +29,7 @@ class ReceiveOrderService
   public function dialog(array $cond)
   {
     $query = ReceiveOrder::select(
-      'receive_orders.id',
+      't_receive_orders.id',
       'receive_order_date',
       'customer_name',
       'total_amount',
@@ -38,7 +38,7 @@ class ReceiveOrderService
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('receive_order_date', 'desc')
-      ->orderBy('receive_orders.id', 'desc');
+      ->orderBy('t_receive_orders.id', 'desc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
@@ -51,7 +51,7 @@ class ReceiveOrderService
   public function fetch(array $cond)
   {
     $query = ReceiveOrder::select(
-      'receive_orders.id',
+      't_receive_orders.id',
       'receive_order_date',
       'customer_name',
       'total_amount',
@@ -60,7 +60,7 @@ class ReceiveOrderService
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('receive_order_date', 'desc')
-      ->orderBy('receive_orders.id', 'desc');
+      ->orderBy('t_receive_orders.id', 'desc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
@@ -73,17 +73,17 @@ class ReceiveOrderService
   public function get(int $receive_order_id)
   {
     $data = ReceiveOrder::select(
-      'receive_orders.*',
+      't_receive_orders.*',
       'm_personnels.name AS user_name',
       'link_estimate_receive_order.estimate_id',
       'receive_order_has_sales.has_sales',
-      'receive_order_has_p_order.has_p_order as has_place',
+      't_receive_order_has_p_order.has_p_order as has_place',
     )
-      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'receive_orders.user_id')
-      ->leftJoin('link_estimate_receive_order', 'link_estimate_receive_order.receive_order_id', '=', 'receive_orders.id')
-      ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 'receive_orders.id')
-      ->leftJoin('receive_order_has_p_order', 'receive_order_has_p_order.receive_order_id', '=', 'receive_orders.id')
-      ->where('receive_orders.id', $receive_order_id)
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receive_orders.user_id')
+      ->leftJoin('link_estimate_receive_order', 'link_estimate_receive_order.receive_order_id', '=', 't_receive_orders.id')
+      ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 't_receive_orders.id')
+      ->leftJoin('t_receive_order_has_p_order', 't_receive_order_has_p_order.receive_order_id', '=', 't_receive_orders.id')
+      ->where('t_receive_orders.id', $receive_order_id)
       ->first()
       ->toArray();
 
@@ -251,8 +251,8 @@ class ReceiveOrderService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'receive_orders.user_id')
-      ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 'receive_orders.id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receive_orders.user_id')
+      ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 't_receive_orders.id');
 
     $cond = new Collection($cond);
 
@@ -280,9 +280,9 @@ class ReceiveOrderService
     if ($c_item_number) {
       $query->whereExists(function ($q) use ($c_item_number) {
         $q->select(DB::raw(1))
-          ->from('receive_order_details')
-          ->whereRaw('receive_order_details.receive_order_id = receive_orders.id')
-          ->where('receive_order_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
+          ->from('t_receive_order_details')
+          ->whereRaw('t_receive_order_details.receive_order_id = t_receive_orders.id')
+          ->where('t_receive_order_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
         });
     }
 
@@ -290,11 +290,11 @@ class ReceiveOrderService
     if ($c_name) {
       $query->whereExists(function ($q) use ($c_name) {
         $q->select(DB::raw(1))
-          ->from('receive_order_details')
-          ->whereRaw('receive_order_details.receive_order_id = receive_orders.id')
+          ->from('t_receive_order_details')
+          ->whereRaw('t_receive_order_details.receive_order_id = t_receive_orders.id')
           ->where(function($q) use ($c_name) {
-            $q->where('receive_order_details.item_name', 'like', '%' . escape_like($c_name) . '%')
-              ->orWhere('receive_order_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
+            $q->where('t_receive_order_details.item_name', 'like', '%' . escape_like($c_name) . '%')
+              ->orWhere('t_receive_order_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
         });
     }
@@ -315,12 +315,12 @@ class ReceiveOrderService
    */
   private function getDetails(int $receive_order_id)
   {
-    return DB::table('receive_order_details')
+    return DB::table('t_receive_order_details')
       ->select([
-        'receive_order_details.*',
-        'items.purchase_unit_price',
+        't_receive_order_details.*',
+        'm_items.purchase_unit_price',
       ])
-      ->join('items', 'items.id', '=', 'receive_order_details.item_id')
+      ->join('m_items', 'm_items.id', '=', 't_receive_order_details.item_id')
       ->where('receive_order_id', $receive_order_id)
       ->whereIn('item_kind', [1, 2])
       ->orderBy('receive_order_id')
@@ -447,7 +447,7 @@ class ReceiveOrderService
     if ($item_kind === 2) {
       if ($prev->item_id != $m->item_id) {
         // 商品IDが変わった場合、セット品の明細を削除し登録する
-        DB::table('receive_order_details')->where('parent_id', $id)->delete();
+        DB::table('t_receive_order_details')->where('parent_id', $id)->delete();
         $this->createSetItems($m);
 
       } else if ($prev->quantity != $m->quantity) {
@@ -492,7 +492,7 @@ class ReceiveOrderService
         'parent_id' => $parent->id,
       ];
     }
-    DB::table('receive_order_details')->insert($data);
+    DB::table('t_receive_order_details')->insert($data);
   }
 
   /**
@@ -502,10 +502,10 @@ class ReceiveOrderService
    */
   private function updateSetItems($parent) {
     $details = ReceiveOrderDetail::select([
-      'receive_order_details.id',
+      't_receive_order_details.id',
       'set_item_details.quantity',
     ])
-      ->join('set_item_details', 'set_item_details.id', '=', 'receive_order_details.item_id')
+      ->join('set_item_details', 'set_item_details.id', '=', 't_receive_order_details.item_id')
       ->where('parent_id', $parent->id)
       ->where('set_item_id', $parent->item_id)
       ->get();
@@ -517,7 +517,7 @@ class ReceiveOrderService
       $quantity = $d->quantity * $parent->quantity;
       [$amount, $sales_tax] = calc_amount($unit_price, $quantity, $parent->sales_tax_rate, $parent->fraction);
 
-      DB::table('receive_order_details')
+      DB::table('t_receive_order_details')
         ->where('id', $d->id)
         ->update([
           'rate' => $rate,
@@ -542,7 +542,7 @@ class ReceiveOrderService
     // 変更前のIDと更新されたIDの差分を取得する
     $deleteIds = array_diff($prevIds, $currentIds);
 
-    DB::table('receive_order_details')
+    DB::table('t_receive_order_details')
       ->whereIn('id', $deleteIds)
       ->delete();
   }
@@ -554,7 +554,7 @@ class ReceiveOrderService
    * @return array
    */
   private function getPrevDetailIds(int $receive_order_id) {
-    $data =  DB::table('receive_order_details')
+    $data =  DB::table('t_receive_order_details')
       ->where('receive_order_id', $receive_order_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')

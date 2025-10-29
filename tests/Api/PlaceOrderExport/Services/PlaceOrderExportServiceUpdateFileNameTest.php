@@ -120,9 +120,9 @@ class PlaceOrderExportServiceUpdateFileNameTest extends TestCase
       ],
     ]);
 
-    DB::table('place_order_details')->delete();
-    DB::table('place_orders')->delete();
-    DB::table('place_orders')->insert([
+    DB::table('t_place_order_details')->delete();
+    DB::table('t_place_orders')->delete();
+    DB::table('t_place_orders')->insert([
       [
         "id" => 2,
         "place_order_date" => "2021/08/22",
@@ -160,7 +160,7 @@ class PlaceOrderExportServiceUpdateFileNameTest extends TestCase
       ],
     ]);
 
-    DB::table('place_order_details')->insert([
+    DB::table('t_place_order_details')->insert([
       [
         'id' => 21,
         'place_order_id' => 2,
@@ -255,7 +255,7 @@ class PlaceOrderExportServiceUpdateFileNameTest extends TestCase
     $fileName = 'test_file_name';
     $this->method->invoke($this->service, $cond, $supplierId, $fileName);
 
-    $actual = DB::table('place_orders')->count('order_file_name');
+    $actual = DB::table('t_place_orders')->count('order_file_name');
 
     $this->assertEquals(4, $actual);
   }

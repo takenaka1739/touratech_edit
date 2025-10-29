@@ -30,8 +30,8 @@ class SalesServiceUpdateHasSalesTest extends TestCase
     // DB::table('receive_order_has_sales')->delete();
     DB::table('link_r_order_sales_detail')->delete();
     DB::table('sales_details')->delete();
-    DB::table('receive_order_details')->delete();
-    DB::table('receive_orders')->delete();
+    DB::table('t_receive_order_details')->delete();
+    DB::table('t_receive_orders')->delete();
   }
 
   // public function testSuccess()
@@ -41,7 +41,7 @@ class SalesServiceUpdateHasSalesTest extends TestCase
 
   public function testSuccess2()
   {
-    DB::table('receive_orders')->insert([
+    DB::table('t_receive_orders')->insert([
       [
         "id" => 1,
         "receive_order_date" => "2021/08/21",

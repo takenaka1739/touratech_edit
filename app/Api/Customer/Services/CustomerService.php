@@ -6,6 +6,8 @@ use App\Base\Models\Customer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;   
 
 /**
  * 得意先マスタサービス
@@ -96,7 +98,27 @@ class CustomerService
   public function store(array $data)
   {
     DB::transaction(function () use ($data) {
-      Customer::create($data);
+      $p = $data;
+
+      $p['rank_id']      = $p['rank_id']      ?? config('const.customer.default_rank_id', 1);
+      $p['distinguish']  = $p['distinguish']  ?? config('const.customer.default_distinguish', 0); // 0:個人, 1:法人 など
+      $p['name']         = $p['name']         ?? '名無し';
+      $p['kana']         = $p['kana']         ?? '';
+      $p['nickname']     = $p['nickname']     ?? ($p['name'] ?? '');
+      $p['zip_code']     = $p['zip_code']     ?? '';
+      $p['prefectures']  = $p['prefectures']  ?? '';
+      $p['municipality'] = $p['municipality'] ?? '';
+      $p['number']       = $p['number']       ?? '';
+      $p['tel']          = $p['tel']          ?? '';
+      $p['gender']       = $p['gender']       ?? '不明';
+      // パスワード（ハッシュ必須）
+      $p['password']     = $p['password']     ?? Hash::make(Str::random(24));
+      // 既定値があるが念のため補完
+      $p['rate']         = $p['rate']         ?? 100;
+      $p['fraction']     = $p['fraction']     ?? 3;
+
+
+      Customer::create($p);
     });
   }
 
@@ -125,7 +147,13 @@ class CustomerService
       $m->cutoff_date = $data->get('cutoff_date');
       $m->rate = $data->get('rate');
       $m->remarks = $data->get('remarks');
-      $m->distinguish = $data->get('distinguish');
+      $m->distinguish = $data->get('distinguish', $m->distinguish);
+      if ($data->has('rank_id'))   { $m->rank_id  = $data->get('rank_id') ?? $m->rank_id; }
+      if ($data->has('nickname'))  { $m->nickname = $data->get('nickname') ?? $m->nickname; }
+      if ($data->has('gender'))    { $m->gender   = $data->get('gender')   ?? $m->gender; }
+      if ($data->has('password') && $data->get('password')) {
+        $m->password = Hash::make($data->get('password'));
+      }
       $m->save();
     });
   }
@@ -150,29 +178,64 @@ class CustomerService
   public function simpleStore(array $data)
   {
     return DB::transaction(function () use ($data) {
-      $data = new Collection($data);
-      $m = Customer::create([
-        'name' => $data->get('name'),
-        'kana' => $data->get('kana', ''),
-        'zip_code' => $data->get('zip_code'),
-        'address1' => $data->get('address1'),
-        'address2' => $data->get('address2'),
-        'tel' => $data->get('tel'),
-        'fraction' => 3,
-        'corporate_class' => $data->get('corporate_class'),
-        'bank_class' => 1,
-        'cutoff_date' => 31,
-        'rate' => 100,
-      ]);
+      $d = new Collection($data);
+
+      $p = [
+        'name'           => $d->get('name', '名無し'),
+        'kana'           => $d->get('kana', ''),
+        'nickname'       => $d->get('nickname', $d->get('name', '名無し')),
+        'zip_code'       => $d->get('zip_code', ''),
+        // 画面では address1/address2 を使っているケースがあるため、prefectures/municipality/number へ安全に落とす
+        'prefectures'    => $d->get('prefectures', ''),
+        'municipality'   => $d->get('municipality', ''),
+        'number'         => $d->get('number', ''),
+        'address1'       => $d->get('address1'), // テーブルには無いが Model 側で無視される想定（fillableに無ければOK）
+        'address2'       => $d->get('address2'),
+        'tel'            => $d->get('tel', ''),
+        'fax'            => $d->get('fax'),
+        'distinguish'    => $d->get('distinguish', config('const.customer.default_distinguish', 0)),
+        'rank_id'        => $d->get('rank_id',   config('const.customer.default_rank_id', 1)),
+        'gender'         => $d->get('gender', '不明'),
+        'password'       => Hash::make($d->get('password', Str::random(24))),
+        'rate'           => (int)$d->get('rate', 100),
+        'fraction'       => (int)$d->get('fraction', 3),
+        // NULL許容のものはそのまま
+        'email_pc'       => $d->get('email_pc'),
+        'email_phone'    => $d->get('email_phone'),
+        'tel_phone'      => $d->get('tel_phone'),
+        'birthday'       => $d->get('birthday'),
+        'occupation'     => $d->get('occupation'),
+        'motorcycle_maker_id1' => $d->get('motorcycle_maker_id1'),
+        'motorcycle_maker_id2' => $d->get('motorcycle_maker_id2'),
+        'motorcycle_maker_id3' => $d->get('motorcycle_maker_id3'),
+        'workplace'             => $d->get('workplace'),
+        'workplace_zip_code'    => $d->get('workplace_zip_code'),
+        'workplace_prefectures' => $d->get('workplace_prefectures'),
+        'workplace_municipality'=> $d->get('workplace_municipality'),
+        'workplace_number'      => $d->get('workplace_number'),
+        'workplace_tel'         => $d->get('workplace_tel'),
+        'workplace_fax'         => $d->get('workplace_fax'),
+        // bool は既定0がテーブル側にあるが、画面から指定が来たら反映
+        'is_send_post_information'  => (int)$d->get('is_send_post_information', 0),
+        'is_send_email_information' => (int)$d->get('is_send_email_information', 0),
+        'notice'         => $d->get('notice'),
+      ];
+
+      // 最低限、NOT NULL の穴が空いていないか最終チェック（空なら空文字代入）
+      foreach (['name','kana','nickname','zip_code','prefectures','municipality','number','tel','gender'] as $col) {
+        if (!isset($p[$col]) || $p[$col] === null) $p[$col] = '';
+      }
+
+      $m = Customer::create($p);
       return $m->id;
     });
   }
 
   /**
    * エクセル出力用のデータを取得する
-   * 
+   *
    * @param array $cond 検索条件
-   * @return Collection
+   * @return \Illuminate\Support\Collection
    */
   public function getExcelData(array $cond)
   {

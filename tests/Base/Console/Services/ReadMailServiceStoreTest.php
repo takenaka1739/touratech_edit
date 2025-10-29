@@ -20,9 +20,9 @@ class ReadMailServiceStoreTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('receive_order_details')->delete();
-    DB::table('receive_orders')->delete();
-    DB::table('receive_orders')->insert([
+    DB::table('t_receive_order_details')->delete();
+    DB::table('t_receive_orders')->delete();
+    DB::table('t_receive_orders')->insert([
       [
         "receive_order_date" => Carbon::now()->format('Y/m/d'),
         "customer_id" => 1,

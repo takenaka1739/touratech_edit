@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class PlaceOrder extends Model
 {
+  protected $table = 't_place_orders';
   protected $fillable = [
     'place_order_date',
     'user_id',

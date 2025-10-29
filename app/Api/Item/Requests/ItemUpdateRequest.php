@@ -21,7 +21,7 @@ class ItemUpdateRequest extends BaseRequest
         'required',
         'string',
         'max:50',
-        Rule::unique('items', 'item_number')
+        Rule::unique('m_items', 'item_number')
           ->ignore($this->id, 'id'),
       ],
     ] + $this->commonRules();

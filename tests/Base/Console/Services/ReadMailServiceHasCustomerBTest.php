@@ -25,8 +25,8 @@ class ReadMailServiceHasCustomerBTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('customers')->delete();
-    DB::table('customers')->insert([
+    DB::table('t_customers')->delete();
+    DB::table('t_customers')->insert([
       [
         'id' => 1,
         'name' => '得意先名01',

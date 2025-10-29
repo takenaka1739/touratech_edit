@@ -49,11 +49,11 @@ class ShipmentPlanImportService
     }
 
     DB::transaction(function() use ($c_arrival_date, $rows) {
-      DB::table('shipment_plans')
+      DB::table('t_shipment_plans')
         ->where('shipment_plan_date', '=', $c_arrival_date)
         ->delete();
 
-      DB::table('shipment_plans')->insert($rows);
+      DB::table('t_shipment_plans')->insert($rows);
     });
   }
 

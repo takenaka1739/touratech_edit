@@ -49,7 +49,7 @@ class TopImageController extends BaseController
 
     public function sync(Request $request)
     {
-        $items = $request->input('items', []);
+        $items = $request->input('m_items', []);
         return $this->service->sync($items);
     }
 }

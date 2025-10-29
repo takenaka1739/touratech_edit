@@ -15,8 +15,8 @@ class InventoryMoveGetQuantityTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'id' => 2,
         'job_date' => '2021-01-02 01:11:11',

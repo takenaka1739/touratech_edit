@@ -120,8 +120,8 @@ class InventoryGetLatestInventoriesTest extends TestCase
       ],
     ]);
 
-    DB::table('inventories')->delete();
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/01',
         'item_number' => '01-001-0101-0',

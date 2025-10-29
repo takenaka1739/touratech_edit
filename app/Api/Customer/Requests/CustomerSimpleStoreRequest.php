@@ -12,12 +12,12 @@ class CustomerSimpleStoreRequest extends BaseRequest
   public function rules()
   {
     return [
-      'name' => 'required|string|max:30|unique:customers',
+      'name' => 'required|string|max:30|unique:t_customers',
       'kana' => 'nullable|string|max:30',
       'zip_code' => 'required|zip_code',
       'address1' => 'required|string|max:30',
       'address2' => 'nullable|string|max:30',
-      'tel' => 'required|tel|unique:customers',
+      'tel' => 'required|tel|unique:t_customers',
     ];
   }
 

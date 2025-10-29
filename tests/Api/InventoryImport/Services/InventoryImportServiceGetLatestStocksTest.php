@@ -27,8 +27,8 @@ class InventoryImportServiceGetLatestStocksTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('inventories')->delete();
-    DB::table('inventory_moves')->delete();
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventory_moves')->delete();
   }
 
   public function testSuccess()
@@ -41,14 +41,14 @@ class InventoryImportServiceGetLatestStocksTest extends TestCase
   
   public function testSuccess2()
   {
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/01',
         'item_number' => '01-00001-001',
         'quantity' => 101,
       ],
     ]);
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021/02/01',
         'detail_kind' => 1,
@@ -70,7 +70,7 @@ class InventoryImportServiceGetLatestStocksTest extends TestCase
   
   public function testSuccess3()
   {
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/01',
         'item_number' => '01-00001-001',
@@ -82,7 +82,7 @@ class InventoryImportServiceGetLatestStocksTest extends TestCase
         'quantity' => 102,
       ],
     ]);
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021/02/01',
         'detail_kind' => 1,
@@ -108,7 +108,7 @@ class InventoryImportServiceGetLatestStocksTest extends TestCase
   
   public function testSuccess4()
   {
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/00',
         'item_number' => '01-00001-001',
@@ -125,7 +125,7 @@ class InventoryImportServiceGetLatestStocksTest extends TestCase
         'quantity' => 102,
       ],
     ]);
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021/01/31',
         'detail_kind' => 1,

@@ -29,7 +29,7 @@ trait PlaceOrderRequestTrait
         'integer',
         Rule::in(1, 2),
       ],
-      'details.*.item_id' => 'required|integer|exists:items,id',
+      'details.*.item_id' => 'required|integer|exists:m_items,id',
       'details.*.item_number' => 'nullable|string|max:50',
       'details.*.item_name' => 'nullable|string|max:400',
       'details.*.item_name_jp' => 'nullable|string|max:400',

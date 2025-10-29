@@ -18,22 +18,22 @@ class MigrationService
     $this->migrateDefaults('configs');
     $this->migrateDefaults('config_currencies');
     $this->migrateDefaults('users');
-    $this->migrateDefaults('customers');
+    $this->migrateDefaults('t_customers');
     $this->migrateDefaults('suppliers');
-    $this->migrateDefaults('item_classifications');
-    $this->migrateDefaults('items');
+    $this->migrateDefaults('m_categories');
+    $this->migrateDefaults('m_items');
     $this->migrateDefaults('set_items');
     $this->migrateDefaults('set_item_details');
 
     $this->migrateDefaults('estimates');
     $this->migrateDefaults('estimate_details');
-    $this->migrateDefaults('receive_orders');
-    $this->migrateDefaults('receive_order_details');
+    $this->migrateDefaults('t_receive_orders');
+    $this->migrateDefaults('t_receive_order_details');
 
     $this->migrateDefaults('link_estimate_receive_order');
 
-    $this->migrateDefaults('place_orders');
-    $this->migrateDefaults('place_order_details');
+    $this->migrateDefaults('t_place_orders');
+    $this->migrateDefaults('t_place_order_details');
 
     // $this->migrateEstimates();
     // $this->migrateEstimateDetails();

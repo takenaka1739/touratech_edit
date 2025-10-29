@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReceiveOrderDetail extends Model
 {
+  protected $table = 't_receive_order_details';
   public $timestamps = false;
 
   protected $fillable = [

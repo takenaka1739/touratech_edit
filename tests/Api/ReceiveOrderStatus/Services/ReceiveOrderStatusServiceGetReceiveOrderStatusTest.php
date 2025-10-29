@@ -49,9 +49,9 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
       ],
     ]);
 
-    DB::table('receive_order_details')->delete();
-    DB::table('receive_orders')->delete();
-    DB::table('receive_orders')->insert([
+    DB::table('t_receive_order_details')->delete();
+    DB::table('t_receive_orders')->delete();
+    DB::table('t_receive_orders')->insert([
       [
         'id' => 1,
         'receive_order_date' => '2021/02/03',
@@ -85,7 +85,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'total_amount' => 104,
       ],
     ]);
-    DB::table('receive_order_details')->insert([
+    DB::table('t_receive_order_details')->insert([
       [
         'id' => 11,
         'receive_order_id' => 1,
@@ -142,8 +142,8 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
 
   public function testSuccessNoData()
   {
-    DB::table('receive_order_details')->delete();
-    DB::table('receive_orders')->delete();
+    DB::table('t_receive_order_details')->delete();
+    DB::table('t_receive_orders')->delete();
 
     $actual = $this->method->invoke($this->service);
 

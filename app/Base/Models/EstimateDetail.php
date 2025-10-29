@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class EstimateDetail extends Model
 {
+  /** 最小変更：実体テーブル名を明示 */
+  protected $table = 't_estimate_details';
+
   public $timestamps = false;
 
   protected $fillable = [

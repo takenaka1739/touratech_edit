@@ -154,8 +154,6 @@ class ItemService
       'm_categories.name AS category_name',
       'm_suppliers.id AS supplier_id',
       'm_suppliers.name AS supplier_name',
-      't_stocks.domestic_stocks AS domestic_stock',
-      't_stocks.overseas_stocks AS overseas_stock',
       't_special_sales.is_sales_members_only AS is_sales_members_only',
       't_special_sales.start_at AS start_at',
       't_special_sales.end_at AS end_at',
@@ -281,7 +279,7 @@ class ItemService
 
       $b['category_id'] = $item->category_id;
       $b['supplier_id'] = $item->supplier_id;
-      $b['domestic_stock'] = $item->domestic_stock;
+      $b['domestic_stocks'] = $item->domestic_stocks;
       $b['overseas_stock'] = $item->overseas_stock;
 
       $c['is_sales_members_only'] = $item->is_sales_members_only;
@@ -424,17 +422,17 @@ class ItemService
   public function selected(int $id)
   {
     return Item::select(
-      'items.id',
-      'items.code',
-      'items.name',
-      'items.name',
-      'items.category_id',
-      'items.sales_unit_price',
-      'items.purchase_unit_price',
-      'item_classifications.name AS item_classification_name',
+      'm_items.id',
+      'm_items.code',
+      'm_items.name',
+      'm_items.name',
+      'm_items.item_number',
+      'm_items.sales_unit_price',
+      'm_items.purchase_unit_price',
+      'm_categories.name AS item_classification_name',
     )
-      ->leftJoin('item_classifications', 'item_classifications.id', '=', 'items.category_id')
-      ->where('items.id', $id)
+      ->leftJoin('m_categories', 'm_categories.id', '=', 'm_items.item_number')
+      ->where('m_items.id', $id)
       ->first()
       ->toArray();
   }

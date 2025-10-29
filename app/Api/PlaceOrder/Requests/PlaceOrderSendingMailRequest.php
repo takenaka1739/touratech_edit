@@ -12,7 +12,7 @@ class PlaceOrderSendingMailRequest extends BaseRequest
   public function rules()
   {
     return [
-      'id' => 'required|integer|exists:place_orders,id',
+      'id' => 'required|integer|exists:t_place_orders,id',
     ];
   }
 

@@ -49,8 +49,8 @@ class ReadMailServiceCreateReceiveOrderATest extends TestCase
       'send_personal' => 11000,
       'send_price' => 800,
     ]]);
-    DB::table("customers")->delete();
-    DB::table('customers')->insert([
+    DB::table("t_customers")->delete();
+    DB::table('t_customers')->insert([
       [
         "id" => 1,
         "name" => "得意先01",

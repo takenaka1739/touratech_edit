@@ -26,7 +26,7 @@ class InventoryImportServiceGetInventoryMovesTest extends TestCase
 
   public function testSuccessNoData()
   {
-    DB::table('inventory_moves')->delete();
+    DB::table('t_inventory_moves')->delete();
 
     $actual = $this->method->invoke($this->service,  '2021/01');
 
@@ -35,8 +35,8 @@ class InventoryImportServiceGetInventoryMovesTest extends TestCase
 
   public function testSuccess1()
   {
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-06-01',
         'detail_kind' => 1,
@@ -56,8 +56,8 @@ class InventoryImportServiceGetInventoryMovesTest extends TestCase
 
   public function testSuccess2()
   {
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-06-01',
         'detail_kind' => 2,
@@ -77,8 +77,8 @@ class InventoryImportServiceGetInventoryMovesTest extends TestCase
 
   public function testSuccess3()
   {
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-06-01',
         'detail_kind' => 2,
@@ -104,8 +104,8 @@ class InventoryImportServiceGetInventoryMovesTest extends TestCase
 
   public function testSuccess4()
   {
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-06-01',
         'detail_kind' => 2,
@@ -134,8 +134,8 @@ class InventoryImportServiceGetInventoryMovesTest extends TestCase
 
   public function testSuccess5()
   {
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-05-31',
         'detail_kind' => 2,

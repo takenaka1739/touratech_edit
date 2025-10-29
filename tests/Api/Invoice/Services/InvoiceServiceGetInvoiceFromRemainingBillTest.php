@@ -26,8 +26,8 @@ class InvoiceServiceGetInvoiceFromRemainingBillTest extends TestCase
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
     DB::table('invoices')->delete();
-    DB::table('customers')->delete();
-    DB::table('customers')->insert([
+    DB::table('t_customers')->delete();
+    DB::table('t_customers')->insert([
       [
         'id' => 1,
         'name' => '得意先01',

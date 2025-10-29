@@ -26,7 +26,7 @@ class InventoryImportServiceGetLatestInventoriesTest extends TestCase
 
   public function testSuccessNoData()
   {
-    DB::table('inventories')->delete();
+    DB::table('t_inventories')->delete();
 
     $actual = $this->method->invoke($this->service,  '2021/01');
 
@@ -35,8 +35,8 @@ class InventoryImportServiceGetLatestInventoriesTest extends TestCase
 
   public function testSuccess1()
   {
-    DB::table('inventories')->delete();
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/05',
         'item_number' => '00-0000-0001',
@@ -57,8 +57,8 @@ class InventoryImportServiceGetLatestInventoriesTest extends TestCase
 
   public function testSuccess2()
   {
-    DB::table('inventories')->delete();
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/04',
         'item_number' => '00-0000-0001',
@@ -79,8 +79,8 @@ class InventoryImportServiceGetLatestInventoriesTest extends TestCase
 
   public function testSuccess3()
   {
-    DB::table('inventories')->delete();
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/06',
         'item_number' => '00-0000-0001',
@@ -112,8 +112,8 @@ class InventoryImportServiceGetLatestInventoriesTest extends TestCase
 
   public function testSuccess4()
   {
-    DB::table('inventories')->delete();
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/06',
         'item_number' => '00-0000-0001',

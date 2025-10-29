@@ -146,13 +146,13 @@ class PlaceOrderExportService
   private function getPlaceOrders($cond)
   {
     $query = PlaceOrder::select(
-      'items.supplier_id',
-      'place_order_details.item_number',
-      DB::raw('SUM(place_order_details.quantity) AS quantity')
+      'm_items.supplier_id',
+      't_place_order_details.item_number',
+      DB::raw('SUM(t_place_order_details.quantity) AS quantity')
     );
     $query = $this->setCondition($query, $cond);
 
-    $query->groupBy('items.supplier_id', 'place_order_details.item_number');
+    $query->groupBy('m_items.supplier_id', 't_place_order_details.item_number');
 
     return $query->get();
   }
@@ -169,14 +169,14 @@ class PlaceOrderExportService
 
     $place_order_date_to = new Carbon($place_order_date_to);
 
-    $query->join('place_order_details', 'place_order_details.place_order_id', '=', 'place_orders.id')
-      ->join('items', 'items.id', '=', 'place_order_details.item_id')
+    $query->join('t_place_order_details', 't_place_order_details.place_order_id', '=', 't_place_orders.id')
+      ->join('m_items', 'm_items.id', '=', 't_place_order_details.item_id')
       ->where('place_order_date', '>=', $place_order_date_from)
       ->where('place_order_date', '<', $place_order_date_to->addDay())
-      ->whereNotNull('place_order_details.item_number');
+      ->whereNotNull('t_place_order_details.item_number');
 
     if (!$is_output) {
-      $query->whereNull('place_orders.order_file_name');
+      $query->whereNull('t_place_orders.order_file_name');
     }
 
     return $query;
@@ -214,19 +214,19 @@ class PlaceOrderExportService
 
     $place_order_date_to = new Carbon($place_order_date_to);
 
-    $query = DB::table('place_orders')
+    $query = DB::table('t_place_orders')
       ->where('place_order_date', '>=', $place_order_date_from)
       ->where('place_order_date', '<', $place_order_date_to->addDay())
       ->whereExists(function ($q) use ($supplierId) {
         $q->select(DB::raw(1))
-          ->from('place_order_details')
-          ->join('items', 'items.id', '=', 'place_order_details.item_id')
-          ->whereRaw('place_order_details.place_order_id = place_orders.id')
-          ->where('items.supplier_id', '=', $supplierId);
+          ->from('t_place_order_details')
+          ->join('m_items', 'm_items.id', '=', 't_place_order_details.item_id')
+          ->whereRaw('t_place_order_details.place_order_id = t_place_orders.id')
+          ->where('m_items.supplier_id', '=', $supplierId);
       });
 
     if (!$is_output) {
-      $query->whereNull('place_orders.order_file_name');
+      $query->whereNull('t_place_orders.order_file_name');
     }
 
     $query->update([

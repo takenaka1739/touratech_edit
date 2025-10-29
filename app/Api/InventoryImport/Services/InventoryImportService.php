@@ -29,9 +29,9 @@ class InventoryImportService
         'inventory_imports.quantity',
         'inventory_imports.stocks',
         'inventory_imports.unmatch',
-        'items.name_jp AS item_name',
+        'm_items.name_jp AS item_name',
       ])
-      ->leftJoin('items', 'items.item_number', '=', 'inventory_imports.item_number');
+      ->leftJoin('m_items', 'm_items.item_number', '=', 'inventory_imports.item_number');
       $query = $this->setCondition($query, $data);
       $query->orderBy('item_number');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -133,9 +133,9 @@ class InventoryImportService
       'inventory_imports.item_number',
       'inventory_imports.quantity',
       'inventory_imports.stocks',
-      'items.name_jp AS item_name',
+      'm_items.name_jp AS item_name',
     ])
-    ->leftJoin('items', 'items.item_number', '=', 'inventory_imports.item_number');
+    ->leftJoin('m_items', 'm_items.item_number', '=', 'inventory_imports.item_number');
     $query = $this->setCondition($query, $cond);
     $query->orderBy('item_number');
     $data = $query->get()->toArray();
@@ -158,7 +158,7 @@ class InventoryImportService
     $inventory_month = $data->get('c_inventory_month');
 
     DB::transaction(function() use ($inventory_month) {
-      DB::table('inventories')->insertUsing([
+      DB::table('t_inventories')->insertUsing([
         'import_month',
         'item_number',
         'quantity'
@@ -247,15 +247,15 @@ class InventoryImportService
    */
   private function getLatestInventories($inventory_month)
   {
-    $rows = DB::table('inventories')
+    $rows = DB::table('t_inventories')
       ->select(
-        'inventories.import_month',
-        'inventories.item_number',
-        'inventories.quantity'
+        't_inventories.import_month',
+        't_inventories.item_number',
+        't_inventories.quantity'
       )
-      ->join(DB::raw("(SELECT b.item_number, MAX(b.import_month) AS import_month FROM inventories b WHERE b.import_month < '" . $inventory_month . "' GROUP BY b.item_number) AS x"), function ($join) {
-        $join->on('x.import_month', "=", 'inventories.import_month')
-          ->on('x.item_number', "=", 'inventories.item_number');
+      ->join(DB::raw("(SELECT b.item_number, MAX(b.import_month) AS import_month FROM t_inventories b WHERE b.import_month < '" . $inventory_month . "' GROUP BY b.item_number) AS x"), function ($join) {
+        $join->on('x.import_month', "=", 't_inventories.import_month')
+          ->on('x.item_number', "=", 't_inventories.item_number');
       })
       ->get();
     return $rows;
@@ -274,7 +274,7 @@ class InventoryImportService
     $dt = new Carbon($date_from);
     $date_to = $dt->addMonth()->format("Y/m/d");
 
-    $rows = DB::table('inventory_moves')
+    $rows = DB::table('t_inventory_moves')
       ->select([
         'item_number',
         'detail_kind',
@@ -418,13 +418,13 @@ class InventoryImportService
 
     DB::table('temp_inventory')->insert($stocks);
 
-    DB::update("UPDATE items a
+    DB::update("UPDATE m_items a
       INNER JOIN temp_inventory b ON b.item_number = a.item_number
-      SET a.domestic_stock = b.stocks;");
+      SET a.domestic_stocks = b.stocks;");
 
-    DB::update("UPDATE items 
-      SET domestic_stock = 0 
-      WHERE NOT EXISTS (SELECT * FROM temp_inventory WHERE temp_inventory.item_number = items.item_number);");
+    DB::update("UPDATE m_items 
+      SET domestic_stocks = 0 
+      WHERE NOT EXISTS (SELECT * FROM temp_inventory WHERE temp_inventory.item_number = m_items.item_number);");
 
     Schema::drop('temp_inventory');
   }
@@ -438,7 +438,7 @@ class InventoryImportService
   private function getLatestStocks($inventory_month)
   {
     // 棚卸年月のデータを取得する
-    $inventories = DB::table('inventories')
+    $inventories = DB::table('t_inventories')
       ->select([
         'item_number',
         'quantity'
@@ -465,7 +465,7 @@ class InventoryImportService
     $dt = new Carbon($date);
     $date_from = $dt->addMonth()->format("Y/m/d");
 
-    $rows = DB::table('inventory_moves')
+    $rows = DB::table('t_inventory_moves')
       ->select([
         'item_number',
         'detail_kind',

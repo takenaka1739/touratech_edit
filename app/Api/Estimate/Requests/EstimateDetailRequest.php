@@ -12,7 +12,7 @@ class EstimateDetailRequest extends BaseRequest
   public function rules()
   {
     return [
-      'item_id' => 'required|integer|exists:items,id',
+      'item_id' => 'required|integer|exists:m_items,id',
       'unit_price' => 'required|numeric|price',
       'quantity' => 'required|integer|between:0,999',
     ];

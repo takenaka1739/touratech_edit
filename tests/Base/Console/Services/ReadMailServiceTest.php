@@ -28,8 +28,8 @@ class ReadMailServiceTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('receive_order_details')->delete();
-    DB::table('receive_orders')->delete();
+    DB::table('t_receive_order_details')->delete();
+    DB::table('t_receive_orders')->delete();
 
     DB::table('configs')->delete();
     DB::table('configs')->insert([[
@@ -56,8 +56,8 @@ class ReadMailServiceTest extends TestCase
       'pre_tax_rate' => 8,
       'tax_rate_change_at' => '2019-10-01',
     ]]);
-    DB::table("customers")->delete();
-    DB::table('customers')->insert([
+    DB::table("t_customers")->delete();
+    DB::table('t_customers')->insert([
       [
         "id" => 1,
         "name" => "得意先01",

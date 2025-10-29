@@ -14,8 +14,8 @@ class PlaceOrderStoreRequest extends BaseRequest
   public function rules()
   {
     return [
-      'receive_order_id' => 'nullable|integer|exists:receive_orders,id',
-      'details.*.receive_order_detail_id' => 'nullable|integer|exists:receive_order_details,id',
+      'receive_order_id' => 'nullable|integer|exists:t_receive_orders,id',
+      'details.*.receive_order_detail_id' => 'nullable|integer|exists:t_receive_order_details,id',
     ] +  $this->commonRules();
   }
 }

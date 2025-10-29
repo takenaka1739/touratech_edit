@@ -61,7 +61,7 @@ class ItemExcelService
       $sheet->setCellValue('C'.$y, $row->get("name_jp", ''));
       $sheet->setCellValue('D'.$y, $row->get('sales_unit_price'));
       $sheet->setCellValue('E'.$y, $row->get('purchase_unit_price'));
-      $sheet->setCellValue('F'.$y, $row->get('domestic_stock'));
+      $sheet->setCellValue('F'.$y, $row->get('domestic_stocks'));
       $sheet->setCellValue('G'.$y, $row->get('overseas_stock'));
 
       $y++;

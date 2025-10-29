@@ -46,11 +46,11 @@ class ReceiveOrderStatusService
       'rd.item_name_jp',
       'rd.item_kind',
       'i.item_number',
-      'i.domestic_stock',
+      'i.domestic_stocks',
     )
-    ->from('receive_orders AS r')
-    ->join('receive_order_details AS rd', 'rd.receive_order_id', '=', 'r.id')
-    ->join('items AS i', 'i.id', '=', 'rd.item_id')
+    ->from('t_receive_orders AS r')
+    ->join('t_receive_order_details AS rd', 'rd.receive_order_id', '=', 'r.id')
+    ->join('m_items AS i', 'i.id', '=', 'rd.item_id')
     ->whereIn('rd.item_kind', [1, 2])
     ->where(function ($q) {
       $q->where('rd.sales_completed', '<>', 1)

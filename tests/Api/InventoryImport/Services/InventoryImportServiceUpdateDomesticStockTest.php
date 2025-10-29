@@ -46,8 +46,8 @@ class InventoryImportServiceUpdateDomesticStockTest extends TestCase
       ],
     ]);
 
-    DB::table('inventories')->delete();
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/01',
         'item_number' => '01-00001-001',
@@ -59,8 +59,8 @@ class InventoryImportServiceUpdateDomesticStockTest extends TestCase
         'quantity' => 102,
       ],      
     ]);
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021/02/01',
         'detail_kind' => 1,

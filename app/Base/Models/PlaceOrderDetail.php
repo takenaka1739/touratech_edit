@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PlaceOrderDetail extends Model
 {
+  protected $table = 't_place_order_details';
   public $timestamps = false;
 
   protected $fillable = [

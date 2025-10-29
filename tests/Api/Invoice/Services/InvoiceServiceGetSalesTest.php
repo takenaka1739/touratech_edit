@@ -28,8 +28,8 @@ class InvoiceServiceGetSalesTest extends TestCase
     DB::table('sales_details')->delete();
     DB::table('sales')->delete();
 
-    DB::table('customers')->delete();
-    DB::table('customers')->insert([
+    DB::table('t_customers')->delete();
+    DB::table('t_customers')->insert([
       [
         'id' => 1,
         'name' => '得意先01',

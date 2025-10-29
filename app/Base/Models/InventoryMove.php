@@ -10,6 +10,7 @@ class InventoryMove extends Model
   const EDIT_KIND_SALES = 2;
 
   public $timestamps = false;
+  protected $table = 't_inventory_moves';
 
   protected $fillable = [
     'job_date',

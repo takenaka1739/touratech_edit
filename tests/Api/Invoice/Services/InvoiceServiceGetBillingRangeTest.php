@@ -23,8 +23,8 @@ class InvoiceServiceGetBillingRangeTest extends TestCase
     $this->method = $reflection->getMethod('getBillingRange');
     $this->method->setAccessible(true);
 
-    DB::table('customers')->delete();
-    DB::table('customers')->insert([
+    DB::table('t_customers')->delete();
+    DB::table('t_customers')->insert([
       [
         'id' => 1,
         'name' => '得意先01',
@@ -96,7 +96,7 @@ class InvoiceServiceGetBillingRangeTest extends TestCase
 
   public function testSuccessNoData()
   {
-    DB::table('customers')->delete();
+    DB::table('t_customers')->delete();
 
     $actual = $this->method->invoke($this->service, '2021/01', null);
 
@@ -105,7 +105,7 @@ class InvoiceServiceGetBillingRangeTest extends TestCase
 
   public function testSuccessNoData2()
   {
-    DB::table('customers')->delete();
+    DB::table('t_customers')->delete();
 
     $actual = $this->method->invoke($this->service, '2021/01');
 
@@ -114,7 +114,7 @@ class InvoiceServiceGetBillingRangeTest extends TestCase
 
   public function testSuccessNoData3()
   {
-    DB::table('customers')->delete();
+    DB::table('t_customers')->delete();
 
     $actual = $this->method->invoke($this->service, '2021/01', 31);
 

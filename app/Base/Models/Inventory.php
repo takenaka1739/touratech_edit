@@ -24,17 +24,17 @@ class Inventory extends Model
    */
   public static function getLatestInventories(array $item_numbers)
   {
-    $rows = DB::table('inventories')
+    $rows = DB::table('t_inventories')
       ->select([
-        'inventories.import_month',
-        'inventories.item_number',
-        'inventories.quantity'
+        't_inventories.import_month',
+        't_inventories.item_number',
+        't_inventories.quantity'
       ])
-      ->join(DB::raw("(SELECT b.item_number, MAX(b.import_month) AS import_month FROM inventories b GROUP BY b.item_number) AS x"), function ($join) {
-        $join->on('x.import_month', "=", 'inventories.import_month')
-          ->on('x.item_number', "=", 'inventories.item_number');
+      ->join(DB::raw("(SELECT b.item_number, MAX(b.import_month) AS import_month FROM t_inventories b GROUP BY b.item_number) AS x"), function ($join) {
+        $join->on('x.import_month', "=", 't_inventories.import_month')
+          ->on('x.item_number', "=", 't_inventories.item_number');
       })
-      ->whereIn('inventories.item_number', $item_numbers)
+      ->whereIn('t_inventories.item_number', $item_numbers)
       ->get();
 
     return $rows->groupBy('item_number');

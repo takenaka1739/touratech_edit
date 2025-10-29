@@ -23,10 +23,10 @@ class ShipmentPlanServiceGetShipmentPlanDataTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('place_orders')->delete();
-    DB::table('place_order_details')->delete();
+    DB::table('t_place_orders')->delete();
+    DB::table('t_place_order_details')->delete();
 
-    DB::table('shipment_plans')->delete();
+    DB::table('t_shipment_plans')->delete();
     DB::table('items')->delete();
     DB::table('items')->insert([
       [
@@ -60,7 +60,7 @@ class ShipmentPlanServiceGetShipmentPlanDataTest extends TestCase
 
   public function testSuccess1()
   {
-    DB::table('shipment_plans')->insert([
+    DB::table('t_shipment_plans')->insert([
       [
         'id' => 3,
         'shipment_plan_date' => '2021/01/02',
@@ -106,7 +106,7 @@ class ShipmentPlanServiceGetShipmentPlanDataTest extends TestCase
   
   public function testSuccess2()
   {
-    DB::table('place_orders')->insert([
+    DB::table('t_place_orders')->insert([
       [
         'id' => 1,
         'place_order_date' => '2021/11/11',
@@ -118,7 +118,7 @@ class ShipmentPlanServiceGetShipmentPlanDataTest extends TestCase
         'order_file_name' => 'order_1002_20211111.csv',
       ],
     ]);
-    DB::table('place_order_details')->insert([
+    DB::table('t_place_order_details')->insert([
       [
         'id' => 11,
         'place_order_id' => 1,
@@ -154,7 +154,7 @@ class ShipmentPlanServiceGetShipmentPlanDataTest extends TestCase
       ],
     ]);
 
-    DB::table('shipment_plans')->insert([
+    DB::table('t_shipment_plans')->insert([
       [
         'id' => 3,
         'shipment_plan_date' => '2021/01/02',

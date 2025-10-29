@@ -50,7 +50,7 @@ trait ItemRequestTrait
         'required',
         'string',
         'max:50',
-        Rule::unique('items', 'item_number')->where(function ($q) {
+        Rule::unique('m_items', 'item_number')->where(function ($q) {
           return $q->whereNull('deleted_at');
         })
       ],

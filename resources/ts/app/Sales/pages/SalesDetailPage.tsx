@@ -1,4 +1,5 @@
-import React from 'react';
+// [UPDATE] resources/ts/app/Sales/pages/SalesDetailPage.tsx
+import React, { useMemo, useCallback } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
 import { CommonDataDetailDialog } from '@/app/App/components/CommonDataDetailDialog';
@@ -50,6 +51,52 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     onClickCreateCustomer,
   } = useSalesDetailPage(slug, from_receive);
 
+  // ---------- 安全なデフォルト（壊れないための保険） ----------
+  const details = useMemo(() => (Array.isArray(state?.details) ? state.details : []), [state?.details]);
+  const safeNumber = (v: number | string | undefined, p: number = 0) => numberFormat((v as number) ?? 0, p);
+
+  // ---------- 簡易バリデーション（必須未入力でも保存できてしまう問題の暫定ガード） ----------
+  const validateBeforeSave = useCallback((): string[] => {
+    const msgs: string[] = [];
+    const s = state || {};
+
+    // 基本必須
+    if (!s.sales_at) msgs.push('売上日');
+    if (!s.tel) msgs.push('TEL');
+    if (!s.corporate_class && s.corporate_class !== 0) msgs.push('法人区分');
+
+    // 発送ありの場合の必須
+    if (s.send_flg) {
+      if (!s.name) msgs.push('届け先名');
+      if (!s.zip_code) msgs.push('郵便番号');
+      if (!s.address1) msgs.push('住所1');
+    }
+
+    // 担当・得意先（要件により外して良ければ調整可）
+    if (!s.user_id) msgs.push('担当者');
+    if (!s.customer_id) msgs.push('得意先');
+
+    // 明細
+    if (!details.length) {
+      msgs.push('明細（少なくとも1行）');
+    } else {
+      const invalidQty = details.some((r: any) => r?.quantity === null || r?.quantity === undefined || Number(r.quantity) <= 0);
+      if (invalidQty) msgs.push('明細の数量（0以下の行があります）');
+    }
+
+    return msgs;
+  }, [state, details]);
+
+  const handleSave = useCallback(() => {
+    const msgs = validateBeforeSave();
+    if (msgs.length > 0) {
+      alert(`未入力/不正があります。\n\n・${msgs.join('\n・')}`);
+      return;
+    }
+    // フック側の保存を呼ぶ
+    onClickSave();
+  }, [onClickSave, validateBeforeSave]);
+
   return (
     <PageWrapper
       prefix={`${slug}-detail`}
@@ -83,18 +130,18 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           </div>
         </div>
       </div>
+
       <div className="form-group-wrapper">
         {errors?.has_invoice && (
           <div className="bg-red-200 py-2 px-4 text-sm">{errors?.has_invoice}</div>
         )}
+
         <div className="flex max-w-2xl">
           <div className="w-2/5">
             <Forms.FormGroupInputDate
               labelText="売上日"
               name="sales_at"
-              value={
-                state.sales_at ? state.sales_at.substring(0, 10).replace(/-/g, '/') : ''
-              }
+              value={state.sales_at ? state.sales_at.substring(0, 10).replace(/-/g, '/') : ''}
               error={errors?.sales_at}
               onChange={onChange}
               groupClassName="mt-0"
@@ -110,6 +157,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             )}
           </div>
         </div>
+
         <div>
           <Forms.FormGroup labelText="得意先" error={errors?.customer_id}>
             <div className="flex">
@@ -128,6 +176,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           </Forms.FormGroup>
           <CustomerSearchDialog {...customerSearchDialogProps} />
         </div>
+
         <div className="flex max-w-4xl">
           <div className="w-4/6">
             <Forms.FormGroupInputText
@@ -146,7 +195,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               id="send_flg"
               name="send_flg"
               value={1}
-              checked={state.send_flg}
+              checked={!!state.send_flg}
               onChange={onChange}
             />
           </div>
@@ -156,6 +205,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             </button>
           </div>
         </div>
+
         <Forms.FormGroupInputZipCode
           labelText="郵便番号"
           name="zip_code"
@@ -183,6 +233,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           className="max-w-lg"
           maxLength={30}
         />
+
         <div className="flex max-w-2xl">
           <div className="w-2/5">
             <Forms.FormGroupInputTel
@@ -204,12 +255,14 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             />
           </div>
         </div>
+
         <Forms.FormCorporateClass
           corporateClass={state.corporate_class}
           error={errors?.corporate_class}
           required
           onChange={onChange}
         />
+
         <div>
           <Forms.FormGroup labelText="担当者" error={errors?.user_id}>
             <div className="flex">
@@ -228,6 +281,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           </Forms.FormGroup>
           <UserSearchDialog {...userSearchDialogProps} />
         </div>
+
         <Forms.FormGroupInputText
           labelText="注文番号"
           name="order_no"
@@ -237,7 +291,9 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           className="max-w-xs"
           maxLength={20}
         />
+
         <hr className="border-dashed border-gray-400 mt-6" />
+
         <div className="p-6">
           <div className="flex items-center">
             <div>
@@ -271,6 +327,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               )}
             </div>
           </div>
+
           <table className="table w-full">
             <thead>
               <tr>
@@ -285,37 +342,53 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                 <th className="w-16">編集</th>
               </tr>
             </thead>
+
             <tbody>
-              {state.details.map(r => (
-                <tr key={r.id}>
-                  <td className="text-center">{r.id}</td>
-                  <td>{getItemKindName(r.item_kind)}</td>
-                  <td>
-                    <div className="text-xs">{r.item_number}</div>
-                    <div>{r.item_name}</div>
-                    <div>{r.item_name_jp}</div>
-                  </td>
-                  <td className="text-right">{numberFormat(r.sales_unit_price, 2)}</td>
-                  <td className="text-right">{r.rate}</td>
-                  <td className="text-right">{numberFormat(r.unit_price, 2)}</td>
-                  <td
-                    className={classNames(
-                      'text-right',
-                      errors && `quantity_${r.id}` in errors ? 'bg-red-200' : ''
-                    )}
-                  >
-                    {r.quantity}
-                  </td>
-                  <td className="text-right">{numberFormat(r.amount, 0)}</td>
-                  <td className="col-btn">
-                    <span onClick={onClickEditDetail} data-no={r.id}>
-                      編集
-                    </span>
+              {details.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="text-center py-4 text-sm text-gray-500">
+                    明細がありません。バーコード入力または「新規追加」から追加してください。
                   </td>
                 </tr>
-              ))}
+              )}
+
+              {details.map((r: any, idx: number) => {
+                // ユニークキー警告対策：id / no が無い場合にも固有化
+                const key = `${r?.id ?? 'tmp'}-${r?.no ?? idx}`;
+                return (
+                  <tr key={key}>
+                    {/* 先頭列は id がなければ no を見せる */}
+                    <td className="text-center">{r?.id ?? r?.no}</td>
+                    <td>{getItemKindName(r?.item_kind)}</td>
+                    <td>
+                      <div className="text-xs">{r?.item_number}</div>
+                      <div>{r?.item_name}</div>
+                      <div>{r?.item_name_jp}</div>
+                    </td>
+                    <td className="text-right">{safeNumber(r?.sales_unit_price, 2)}</td>
+                    <td className="text-right">{r?.rate ?? ''}</td>
+                    <td className="text-right">{safeNumber(r?.unit_price, 2)}</td>
+                    <td
+                      className={classNames(
+                        'text-right',
+                        errors && (`quantity_${r?.id ?? r?.no}` in errors) ? 'bg-red-200' : ''
+                      )}
+                    >
+                      {r?.quantity}
+                    </td>
+                    <td className="text-right">{safeNumber(r?.amount, 0)}</td>
+                    <td className="col-btn">
+                      {/* button にしてフォーカス可能＆data-noはr.noを優先 */}
+                      <button type="button" onClick={onClickEditDetail} data-no={r?.no} className="underline">
+                        編集
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+
           {errors?.details && <div className="form-error ml-2">{errors.details}</div>}
           {errors?.quantity && <div className="form-error ml-2">{errors.quantity}</div>}
 
@@ -327,6 +400,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             salesTaxRate={state.sales_tax_rate ?? 0}
           />
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -353,6 +427,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             />
           </div>
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -367,18 +442,20 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             />
           </div>
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputText
               labelText="合計金額"
               name="total_amount"
-              value={numberFormat(state.total_amount, 0)}
+              value={numberFormat(state.total_amount ?? 0, 0)}
               className="max-w-8 text-right text-sm"
               removeOptionalLabel
               readOnly
             />
           </div>
         </div>
+
         <Forms.FormGroupTextarea
           labelText="備考"
           name="remarks"
@@ -388,10 +465,12 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           onChange={onChange}
         />
       </div>
+
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>
-            <button className="btn" onClick={onClickSave} disabled={state.has_invoice}>
+            {/* onClickSave 直呼び→ handleSave で暫定バリデーション */}
+            <button className="btn" onClick={handleSave} disabled={state.has_invoice}>
               保存
             </button>
             <button className="btn ml-6" onClick={onClickPrintDelivery}>

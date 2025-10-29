@@ -112,8 +112,8 @@ class SalesServiceInsertInventoryMovesTest extends TestCase
       ],
     ]);
 
-    DB::table('inventory_moves')->delete();
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->delete();
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-01-03',
         'detail_kind' => 1,

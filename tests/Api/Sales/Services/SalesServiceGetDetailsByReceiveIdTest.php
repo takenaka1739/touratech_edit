@@ -51,8 +51,8 @@ class SalesServiceGetDetailsByReceiveIdTest extends TestCase
       ],
     ]);
 
-    DB::table('receive_order_details')->delete();
-    DB::table('receive_order_details')->insert([
+    DB::table('t_receive_order_details')->delete();
+    DB::table('t_receive_order_details')->insert([
       [
         'id' => 11,
         'receive_order_id' => 1,

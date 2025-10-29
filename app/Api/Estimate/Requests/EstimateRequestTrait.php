@@ -14,7 +14,7 @@ trait EstimateRequestTrait
     return [
       'estimate_date' => 'required|date',
       'delivery_date' => 'nullable|date',
-      'customer_id' => 'nullable|integer|exists:customers,id',
+      'customer_id' => 'nullable|integer|exists:t_customers,id',
       'customer_name' => 'required|string|max:30',
       'send_flg' => 'required|boolean',
       'name' => 'required_if:send_flg,true|nullable|string|max:30',
@@ -48,7 +48,7 @@ trait EstimateRequestTrait
         'integer',
         Rule::in(1, 2),
       ],
-      'details.*.item_id' => 'required|integer|exists:items,id',
+      'details.*.item_id' => 'required|integer|exists:m_items,id',
       'details.*.item_number' => 'nullable|string|max:50',
       'details.*.item_name' => 'nullable|string|max:400',
       'details.*.item_name_jp' => 'nullable|string|max:400',

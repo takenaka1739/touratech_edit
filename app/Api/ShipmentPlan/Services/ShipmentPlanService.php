@@ -42,15 +42,15 @@ class ShipmentPlanService
     $c_shipment_plan_date_to = $input->get('c_shipment_plan_date_to');
 
     $rows = ShipmentPlan::select([
-      'shipment_plans.item_number',
+      't_shipment_plans.item_number',
     ])
-      ->where('shipment_plans.shipment_plan_date', '>=', $c_shipment_plan_date_from)
-      ->where('shipment_plans.shipment_plan_date', '<=', $c_shipment_plan_date_to)
-      ->whereIn('shipment_plans.id', $selected)
+      ->where('t_shipment_plans.shipment_plan_date', '>=', $c_shipment_plan_date_from)
+      ->where('t_shipment_plans.shipment_plan_date', '<=', $c_shipment_plan_date_to)
+      ->whereIn('t_shipment_plans.id', $selected)
       ->whereNotExists(function($q) {
         $q->select(DB::raw(1))
-          ->from('items')
-          ->whereRaw('items.item_number = shipment_plans.item_number');
+          ->from('m_items')
+          ->whereRaw('m_items.item_number = t_shipment_plans.item_number');
       })
       ->get();
 
@@ -72,11 +72,11 @@ class ShipmentPlanService
       // 仕入データを作成する
       $data = $this->getPurchaseData(Auth::user()->id, $rows);
 
-      DB::table('purchases')->insert($data['data']);
-      DB::table('purchase_details')->insert($data['details']);
+      DB::table('t_purchases')->insert($data['data']);
+      DB::table('t_purchase_details')->insert($data['details']);
 
-      $this->insertPlaceOrderPurchase($data['link_p_order_purchase']);
-      $this->insertPlaceOrderDetailPurchaseDetail($data['link_p_order_purchase_detail']);
+      $this->insertPlaceOrderPurchase($data['t_link_p_order_purchase']);
+      $this->insertPlaceOrderDetailPurchaseDetail($data['t_link_p_order_purchase_detail']);
 
       // place_order_detailsのpurchasedを更新する
       $this->updatePlaceOrderDetailsPurchased();
@@ -93,9 +93,9 @@ class ShipmentPlanService
       // 最新の棚卸データと増減をマージする
       $items = $this->mergeLatestMoves($latest, $moves);
       foreach ($items as $item) {
-        DB::table('items')
+        DB::table('m_items')
           ->where('item_number', $item['item_number'])
-          ->update(['domestic_stock' => $item['stocks']]);
+          ->update(['domestic_stocks' => $item['stocks']]);
       }
 
     });
@@ -115,23 +115,23 @@ class ShipmentPlanService
     $c_shipment_plan_date_to = $input->get('c_shipment_plan_date_to');
 
     $query = ShipmentPlan::select([
-      'shipment_plans.shipment_plan_date',
-      'shipment_plans.item_number',
-      'shipment_plans.quantity',
-      'items.name_label',
-      'items.sales_unit_price',
+      't_shipment_plans.shipment_plan_date',
+      't_shipment_plans.item_number',
+      't_shipment_plans.quantity',
+      'm_items.name_label',
+      'm_items.sales_unit_price',
     ])
-      ->leftJoin('items', 'items.item_number', '=', 'shipment_plans.item_number')
-      ->where('shipment_plans.shipment_plan_date', '>=', $c_shipment_plan_date_from)
-      ->where('shipment_plans.shipment_plan_date', '<=', $c_shipment_plan_date_to);
+      ->leftJoin('m_items', 'm_items.item_number', '=', 't_shipment_plans.item_number')
+      ->where('t_shipment_plans.shipment_plan_date', '>=', $c_shipment_plan_date_from)
+      ->where('t_shipment_plans.shipment_plan_date', '<=', $c_shipment_plan_date_to);
 
     $c_item_number = $input->get('c_item_number');
     if ($c_item_number) {
-      $query->where('shipment_plans.item_number', 'like', '%' . escape_like($c_item_number) . '%');
+      $query->where('t_shipment_plans.item_number', 'like', '%' . escape_like($c_item_number) . '%');
     }
 
-    $query->whereIn('shipment_plans.id', $selected);
-    $query->orderBy('shipment_plans.item_number');
+    $query->whereIn('t_shipment_plans.id', $selected);
+    $query->orderBy('t_shipment_plans.item_number');
     $rows = $query->get();
 
     $data = [];
@@ -161,34 +161,34 @@ class ShipmentPlanService
     $c_shipment_plan_date_from = $input->get('c_shipment_plan_date_from');
     $c_shipment_plan_date_to = $input->get('c_shipment_plan_date_to');
 
-    $placeOrders = DB::table('place_orders')
-      ->join('place_order_details', 'place_order_details.place_order_id', '=', 'place_orders.id')
+    $placeOrders = DB::table('t_place_orders')
+      ->join('t_place_order_details', 't_place_order_details.place_order_id', '=', 't_place_orders.id')
       ->select([
-        'place_orders.id AS place_order_id',
-        'place_orders.order_file_name',
-        'place_order_details.id AS place_order_detail_id',
-        'place_order_details.item_number',
+        't_place_orders.id AS place_order_id',
+        't_place_orders.order_file_name',
+        't_place_order_details.id AS place_order_detail_id',
+        't_place_order_details.item_number',
       ]);
 
     $query = ShipmentPlan::select([
-      'shipment_plans.id',
-      'shipment_plans.shipment_plan_date',
-      'shipment_plans.item_number',
-      'shipment_plans.unit_price',
-      'shipment_plans.quantity',
-      'shipment_plans.amount',
-      'items.id AS item_id',
+      't_shipment_plans.id',
+      't_shipment_plans.shipment_plan_date',
+      't_shipment_plans.item_number',
+      't_shipment_plans.unit_price',
+      't_shipment_plans.quantity',
+      't_shipment_plans.amount',
+      'm_items.id AS item_id',
       'po.place_order_id',
       'po.place_order_detail_id',
     ])
-      ->leftJoin('items', 'items.item_number', '=', 'shipment_plans.item_number')
+      ->leftJoin('m_items', 'm_items.item_number', '=', 't_shipment_plans.item_number')
       ->leftJoinSub($placeOrders, 'po', function($join) {
-        $join->on('shipment_plans.place_order_no', '=', 'po.order_file_name')
-          ->on('shipment_plans.item_number', '=', 'po.item_number');
+        $join->on('t_shipment_plans.place_order_no', '=', 'po.order_file_name')
+          ->on('t_shipment_plans.item_number', '=', 'po.item_number');
       })
-      ->where('shipment_plans.shipment_plan_date', '>=', $c_shipment_plan_date_from)
-      ->where('shipment_plans.shipment_plan_date', '<=', $c_shipment_plan_date_to)
-      ->whereIn('shipment_plans.id', $selected);
+      ->where('t_shipment_plans.shipment_plan_date', '>=', $c_shipment_plan_date_from)
+      ->where('t_shipment_plans.shipment_plan_date', '<=', $c_shipment_plan_date_to)
+      ->whereIn('t_shipment_plans.id', $selected);
     return $query->get()->toArray();
   }
 
@@ -201,8 +201,8 @@ class ShipmentPlanService
    */
   private function getPurchaseData(int $user_id, array $rows)
   {
-    $id = DB::table('purchases')->max('id');
-    $detail_id = DB::table('purchase_details')->max('id');
+    $id = DB::table('t_purchases')->max('id');
+    $detail_id = DB::table('t_purchase_details')->max('id');
 
     $items = $this->getItems();
 
@@ -284,8 +284,8 @@ class ShipmentPlanService
     return [
        'data' => $data,
        'details' => $details,
-       'link_p_order_purchase' => $link_p_order_purchase,
-       'link_p_order_purchase_detail' => $link_p_order_purchase_detail,
+       't_link_p_order_purchase' => $link_p_order_purchase,
+       't_link_p_order_purchase_detail' => $link_p_order_purchase_detail,
        'moves' => $moves,
     ];
   }
@@ -326,7 +326,7 @@ class ShipmentPlanService
    */
   private function getItems()
   {
-    $rows = DB::table('items')->get();
+    $rows = DB::table('m_items')->get();
     return $rows->groupBy('id')->toArray();
   }
 
@@ -337,7 +337,7 @@ class ShipmentPlanService
    */
   private function insertPlaceOrderPurchase($rows)
   {
-    DB::table('link_p_order_purchase')->insert($rows);
+    DB::table('t_link_p_order_purchase')->insert($rows);
   }
 
   /**
@@ -347,7 +347,7 @@ class ShipmentPlanService
    */
   private function insertPlaceOrderDetailPurchaseDetail($rows)
   {
-    DB::table('link_p_order_purchase_detail')->insert($rows);
+    DB::table('t_link_p_order_purchase_detail')->insert($rows);
   }
 
   /**
@@ -355,11 +355,11 @@ class ShipmentPlanService
    */
   private function updatePlaceOrderDetailsPurchased()
   {
-    DB::table('place_order_details')
+    DB::table('t_place_order_details')
       ->whereExists(function ($query) {
         $query->select(DB::raw(1))
-          ->from('link_p_order_purchase_detail')
-          ->whereRaw('link_p_order_purchase_detail.place_order_detail_id = place_order_details.id');
+          ->from('t_link_p_order_purchase_detail')
+          ->whereRaw('t_link_p_order_purchase_detail.place_order_detail_id = t_place_order_details.id');
       })
       ->update(['purchased' => 1]);
   }
@@ -371,7 +371,7 @@ class ShipmentPlanService
    */
   private function insertMoves(array $moves)
   {
-    DB::table('inventory_moves')->insert($moves);
+    DB::table('t_inventory_moves')->insert($moves);
   }
 
   /**
@@ -381,15 +381,15 @@ class ShipmentPlanService
    */
   private function getLatestInventories()
   {
-    $rows = DB::table('inventories')
+    $rows = DB::table('t_inventories')
       ->select(
-        'inventories.import_month',
-        'inventories.item_number',
-        'inventories.quantity'
+        't_inventories.import_month',
+        't_inventories.item_number',
+        't_inventories.quantity'
       )
-      ->join(DB::raw("(SELECT b.item_number, MAX(b.import_month) AS import_month FROM inventories b GROUP BY b.item_number) AS x"), function ($join) {
-        $join->on('x.import_month', "=", 'inventories.import_month')
-          ->on('x.item_number', "=", 'inventories.item_number');
+      ->join(DB::raw("(SELECT b.item_number, MAX(b.import_month) AS import_month FROM t_inventories b GROUP BY b.item_number) AS x"), function ($join) {
+        $join->on('x.import_month', "=", 't_inventories.import_month')
+          ->on('x.item_number', "=", 't_inventories.item_number');
       })
       ->get();
     return $rows;

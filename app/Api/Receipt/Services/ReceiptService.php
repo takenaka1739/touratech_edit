@@ -152,14 +152,14 @@ class ReceiptService
   public function getCustomer(int $customer_id)
   {
     $row = Customer::select([
-        'customers.id',
-        'customers.name',
+        't_customers.id',
+        't_customers.name',
         'invoices.total_amount',
         'invoices.total_tax',
         'invoices.total_invoice',
       ])
-      ->where('customers.id', '=', $customer_id)
-      ->leftJoin('invoices', 'invoices.customer_id', '=', 'customers.id')
+      ->where('t_customers.id', '=', $customer_id)
+      ->leftJoin('invoices', 'invoices.customer_id', '=', 't_customers.id')
       ->orderBy('invoices.invoice_month', 'DESC')
       ->first();
 

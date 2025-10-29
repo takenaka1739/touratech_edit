@@ -12,7 +12,7 @@ class SetItemDetailRequest extends BaseRequest
   public function rules()
   {
     return [
-      'item_id' => 'required|integer|exists:items,id',
+      'item_id' => 'required|integer|exists:m_items,id',
       'quantity' => 'required|integer|between:0,999',
       'set_price' => 'required|numeric|price',
     ];

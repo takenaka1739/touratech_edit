@@ -29,13 +29,13 @@ class PurchaseService
   public function fetch(array $cond)
   {
     $query = Purchase::select(
-      'purchases.id',
-      'purchase_date',
-      'total_amount',
-      'm_personnels.name AS user_name',
+      't_purchases.id',
+      't_purchases.purchase_date',
+      't_purchases.total_amount',
+      'm_personnels.name AS user_name'
     );
     $query = $this->setCondition($query, $cond);
-    $query->orderBy('purchase_date', 'desc');
+    $query->orderBy('t_purchases.purchase_date', 'desc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
@@ -48,13 +48,13 @@ class PurchaseService
   public function get(int $purchase_id)
   {
     $data = Purchase::select(
-      'purchases.*',
+      't_purchases.*',
       'm_personnels.name AS user_name',
-      'link_p_order_purchase.place_order_id',
+      't_link_p_order_purchase.place_order_id'
     )
-      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'purchases.user_id')
-      ->leftJoin('link_p_order_purchase', 'link_p_order_purchase.purchase_id', '=', 'purchases.id')
-      ->where('purchases.id', $purchase_id)
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_purchases.user_id')
+      ->leftJoin('t_link_p_order_purchase', 't_link_p_order_purchase.purchase_id', '=', 't_purchases.id')
+      ->where('t_purchases.id', $purchase_id)
       ->first()
       ->toArray();
 
@@ -70,6 +70,7 @@ class PurchaseService
   public function newData()
   {
     $m = new Purchase();
+    // 画面初期値は Y/m/d 表記（保存時に正規化）
     $m->purchase_date = Carbon::today()->format('Y/m/d');
     $m->total_amount = null;
     $data = $m->toArray();
@@ -90,8 +91,21 @@ class PurchaseService
   public function store(array $data)
   {
     $data = new Collection($data);
+
     DB::transaction(function () use ($data) {
-      $m = Purchase::create($data->toArray());
+      // t_purchases は AUTO_INCREMENT なし → 手動採番（FOR UPDATE）
+      $nextId = (int) DB::table('t_purchases')->lockForUpdate()->max('id');
+      $newId  = $nextId + 1;
+
+      $payload = $data->toArray();
+      $payload['id'] = $newId;
+
+      // 日付を 'Y-m-d' or 'Y-m-d H:i:s' に正規化
+      if (!empty($payload['purchase_date'])) {
+        $payload['purchase_date'] = $this->normalizeDate($payload['purchase_date']);
+      }
+
+      $m = Purchase::create($payload);
       $m->save();
 
       // 発注仕入連結テーブルを登録する
@@ -121,12 +135,19 @@ class PurchaseService
   public function update(int $id, array $data)
   {
     $data = new Collection($data);
+
     DB::transaction(function () use ($id, $data) {
       $m = Purchase::find($id);
 
       $pre_item_numbers = $m->getItemNumbers();
 
-      $m->purchase_date = $data->get('purchase_date');
+      // 日付正規化
+      $purchase_date = $data->get('purchase_date');
+      if ($purchase_date) {
+        $purchase_date = $this->normalizeDate($purchase_date);
+      }
+
+      $m->purchase_date = $purchase_date;
       $m->user_id = $data->get('user_id');
       $m->total_amount = $data->get('total_amount');
       $m->remarks = $data->get('remarks');
@@ -171,18 +192,18 @@ class PurchaseService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'purchases.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 't_purchases.user_id');
 
     $cond = new Collection($cond);
 
     $c_purchase_date_from = $cond->get('c_purchase_date_from');
     if ($c_purchase_date_from) {
-      $query->where('purchase_date', '>=', $c_purchase_date_from);
+      $query->where('t_purchases.purchase_date', '>=', $this->normalizeDate($c_purchase_date_from));
     }
 
     $c_purchase_date_to = $cond->get('c_purchase_date_to');
     if ($c_purchase_date_to) {
-      $query->where('purchase_date', '<=', $c_purchase_date_to);
+      $query->where('t_purchases.purchase_date', '<=', $this->normalizeDate($c_purchase_date_to, true));
     }
 
     $c_customer_name = $cond->get('c_user_name');
@@ -194,23 +215,23 @@ class PurchaseService
     if ($c_item_number) {
       $query->whereExists(function ($q) use ($c_item_number) {
         $q->select(DB::raw(1))
-          ->from('purchase_details')
-          ->whereRaw('purchase_details.purchase_id = purchases.id')
-          ->where('purchase_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
-        });
+          ->from('t_purchase_details')
+          ->whereRaw('t_purchase_details.purchase_id = t_purchases.id')
+          ->where('t_purchase_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
+      });
     }
 
     $c_name = $cond->get('c_name');
     if ($c_name) {
       $query->whereExists(function ($q) use ($c_name) {
         $q->select(DB::raw(1))
-          ->from('purchase_details')
-          ->whereRaw('purchase_details.purchase_id = purchases.id')
+          ->from('t_purchase_details')
+          ->whereRaw('t_purchase_details.purchase_id = t_purchases.id')
           ->where(function($q) use ($c_name) {
-            $q->where('purchase_details.item_name', 'like', '%' . escape_like($c_name) . '%')
-              ->orWhere('purchase_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
+            $q->where('t_purchase_details.item_name', 'like', '%' . escape_like($c_name) . '%')
+              ->orWhere('t_purchase_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
-        });
+      });
     }
 
     return $query;
@@ -224,10 +245,8 @@ class PurchaseService
    */
   private function getDetails(int $purchase_id)
   {
-    return DB::table('purchase_details')
-      ->select(
-        'purchase_details.*',
-      )
+    return DB::table('t_purchase_details')
+      ->select('t_purchase_details.*')
       ->where('purchase_id', $purchase_id)
       ->whereIn('item_kind', [1, 2])
       ->orderBy('purchase_id')
@@ -248,7 +267,6 @@ class PurchaseService
     if ($details) {
       foreach ($details as $detail) {
         $detail = new Collection($detail);
-
         $this->createDetailItems($purchase_id, $detail, $place_order_id);
       }
     }
@@ -358,7 +376,7 @@ class PurchaseService
 
     // 商品IDが変わった場合、セット品の明細を削除する
     if ($prev_item_id != $item_id) {
-      DB::table('purchase_details')->where('parent_id', $id)->delete();
+      DB::table('t_purchase_details')->where('parent_id', $id)->delete();
 
       // セット品の場合、セット品の明細を登録する
       if ($item_kind === 2) {
@@ -395,7 +413,7 @@ class PurchaseService
         'parent_id' => $parent->id,
       ];
     }
-    DB::table('purchase_details')->insert($data);
+    DB::table('t_purchase_details')->insert($data);
   }
 
   /**
@@ -403,7 +421,7 @@ class PurchaseService
    *
    * @param int $purchase_id 仕入ID
    * @param int $place_order_detail_id 発注明細ID
-   * @param EstimateDetail $parent 親データ
+   * @param PurchaseDetail $parent 親データ
    */
   private function createSetItemsByPlaceOrder(
     int $purchase_id,
@@ -412,9 +430,7 @@ class PurchaseService
   ) {
     $rows = PlaceOrderDetail::where('parent_id', $place_order_detail_id)->get();
 
-    $data = [];
     foreach ($rows as $row) {
-
       $m = PurchaseDetail::create([
         'id' => null,
         'purchase_id' => $purchase_id,
@@ -449,7 +465,7 @@ class PurchaseService
     // 変更前のIDと更新されたIDの差分を取得する
     $deleteIds = array_diff($prevIds, $currentIds);
 
-    DB::table('purchase_details')
+    DB::table('t_purchase_details')
       ->whereIn('id', $deleteIds)
       ->delete();
   }
@@ -461,7 +477,7 @@ class PurchaseService
    * @return array
    */
   private function getPrevDetailIds(int $purchase_id) {
-    $data =  DB::table('purchase_details')
+    $data =  DB::table('t_purchase_details')
       ->where('purchase_id', $purchase_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')
@@ -476,7 +492,7 @@ class PurchaseService
    * @param int $purchase_id 仕入ID
    */
   private function insertPlaceOrderPurchase(int $place_order_id, int $purchase_id) {
-    DB::table('link_p_order_purchase')->insert([
+    DB::table('t_link_p_order_purchase')->insert([
       ['place_order_id' => $place_order_id, 'purchase_id' => $purchase_id]
     ]);
   }
@@ -489,7 +505,7 @@ class PurchaseService
    */
   private function insertPlaceOrderDetailPurchaseDetail(int $place_order_detail_id, int $purchase_detail_id) {
     if ($place_order_detail_id) {
-      DB::table('link_p_order_purchase_detail')->insert([
+      DB::table('t_link_p_order_purchase_detail')->insert([
         ['place_order_detail_id' => $place_order_detail_id, 'purchase_detail_id' => $purchase_detail_id]
       ]);
     }
@@ -502,21 +518,37 @@ class PurchaseService
    */
   private function insertInventoryMoves(int $purchase_id)
   {
-    DB::table('inventory_moves')->where('purchase_id', '=', $purchase_id)->delete();
-    DB::insert("INSERT INTO inventory_moves (job_date
-      , detail_kind
-      , purchase_id
-      , item_number
-      , quantity
-      , created_at)
-    SELECT p.purchase_date
-      , 1
-      , p.id
-      , d.item_number
-      , d.quantity
-      , CURRENT_TIMESTAMP
-    FROM purchases p INNER JOIN purchase_details d ON d.purchase_id = p.id
-    WHERE p.id = :id AND d.item_kind <> 2 ", ['id' => $purchase_id]);
+    // 既存削除
+    DB::table('t_inventory_moves')->where('purchase_id', '=', $purchase_id)->delete();
+
+    // item_number が NULL/空文字の行は在庫移動を作らない
+    // quantity が NULL の場合は 0 に補正
+    DB::insert("
+      INSERT INTO t_inventory_moves (
+          job_date,
+          detail_kind,
+          sales_id,
+          purchase_id,
+          item_number,
+          quantity,
+          created_at
+      )
+      SELECT
+          p.purchase_date       AS job_date,
+          1                     AS detail_kind,
+          NULL                  AS sales_id,
+          p.id                  AS purchase_id,
+          d.item_number         AS item_number,
+          COALESCE(d.quantity, 0) AS quantity,
+          CURRENT_TIMESTAMP     AS created_at
+      FROM t_purchases p
+      INNER JOIN t_purchase_details d
+              ON d.purchase_id = p.id
+      WHERE p.id = :id
+        AND d.item_kind <> 2
+        AND d.item_number IS NOT NULL
+        AND d.item_number <> ''
+    ", ['id' => $purchase_id]);
   }
 
   /**
@@ -530,27 +562,60 @@ class PurchaseService
     $m = Purchase::find($purchase_id);
     $item_numbers = $m ? $m->getItemNumbers() : [];
 
-    $numbers = $pre_item_numbers + $item_numbers;
+    // ▼ 事前/今回の品番をマージし、null/空文字/非文字列を除外 & 重複排除
+    $numbers = array_values(array_unique(array_filter(
+      array_merge(
+        is_array($pre_item_numbers) ? $pre_item_numbers : [],
+        is_array($item_numbers)     ? $item_numbers     : []
+      ),
+      function ($n) {
+        return is_string($n) && $n !== '';
+      }
+    )));
 
-    // 最新の在庫を取得する
+    if (empty($numbers)) {
+      return; // 更新対象なし
+    }
+
+    // 最新の在庫を取得する（戻りは品番→コレクション想定）
     $latests = Inventory::getLatestInventories($numbers);
 
     foreach ($numbers as $number) {
-      $import_month = "";
-      $quantity = 0;
+      $import_month = '';
+      $quantity     = 0;
 
       $l = $latests->get($number);
       if ($l) {
-        $l = $l->first();
-        $import_month = $l->import_month;
-        $import_month = add_month($import_month);
-        $quantity = $l->quantity;
+        $row = $l->first();
+        if ($row) {
+          $import_month = (string) $row->import_month;
+          if ($import_month !== '') {
+            // 翌月に進める仕様を踏襲
+            $import_month = add_month($import_month);
+          }
+          $quantity = (int) $row->quantity;
+        }
       }
 
+      // 型エラー対策：第2引数は必ず string（ここまでで空は弾いている）
       $move_quantity = InventoryMove::getQuantity($import_month, $number);
 
       Item::where('item_number', $number)
-        ->update(['domestic_stock' => $quantity + $move_quantity]);
+        ->update(['domestic_stocks' => $quantity + $move_quantity]);
     }
+  }
+
+  /**
+   * 'YYYY/MM/DD' / 'YYYY-MM-DD' を受け付けて 'Y-m-d H:i:s' 形式に正規化
+   * $endOfDay=true の場合は 23:59:59、false は 00:00:00 を付与
+   */
+  private function normalizeDate(string $val, bool $endOfDay = false): string
+  {
+    $v = str_replace('/', '-', trim($val));
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) {
+      return $endOfDay ? "{$v} 23:59:59" : "{$v} 00:00:00";
+    }
+    // すでに時間付きならそのまま返す
+    return $v;
   }
 }

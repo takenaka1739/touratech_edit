@@ -14,8 +14,8 @@ class PurchaseStoreRequest extends BaseRequest
   public function rules()
   {
     return [
-      'place_order_id' => 'nullable|integer|exists:place_orders,id',
-      'details.*.place_order_detail_id' => 'nullable|integer|exists:place_order_details,id',
+      'place_order_id' => 'nullable|integer|exists:t_place_orders,id',
+      'details.*.place_order_detail_id' => 'nullable|integer|exists:t_place_order_details,id',
     ] + $this->commonRules();
   }
 }

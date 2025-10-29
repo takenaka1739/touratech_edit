@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class Purchase extends Model
 {
+  protected $table = 't_purchases';
   protected $fillable = [
     'purchase_number',
     'purchase_date',
@@ -33,7 +34,7 @@ class Purchase extends Model
    */
   public function getItemNumbers()
   {
-    $r = DB::table('purchase_details')
+    $r = DB::table('t_purchase_details')
       ->select('item_number')
       ->where('purchase_id', '=', $this->id)
       ->whereIn('item_kind', [1, 3])

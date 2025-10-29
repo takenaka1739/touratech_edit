@@ -25,17 +25,18 @@ class EstimateService
    */
   public function dialog(array $cond)
   {
+    $est = (new Estimate)->getTable(); // ← 追加：実テーブル名を取得（t_estimates）
     $query = Estimate::select(
-      'estimates.id',
+      "{$est}.id",
       'estimate_date',
       'customer_name',
       'total_amount',
       'm_personnels.name AS user_name',
-      DB::raw('EXISTS(SELECT * FROM link_estimate_receive_order x WHERE x.estimate_id = estimates.id) AS has_receive_order')
+      DB::raw("EXISTS(SELECT * FROM t_link_estimate_receive_order x WHERE x.estimate_id = {$est}.id) AS has_receive_order")
     );
-    $query = $this->setCondition($query, $cond);
+    $query = $this->setCondition($query, $cond, $est);
     $query->orderBy('estimate_date', 'desc')
-      ->orderBy('estimates.id', 'desc');
+      ->orderBy("{$est}.id", 'desc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
@@ -47,17 +48,18 @@ class EstimateService
    */
   public function fetch(array $cond)
   {
+    $est = (new Estimate)->getTable();
     $query = Estimate::select(
-      'estimates.id',
+      "{$est}.id",
       'estimate_date',
       'customer_name',
       'total_amount',
       'm_personnels.name AS user_name',
-      DB::raw('EXISTS(SELECT * FROM link_estimate_receive_order x WHERE x.estimate_id = estimates.id) AS has_receive_order')
+      DB::raw("EXISTS(SELECT * FROM t_link_estimate_receive_order x WHERE x.estimate_id = {$est}.id) AS has_receive_order")
     );
-    $query = $this->setCondition($query, $cond);
+    $query = $this->setCondition($query, $cond, $est);
     $query->orderBy('estimate_date', 'desc')
-      ->orderBy('estimates.id', 'desc');
+      ->orderBy("{$est}.id", 'desc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
@@ -69,13 +71,14 @@ class EstimateService
    */
   public function get(int $estimate_id)
   {
+    $est = (new Estimate)->getTable();
     $data = Estimate::select(
-      'estimates.*',
+      "{$est}.*",
       'm_personnels.name AS user_name',
-      DB::raw('EXISTS(SELECT * FROM link_estimate_receive_order x WHERE x.estimate_id = estimates.id) AS has_receive_order')
+      DB::raw("EXISTS(SELECT * FROM t_link_estimate_receive_order x WHERE x.estimate_id = {$est}.id) AS has_receive_order")
     )
-      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'estimates.user_id')
-      ->where('estimates.id', $estimate_id)
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', "{$est}.user_id")
+      ->where("{$est}.id", $estimate_id)
       ->first()
       ->toArray();
 
@@ -85,8 +88,6 @@ class EstimateService
 
   /**
    * 新規作成時のデータを作成する
-   *
-   * @return array
    */
   public function newData()
   {
@@ -107,22 +108,15 @@ class EstimateService
 
   /**
    * 見積と連結している受注データがある場合はtrue
-   *
-   * @param int $estimate_id
-   * @return bool
    */
   public function hasReceiveOrder(int $estimate_id)
   {
-    return DB::table('link_estimate_receive_order')
+    return DB::table('t_link_estimate_receive_order')
       ->where('estimate_id', $estimate_id)
       ->count() > 0;
   }
 
-  /**
-   * 登録
-   *
-   * @param array $input 登録データ
-   */
+  /** 登録 */
   public function store(array $input)
   {
     $data = new Collection($input);
@@ -137,12 +131,7 @@ class EstimateService
     });
   }
 
-  /**
-   * 更新
-   *
-   * @param int $estimate_id 見積ID
-   * @param array $input 更新データ
-   */
+  /** 更新 */
   public function update(int $estimate_id, array $input)
   {
     $data = new Collection($input);
@@ -177,11 +166,7 @@ class EstimateService
     });
   }
 
-  /**
-   * 削除
-   *
-   * @param int $estimate_id 見積ID
-   */
+  /** 削除 */
   public function delete(int $estimate_id)
   {
     DB::transaction(function () use ($estimate_id) {
@@ -189,46 +174,40 @@ class EstimateService
     });
   }
 
-  /**
-   * PDF用データを作成する
-   *
-   * @param array $data
-   * @return array
-   */
+  /** PDF用データ作成 */
   public function getPdfData(array $data)
   {
     $config = Config::getSelf();
     $data['config_data'] = $config->toArray();
-
     return $data;
   }
 
   /**
-   * 条件を設定する
+   * 条件を設定する（※ $est を受け取るように変更）
    *
    * @param \Illuminate\Database\Eloquent\Builder $query
-   * @param array $cond 条件
-   * @return mixed
+   * @param array $cond
+   * @param string $est 実テーブル名（t_estimates）
    */
-  private function setCondition($query, array $cond)
+  private function setCondition($query, array $cond, string $est)
   {
-    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'estimates.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', "{$est}.user_id");
 
     $cond = new Collection($cond);
 
     $c_estimate_date_from = $cond->get('c_estimate_date_from');
     if ($c_estimate_date_from) {
-      $query->where('estimate_date', '>=', $c_estimate_date_from);
+      $query->where("{$est}.estimate_date", '>=', $c_estimate_date_from);
     }
 
     $c_estimate_date_to = $cond->get('c_estimate_date_to');
     if ($c_estimate_date_to) {
-      $query->where('estimate_date', '<=', $c_estimate_date_to);
+      $query->where("{$est}.estimate_date", '<=', $c_estimate_date_to);
     }
 
     $c_customer_name = $cond->get('c_customer_name');
     if ($c_customer_name) {
-      $query->where('customer_name', 'like', '%' . escape_like($c_customer_name) . '%');
+      $query->where("{$est}.customer_name", 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
     $c_user_name = $cond->get('c_user_name');
@@ -238,56 +217,49 @@ class EstimateService
 
     $c_item_number = $cond->get('c_item_number');
     if ($c_item_number) {
-      $query->whereExists(function ($q) use ($c_item_number) {
+      $query->whereExists(function ($q) use ($c_item_number, $est) {
         $q->select(DB::raw(1))
           ->from('estimate_details')
-          ->whereRaw('estimate_details.estimate_id = estimates.id')
+          ->whereRaw("estimate_details.estimate_id = {$est}.id")
           ->where('estimate_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
-        });
+      });
     }
 
     $c_name = $cond->get('c_name');
     if ($c_name) {
-      $query->whereExists(function ($q) use ($c_name) {
+      $query->whereExists(function ($q) use ($c_name, $est) {
         $q->select(DB::raw(1))
           ->from('estimate_details')
-          ->whereRaw('estimate_details.estimate_id = estimates.id')
+          ->whereRaw("estimate_details.estimate_id = {$est}.id")
           ->where(function($q) use ($c_name) {
             $q->where('estimate_details.item_name', 'like', '%' . escape_like($c_name) . '%')
               ->orWhere('estimate_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
-        });
+      });
     }
 
     $c_order_no = $cond->get('c_order_no');
     if ($c_order_no) {
-      $query->where('order_no', 'like', '%' . escape_like($c_order_no) . '%');
+      $query->where("{$est}.order_no", 'like', '%' . escape_like($c_order_no) . '%');
     }
 
     $c_not_receive_order = $cond->get('c_not_receive_order');
     if ($c_not_receive_order) {
-      $query->whereNotExists(function ($q) {
+      $query->whereNotExists(function ($q) use ($est) {
         $q->select(DB::raw(1))
-          ->from('link_estimate_receive_order')
-          ->whereRaw('link_estimate_receive_order.estimate_id = estimates.id');
+          ->from('t_link_estimate_receive_order')
+          ->whereRaw("t_link_estimate_receive_order.estimate_id = {$est}.id");
       });
     }
 
     return $query;
   }
 
-  /**
-   * 明細を取得する
-   *
-   * @param int $estimate_id 見積ID
-   * @return array
-   */
+  /** 明細取得（ここは互換VIEWを使うまま） */
   private function getDetails(int $estimate_id)
   {
     return DB::table('estimate_details')
-      ->select(
-        'estimate_details.*',
-      )
+      ->select('estimate_details.*')
       ->where('estimate_id', $estimate_id)
       ->whereIn('item_kind', [1, 2])
       ->orderBy('estimate_id')
@@ -296,32 +268,19 @@ class EstimateService
       ->toArray();
   }
 
-  /**
-   * 明細を登録する
-   *
-   * @param int $estimte_id 見積ID
-   * @param mixed $details 明細データ
-   */
+  /** 明細登録・更新・削除（最小変更のため据え置き） */
   private function insertDetails(int $estimte_id, $details)
   {
     if ($details) {
       foreach ($details as $detail) {
         $detail = new Collection($detail);
-
         $this->createDetailItems($estimte_id, $detail);
       }
     }
   }
 
-  /**
-   * 明細を更新する
-   *
-   * @param int $estimte_id 見積ID
-   * @param mixed $details 明細データ
-   */
   private function updateDetails(int $estimte_id, $details)
   {
-    // 削除された明細をDBから削除する
     $this->deleteDetails($estimte_id, $details);
 
     if ($details) {
@@ -329,7 +288,6 @@ class EstimateService
         $detail = new Collection($detail);
         $id = $detail->get('id');
 
-        // 明細IDが存在する場合は更新、しない場合は登録する
         if ($id) {
           $this->updateDetailItems($id, $estimte_id, $detail);
         } else {
@@ -339,12 +297,6 @@ class EstimateService
     }
   }
 
-  /**
-   * 明細を生成する
-   *
-   * @param int $estimate_id 見積ID
-   * @param Collection $detail 明細データ
-   */
   private function createDetailItems(int $estimate_id, $detail) {
     $item_kind = $detail->get('item_kind');
     $item_id = $detail->get('item_id');
@@ -368,19 +320,11 @@ class EstimateService
       'sales_tax' => $detail->get('sales_tax'),
     ]);
 
-    // セット品の場合、セット品の明細を登録する
     if ($item_kind === 2) {
       $this->createSetItems($m);
     }
   }
 
-  /**
-   * 明細を更新する
-   *
-   * @param int $id 明細ID
-   * @param int $estimate_id 見積ID
-   * @param Collection $detail 明細データ
-   */
   private function updateDetailItems(int $id, int $estimate_id, $detail) {
     $item_kind = $detail->get('item_kind');
 
@@ -404,25 +348,16 @@ class EstimateService
     $m->sales_tax = $detail->get('sales_tax');
     $m->save();
 
-    // セット品の場合、セット品の明細を登録する
     if ($item_kind === 2) {
       if ($prev->item_id != $m->item_id) {
-        // 商品IDが変わった場合、セット品の明細を削除し登録する
         DB::table('estimate_details')->where('parent_id', $id)->delete();
         $this->createSetItems($m);
-
       } else if ($prev->quantity != $m->quantity) {
-        // 数量が変わった場合、セット品の明細を更新する
         $this->updateSetItems($m);
       }
     }
   }
 
-  /**
-   * セット品の明細を生成する
-   *
-   * @param EstimateDetail $parent 親の明細データ
-   */
   private function createSetItems($parent) {
     $items = Item::getSetItems($parent->item_id);
     $data = [];
@@ -456,11 +391,6 @@ class EstimateService
     DB::table('estimate_details')->insert($data);
   }
 
-  /**
-   * セット品の明細を更新する
-   *
-   * @param EstimateDetail $parent 親のセット品明細データ
-   */
   private function updateSetItems($parent) {
     $details = EstimateDetail::select([
       'estimate_details.id',
@@ -491,17 +421,10 @@ class EstimateService
     }
   }
 
-  /**
-   * 削除された明細をDBから削除する
-   *
-   * @param int $prev_estimate_id 変更前の見積ID
-   * @param mixed $details 明細データ
-   */
   private function deleteDetails(int $prev_estimate_id, $details) {
     $prevIds = $this->getPrevDetailIds($prev_estimate_id);
     $currentIds = Arr::pluck($details, 'id');
 
-    // 変更前のIDと更新されたIDの差分を取得する
     $deleteIds = array_diff($prevIds, $currentIds);
 
     DB::table('estimate_details')
@@ -509,12 +432,6 @@ class EstimateService
       ->delete();
   }
 
-  /**
-   * 変更前の明細のIDの配列を取得する
-   *
-   * @param int $estimate_id 見積ID
-   * @return array ex. [1, 2]
-   */
   private function getPrevDetailIds(int $estimate_id) {
     $data =  DB::table('estimate_details')
       ->where('estimate_id', $estimate_id)

@@ -23,11 +23,11 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('purchases')->truncate();
-    DB::table('purchase_details')->truncate();
+    DB::table('t_purchases')->truncate();
+    DB::table('t_purchase_details')->truncate();
 
-    DB::table('place_orders')->truncate();
-    DB::table('place_order_details')->truncate();
+    DB::table('t_place_orders')->truncate();
+    DB::table('t_place_order_details')->truncate();
 
     DB::table('items')->delete();
     DB::table('items')->insert([
@@ -56,8 +56,8 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
     $expected = [
       'data' => [],
       'details' => [],
-      'link_p_order_purchase' => [],
-      'link_p_order_purchase_detail' => [],
+      't_link_p_order_purchase' => [],
+      't_link_p_order_purchase_detail' => [],
       'moves' => [],
     ];
 
@@ -107,8 +107,8 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
           'shipment_plan_id' => 10,
         ],
       ],
-      'link_p_order_purchase' => [],
-      'link_p_order_purchase_detail' => [],
+      't_link_p_order_purchase' => [],
+      't_link_p_order_purchase_detail' => [],
       'moves' => [
         [
           'job_date' => '2021/11/01',
@@ -125,11 +125,11 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
   
   public function testSuccess2()
   {
-    DB::table('purchases')->insert([
+    DB::table('t_purchases')->insert([
       'id' => 1020,
       'purchase_date' => '2021/01/01',
     ]);
-    DB::table('purchase_details')->insert([
+    DB::table('t_purchase_details')->insert([
       'id' => 3201,
       'purchase_id' => 1020,
       'no' => 1,
@@ -142,7 +142,7 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
       'amount' => 0,
     ]);
 
-    DB::table('place_orders')->insert([
+    DB::table('t_place_orders')->insert([
       [
         'id' => 1,
         'place_order_date' => '2021/11/11',
@@ -154,7 +154,7 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
         'order_file_name' => 'order_1002_20211111.csv',
       ],
     ]);
-    DB::table('place_order_details')->insert([
+    DB::table('t_place_order_details')->insert([
       [
         'id' => 11,
         'place_order_id' => 1,
@@ -231,13 +231,13 @@ class ShipmentPlanServiceGetPurchaseDataTest extends TestCase
           'shipment_plan_id' => 10,
         ],
       ],
-      'link_p_order_purchase' => [
+      't_link_p_order_purchase' => [
         [
           'place_order_id' => 2,
           'purchase_id' => 1021
         ],
       ],
-      'link_p_order_purchase_detail' => [
+      't_link_p_order_purchase_detail' => [
         [
           'place_order_detail_id' => 21,
           'purchase_detail_id' => 3202

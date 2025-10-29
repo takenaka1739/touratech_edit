@@ -118,16 +118,21 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
    */
   const toState: <V extends CommonDataDetailPage>(data: V) => any = data => {
     const { shipping_amount, fee, discount, total_amount, details, ...props } = data;
-    const details_amount = details.reduce((x, y) => {
-      return x + toNumber(y.amount ?? 0);
+
+    // 👇 安全化：details が未定義/null でも動く
+    const safeDetails = Array.isArray(details) ? details : [];
+
+    const details_amount = safeDetails.reduce((x, y) => {
+      return x + toNumber(y?.amount ?? 0);
     }, 0);
+
     return {
       ...props,
       shipping_amount,
       fee,
       discount,
-      total_amount: toNumber(total_amount),
-      details,
+      total_amount: toNumber(total_amount ?? 0),
+      details: safeDetails,
       details_amount,
     };
   };

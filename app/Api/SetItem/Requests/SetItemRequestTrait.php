@@ -10,14 +10,14 @@ trait SetItemRequestTrait
   public function commonRules()
   {
     return [
-      'item_number' => 'bail|required|string|max:50|unique:items',
+      'item_number' => 'bail|required|string|max:50|unique:m_items',
       'name_jp' => 'required|string|max:200',
       'sales_unit_price' => 'required|numeric|price',
       'discontinued_date' => 'nullable|date',
       'is_display' => 'required|boolean',
       'details' => 'required',
       'details.*.id' => 'required|integer',
-      'details.*.item_id' => 'required|integer|exists:items,id',
+      'details.*.item_id' => 'required|integer|exists:m_items,id',
       'details.*.quantity' => 'required|integer|between:0,999',
       'details.*.set_price' => 'required|numeric|price'
     ];

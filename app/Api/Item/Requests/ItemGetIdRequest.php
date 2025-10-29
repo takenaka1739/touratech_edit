@@ -16,7 +16,7 @@ class ItemGetIdRequest extends BaseRequest
         'required',
         'string',
         'max:50',
-        'exists:items,item_number',
+        'exists:m_items,item_number',
       ],
     ];
   }

@@ -23,8 +23,8 @@ class InventoryPrintingServiceGetPdfDataTest extends TestCase
     $this->method = $reflection->getMethod('getPdfData');
     $this->method->setAccessible(true);
 
-    DB::table('inventories')->delete();
-    DB::table('inventory_moves')->delete();
+    DB::table('t_inventories')->delete();
+    DB::table('t_inventory_moves')->delete();
     DB::table('items')->delete();
     DB::table('items')->insert([
       [
@@ -48,7 +48,7 @@ class InventoryPrintingServiceGetPdfDataTest extends TestCase
 
   public function testSuccess1()
   {
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/06',
         'item_number' => '00-0000-0001',
@@ -74,7 +74,7 @@ class InventoryPrintingServiceGetPdfDataTest extends TestCase
 
   public function testSuccess2()
   {
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-06-01',
         'detail_kind' => 1,
@@ -101,7 +101,7 @@ class InventoryPrintingServiceGetPdfDataTest extends TestCase
 
   public function testSuccess3()
   {
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/05',
         'item_number' => '00-0000-0001',
@@ -127,7 +127,7 @@ class InventoryPrintingServiceGetPdfDataTest extends TestCase
 
   public function testSuccess4()
   {
-    DB::table('inventories')->insert([
+    DB::table('t_inventories')->insert([
       [
         'import_month' => '2021/05',
         'item_number' => '00-0000-0001',
@@ -144,7 +144,7 @@ class InventoryPrintingServiceGetPdfDataTest extends TestCase
         'quantity' => 8,
       ],
     ]);
-    DB::table('inventory_moves')->insert([
+    DB::table('t_inventory_moves')->insert([
       [
         'job_date' => '2021-06-01',
         'detail_kind' => 1,

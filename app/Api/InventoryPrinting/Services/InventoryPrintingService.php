@@ -98,13 +98,13 @@ class InventoryPrintingService
   private function getInventories($import_month)
   {
     return Inventory::select([
-      'inventories.item_number',
-      'inventories.quantity',
-      'items.name',
-      'items.purchase_unit_price',
+      't_inventories.item_number',
+      't_inventories.quantity',
+      '.name',
+      'm_items.purchase_unit_price',
     ])
     ->where('import_month', $import_month)
-    ->leftJoin('items', 'items.item_number', "=", 'inventories.item_number')
+    ->leftJoin('m_items', 'm_items.item_number', "=", 't_inventories.item_number')
     ->get();
   }
 
@@ -134,7 +134,7 @@ class InventoryPrintingService
 		$dt = new Carbon($date_from);
 		$date_to = $dt->addMonth()->format("Y/m/d");
 
-		$rows = DB::table('inventory_moves')
+		$rows = DB::table('t_inventory_moves')
       ->select([
         'item_number',
         'detail_kind',

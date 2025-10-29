@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 import axios from 'axios';
 import { RootState } from '@/store';
 import { Sales, Pager } from '@/types';
@@ -22,6 +22,7 @@ export type PageState = {
  */
 export const useSalesListPage = (slug: string) => {
   const dispatch = useDispatch();
+  const history = useHistory();
   const [isDisabled, setDisabled] = useState(false);
   const initialConditions = salesInitialState.conditions;
 
@@ -31,9 +32,7 @@ export const useSalesListPage = (slug: string) => {
     [dispatch]
   );
 
-  const getConditions = () => {
-    return useSelector((state: RootState) => state.salesListPage.conditions);
-  };
+  const getConditions = () => useSelector((state: RootState) => state.salesListPage.conditions);
 
   const {
     isLoading,
@@ -43,21 +42,22 @@ export const useSalesListPage = (slug: string) => {
     onClickSearchButton,
     onClickClearButton,
     onChangePage,
-    addDetail,
+    // addDetail は受け取るが、この下で上書きする
   } = useCommonListPage<PageState, SalesListPageConditionState>(
     slug,
-    {
-      rows: [],
-      pager: undefined,
-    },
+    { rows: [], pager: undefined },
     initialConditions,
     getConditions,
     setConditions
   );
 
+  const addDetail = useCallback(() => {
+    // ルーティングは /sales/detail（新規） /sales/detail/:id（編集）想定
+    history.push(`/${slug}/detail`);
+  }, [history, slug]);
+
   const output: () => Promise<boolean> = async () => {
     dispatch(AppActions.request());
-
     const res = await axios.post(`/api/${slug}/output_excel`, conditions);
     if (res.status === 200) {
       dispatch(AppActions.success());
@@ -66,7 +66,6 @@ export const useSalesListPage = (slug: string) => {
         const link = document.createElement('a');
         link.href = `/web/${slug}/output_excel/${file_id}`;
         link.click();
-
         return true;
       }
     } else {

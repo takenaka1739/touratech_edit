@@ -7,6 +7,9 @@ use Carbon\Carbon;
 
 class Estimate extends Model
 {
+  /** 最小変更：実体テーブルを明示（互換VIEW経由をやめる） */
+  protected $table = 't_estimates';
+
   protected $fillable = [
     'estimate_date',
     'delivery_date',

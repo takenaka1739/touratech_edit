@@ -16,7 +16,7 @@ class SimpleSearchService
       'item_number',
       'name_jp',
       'sales_unit_price',
-      'domestic_stock',
+      'domestic_stocks',
       'overseas_stock',
     ])
       ->where('item_number', '=', $item_number)

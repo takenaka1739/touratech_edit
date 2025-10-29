@@ -28,7 +28,7 @@ class SalesServiceUpdateSalesCompletedTest extends TestCase
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
     DB::table('link_r_order_sales_detail')->delete();
-    DB::table('receive_order_details')->delete();
+    DB::table('t_receive_order_details')->delete();
     DB::table('sales_details')->delete();
 
     // DB::table('receive_order_details')->insert([[
@@ -241,7 +241,7 @@ class SalesServiceUpdateSalesCompletedTest extends TestCase
   public function testSuccess3()
   {
 
-    DB::table('receive_order_details')->insert([[
+    DB::table('t_receive_order_details')->insert([[
       'id' => 1,
       'receive_order_id' => 1,
       'no' => 1,

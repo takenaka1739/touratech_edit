@@ -24,8 +24,8 @@ class InvoiceServiceGetLatestInvoicesTest extends TestCase
     $this->method->setAccessible(true);
 
     DB::table('invoices')->delete();
-    DB::table('customers')->delete();
-    DB::table('customers')->insert([
+    DB::table('t_customers')->delete();
+    DB::table('t_customers')->insert([
       [
         'id' => 1,
         'name' => '得意先01',

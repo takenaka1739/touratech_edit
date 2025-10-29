@@ -18,7 +18,11 @@ Route::group([
     Route::get('assets/js/index.js', function () {
         return File::get(public_path(). '/assets/js/index.js');
     });
-    Route::get('logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::get('logout', [LoginController::class, 'logout']);
+
     Route::get('/{any}', [HomeController::class, 'index'])
         ->where('any', '^(?!(api|web)).*$')
         ->name('home');

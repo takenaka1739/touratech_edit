@@ -107,7 +107,7 @@ class HomeDataImportService
     $rate = ConfigCurrency::getEuroRate();
 
     // 現在の商品データを取得する（セット品を除く）
-    $items = DB::table('items')->where('is_set_item', false)->get()->keyBy('item_number');
+    $items = DB::table('m_items')->where('is_set_item', false)->get()->keyBy('item_number');
     //$items = DB::table('m_items')->where('is_set_item', false)->get()->keyBy('item_number');
 
     $rows = [];
@@ -165,7 +165,7 @@ class HomeDataImportService
    */
   private function insertItems()
   {
-    DB::insert("INSERT INTO items (item_number
+    DB::insert("INSERT INTO m_items (item_number
       , name
       , purchase_unit_price
       , sample_price
@@ -193,7 +193,7 @@ class HomeDataImportService
    */
   private function updateItemsNotDiscontinued()
   {
-    DB::update("UPDATE items a
+    DB::update("UPDATE m_items a
       INNER JOIN item_temporaries b ON b.item_number = a.item_number AND b.supplier_id = a.supplier_id AND b.edit_kind = ".$this::EDIT_KIND_UPDATE."
     SET a.name = b.name
       , a.purchase_unit_price = b.purchase_unit_price
@@ -230,11 +230,11 @@ class HomeDataImportService
       , overseas_stock
       , 2
       , NULL
-    FROM items
-    WHERE NOT EXISTS (SELECT * FROM item_temporaries WHERE item_temporaries.item_number = items.item_number AND item_temporaries.supplier_id = items.supplier_id)
+    FROM m_items
+    WHERE NOT EXISTS (SELECT * FROM item_temporaries WHERE item_temporaries.item_number = m_items.item_number AND item_temporaries.supplier_id = m_items.supplier_id)
     AND supplier_id = ". $supplier_id .";");
 
-    DB::update("UPDATE items a
+    DB::update("UPDATE m_items a
       INNER JOIN item_temporaries b ON b.item_number = a.item_number AND b.supplier_id = a.supplier_id AND b.edit_kind = ".$this::EDIT_KIND_DELETE."
     SET a.discontinued_date = CURRENT_DATE
       , a.overseas_stock = 0");

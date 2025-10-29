@@ -7,15 +7,18 @@ use Carbon\Carbon;
 
 class ShipmentPlan extends Model
 {
+  
+  protected $table = 't_shipment_plans';
   public $timestamps = false;
 
   protected $fillable = [
     'shipment_plan_date',
     'item_number',
-    'item_name',
+    'name',
     'unit_price',
     'quantity',
     'amount',
+    'place_order_no',
   ];
 
   public function getShipmentPlanDateAttribute($value)

@@ -64,9 +64,9 @@ class InvoiceService
 
     DB::transaction(function () use ($invoice_month, $cutoff_date) {
       if ($cutoff_date) {
-        Invoice::join('customers', 'customers.id', '=', 'invoices.customer_id')
+        Invoice::join('t_customers', 't_customers.id', '=', 'invoices.customer_id')
           ->where('invoices.invoice_month', $invoice_month)
-          ->where('customers.cutoff_date', '=', $cutoff_date)
+          ->where('t_customers.cutoff_date', '=', $cutoff_date)
           ->delete();
       } else {
         Invoice::where('invoice_month', $invoice_month)->delete();
@@ -277,18 +277,18 @@ class InvoiceService
     $tmp_dt = new Carbon($invoice_month . "/01");
     $tmp_dt->subMonth();
 
-    $rows = DB::table('customers')
+    $rows = DB::table('t_customers')
       ->whereExists(function ($query) use ($tmp_dt) {
         $query->select(DB::raw(1))
           ->from('sales')
-          ->whereRaw('sales.customer_id = customers.id')
+          ->whereRaw('sales.customer_id = t_customers.id')
           ->where('sales.sales_at', '>=', $tmp_dt);
       })
       ->orWhere(function($query) use ($tmp_dt) {
         $query->whereExists(function ($query) use ($tmp_dt) {
           $query->select(DB::raw(1))
             ->from('receipts')
-            ->whereRaw('receipts.customer_id = customers.id')
+            ->whereRaw('receipts.customer_id = t_customers.id')
             ->where('receipts.receipt_date', '>=', $tmp_dt);
         });
       })

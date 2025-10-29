@@ -32,7 +32,7 @@ class PlaceOrderService
   public function dialog(array $cond)
   {
     $query = PlaceOrder::select(
-      'place_orders.id',
+      't_place_orders.id',
       'place_order_date',
       'total_amount',
       'm_personnels.name AS user_name',
@@ -51,7 +51,7 @@ class PlaceOrderService
   public function fetch(array $cond)
   {
     $query = PlaceOrder::select(
-      'place_orders.id',
+      't_place_orders.id',
       'place_order_date',
       'total_amount',
       'm_personnels.name AS user_name',
@@ -71,13 +71,13 @@ class PlaceOrderService
   public function get(int $place_order_id, bool $is_purchase = false)
   {
     $data = PlaceOrder::select(
-      'place_orders.*',
+      't_place_orders.*',
       'm_personnels.name AS user_name',
       'link_r_order_p_order.receive_order_id',
     )
-      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'place_orders.user_id')
-      ->leftJoin('link_r_order_p_order', 'link_r_order_p_order.place_order_id', '=', 'place_orders.id')
-      ->where('place_orders.id', $place_order_id)
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_place_orders.user_id')
+      ->leftJoin('link_r_order_p_order', 'link_r_order_p_order.place_order_id', '=', 't_place_orders.id')
+      ->where('t_place_orders.id', $place_order_id)
       ->first()
       ->toArray();
 
@@ -109,11 +109,11 @@ class PlaceOrderService
   public function get_by_receive_id(int $receive_order_id)
   {
     $query = ReceiveOrder::select(
-      'receive_orders.*',
+      't_receive_orders.*',
       'm_personnels.name AS user_name',
     )
-      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'receive_orders.user_id')
-      ->where('receive_orders.id', $receive_order_id)
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receive_orders.user_id')
+      ->where('t_receive_orders.id', $receive_order_id)
       ->first();
 
     $user = Auth::user();
@@ -279,7 +279,7 @@ class PlaceOrderService
 
       // 外部キーを設定しない代わりに手動で削除する
       DB::table('link_r_order_p_order_detail ld')
-        ->join('place_order_details d', 'd.id', '=', 'ld.place_order_detail_id')
+        ->join('t_place_order_details d', 'd.id', '=', 'ld.place_order_detail_id')
         ->where('d.place_order_id', '=', $place_order_id);
       DB::table('link_r_order_p_order')
       ->where('place_order_id', '=', $place_order_id)
@@ -309,16 +309,16 @@ class PlaceOrderService
     $data = new Collection($data);
     $place_order_id = $data->get('id');
     $m = PlaceOrder::select(
-      'place_orders.delivery_day',
-      'receive_orders.id AS receive_order_id',
-      'receive_orders.receive_order_date',
-      'receive_orders.customer_name',
-      'customers.email',
+      't_place_orders.delivery_day',
+      't_receive_orders.id AS receive_order_id',
+      't_receive_orders.receive_order_date',
+      't_receive_orders.customer_name',
+      't_customers.email',
     )
-      ->leftJoin('link_r_order_p_order', 'link_r_order_p_order.place_order_id', '=', 'place_orders.id')
-      ->leftJoin('receive_orders', 'receive_orders.id', '=', 'link_r_order_p_order.receive_order_id')
-      ->leftJoin('customers', 'customers.id', '=', 'receive_orders.customer_id')
-      ->where('place_orders.id', $place_order_id)
+      ->leftJoin('link_r_order_p_order', 'link_r_order_p_order.place_order_id', '=', 't_place_orders.id')
+      ->leftJoin('t_receive_orders', 't_receive_orders.id', '=', 'link_r_order_p_order.receive_order_id')
+      ->leftJoin('t_customers', 't_customers.id', '=', 't_receive_orders.customer_id')
+      ->where('t_place_orders.id', $place_order_id)
       ->first();
 
     $config = Config::getSelf();
@@ -343,16 +343,16 @@ class PlaceOrderService
     $data = new Collection($data);
     $place_order_id = $data->get('id');
     $m = PlaceOrder::select(
-      'place_orders.delivery_day',
-      'receive_orders.id AS receive_order_id',
-      'receive_orders.receive_order_date',
-      'receive_orders.customer_name',
-      'customers.email',
+      't_place_orders.delivery_day',
+      't_receive_orders.id AS receive_order_id',
+      't_receive_orders.receive_order_date',
+      't_receive_orders.customer_name',
+      't_customers.email',
     )
-      ->leftJoin('link_r_order_p_order', 'link_r_order_p_order.place_order_id', '=', 'place_orders.id')
-      ->leftJoin('receive_orders', 'receive_orders.id', '=', 'link_r_order_p_order.receive_order_id')
-      ->leftJoin('customers', 'customers.id', '=', 'receive_orders.customer_id')
-      ->where('place_orders.id', $place_order_id)
+      ->leftJoin('link_r_order_p_order', 'link_r_order_p_order.place_order_id', '=', 't_place_orders.id')
+      ->leftJoin('t_receive_orders', 't_receive_orders.id', '=', 'link_r_order_p_order.receive_order_id')
+      ->leftJoin('t_customers', 't_customers.id', '=', 't_receive_orders.customer_id')
+      ->where('t_place_orders.id', $place_order_id)
       ->first();
 
     $config = Config::getSelf();
@@ -383,7 +383,7 @@ class PlaceOrderService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'place_orders.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 't_place_orders.user_id');
 
     $cond = new Collection($cond);
 
@@ -406,9 +406,9 @@ class PlaceOrderService
     if ($c_item_number) {
       $query->whereExists(function ($q) use ($c_item_number) {
         $q->select(DB::raw(1))
-          ->from('place_order_details')
-          ->whereRaw('place_order_details.place_order_id = place_orders.id')
-          ->where('place_order_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
+          ->from('t_place_order_details')
+          ->whereRaw('t_place_order_details.place_order_id = t_place_orders.id')
+          ->where('t_place_order_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
         });
     }
 
@@ -416,11 +416,11 @@ class PlaceOrderService
     if ($c_name) {
       $query->whereExists(function ($q) use ($c_name) {
         $q->select(DB::raw(1))
-          ->from('place_order_details')
-          ->whereRaw('place_order_details.place_order_id = place_orders.id')
+          ->from('t_place_order_details')
+          ->whereRaw('t_place_order_details.place_order_id = t_place_orders.id')
           ->where(function($q) use ($c_name) {
-            $q->where('place_order_details.item_name', 'like', '%' . escape_like($c_name) . '%')
-              ->orWhere('place_order_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
+            $q->where('t_place_order_details.item_name', 'like', '%' . escape_like($c_name) . '%')
+              ->orWhere('t_place_order_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
         });
     }
@@ -429,16 +429,16 @@ class PlaceOrderService
     if ($c_is_purchased === "1") {
       $query->whereNotExists(function ($q) {
         $q->select(DB::raw(1))
-          ->from('place_order_details')
-          ->whereRaw('place_order_details.place_order_id = place_orders.id')
-          ->where('place_order_details.purchased', '=', 0);
+          ->from('t_place_order_details')
+          ->whereRaw('t_place_order_details.place_order_id = t_place_orders.id')
+          ->where('t_place_order_details.purchased', '=', 0);
       });
     } else if ($c_is_purchased === "0") {
       $query->whereExists(function ($q) {
         $q->select(DB::raw(1))
-          ->from('place_order_details')
-          ->whereRaw('place_order_details.place_order_id = place_orders.id')
-          ->where('place_order_details.purchased', '=', 0);
+          ->from('t_place_order_details')
+          ->whereRaw('t_place_order_details.place_order_id = t_place_orders.id')
+          ->where('t_place_order_details.purchased', '=', 0);
       });
     }
 
@@ -453,9 +453,9 @@ class PlaceOrderService
    */
   private function getDetails(int $place_order_id)
   {
-    return DB::table('place_order_details')
+    return DB::table('t_place_order_details')
       ->select(
-        'place_order_details.*',
+        't_place_order_details.*',
       )
       ->where('place_order_id', $place_order_id)
       ->whereIn('item_kind', [1, 2])
@@ -471,15 +471,15 @@ class PlaceOrderService
    */
   private function getPurchaseQuantityGroups(int $place_order_id)
   {
-    $rows = DB::table('place_orders as po')
+    $rows = DB::table('t_place_orders as po')
       ->select([
         'pd.id as place_detail_id',
         'pd.quantity as p_quantity',
         'ud.quantity as u_quantity',
       ])
-      ->join('place_order_details as pd', 'pd.place_order_id', '=', 'po.id')
-      ->join('link_p_order_purchase_detail as l', 'l.place_order_detail_id', '=', 'pd.id')
-      ->join('purchase_details as ud', 'ud.id', '=', 'l.purchase_detail_id')
+      ->join('t_place_order_details as pd', 'pd.place_order_id', '=', 'po.id')
+      ->join('t_link_p_order_purchase_detail as l', 'l.place_order_detail_id', '=', 'pd.id')
+      ->join('t_purchase_details as ud', 'ud.id', '=', 'l.purchase_detail_id')
       ->where('po.id', '=', $place_order_id)
       ->whereIn('ud.item_kind', [1, 2])
       ->get();
@@ -495,7 +495,7 @@ class PlaceOrderService
    */
   private function getDetailsByReceiveId(int $receive_order_id)
   {
-    return DB::table('receive_order_details AS rd')
+    return DB::table('t_receive_order_details AS rd')
       ->select(
         'rd.id AS receive_order_detail_id',
         'rd.no',
@@ -510,9 +510,9 @@ class PlaceOrderService
         'rd.amount',
         'rd.sales_tax_rate',
         'rd.sales_tax',
-        'items.purchase_unit_price AS unit_price',
+        'm_items.purchase_unit_price AS unit_price',
       )
-      ->join('items', 'items.id', '=', 'rd.item_id')
+      ->join('m_items', 'm_items.id', '=', 'rd.item_id')
       ->where('rd.receive_order_id', $receive_order_id)
       ->whereIn('rd.item_kind', [1, 2])
       ->where('rd.place_completed', '<>', 1)
@@ -646,7 +646,7 @@ class PlaceOrderService
 
     // 商品IDが変わった場合、セット品の明細を削除する
     if ($prev_item_id != $item_id || $prev_quantity != $quantity) {
-      DB::table('place_order_details')->where('parent_id', $id)->delete();
+      DB::table('t_place_order_details')->where('parent_id', $id)->delete();
 
       // セット品の場合、セット品の明細を登録する
       if ($item_kind === 2) {
@@ -683,7 +683,7 @@ class PlaceOrderService
         'parent_id' => $parent->id,
       ];
     }
-    DB::table('place_order_details')->insert($data);
+    DB::table('t_place_order_details')->insert($data);
   }
 
   /**
@@ -731,7 +731,7 @@ class PlaceOrderService
     // 変更前のIDと更新されたIDの差分を取得する
     $deleteIds = array_diff($prevIds, $currentIds);
 
-    DB::table('place_order_details')
+    DB::table('t_place_order_details')
       ->whereIn('id', $deleteIds)
       ->delete();
   }
@@ -743,7 +743,7 @@ class PlaceOrderService
    * @return array
    */
   private function getPrevDetailIds(int $place_order_id) {
-    $data =  DB::table('place_order_details')
+    $data =  DB::table('t_place_order_details')
       ->where('place_order_id', $place_order_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')
@@ -784,7 +784,7 @@ class PlaceOrderService
    */
   private function updatePlaceCompleted(int $receive_order_id)
   {
-    DB::update("UPDATE receive_order_details AS rd LEFT JOIN (SELECT x.receive_order_detail_id, sum(y.quantity) AS quantity FROM link_r_order_p_order_detail x INNER JOIN place_order_details y ON y.id = x.place_order_detail_id GROUP BY x.receive_order_detail_id) AS pd ON pd.receive_order_detail_id = rd.id
+    DB::update("UPDATE t_receive_order_details AS rd LEFT JOIN (SELECT x.receive_order_detail_id, sum(y.quantity) AS quantity FROM link_r_order_p_order_detail x INNER JOIN t_place_order_details y ON y.id = x.place_order_detail_id GROUP BY x.receive_order_detail_id) AS pd ON pd.receive_order_detail_id = rd.id
       SET place_completed = CASE WHEN rd.quantity <= pd.quantity THEN 1 ELSE 0 END
       WHERE rd.receive_order_id = ?", [$receive_order_id]);
   }
@@ -798,15 +798,15 @@ class PlaceOrderService
   {
     $has_p_order = 0;
 
-    $rows = DB::table('receive_orders as r')
+    $rows = DB::table('t_receive_orders as r')
       ->select([
         'rd.id as receive_detail_id',
         'rd.quantity as r_quantity',
         'pd.quantity as p_quantity',
       ])
-      ->join('receive_order_details as rd', 'rd.receive_order_id', '=', 'r.id')
+      ->join('t_receive_order_details as rd', 'rd.receive_order_id', '=', 'r.id')
       ->leftJoin('link_r_order_p_order_detail as l', 'l.receive_order_detail_id', '=', 'rd.id')
-      ->leftJoin('place_order_details as pd', 'pd.id', '=', 'l.place_order_detail_id')
+      ->leftJoin('t_place_order_details as pd', 'pd.id', '=', 'l.place_order_detail_id')
       ->where('r.id', '=', $receive_order_id)
       ->whereIn('rd.item_kind', [1, 2])
       ->get();
@@ -824,7 +824,7 @@ class PlaceOrderService
       }
     }
 
-    DB::table('receive_order_has_p_order')->updateOrInsert([
+    DB::table('t_receive_order_has_p_order')->updateOrInsert([
       'receive_order_id' => $receive_order_id,
     ], [
       'has_p_order' => $has_p_order

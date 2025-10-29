@@ -48,8 +48,8 @@ class ReadMailServiceCreateReceiveOrderBTest extends TestCase
       'send_personal' => 11000,
       'send_price' => 800,
     ]]);
-    DB::table("customers")->truncate();
-    DB::table('customers')->insert([
+    DB::table("t_customers")->truncate();
+    DB::table('t_customers')->insert([
       [
         "id" => 4,
         "name" => "酒部圭司",
