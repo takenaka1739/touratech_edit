@@ -44,7 +44,6 @@ export const SupplierSearchDialog: React.VFC<SupplierSearchDialogProps> = ({
     onCancel
   );
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
-
   const tables = useMemo(() => {
     const tbody = state.rows.map(r => (
       <tr key={r.id}>

@@ -41,10 +41,11 @@ class SetItemService
   public function fetch(array $cond)
   {
     $query = Item::select(
-      'm_items.item_number',
-      'm_items.id',
-      'm_items.name_jp',
-      'm_items.sales_unit_price',
+      'items.item_number',
+      'items.id',
+      //'items.name_jp',
+      'items.name_note',
+      'items.sales_unit_price',
       'set_items.total_quantity',
     );
     $query = $this->setCondition($query, $cond);
@@ -61,12 +62,13 @@ class SetItemService
   public function get(int $id)
   {
     $data = Item::select(
-      'm_items.id',
-      'm_items.item_number',
-      'm_items.name_jp',
-      'm_items.sales_unit_price',
-      'm_items.discontinued_date',
-      'm_items.is_display',
+      'items.id',
+      'items.item_number',
+      //'items.name_jp',
+      'items.name_note',
+      'items.sales_unit_price',
+      'items.discontinued_date',
+      'items.is_display',
     )
       ->where('m_items.id', $id)
       ->first()
@@ -107,7 +109,8 @@ class SetItemService
     DB::transaction(function () use ($id, $data) {
       $m = Item::find($id);
       $m->item_number = $data->get('item_number');
-      $m->name_jp = $data->get('name_jp');
+      //$m->name_jp = $data->get('name_jp');
+      $m->name_note = $data->get('name_note');
       $m->sales_unit_price = $data->get('sales_unit_price');
       $discontinued_date = $data->get('discontinued_date');
       $m->is_discontinued = $discontinued_date ? true : false;
@@ -150,7 +153,8 @@ class SetItemService
       foreach ($keywords as $key) {
         $query->where(function($query) use ($key) {
           $query->where('item_number', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('name_jp', 'like', '%' . escape_like($key) . '%');
+            //->orWhere('name_jp', 'like', '%' . escape_like($key) . '%');
+            ->orWhere('name_note', 'like', '%' . escape_like($key) . '%');
         });
       }
     }
@@ -185,10 +189,11 @@ class SetItemService
       ->join('m_items', 'm_items.id', '=', 'set_item_details.item_id')
       ->select(
         'set_item_details.*',
-        'm_items.name AS item_name',
-        'm_items.name_jp AS item_name_jp',
-        'm_items.item_number',
-        'm_items.sales_unit_price'
+        'items.name AS item_name',
+        //'items.name_jp AS item_name_jp',
+        'items.name_note AS item_name_note',
+        'items.item_number',
+        'items.sales_unit_price'
         )
       ->where('set_item_id', $id)
       ->get()

@@ -68,8 +68,8 @@ export const ItemSearchDialog: React.VFC<ItemSearchDialogProps> = ({
         </td>
         <td className="text-right">{numberFormat(r.sales_unit_price)}</td>
         <td className="text-right">{numberFormat(r.purchase_unit_price)}</td>
-        <td className="text-right">{numberFormat(r.domestic_stock ?? 0, 0)}</td>
-        <td className="text-right">{numberFormat(r.overseas_stock ?? 0, 0)}</td>
+        <td className="text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
+        <td className="text-right">{numberFormat(r.overseas_stocks ?? 0, 0)}</td>
         <td className="col-btn">
           <span data-id={r.id} onClick={onClickSelect}>
             選択

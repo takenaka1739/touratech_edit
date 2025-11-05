@@ -87,8 +87,11 @@ class ItemController extends BaseController
   public function edit(int $id)
   {
     \log::debug('デバッグ：ItemController.edit');
+    \log::debug($id);
 
     $data = $this->service->get($id);
+    \log::debug('$data');
+    \log::debug($data);
     return $this->success($data);
   }
 
@@ -97,9 +100,15 @@ class ItemController extends BaseController
    */
   public function store(ItemStoreRequest $request)
   {
-    $this->service->store($request->validated());
+    //$this->service->store($request->validated());
+    //return $this->success();
 
-    return $this->success();
+    $newId = $this->service->store($request->validated());
+
+    return response()->json([
+        'success' => true,
+        'id' => $newId,
+    ]);
   }
 
   /**
@@ -109,6 +118,9 @@ class ItemController extends BaseController
    */
   public function update(ItemUpdateRequest $request, int $id)
   {
+    \log::debug('デバッグ：ItemController.update');
+    \log::debug($request->validated());
+
     $this->service->update($id, $request->validated());
 
     return $this->success();

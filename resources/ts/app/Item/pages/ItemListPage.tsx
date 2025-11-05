@@ -33,18 +33,21 @@ export const ItemListPage: React.VFC = () => {
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
         <td>
+          {console.log(r)}
+          {console.log(r.variations1)}
           {/*<div className="text-xs">{r.item_number}</div>*/}
           <div className="text-xs">{r.itemNumberItem}</div>
-          <div>{r.name}</div>
-          {console.log('r')}
-          {console.log(r)}
+          <div>{r.name + '　' +
+                (r.variations1 ? `${r.variations1}` : '') + (r.variations2 ? ` / ${r.variations2}` : '') + 
+                (r.variations3 ? ` / ${r.variations3}` : '') + (r.variations4 ? ` / ${r.variations4}` : '') +
+                (r.variations5 ? ` / ${r.variations5}` : '')}</div>
           {/*<div>{r.name_jp}</div>*/}
           <div>{r.name_note}</div>
         </td>
         <td className="text-right">{numberFormat(r.sales_unit_price)}</td>
         <td className="text-right">{numberFormat(r.purchase_unit_price)}</td>
-        <td className="text-right">{numberFormat(r.domestic_stock ?? 0, 0)}</td>
-        <td className="text-right">{numberFormat(r.overseas_stock ?? 0, 0)}</td>
+        <td className="text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
+        <td className="text-right">{numberFormat(r.overseas_stocks ?? 0, 0)}</td>
         <td className="col-btn">
           <Link to={`/${slug}/detail/${r.id}`}>編集</Link>
         </td>

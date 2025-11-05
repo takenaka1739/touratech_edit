@@ -47,7 +47,9 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
 
   const get: (id: number) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
+    console.dir(`/api/${slug}/edit/${id}`);
     const res = await axios.get(`/api/${slug}/edit/${id}`);
+    console.dir(res);
     if (res.status === 200) {
       setState(res.data.data);
       dispatch(AppActions.success());
@@ -62,6 +64,8 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
 
   const store: () => Promise<boolean> = async () => {
     dispatch(AppActions.request());
+    console.log('state');
+    console.dir(state);
     const res = await axios.post(`/api/${slug}/store`, state);
     console.log(`store.res：${res}`);
     if (res.status === 200) {
@@ -81,7 +85,6 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
   const edit: (id: number) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
     const res = await axios.put(`/api/${slug}/edit/${id}`, state);
-    console.log(`edit.res.status：${res.status}`);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
@@ -148,6 +151,22 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
     setErrors({ ...errors, [name]: '' });
   };
 
+  //const onChange: (name: string, value: string | number | boolean | undefined) => void = (
+  //  name,
+  //  value
+  //) => {
+  //  setState(prev => ({ ...prev, [name]: value }));
+  //  setErrors(prev => ({ ...prev, [name]: '' }));
+  //};
+//
+  //const onChangeItem: (name: string, value: string | number | boolean | undefined) => void = (
+  //  name,
+  //  value
+  //) => {
+  //  setState(prev => ({ ...prev, [name]: value }));
+  //  setErrors(prev => ({ ...prev, [name]: '' }));
+  //};
+
   const onClickSave: () => void = async () => {
     console.log('onClickSave');
     setDisabled(true);
@@ -161,6 +180,7 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
         window.scrollTo(0, 0);
       }
     } else {
+      console.log(`id：${id}`);
       if (await store()) {
         await appAlert('保存しました。');
         backPage();
@@ -206,6 +226,7 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
     updateState,
     updateErrors,
     onChange,
+    //onChangeItem,
     onClickSave,
     onClickDelete,
     onClickOutput,

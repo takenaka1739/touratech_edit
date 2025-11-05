@@ -8,16 +8,16 @@ type SimpleSearchDetailPageState = {
   item_number: string | undefined;
   name_jp: string | undefined;
   sales_unit_price: number | undefined;
-  domestic_stock: number | undefined;
-  overseas_stock: number | undefined;
+  domestic_stocks: number | undefined;
+  overseas_stocks: number | undefined;
 };
 
 const initialState: SimpleSearchDetailPageState = {
   item_number: '',
   name_jp: '',
   sales_unit_price: undefined,
-  domestic_stock: undefined,
-  overseas_stock: undefined,
+  domestic_stocks: undefined,
+  overseas_stocks: undefined,
 };
 
 export const useSimpleSearchDetailPage = (slug: string) => {

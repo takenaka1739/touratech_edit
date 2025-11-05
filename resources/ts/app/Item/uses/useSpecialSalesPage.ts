@@ -1,5 +1,6 @@
 //import { useState, useEffect, useCallback } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+//import { useEffect } from 'react';
 import isEqual from 'lodash/isEqual';
 import { PageErrors } from '@/types';
 //import { SpecialSale } from '@/types';
@@ -27,37 +28,37 @@ import { PageErrors } from '@/types';
 //  specialSaleItem: SpecialSale;
 //}
 
+type props = {
+  id: number | undefined,
+  item_id: number | undefined,
+  is_sales_members_only: boolean | undefined,
+  start_at?: string | undefined,
+  end_at?: string | undefined,
+  special_sale_price: number | undefined,
+  refund_rate: number | undefined,
+}
+
 /**
  * 検索画面共通 hooks
  */
-export const useSpecialSalesPage = <T>(initialState: T) => {
+export const useSpecialSalesPage = <T extends props>(initialState: T) => {
 //export const useSpecialSalesPage = <T extends props>(initialState: T) => {
 //export const useSpecialSalesPage = <T extends props>(  id: number | undefined,
 //export const useSpecialSalesPage = <T>(
 //  item_id: number | undefined
 //) => {
   //const [state, setState] = useState<T>(initialState);
-  const [state, setState] = useState<T>(initialState);
+  const [state, setState] = useState(initialState);
   const [isShown, setIsShown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [conditions, setConditions] = useState(initialState);
   const [errors, setErrors] = useState<PageErrors>(undefined);
 
-  console.log(`initialState`);
-  console.dir(initialState, { depth: null });
-
-
-  //console.log(`useSpecialSalesPage.state：${item_id}`);
-  //console.log(`useSpecialSalesPage.state：${is_sales_members_only}`);
-  //console.log(`useSpecialSalesPage.state：${start_at}`);
-  //console.log(`useSpecialSalesPage.state：${end_at}`);
-  //console.log(`useSpecialSalesPage.state：${special_sale_price}`);
-  //console.log(`useSpecialSalesPage.state：${refund_rate}`);
-
-  //const dispatch = useDispatch();
+  useEffect(() => {setState(state)}, [initialState]);
 
   const onCancel: () => void = () => {
-    setIsShown(false)
+    setIsShown(false);
+    setState(initialState);
   };
 
   const cleanup: () => void = () => {
@@ -104,19 +105,34 @@ export const useSpecialSalesPage = <T>(initialState: T) => {
     cleanup();
   };
 
-  console.log('useSpecialSalesPageの中');
+  const open = () => {
+    setIsShown(true);
+    setState(initialState); // ← これがないと再表示時に古い値のまま
+  }
+
+  //const a = () => {
+  //  console.log(isShown);
+  //}
 
   return {
-    open: () => setIsShown(true),
+    //open: () => setIsShown(true),
+    isShown,    
+    open,
+    //a,
     isLoading,
     state,
     errors,
     onChange,
-    onClickCancel, 
+    onClickCancel,
+    setState,
+    setIsShown,
+    setIsLoading,
+    //onCancel: () => setIsShown(false),
     searchDialogProps: {
+      isLoading,
       isShown,
       //onCancel: () => setIsShown(false),
-      onCancel
+      onClickCancel
     },
   };
 };

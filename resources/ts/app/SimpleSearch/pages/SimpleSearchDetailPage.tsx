@@ -70,15 +70,15 @@ export const SimpleSearchDetailPage: React.VFC = () => {
               <tr>
                 <th>国内在庫</th>
                 <td>
-                  {state.domestic_stock != undefined &&
-                    (state.domestic_stock > 0 ? 'あり' : 'なし')}
+                  {state.domestic_stocks != undefined &&
+                    (state.domestic_stocks > 0 ? 'あり' : 'なし')}
                 </td>
               </tr>
               <tr>
                 <th>メーカー本国在庫</th>
                 <td>
-                  {state.overseas_stock != undefined &&
-                    (state.overseas_stock > 0 ? 'あり' : 'なし')}
+                  {state.overseas_stocks != undefined &&
+                    (state.overseas_stocks > 0 ? 'あり' : 'なし')}
                 </td>
               </tr>
             </tbody>

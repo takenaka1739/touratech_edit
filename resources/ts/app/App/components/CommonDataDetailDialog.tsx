@@ -66,14 +66,14 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         name_note,
         sales_unit_price,
         is_set_item,
-        domestic_stock,
-        overseas_stock,
+        domestic_stocks,
+        overseas_stocks,
       } = props;
       const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
       const ret = calcAmount(unit_price, 1, salesTaxRate, fraction);
       let answer_date: string | undefined = undefined;
       if (showAnswerDate) {
-        answer_date = getAnswerDate(receiveOrderDate, domestic_stock, overseas_stock);
+        answer_date = getAnswerDate(receiveOrderDate, domestic_stocks, overseas_stocks);
       }
       updateState({
         item_kind: is_set_item ? 2 : 1,

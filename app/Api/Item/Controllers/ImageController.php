@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Api\Item\Controllers;
+
+use App\Base\Http\Controllers\Api\BaseController;
+use App\Api\Item\Requests\ImageStoreRequest;
+use App\Api\Item\Requests\ImageUpdateRequest;
+use App\Api\Item\Services\ImageService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+/**
+ * 商品分類マスタ
+ */
+class ImageController extends BaseController
+{
+  /** @var \App\Api\ItemClassification\Services\ImageService */
+  protected $service;
+
+  /**
+   * @param \App\Api\ItemClassification\Services\ImageService $service
+   */
+  public function __construct(ImageService $service)
+  {
+    \Log::debug('デバッグ：ImageController.__construct');
+
+    $this->service = $service;
+  }
+
+  /**
+   * 登録
+   */
+  public function store(ImageStoreRequest $request)
+  {
+    \Log::debug('ImageStoreRequest');
+    \Log::debug('$request->validated()');
+    \Log::debug($request->validated());
+
+    $this->service->store($request->validated());
+
+    return $this->success();
+  }
+
+  public function serverStore(Request $request)
+  {
+    $request->validate([
+        'image' => 'required|image|max:30000',
+        'filename' => 'nullable|string',
+    ]);
+
+    $filename = $request->input('filename');
+    $path = 'images/' . $filename;
+
+    if (!(Storage::disk('public')->exists($path))) {
+      $file = $request->file('image');
+      $filename = $request->input('filename') ?? uniqid() . '.' . $file->getClientOriginalExtension();
+      $path = $file->storeAs('images', $filename, 'public');
+      return response()->json(['path' => $path], 201);
+    }else{
+      return response()->json(['path' => $path], 200);
+    }
+  }
+
+  //public function videoServerStore(Request $request){
+  //  $request->validate([
+  //      'video' => 'required|mimetypes:video/mp4, video/quicktime, video/avi, video/mpeg|max:51200', // 最大50MB
+  //      'filename' => 'nullable|string',
+  //  ]);
+//
+  //  $filename = $request->input('filename');
+  //  $path = 'images/' . $filename;
+//
+  //  if (!(Storage::disk('public')->exists($path))) {
+  //    $file = $request->file('video');
+  //    $filename = $request->input('filename') ?? uniqid() . '.' . $file->getClientOriginalExtension();
+  //    $path = $file->storeAs('images', $filename, 'public');
+  //    return response()->json(['path' => $path], 201);
+  //  }else{
+  //    return response()->json(['path' => $path], 404);
+  //  }
+  //}
+  public function videoServerStore(Request $request)
+  {
+    $request->validate([
+        'video' => 'required|mimetypes:video/mp4,video/quicktime,video/avi,video/mpeg|max:80000',
+        'filename' => 'nullable|string',
+    ]);
+
+    $file = $request->file('video');
+    if (!$file) {
+        return response()->json(['error' => '動画ファイルが取得できません'], 400);
+    }
+
+    $filename = $request->input('filename');
+    if (!$filename || !preg_match('/^[\w\-\.]+$/', $filename)) {
+        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+    }
+
+    $path = 'images/' . $filename;
+    $storedPath = $path;
+
+    if (!Storage::disk('public')->exists($path)) {
+        $storedPath = $file->storeAs('images', $filename, 'public');
+        if (!$storedPath) {
+            return response()->json(['error' => '保存に失敗しました'], 500);
+        }
+        return response()->json(['path' => $storedPath], 201);
+    } else {
+        return response()->json(['path' => $storedPath], 200);
+    }
+  }
+
+
+  /**
+   * 更新
+   *
+   * @param int $id 商品分類ID
+   */
+  public function update(ImageUpdateRequest $request, int $id)
+  {
+    \Log::debug('ImageController.update');
+    \Log::debug($id);
+
+    $this->service->update($id, $request->validated());
+
+    return $this->success();
+  }
+//
+//  /**
+//   * 削除
+//   *
+//   * @param int $id 商品分類ID
+//   */
+  public function delete($id)
+  {
+    \Log::debug('ImageController.delete');
+    \Log::debug($id);
+    $this->service->delete($id);
+
+    return $this->success();
+  }
+}

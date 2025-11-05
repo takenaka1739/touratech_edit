@@ -43,7 +43,7 @@ trait ItemRequestTrait
 
       'supplier_id' => 'bail|nullable|integer|exists:m_suppliers,id',
       'consumption_tax_id' => 'bail|nullable|integer|exists:t_consumption_taxes,id',
-      'code',
+      'code' => 'required|string|max:30',
       'name' => 'required|string|max:400',
       'item_number'=> [
         'bail',
@@ -60,8 +60,8 @@ trait ItemRequestTrait
       'variations4' => 'nullable|string|max:50',
       'explanation' => 'nullable|string|max:500',
       'explanation_details' => 'nullable|string|max:500',
-      'name_note' => 'nullable|string|max:36',
-      'name_label' => 'nullable|string|max:36',
+      'name_note' => 'nullable|string|max:400',
+      'name_label' => 'nullable|string|max:400',
       'is_sell' => 'required|boolean',
       'purchase_price' => 'nullable|numeric|price',
       'sales_price' => 'nullable|numeric|price',
@@ -86,6 +86,7 @@ trait ItemRequestTrait
       'is_payment_id3' => 'required|boolean',
       'is_payment_id4' => 'required|boolean',
       'is_payment_id5' => 'required|boolean',
+      'shipping_pay' => 'nullable|numeric|price',
       //'category_id' => 'bail|nullable|integer|exists:m_categories,id',
     ];
   }

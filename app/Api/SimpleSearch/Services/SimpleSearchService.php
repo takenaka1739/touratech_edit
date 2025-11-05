@@ -17,7 +17,7 @@ class SimpleSearchService
       'name_jp',
       'sales_unit_price',
       'domestic_stocks',
-      'overseas_stock',
+      'overseas_stocks',
     ])
       ->where('item_number', '=', $item_number)
       ->first();

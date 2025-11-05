@@ -34,7 +34,7 @@ export const SetItemDetailDialog: React.VFC<SetItemDetailDialogProps> = ({
     open: openItemDialog,
     searchDialogProps: itemSearchDialogProps,
   } = useCommonSearchDialogProps<Item>(
-    'item',
+    'm_items',
     async props => {
       //const { id, item_number, name, name_jp, sales_unit_price } = props;
       const { id,  name, name_note, sales_unit_price } = props;

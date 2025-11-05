@@ -5,9 +5,12 @@ namespace App\Base\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Database\Factories\ItemFactory;
 
 class Item extends Model
 {
+  use HasFactory;
   use SoftDeletes;
 
   //protected $table = 'm_items';
@@ -67,11 +70,13 @@ class Item extends Model
     'is_cash_delivery_fee',
     'additional_shipping_fee',
     'is_special_sale',
+    'shipping_pay',
     'is_payment_id1',
     'is_payment_id2',
     'is_payment_id3',
     'is_payment_id4',
     'is_payment_id5',
+    //'is_set_item'
   ];
 
   protected $hidden = [
@@ -84,4 +89,10 @@ class Item extends Model
     {
         return $value ? Carbon::parse($value)->format('Y/m/d') : null;
     }
+
+    protected static function newFactory(): ItemFactory
+    {
+        return ItemFactory::new();
+    }
+
 }

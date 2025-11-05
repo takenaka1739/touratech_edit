@@ -1,20 +1,22 @@
 //import { useState } from 'react';
 //import { RouteComponentProps } from 'react-router-dom';
 //import { forEach } from 'lodash';
-import { useCallback, useRef, useMemo, useState } from 'react';
+//import { forEach } from 'lodash';
+import { useCallback, useRef, useMemo, useState, useEffect } from 'react';
+//import { useCallback, useRef, useMemo, useState } from 'react';
 //import { useMemo } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 //import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 //import { Item } from '@/types';
 //import SimpleBar from 'simplebar-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 //import { TableScrollbar } from 'react-table-scrollbar';
 //import { ScrollView} from 'react-native';
+//import { useNavigate } from "react-router-dom";
 
 export type ItemDetailPageProps = {};
 
 export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
-
   type Props = {
     file: File;
   };
@@ -22,20 +24,98 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
   const location = useLocation<any>();
   const attachRef = useRef<HTMLInputElement>(null);
 
-  const [nameText, setNameText] = useState(location.state.itemName ?? "商品名を入力して下さい");
+  //const [nameText, setNameText] = useState(location.state.itemName ?? "商品名を入力して下さい");
+  const [nameText, setNameText] = useState(location.state.items.name ?? "商品名を入力して下さい");
   const [priceText, setpriceText] = useState(location.state.salesPriceItem ?? "金額を入力して下さい");
   const [detailText, setDetailText] = useState(location.state.exDetail ?? "説明文を入力して下さい");
   const [movieUrl, setMovieUrl] = useState('');
-  const variKindItem = location.state.variItems;
+  //const variKindItem = location.state.variItems;
+  const [variKindItem, setVariKindItem] = useState(location.state.variItems);
+  const [variChangeItem, setVariChangeItem] = useState(location.state.variChangeItem);
   const [pointText, setpoint] = useState("  ");
   const [dropErea, setDropErea] = useState("ファイルドロップまたはURLを入力して下さい");
   const [selectImageSrc, setImageSrc] = useState('');
   const [selectImageType, setImageType] = useState(-1);
-  const [files, setFiles] = useState<any[]>(location.state.imageItems[0]);
+  const [files, setFiles] = useState<any[]>(Array.isArray(location.state?.imageItems) ? location.state.imageItems[0] : ['','']);
+  const [clicked, setClicked] = useState(false);
+  const [SelectImage, setSelectImage] = useState('');
+
+  //const [variButton, setVariButton] = useState('');
+  //const [files, setFiles] = useState<any[]>(
+  //  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
+  //    ? location.state.imageItems
+  //    : ['', ''] // 初期要素を追加（必要に応じて内容を変更）
+  //);
+  //const [files, setFiles] = useState<any[]>(
+  //  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
+  //    ? location.state.imageItems : Array.isArray(location.state.variItems)
+  //    ? Array.from({ length: variKindItem.length }, () => ['']) : ['', '']// variKindItemの数だけ [''] を作成
+  //);
+
+  //const [edtImageItems, setEdtImageItems] = useState(Array.isArray(location.state?.imageItems) ? location.state.imageItems : [['', '']]);
+  //const [edtImageItems, setEdtImageItems] = useState(
+  //  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
+  //    ? location.state.imageItems : Array.isArray(location.state.variItems)
+  //    ? [['', '']].concat(Array.from({ length: variKindItem.length }, () => [''])) : [['', '']]);
+  //const [edtImageItems, setEdtImageItems] = useState(
+  //  Array.isArray(location.state?.imageItems) ? location.state.imageItems : 
+  //  Array.isArray(location.state.variItems) ? location.state.variItems.forEach((value:any) => 
+  //    {
+  //      setEdtImageItems((prev:any) => [...(prev || []), [value[0]]])
+  //    }) : [['', '']]
+  //);
+
+const [selectId, setSelectId] = useState(
+  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
+    ? location.state.imageItems[0][0]
+    : null
+);
+
+const [selectIndex, setSelectIndex] = useState(0);
+
+//const [edtImageItems, setEdtImageItems] = useState<any[][]>(
+//  Array.isArray(location.state?.imageItems)
+//    ? location.state.imageItems
+//    : [['', '']]
+//)
+
+const variItems = Array.isArray(location.state?.variItems)
+  ? location.state.variItems
+  : [];
+
+const imageItems = Array.isArray(location.state?.imageItems)
+  ? location.state.imageItems
+  : [];
+
+const initialMatrix = variItems.map((variItem:any) => {
+  let imageRow:any = [[]];
+  const hasSameValue = imageItems.some((arr:any) => arr[0] === variItem[0]);
+  if(hasSameValue){
+    const matchedItems = imageItems.filter((row:any) => row[0] === variItem[0]);
+    imageRow = [...matchedItems[0]];
+  }else{
+    const item = [variItem[0], ''];
+    imageRow = [...item];
+  }
+  return Array.isArray(imageRow) ? imageRow : [''];
+});
+
+const [edtImageItems, setEdtImageItems] = useState<any[][]>(initialMatrix);
+
+useEffect(() => {
+  if(!Array.isArray(location.state?.imageItems)){
+    if (((Array.isArray(location.state?.variItems)) && (location.state?.variItems.length > 0))) {
+      const initial = location.state.variItems.map((value: any) => [value[0], ''])
+      setEdtImageItems(initial);
+      setSelectId(initial[0][0]);
+    }
+  }
+}, [])
+
+  //const [selectId, setSelectId] = useState(location.state.imageItems[0][0]);
+  const [delimageItem, setDelImageItem] = useState<string[][]>([]);
   //const [selectVari, setSelectVari] = useState(0);
-
-  console.log(`typeof：${typeof files}`);
-
+  const history = useHistory();
 
   // 各入力欄の値設定
   const inputNameClick = () => {
@@ -53,13 +133,57 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
       setpriceText("");
     }
   }
+
   const inputPriceFocusOut = () => {
+    const updatedItems = variKindItem.map((row:any) => {
+      if (row[0] === selectId) {
+        const newRow = [...row]; // 元の配列をコピーして破壊的変更を避ける
+        newRow[6] = priceText;    // 5番目の要素（index 4）を書き換え
+        return newRow;
+      }
+      return row;
+    });
+    setVariKindItem(updatedItems);
+
+    const updateChangeItems = (() => {
+      const exists = variChangeItem.some((row:any) => row[0] === selectId);
+      location.state.preVariItem.find((row: any) => row[0] === selectId)[6] = priceText;
+
+      if (exists) {
+        // 該当行がある場合：更新
+        return variChangeItem.map((row:any) => {
+          if (row[0] === selectId) {
+            const newRow = [...row];
+            //location.state.preVariItem.find((row: any) => row[0] === selectId)[6] = priceText;
+            newRow[6] = priceText;
+            console.dir(location.state.preVariItem);
+            return newRow;
+          }
+          return row;
+        });
+      } else {
+        // 該当行がない場合：variKindItem から探して追加
+        const matched = variKindItem.find((row:any) => row[0] === selectId);
+        if (matched) {
+          const newRow = [...matched];
+          newRow[6] = priceText; // 価格情報を追加
+          return [...variChangeItem, newRow];
+        } else {
+          // 該当なしの場合はそのまま返す（または何もしない）
+          return variChangeItem;
+        }
+      }
+    })();
+    setVariChangeItem(updateChangeItems);
+
+
     if(priceText == ""){
       setpriceText("金額を入力して下さい");
     }else{
       Number(priceText) > 100 ? setpoint(String(Number(priceText) / 100)) : setpoint("  ");
     }
   }
+  
   const inputDetailClick = () => {
     if(detailText == "説明文を入力して下さい"){
       setDetailText("");
@@ -74,9 +198,8 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
   // 画像ドロップの処理
   const handleInpuFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files == null) return;
-    const files = Array.from(e.target.files);
-    console.log(`files：${files}`);
-    setFiles((current) => current.concat(files));
+    const newFiles = Array.from(e.target.files);
+    setFiles((current) => current.concat(newFiles));
     if (attachRef.current) attachRef.current.value = '';
   }, []);
 
@@ -100,12 +223,47 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    const files = Array.from(e.dataTransfer.items)
+
+    //if(files.length === 0){
+    //  setFiles(['']);
+    //}
+
+    const addFiles = Array.from(e.dataTransfer.items)
       .map((item) => item.getAsFile())
       .filter((file): file is File => file !== null);
-    setFiles((current) => current.concat(files));
+      setFiles((current) => Array.isArray(current) ? current.concat(addFiles) : [...addFiles]);
+
+    if (Array.isArray(edtImageItems)) {
+      const item = edtImageItems[selectIndex];
+
+      if (item[0] === selectId) {
+        const updatedMatrix = edtImageItems.filter((_, idx) => idx !== selectIndex);
+        const a = edtImageItems[selectIndex].concat(addFiles);
+      
+        if (selectIndex === 0) {
+          const withoutFirst = edtImageItems.slice(1);
+          const addItem = [a, ...withoutFirst];
+          setEdtImageItems(addItem);
+        } else {
+          const addItem = [...updatedMatrix.slice(0, selectIndex), a, ...updatedMatrix.slice(selectIndex)];
+          setEdtImageItems(addItem);
+        }
+      
+        //break; // ← ここでループを抜ける
+      } else {
+        const a = [selectId, ...addFiles];  
+        const withoutFirst = edtImageItems.filter((_, i) => i !== selectIndex);
+        const addItem = [...withoutFirst.slice(0, selectIndex), a, ...withoutFirst.slice(selectIndex)];
+        setEdtImageItems(addItem);
+      }
+    }else{
+      //const a = edtImageItems[index].concat(addFiles);
+      //const addItem = [...updatedMatrix.slice(0, index), a, ...updatedMatrix.slice(index)];
+      //setEdtImageItems(addFiles);
+    }
+
     setDropErea("");
-  }, []);
+  }, [edtImageItems, selectId]);
 
   const onPaste = useCallback(
     (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -116,110 +274,298 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
     },[]
   );
 
-  const handleClick = (src:string, type:number) => {
-    setImageSrc(src);
-    setImageType(type);
-    //setselectImage({pTag:'hidden', imgvisible:imgvisible, vdovisible:vdovisible});
-  };
-
-  const addMovie = () => {
-    console.log('url追加');
-    setFiles((current) => current.concat(movieUrl));
-    setMovieUrl('');
-  }
-
-  const Image = ({ file }: Props) => {
-    let fileType = typeof file; // { id: number; name: string; }
-    console.log(`fileType：${fileType}`);
-
-    if(fileType == 'object'){
-      let type = file.type.indexOf('video');
-      const src = useMemo(() => URL.createObjectURL(file), [file]);
-      if(type == -1){
-        console.log(`img：${type}`);
-        return (
-          <div style={{height: '80px', width: '80px', margin: '10px'}}>
-            <img key={src} src={src} onClick={() => handleClick(src, type)} alt={file.name}></img>
-          </div>
-        );
-      }else{
-        const src = useMemo(() => URL.createObjectURL(file), [file]);
-        return (
-          <div style={{height: '80px', width: '80px', margin: '10px'}}>
-            <video onClick={() => handleClick(src, type)}>
-              <source src={src} type="video/mp4"/>
-            </video>
-          </div>
-        );
-      }
-    }else{
-      const src = String(file);
-      if(((src.indexOf('jpg')) || (src.indexOf('gif')) || (src.indexOf('png'))) != -1 ){
-        return (
-          <div style={{height: '80px', width: '80px', margin: '10px'}}>
-            <img key={src} src={src} onClick={() => handleClick(src, -1)}/>
-          </div>
-        );
-      }else if(((src.indexOf('mp4')) || (src.indexOf('mov'))) != -1){
-        return (
-          <div style={{height: '80px', width: '80px', margin: '10px'}}>
-            <video onClick={() => handleClick(src, 3)}>
-              <source src={src} type="video/mp4"/>
-            </video>
-          </div>
-        );
-      }else{
-        return (
-          <div style={{margin: "10px"}} onClick={() => handleClick(src, 2)}>
-            <iframe
-              width="80px"
-              height="80px"
-              src={src}
-              title="YouTube video player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          </div>
-        )
-      }
-    }
-  };
-
   const onDragEnd = (result: any) => {
-     //console.log('発火');
     // drag時のindexの値
-     //console.log(result.source.index);
     // drag終了後のindexの値
-     //console.log(result.destination.index);
     const remove = files.splice(result.source.index, 1);
     files.splice(result.destination.index, 0, remove[0]);
   };
 
+  const handleClick = (src:string, type:number, fileName:string) => {
+    console.log(src);
+  if (src.includes("blob:")) {
+    setSelectImage(fileName);
+  }
+
+    setImageSrc(src);
+    setImageType(type);
+    setClicked(true);
+    //setselectImage({pTag:'hidden', imgvisible:imgvisible, vdovisible:vdovisible});
+  };
+
+  //const imageConversion = async (uuid: string): Promise<string> => {
+  //  const res = await fetch(`/api/file-info/${uuid}`);
+  //  const data = await res.json();
+  //  return data.filename;
+  //};
+
+
+
+  const youtubeClick = (src:string, type:number) => {
+    setImageSrc(src);
+    setImageType(type);
+    setClicked(true);
+  }
+
+  const addMovie = () => {
+    //setFiles((current) => current.concat(movieUrl));
+    //setMovieUrl('');
+
+    if (movieUrl.trim() === '') return;
+    setFiles((current) => current.concat(movieUrl));
+    setMovieUrl('');
+
+    //if (Array.isArray(edtImageItems)) {
+    //  edtImageItems.forEach((item: any, index: number) => {
+    //    if (item[0] === selectId) {
+    //      const updatedMatrix = edtImageItems.filter((_: any, idx: number) => idx !== index);
+    //      const a = edtImageItems[index].concat(movieUrl);
+    //      console.log(a);
+    //      const addItem = [...updatedMatrix.slice(0, index), a, ...updatedMatrix.slice(index)];
+    //      setEdtImageItems(addItem);
+    //    }else{
+    //    }
+    //  });
+    //}else{
+    //  //const a = edtImageItems[index].concat(addFiles);
+    //  //const addItem = [...updatedMatrix.slice(0, index), a, ...updatedMatrix.slice(index)];
+    //  //setEdtImageItems(addFiles);
+    //}
+
+    //if (Array.isArray(edtImageItems)) {
+    //  const index = edtImageItems.findIndex((item: any) => item[0] === selectId);
+    //  if (index !== -1) {
+    //    const updatedItem = edtImageItems[index].concat(movieUrl);
+    //    console.log(updatedItem);
+    //    const updatedMatrix = edtImageItems.map((item: any, idx: number) =>
+    //      idx === index ? updatedItem : item
+    //    );
+    //    setEdtImageItems(updatedMatrix);
+    //  }
+    //} else {
+    //  // setEdtImageItems([addFiles]); // 必要に応じて
+    //}
+
+    //if (Array.isArray(edtImageItems)) {
+    //  const index = edtImageItems.findIndex((item: any) => item[0] === selectId);
+    //  if (index !== -1) {
+    //    const updatedItem = edtImageItems[index].concat(movieUrl);
+    //    const updatedMatrix = edtImageItems.map((item: any, idx: number) =>
+    //      idx === index ? updatedItem : item
+    //    );
+    //    setEdtImageItems(updatedMatrix);
+    //  } else {
+    //    // selectId に一致する item が存在しない場合、新しく追加
+    //    const newItem = [selectId, movieUrl];
+    //    setEdtImageItems([...edtImageItems, newItem]);
+    //  }
+    //} else {
+    //  // edtImageItems が null や undefined の場合、初期化して追加
+    //  const newItem = [selectId, movieUrl];
+    //  setEdtImageItems([newItem]);
+    //}
+
+    if (Array.isArray(edtImageItems)) {
+      const index = edtImageItems.findIndex((item: any) => item[0] === selectId);
+      if (index !== -1) {
+        const originalItem = edtImageItems[index];
+        const updatedItem = [originalItem[0], ...originalItem.slice(1), movieUrl];
+        const updatedMatrix = edtImageItems.map((item: any, idx: number) =>
+          idx === index ? updatedItem : item
+        );
+        setEdtImageItems(updatedMatrix);
+      } else {
+        const newItem = [selectId, movieUrl];
+        setEdtImageItems([...edtImageItems, newItem]);
+      }
+    } else {
+      const newItem = [selectId, movieUrl];
+      setEdtImageItems([newItem]);
+    }
+  }
+
+  const removeFileByName = (targetName: string) => {
+    console.log(targetName);
+    console.dir(edtImageItems);
+    edtImageItems.map((item:any, index:number) => {
+      let fileItem: string[] = [];
+      if(item[0] === files[0]){
+        let delFile = [];
+        // 該当ファイルの削除処理
+        if(targetName.includes("blob:")){
+          delFile = edtImageItems[index].filter((file:File) => file.name !== SelectImage);
+        }else{
+          delFile = edtImageItems[index].filter((file:string) => file !== targetName);
+        }
+        // 編集行の削除
+        const updatedMatrix = edtImageItems.filter((_:any, idx:number) => idx !== index);
+        // 編集行の再追加
+        const addItem = [...updatedMatrix.slice(0, index), delFile, ...updatedMatrix.slice(index)];
+        fileItem.push(item[0], targetName.replace("http://localhost:8081/storage/images/", ""));
+        //const addFileItem = [...delimageItem, fileItem];
+        // 更新
+        setEdtImageItems(addItem); // 内部データの配列更新
+        setFiles(delFile); // ユーザーに表示される部分の配列更新
+        //setDelImageItem(addFileItem);
+        setDelImageItem(prev => [...prev, fileItem]);
+
+        setImageSrc('');
+      }
+    });
+  };
+
   const clickVariItem = (index:number) => {
-    setpriceText(variKindItem[index][5]);
-    setFiles(location.state.imageItems[index]);
-    if(Number(variKindItem[index][5]) >= 100) setpoint(String(Number(variKindItem[index][5]) / 100))
+    setSelectIndex(index);
+    setpriceText(variKindItem[index][6]);
+    setSelectId(variKindItem[index][0]);
+    if(Array.isArray(edtImageItems[index])){
+      setFiles(edtImageItems[index]);
+    }else{
+      setFiles([]);
+    }
+
+    //if (Array.isArray(edtImageItems)){
+    //  setFiles(edtImageItems[index]);
+    //  setSelectId(edtImageItems[index][0]);
+    //}else{
+    //  setFiles(['']);
+    //  setSelectId(variKindItem[index][0]);
+    //}
+
+    //setFiles(edtImageItems[index]);
+    //(edtImageItems[index][0]);
+    //if (Array.isArray(edtImageItems) && edtImageItems[index] && Array.isArray(edtImageItems[index])) {
+    //  console.log('if文の中');
+    //  setFiles(edtImageItems[index]);
+    //  setSelectId(edtImageItems[index][0]);
+    //}else{
+    //  if(edtImageItems[index] !== undefined) setSelectId(edtImageItems[index][0]);
+    //  else setSelectId(variKindItem[index][0]);
+    //  console.log('test');
+    //}
+
+    if(Number(variKindItem[index][6]) >= 100) setpoint(String(Number(variKindItem[index][6]) / 100))
     else setpoint('0');
   }
 
-  location.state.imageItems.forEach((value:string) => {
-    console.log(value);
-  });
+  const handleBack = () => {
+    const url = location.state.item_id !== undefined ? `/item/detail/${location.state.item_id}` : `/item/detail`;
+    console.dir(variItems);
+    console.dir(variChangeItem);
+    console.dir(location.state.preVariItem);
+    history.push({ pathname: url,
+                      state: {itemName: nameText,
+                              preVariItem:location.state.preVariItem,
+                              preState: location.state.items,
+                              exDetail: detailText === '説明文を入力して下さい' ? '' : detailText,
+                              preImageItem: location.state.imageItems,
+                              imageItem: edtImageItems,
+                              delimageItem: delimageItem,
+                              //variItems: location.state.variItems,
+                              variItems: variKindItem,
+                              variChangeItem: variChangeItem,
+                              backVariItems: location.state.backVariItems,
+                              categoryChangeFlag: location.state.categoryChangeFlag,
+                              supplierChangeFlag: location.state.supplierChangeFlag
+                      }}); // 1つ前の履歴に戻る
+    //history.goBack(); // 1つ前の履歴に戻る
+  };
 
-  console.log(`files：${files}`);
-
+  const Image = ({ file }: Props) => {
+    const fileType = typeof file;
+    // File/Blob 判定
+    const isBlobLike = file instanceof Blob;
+    if (fileType === 'object' && isBlobLike && typeof file !== 'string') {
+      const isVideo = typeof file.type === 'string' && file.type.indexOf('video') !== -1;
+      const src = useMemo(() => URL.createObjectURL(file), [file]);
+      console.log(src);
+    
+      if (!isVideo) {
+        return (
+          <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+            <img key={src} src={src} onClick={() => handleClick(src, -1, file.name)} alt={file.name} />
+          </div>
+        );
+      } else {
+        return (
+          <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+            <video onClick={() => handleClick(src, 3, file.name)}>
+              <source src={src} type="video/mp4" />
+            </video>
+          </div>
+        );
+      }
+    } else {
+      const src = String(file);
+      const isImage = ['jpg', 'gif', 'png'].some(ext => src.includes(ext));
+      const isVideo = ['mp4', 'mov'].some(ext => src.includes(ext));
+      if(src !== ''){
+        if (isImage) {
+          return (
+            <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+              <img key={src} src={src} onClick={() => handleClick(src, -1, '')} />
+            </div>
+          );
+        } else if (isVideo) {
+          return (
+            <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+              <video onClick={() => handleClick(src, 3, '')}>
+                <source src={src} type="video/mp4" />
+              </video>
+            </div>
+          );
+        } else {
+          return (
+            <div style={{ margin: '10px', position: 'relative' }}> {/*onClick={() => handleClick(src, 2)}*/}
+              <iframe
+                width="80px"
+                height="80px"
+                src={src}
+                style={{ pointerEvents: 'none' }}
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+              {/* クリック検知用オーバーレイ */}
+              {!clicked && (
+                <div
+                  onClick={() => youtubeClick(src, 2)}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    cursor: 'pointer',
+                    zIndex: 10,
+                  }}
+                />
+              )}
+            </div>
+          );
+        }
+      }
+    }
+    return null;
+  };
+  
   return (
     <div id="shop-image">
       <div id="button-area">
-        <a id="back-button">← 受注管理システム</a>
+        <button id="back-button" onClick={() => handleBack()}>← 受注管理システム</button>
       </div>
       <div id="input-area">
         <div id="image-area">
-          {console.log(`selectImageSrc：${selectImageSrc}`)}
+          <button className="btn-delete" style={{ marginLeft:'495px', marginBottom:'5px', height: '26px', paddingTop: '0px', paddingBottom: '0px'}}
+                  onClick={() => removeFileByName(selectImageSrc)}>
+            削除
+          </button>
+          {/*<button style={{marginLeft: '400px'}} onClick={() => removeFileByName(selectImageSrc)}>
+            削除
+          </button>*/}
           <div>{ selectImageType === -1 ? (<img key={selectImageType} className="image-size" src={selectImageSrc}/>) : 
-                 selectImageType === 2 ? (<iframe key={selectImageType} className="image-size" src={selectImageSrc}
-                                                  style={{width: '100px', height: '100px'}}
+                 selectImageType === 2 && clicked ? (<iframe key={selectImageType} className="image-size" src={selectImageSrc}
                                                   title="YouTube video player"
                                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;
                                                          web-share"
@@ -242,29 +588,34 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
             >
               <p style={{height: '30px', fontSize: '20px', color: '#c9d7e8f8', textAlign: 'center', position: 'absolute'}}>{dropErea}</p>
               <DragDropContext onDragEnd={onDragEnd}> 
-                <Droppable droppableId="droppable" direction="horizontal">
+                <Droppable key={'droppable'} droppableId="droppable" direction="horizontal">
                   {(provided) => (
-                    <div className="scllowDiv" {...provided.droppableProps} ref={provided.innerRef}>
-                      {files.map((f, index) => (
-                        <Draggable draggableId={String(index)} index={index} key={String(f)}>
-                          {/* Droppableで指定した引数をそのまま指定する */}
-                          {(provided) => (
-                            // この中で静的なdivタグなどを指定できる
-                            //  <div {...provided.draggableProps} ref={provided.innerRef}>もお作法
-                            // 実際に掴んで移動させるpropsに{...provided.dragHandleProps}をつける
-                            //<SimpleBar style={{ width: 500, height: 300 }}>
-                                                    //<section style={{overflowX: 'scroll'}}>
-                              <div key={index} style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
-                                <div key={f.name} {...provided.dragHandleProps}>
-                                  {/*<section style={{overflowX: 'scroll'}}>*/}
-                                    <Image file={f}/>
-                                  {/*</section>*/}
-                                </div>
-                              </div>
-                                              //</section>
-                          )}
-                        </Draggable>
-                      ))}
+                    <div key={'scllowDiv'} className="scllowDiv" {...provided.droppableProps} ref={provided.innerRef}>
+                      {files.map((f, index) => {
+                        if (index > 0) {
+                          return (
+                            <Draggable key={String(index)} draggableId={String(index)} index={index}>
+                              {/* Droppableで指定した引数をそのまま指定する */}
+                              {(provided) => (
+                                // この中で静的なdivタグなどを指定できる
+                                //  <div {...provided.draggableProps} ref={provided.innerRef}>もお作法
+                                // 実際に掴んで移動させるpropsに{...provided.dragHandleProps}をつける
+                                //<SimpleBar style={{ width: 500, height: 300 }}>
+                                                        //<section style={{overflowX: 'scroll'}}>
+                                  <div key={index} style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
+                                    <div key={index + index} {...provided.dragHandleProps}>
+                                      {/*<section style={{overflowX: 'scroll'}}>*/}
+                                        <Image file={f}/>
+                                      {/*</section>*/}
+                                    </div>
+                                  </div>
+                                //</section>
+                              )}
+                            </Draggable>
+                        );}
+                      return null;
+                    })}
+                    {provided.placeholder}
                     </div>
                   )}
                 </Droppable>
@@ -279,9 +630,6 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
           </div>
         </div>
         {/*<img src={"c111583894027.jpg"} style={{width: '80px', height: '90px', marginTop: '551px'}}/>*/}
-        <div id="dust-box-icon">
-          <img src={"/images/defbe5d2e16490334ffd8c22f1469ce6_t.jpg"}/>
-        </div>
         <div id="item-info">
           <input id="item-name" value={nameText}
                  onClick={() => inputNameClick()}
@@ -306,16 +654,38 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
                    onChange={(event) => setDetailText(event.target.value)}/>
           </div>
         </div>
-        <div style={{marginLeft: '60px', marginTop: '10px'}}>{variKindItem.map((item:any, index:number) => {
-                console.log(`item.map：${item}}`);
+        {/*<div style={{marginLeft: '60px', marginTop: '10px'}}>{variKindItem.map((item:any, index:number) => {
                 return (
-                  <div key={'vari-erea-key'}>
+                  <div key={'vari-erea-key' + index}>
                     <button id="vari-erea" onClick={() => clickVariItem(index)}>
-                      {item[0] + '/' + item[1] + '/' + item[2] + '/' + item[3]}
+                      {item[1] + '/' + item[2] + '/' + item[3] + '/' + item[4]}
                     </button>
                   </div> 
                 )
-              })}</div> 
+              })}</div>*/}
+          <div style={{ marginLeft: '60px', marginTop: '10px' }}>
+            {variKindItem.map((item: any, index: number) => {
+              if (!item[1] && !item[2] && !item[3] && !item[4]) return null; // null または空文字なら表示しない
+                const varis =
+                  item[1] +
+                  (item[2] !== '' && item[2] !== null ? ' / ' + item[2] : '') +
+                  (item[3] !== '' && item[3] !== null ? ' / ' + item[3] : '') +
+                  (item[4] !== '' && item[4] !== null ? ' / ' + item[4] : '');
+              return (
+                <div key={'vari-erea-key' + index}>
+                  <button id="vari-erea" onClick={() => clickVariItem(index)}>
+                    {varis}
+                    {/*{  let a = '';
+                       item[1] + 
+                     ((item[2] !== '') && (item[2] !== null) ? ' / ' + item[2] : '') +
+                     ((item[3] !== '') && (item[3] !== null) ? ' / ' + item[3] : '') +
+                     ((item[4] !== '') && (item[4] !== null) ? ' / ' + item[4] : '')
+                    }*/}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
       </div>
     </div>
   );

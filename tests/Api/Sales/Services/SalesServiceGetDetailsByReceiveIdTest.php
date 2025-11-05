@@ -37,7 +37,7 @@ class SalesServiceGetDetailsByReceiveIdTest extends TestCase
         'is_discontinued' => 0,
         'is_display' => 0,
         'is_set_item' => 0,
-        'domestic_stock' => 1001,
+        'domestic_stocks' => 1001,
       ],
       [
         'id' => 2,
@@ -47,7 +47,7 @@ class SalesServiceGetDetailsByReceiveIdTest extends TestCase
         'is_discontinued' => 0,
         'is_display' => 0,
         'is_set_item' => 0,
-        'domestic_stock' => 102,
+        'domestic_stocks' => 102,
       ],
     ]);
 

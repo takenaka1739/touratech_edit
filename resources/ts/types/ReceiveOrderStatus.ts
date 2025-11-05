@@ -12,7 +12,7 @@ export type ReceiveOrderStatus = {
   item_name: string | undefined;
   item_name_jp: string | undefined;
   item_kind: number;
-  domestic_stock: number;
+  domestic_stocks: number;
   customer_name?: string | undefined;
   sales_completed: number;
   place_completed: number;
