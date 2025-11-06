@@ -25,7 +25,7 @@ class SetItemService
       'm_items.id',
       'm_items.name_jp',
       'm_items.sales_unit_price',
-      'set_items.total_quantity',
+      't_set_items.total_quantity',
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('item_number', 'asc');
@@ -41,16 +41,24 @@ class SetItemService
   public function fetch(array $cond)
   {
     $query = Item::select(
-      'items.item_number',
-      'items.id',
+      'm_items.item_number',
+      'm_items.id',
       //'items.name_jp',
-      'items.name_note',
-      'items.sales_unit_price',
-      'set_items.total_quantity',
+      'm_items.name_note',
+      'm_items.sales_unit_price',
+      't_set_items.total_quantity',
     );
+    //->leftJoin('t_set_items', 'm_items.id', '=', 't_set_items.item_id');
     $query = $this->setCondition($query, $cond);
     $query->orderBy('item_number', 'asc');
+    \Log::debug('55行目');
+    \Log::debug('$query->paginate(config(const.paginate.per_page))->toArray()');
+    \Log::debug($query->paginate(config('const.paginate.per_page'))->toArray());
     return $query->paginate(config('const.paginate.per_page'))->toArray();
+    //$query = $query->orderBy('item_number', 'asc')
+    //               ->paginate(config('const.paginate.per_page'));
+    //
+    //return $query->toArray();
   }
 
   /**
@@ -62,13 +70,14 @@ class SetItemService
   public function get(int $id)
   {
     $data = Item::select(
-      'items.id',
-      'items.item_number',
+      'm_items.id',
+      'm_items.item_number',
       //'items.name_jp',
-      'items.name_note',
-      'items.sales_unit_price',
-      'items.discontinued_date',
-      'items.is_display',
+      'm_items.name_note',
+      'm_items.sales_unit_price',
+      //'items.discontinued_date',
+      'm_items.discontinued_at',
+      'm_items.is_display',
     )
       ->where('m_items.id', $id)
       ->first()
@@ -88,7 +97,8 @@ class SetItemService
     $data = new Collection($data);
     DB::transaction(function () use ($data) {
       $m = Item::make($data->toArray());
-      $m->is_discontinued = $data->has('discontinued_date');
+      //$m->is_discontinued = $data->has('discontinued_date');
+      $m->is_discontinued = $data->has('discontinued_at');
       $m->is_set_item = true;
       $m->save();
 
@@ -112,9 +122,11 @@ class SetItemService
       //$m->name_jp = $data->get('name_jp');
       $m->name_note = $data->get('name_note');
       $m->sales_unit_price = $data->get('sales_unit_price');
-      $discontinued_date = $data->get('discontinued_date');
-      $m->is_discontinued = $discontinued_date ? true : false;
-      $m->discontinued_date = $discontinued_date;
+      //$discontinued_date = $data->get('discontinued_date');
+      $discontinued_at = $data->get('discontinued_at');
+      //$m->is_discontinued = $discontinued_date ? true : false;
+      $m->is_discontinued = $discontinued_at ? true : false;
+      //$m->discontinued_date = $discontinued_date;
       $m->is_display = $data->get('is_display');
       $m->save();
 
@@ -144,7 +156,8 @@ class SetItemService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('set_items', 'set_items.set_item_id', '=', 'm_items.id');
+    $query->leftJoin('t_set_items', 't_set_items.set_item_id', '=', 'm_items.id');
+    //$query->leftJoin('t_set_items', 't_set_items.item_id', '=', 'm_items.id');
 
     $cond = new Collection($cond);
     $c_keyword = $cond->get('c_keyword');
@@ -171,7 +184,8 @@ class SetItemService
 
     $has_discontinued = $cond->get('c_has_discontinued');
     if (!$has_discontinued) {
-      $query->whereNull('discontinued_date');
+      //$query->whereNull('discontinued_date');
+      $query->whereNull('discontinued_at');
     }
 
     return $query;
@@ -185,15 +199,15 @@ class SetItemService
    */
   private function getDetails(int $id)
   {
-    return DB::table('set_item_details')
-      ->join('m_items', 'm_items.id', '=', 'set_item_details.item_id')
+    return DB::table('t_set_item_details')
+      ->join('m_items', 'm_items.id', '=', 't_set_item_details.item_id')
       ->select(
-        'set_item_details.*',
-        'items.name AS item_name',
+        't_set_item_details.*',
+        'm_items.name AS item_name',
         //'items.name_jp AS item_name_jp',
-        'items.name_note AS item_name_note',
-        'items.item_number',
-        'items.sales_unit_price'
+        'm_items.name_note AS item_name_note',
+        'm_items.item_number',
+        'm_items.sales_unit_price'
         )
       ->where('set_item_id', $id)
       ->get()
@@ -208,8 +222,8 @@ class SetItemService
    */
   private function saveDetails(int $id, $details)
   {
-    DB::table('set_items')->where('set_item_id', '=', $id)->delete();
-    DB::table('set_item_details')->where('set_item_id', '=', $id)->delete();
+    DB::table('t_set_items')->where('set_item_id', '=', $id)->delete();
+    DB::table('t_set_item_details')->where('set_item_id', '=', $id)->delete();
 
     $total_quantity = 0;
     if ($details) {
@@ -225,9 +239,9 @@ class SetItemService
         ];
         $total_quantity += (int)$detail->get('quantity');
       }
-      DB::table('set_item_details')->insert($data);
+      DB::table('t_set_item_details')->insert($data);
     }
-    DB::table('set_items')->insert([[
+    DB::table('t_set_items')->insert([[
       'set_item_id' => $id,
       'total_quantity' => $total_quantity,
     ]]);

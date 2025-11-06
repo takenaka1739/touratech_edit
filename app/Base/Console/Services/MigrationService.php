@@ -22,8 +22,8 @@ class MigrationService
     $this->migrateDefaults('suppliers');
     $this->migrateDefaults('m_categories');
     $this->migrateDefaults('m_items');
-    $this->migrateDefaults('set_items');
-    $this->migrateDefaults('set_item_details');
+    $this->migrateDefaults('t_set_items');
+    $this->migrateDefaults('t_set_item_details');
 
     $this->migrateDefaults('estimates');
     $this->migrateDefaults('estimate_details');

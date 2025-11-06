@@ -503,9 +503,9 @@ class ReceiveOrderService
   private function updateSetItems($parent) {
     $details = ReceiveOrderDetail::select([
       't_receive_order_details.id',
-      'set_item_details.quantity',
+      't_set_item_details.quantity',
     ])
-      ->join('set_item_details', 'set_item_details.id', '=', 't_receive_order_details.item_id')
+      ->join('t_set_item_details', 't_set_item_details.id', '=', 't_receive_order_details.item_id')
       ->where('parent_id', $parent->id)
       ->where('set_item_id', $parent->item_id)
       ->get();

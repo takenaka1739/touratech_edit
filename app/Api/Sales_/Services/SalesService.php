@@ -517,7 +517,7 @@ class SalesService
   private function getDetailsByReceiveId(int $receive_order_id)
   {
     return DB::table('receive_order_details')
-      ->join('items', 'items.id', '=', 'receive_order_details.item_id')
+      ->join('m_items', 'm_items.id', '=', 'receive_order_details.item_id')
       ->select(
         'receive_order_details.id AS receive_order_detail_id',
         'receive_order_details.no',
@@ -726,9 +726,9 @@ class SalesService
   private function updateSetItems($parent) {
     $details = SalesDetail::select([
       'sales_details.id',
-      'set_item_details.quantity',
+      't_set_item_details.quantity',
     ])
-      ->join('set_item_details', 'set_item_details.id', '=', 'sales_details.item_id')
+      ->join('t_set_item_details', 't_set_item_details.id', '=', 'sales_details.item_id')
       ->where('parent_id', $parent->id)
       ->where('set_item_id', $parent->item_id)
       ->get();

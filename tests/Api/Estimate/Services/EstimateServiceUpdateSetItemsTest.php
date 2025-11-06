@@ -28,7 +28,7 @@ class EstimateServiceUpdateSetItemsTest extends TestCase
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
     DB::table('estimate_details')->delete();
-    DB::table('set_item_details')->delete();
+    DB::table('t_set_item_details')->delete();
 
     DB::table('estimate_details')->insert([[
       'id' => 1,
@@ -104,7 +104,7 @@ class EstimateServiceUpdateSetItemsTest extends TestCase
       'parent_id' => 2,
     ]]);
 
-    DB::table('set_item_details')->insert([[
+    DB::table('t_set_item_details')->insert([[
       'set_item_id' => 2,
       'id' => 1,
       'item_id' => 1,
