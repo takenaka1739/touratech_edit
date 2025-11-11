@@ -53,7 +53,11 @@ class SetItemController extends BaseController
    */
   public function fetch(Request $request)
   {
+    \Log::debug('$request');
+    \Log::debug($request);
     $input = $request->all();
+    \Log::debug('$input');
+    \Log::debug($input);
     $data = $this->service->fetch($input);
 
     return $this->success($data);

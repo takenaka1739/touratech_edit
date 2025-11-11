@@ -4,6 +4,8 @@ namespace App\Api\Item\Controllers;
 
 use Illuminate\Support\Facades\Route;
 
+  \Log::debug('デバッグ：Item.Route');
+
 Route::group([
   'prefix' => 'api/item',
   'middleware' => ['api', 'auth', 'check.general']
@@ -20,9 +22,25 @@ Route::group([
     Route::post('store', [ItemController::class, 'store']);
     Route::get('edit/{id}', [ItemController::class, 'edit']);
     Route::put('edit/{id}', [ItemController::class, 'update']);
+    Route::put('/update/{id}', [ItemController::class, 'update']);
     Route::delete('delete/{id}', [ItemController::class, 'delete']);
     Route::post('output', [ItemController::class, 'output']);
     Route::post('get_id', [ItemController::class, 'get_id']);
     Route::post('/output_excel', [ItemController::class, 'output_excel']);
+
+    Route::post('image_store', [ImageController::class, 'store']);
+    Route::put('/image_update/{id}', [ImageController::class, 'update']);
+    Route::post('/image_server_store', [ImageController::class, 'serverStore']);
+    Route::post('/video_server_store', [ImageController::class, 'videoServerStore']);
+    Route::delete('image_delete/{id}', [ImageController::class, 'delete']);
+
+    Route::post('/special_sale_store', [SpecialSaleController::class, 'store']);
+    Route::put('/special_sale_update/{id}', [SpecialSaleController::class, 'update']);
+    Route::delete('/special_sale_delete/{id}', [SpecialSaleController::class, 'delete']); 
+
+    Route::post('/category_store', [CombController::class, 'store']);
+    Route::put('/category_edit/{id}', [CombController::class, 'update']);
+
+    Route::post('image_upload', [UploadController::class, 'store']);
   });
 });

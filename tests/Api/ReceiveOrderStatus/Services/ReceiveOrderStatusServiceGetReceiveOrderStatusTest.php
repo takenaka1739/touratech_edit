@@ -35,7 +35,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'is_discontinued' => 0,
         'is_display' => 1,
         'is_set_item' => 0,
-        'domestic_stock' => 101,
+        'domestic_stocks' => 101,
       ],
       [
         'id' => 2,
@@ -45,7 +45,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'is_discontinued' => 0,
         'is_display' => 1,
         'is_set_item' => 0,
-        'domestic_stock' => 102,
+        'domestic_stocks' => 102,
       ],
     ]);
 
@@ -163,7 +163,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'item_number' => '01-000-0001-0',
         'item_name' => 'ITEM01',
         'item_name_jp' => '商品01',
-        'domestic_stock' => 101,
+        'domestic_stocks' => 101,
       ],
       [
         'id' => 1,
@@ -174,7 +174,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'item_number' => '01-000-0001-0',
         'item_name' => 'ITEM01',
         'item_name_jp' => '商品01',
-        'domestic_stock' => 101,
+        'domestic_stocks' => 101,
       ],
       [
         'id' => 2,
@@ -185,7 +185,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'item_number' => '01-000-0001-0',
         'item_name' => 'ITEM01',
         'item_name_jp' => '商品01',
-        'domestic_stock' => 101,
+        'domestic_stocks' => 101,
       ],
       [
         'id' => 2,
@@ -196,7 +196,7 @@ class ReceiveOrderStatusServiceGetReceiveOrderStatusTest extends TestCase
         'item_number' => '01-000-0002-0',
         'item_name' => 'ITEM02',
         'item_name_jp' => '商品02',
-        'domestic_stock' => 102,
+        'domestic_stocks' => 102,
       ],
     ];
 

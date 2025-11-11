@@ -139,9 +139,9 @@ class HomeDataImportService
             $remarks .= "廃盤予定：".$item->is_discontinued."->".$is_discontinued;
           }
         }
-        $overseas_stock = $tmp->get('stock', 0);
-        if (!is_numeric($overseas_stock)) {
-          $overseas_stock = 0;
+        $overseas_stocks = $tmp->get('stock', 0);
+        if (!is_numeric($overseas_stocks)) {
+          $overseas_stocks = 0;
         }
 
         $rows[] = [
@@ -151,7 +151,7 @@ class HomeDataImportService
           'sample_price' => bcmul($price, $rate, 2),
           'supplier_id' => $supplier_id,
           'is_discontinued' => $is_discontinued,
-          'overseas_stock' => $overseas_stock,
+          'overseas_stocks' => $overseas_stocks,
           'edit_kind' => $edit_kind,
           'remarks' => $remarks,
         ];
@@ -172,7 +172,7 @@ class HomeDataImportService
       , supplier_id
       , is_discontinued
       , is_display
-      , overseas_stock
+      , overseas_stocks
       , created_at
       , updated_at)
     SELECT item_number
@@ -182,7 +182,7 @@ class HomeDataImportService
       , supplier_id
       , is_discontinued
       , 1
-      , overseas_stock
+      , overseas_stocks
       , CURRENT_TIMESTAMP
       , CURRENT_TIMESTAMP
     FROM item_temporaries WHERE item_temporaries.edit_kind = ".$this::EDIT_KIND_INSERT);
@@ -200,7 +200,7 @@ class HomeDataImportService
       , a.sample_price = b.sample_price
       , a.supplier_id = b.supplier_id
       , a.is_discontinued = b.is_discontinued
-      , a.overseas_stock = b.overseas_stock
+      , a.overseas_stocks = b.overseas_stocks
       , a.updated_at = CURRENT_TIMESTAMP");
   }
 
@@ -218,7 +218,7 @@ class HomeDataImportService
       , sample_price
       , supplier_id
       , is_discontinued
-      , overseas_stock
+      , overseas_stocks
       , edit_kind
       , remarks)
     SELECT item_number
@@ -227,7 +227,7 @@ class HomeDataImportService
       , sample_price
       , supplier_id
       , is_discontinued
-      , overseas_stock
+      , overseas_stocks
       , 2
       , NULL
     FROM m_items
@@ -237,6 +237,6 @@ class HomeDataImportService
     DB::update("UPDATE m_items a
       INNER JOIN item_temporaries b ON b.item_number = a.item_number AND b.supplier_id = a.supplier_id AND b.edit_kind = ".$this::EDIT_KIND_DELETE."
     SET a.discontinued_date = CURRENT_DATE
-      , a.overseas_stock = 0");
+      , a.overseas_stocks = 0");
   }
 }

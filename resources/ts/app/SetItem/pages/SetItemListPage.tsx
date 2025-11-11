@@ -28,7 +28,7 @@ export const SetItemListPage: React.VFC = () => {
       <tr key={r.id}>
         <td>
           {/*<div className="text-xs">{r.item_number}</div>*/}
-          <div className="text-xs">{r.code}</div>
+          <div className="text-xs">{r.item_number}</div>
           {/*<div>{r.name_jp}</div>*/}
           <div>{r.name_note}</div>
         </td>

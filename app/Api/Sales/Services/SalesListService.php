@@ -48,7 +48,7 @@ class SalesListService
             $query->whereExists(function ($sub) use ($conditions) {
                 $sub->select(DB::raw(1))
                     ->from('t_sales_details as details')
-                    ->join('m_items as items', 'details.item_id', '=', 'items.id')
+                    ->join('m_items as items', 'details.item_id', '=', 'm_items.id')
                     ->whereRaw('details.sales_id = sales.id')
                     ->where('items.code', 'like', '%' . $conditions['c_item_number'] . '%');
             });
@@ -58,7 +58,7 @@ class SalesListService
             $query->whereExists(function ($sub) use ($conditions) {
                 $sub->select(DB::raw(1))
                     ->from('t_sales_details as details')
-                    ->join('m_items as items', 'details.item_id', '=', 'items.id')
+                    ->join('m_items as items', 'details.item_id', '=', 'm_items.id')
                     ->whereRaw('details.sales_id = sales.id')
                     ->where('items.name', 'like', '%' . $conditions['c_name'] . '%');
             });

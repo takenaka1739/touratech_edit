@@ -35,6 +35,7 @@ class ItemClassificationController extends BaseController
     /** 選択 */
     public function selected(int $id)
     {
+      Log::debug('デバッグ：ItemClassification.selected');
         $data = $this->service->get($id);
         return $this->success($data);
     }

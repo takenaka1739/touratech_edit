@@ -32,17 +32,17 @@ class InventoryImportServiceUpdateDomesticStockTest extends TestCase
       [
         'id' => 1,
         'item_number' => '01-00001-001',
-        'domestic_stock' => 1,
+        'domestic_stocks' => 1,
       ],
       [
         'id' => 2,
         'item_number' => '01-00001-002',
-        'domestic_stock' => 2,
+        'domestic_stocks' => 2,
       ],
       [
         'id' => 3,
         'item_number' => '01-00001-003',
-        'domestic_stock' => 3,
+        'domestic_stocks' => 3,
       ],
     ]);
 

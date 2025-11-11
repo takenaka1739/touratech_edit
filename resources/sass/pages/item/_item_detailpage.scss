@@ -6,14 +6,17 @@
 }
 
 .plus-button {
+  display: inline-flex; // または inline-block
+  align-items: center;
+  justify-content: center;
   color: #a0aec0;
   text-align: center;
   height: 20px;
   width: 20px;
+  margin-top: 3px;
   margin-right: 10px;
-  margin-bottom: 5px;
   border: 1px solid #a0aec0;
-  border-radius: 100px;
+  border-radius: 50%;
 }
 
 .item-explanation {
@@ -168,6 +171,7 @@ label {
 }
 
 .input-text {
+  font-size: 13px;
   display: block;
   background-color: #fff;
   border: 1px solid #a0aec0;
@@ -175,8 +179,8 @@ label {
   border-radius: 0.125rem;
   outline: 2px solid transparent;
   outline-offset: 2px;
-  width: 150px;
-  height: 30px;
+  width: 128px;
+  height: 29px;
 }
 
 .vari-row {

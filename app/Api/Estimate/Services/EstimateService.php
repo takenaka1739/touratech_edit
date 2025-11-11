@@ -394,10 +394,10 @@ class EstimateService
   private function updateSetItems($parent) {
     $details = EstimateDetail::select([
       'estimate_details.id',
-      'set_item_details.set_price',
-      'set_item_details.quantity',
+      't_set_item_details.set_price',
+      't_set_item_details.quantity',
     ])
-      ->join('set_item_details', 'set_item_details.id', '=', 'estimate_details.item_id')
+      ->join('t_set_item_details', 't_set_item_details.id', '=', 'estimate_details.item_id')
       ->where('parent_id', $parent->id)
       ->where('set_item_id', $parent->item_id)
       ->get();

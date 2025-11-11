@@ -36,14 +36,14 @@ export const ReceiveOrderStatusListPage: React.VFC = () => {
             </td>
             <td>{r.answer_date}</td>
             <td className="w-16 text-right">{numberFormat(r.quantity, 0)}</td>
-            <td className="w-20 text-right">{numberFormat(r.domestic_stock ?? 0, 0)}</td>
+            <td className="w-20 text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
             <td className="col-btn">
               {r.place_completed != 1 && (
                 <Link to={`/place_order/detail_by_receive_id/${r.id}`}>発注</Link>
               )}
             </td>
             <td className="col-btn">
-              {((r.sales_completed != 1 && (r.domestic_stock ?? 0) != 0) || r.item_kind == 2) && (
+              {((r.sales_completed != 1 && (r.domestic_stocks ?? 0) != 0) || r.item_kind == 2) && (
                 <Link to={`/sales/detail_by_receive_id/${r.id}`}>売上</Link>
               )}
             </td>

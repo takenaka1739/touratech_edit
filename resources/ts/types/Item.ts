@@ -17,8 +17,8 @@
  * @param discontinued_date - 廃盤日
  * @param is_display - 表示 0:非表示、1:表示
  * @param is_set_item - セット品フラグ 0:単品、1:セット品
- * @param domestic_stock - 国内在庫数
- * @param overseas_stock - 国外在庫数
+ * @param domestic_stocks - 国内在庫数
+ * @param overseas_stocks - 国外在庫数
  * @param stock_display - 在庫表示 1:非表示、2:表示、3:表示（業者のみ）
  * @param remarks - 備考
  * 
@@ -85,10 +85,10 @@ export interface Item {
 
   id: number | undefined;
   supplier_id?: number | undefined;
-  consumption_tax_id?: number | undefined;
+  //consumption_tax_id?: number | undefined;
   code: string | undefined;
   name: string | undefined;
-  //item_number: string[];
+  item_number: string | undefined;
   itemNumberItem: string[];
   variations1: string | undefined;
   variations2: string | undefined;
@@ -101,8 +101,9 @@ export interface Item {
   name_label?: string | undefined;
   is_sell?: boolean | undefined;
   purchase_price?: number | undefined;
-  //sales_price: string[];
+  sales_price: number | undefined;
   salesPriceItem: string[];
+  special_sale_id?: number | undefined;
   sales_unit_price?: number | undefined;
   purchase_unit_price?: number | undefined;
   sample_price?: number | undefined;
@@ -111,6 +112,7 @@ export interface Item {
   is_display?: boolean | undefined;
   is_point_rebates?: boolean | undefined;
   number_reservations?: number | undefined;
+  shipping_pay?: number | undefined;
   is_shipping_fee?: boolean | undefined;
   is_cash_delivery_fee?: boolean | undefined;
   additional_shipping_fee?: number | undefined;
@@ -120,20 +122,22 @@ export interface Item {
   is_payment_id3?: boolean | undefined;
   is_payment_id4?: boolean | undefined;
   is_payment_id5?: boolean | undefined;
-  testArra: string[][];
+  variItems: string[][];
+  backVariItems: string[][];
 
   stock_display?: number | undefined;
   category_id?: number | undefined;
   category_name?: string | undefined;
   supplier_name?: string | undefined;
-  domestic_stock?: number | undefined;
-  overseas_stock?: number | undefined;
+  domestic_stocks?: number | undefined;
+  overseas_stocks?: number | undefined;
   display_status: number |undefined;
   remarks?: string | undefined;
   is_set_item: boolean | undefined;
   imageItem: string[][];
   image_name: any;
 
+  item_id: number | undefined;
   is_sales_members_only: boolean | undefined;
   start_at?: string | undefined;
   end_at?: string | undefined;
@@ -142,4 +146,11 @@ export interface Item {
 
   codeList: any[];
   specialSalesList: any[];
+  specialSalesDelFlag: boolean | undefined;
+  imageList: any[][];
+  combination_id: number | undefined;
+  combIdList: any[];
+
+  send_trader?: number | undefined;
+  send_personal?: number | undefined;
 }

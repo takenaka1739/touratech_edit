@@ -34,7 +34,7 @@ type ItemSearchDialogConditionsState = {
  */
 export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
   onChangeState,
-  selectId,
+  //selectId,
   isShown,
   isSetItem,
   onSelected,
@@ -63,7 +63,6 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
     onCancel
   );
 
-  console.log(`id：${selectId}`);
   //const [restate, setstate] = useState(state.rows);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
   const dispatch = useDispatch();
@@ -71,10 +70,12 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
   //const [reState, setState] = useState(state);
 
   const onClickDetail:(id : number | undefined) => Promise<void> = async id => {
+    console.log(`id：${id}`);
     const res = await axios.get(`/api/item/edit/${id}`);
-    console.log(`res.status：${res.status}`);
+    console.dir(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
+      console.dir(res);
       onChangeState(res.data.data);
       onClickCancel();
     } else {
@@ -90,7 +91,6 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
         <td>
           <span data-id={r.id} onClick={onClickSelect} className="link">
             {/*<div className="text-xs">{r.item_number}</div>*/}
-            {console.log(`state.rows:${state.rows}`)}
             <div className="text-xs">{r.itemNumberItem}</div>
             <div>{r.name}</div>
             {/*<div>{r.name_jp}</div>*/}
@@ -99,8 +99,8 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
         </td>
         <td className="text-right">{numberFormat(r.sales_unit_price)}</td>
         <td className="text-right">{numberFormat(r.purchase_unit_price)}</td>
-        <td className="text-right">{numberFormat(r.domestic_stock ?? 0, 0)}</td>
-        <td className="text-right">{numberFormat(r.overseas_stock ?? 0, 0)}</td>
+        <td className="text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
+        <td className="text-right">{numberFormat(r.overseas_stocks ?? 0, 0)}</td>
         <td className="col-btn">
           {/*<span data-id={r.id} onClick={() => onClickDetail(r.id)}>*/}
           <span data-id={r.id} onClick={() => onClickDetail(r.id)}>

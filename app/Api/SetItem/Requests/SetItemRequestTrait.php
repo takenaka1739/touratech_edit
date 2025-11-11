@@ -11,9 +11,11 @@ trait SetItemRequestTrait
   {
     return [
       'item_number' => 'bail|required|string|max:50|unique:m_items',
-      'name_jp' => 'required|string|max:200',
+      //'name_jp' => 'required|string|max:200',
+      'name_note' => 'required|string|max:200',
       'sales_unit_price' => 'required|numeric|price',
-      'discontinued_date' => 'nullable|date',
+      //'discontinued_date' => 'nullable|date',
+      'discontinued_at' => 'nullable|date',
       'is_display' => 'required|boolean',
       'details' => 'required',
       'details.*.id' => 'required|integer',
@@ -27,9 +29,11 @@ trait SetItemRequestTrait
   {
     return [
       'item_number' => 'セット品番',
-      'name_jp' => 'セット品名',
+      //'name_jp' => 'セット品名',
+      'name_note' => 'セット品名',
       'sales_unit_price' => 'セット単価',
-      'discontinued_date' => '廃盤日',
+      //'discontinued_date' => '廃盤日',
+      'discontinued_at' => '廃盤日',
       'is_display' => '表示',
       'details.*.id' => '品番',
       'details.*.item_id' => '品番',
