@@ -24,7 +24,6 @@ type PreviewItem = {
   url?: string;
 };
 
-// 画像パス解決
 const deriveImageSrc = (row: TopImageRow): string => {
   return row.image_url || '';
 };
@@ -43,6 +42,7 @@ const TopImageListPage: React.FC = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [markedForDelete, setMarkedForDelete] = useState<number[]>([]); // 削除予定ID
   const [previewItemsState, setPreviewItemsState] = useState<PreviewItem[]>([]);
+  const [togglingIdx, setTogglingIdx] = useState<number | null>(null);  // トグル中インジケータ
 
   useEffect(() => {
     fetchSlideItems();
@@ -57,12 +57,12 @@ const TopImageListPage: React.FC = () => {
         persisted: true,
         markedForDelete: false,
         url: it.url ?? '',
+        is_enabled: (it as any).is_enabled ?? true,
       }));
       setPreviewItemsState(existing);
     }
   }, [slideItems]);
 
-  // DBとstagedからプレビュー用配列を組み立てる
   useEffect(() => {
     const existing: PreviewItem[] = slideItems.map((it) => ({
       id: it.id,
@@ -70,20 +70,19 @@ const TopImageListPage: React.FC = () => {
       src: deriveImageSrc(it),
       persisted: true,
       markedForDelete: markedForDelete.includes(it.id),
-      is_enabled: it.is_enabled ?? true, 
+      is_enabled: (it as any).is_enabled ?? true,
       url: it.url ?? '',
     }));
     const staged: PreviewItem[] = stagedItems.map((s) => ({
       image_id: s.image_id,
-      src: s.img_url ,
+      src: s.img_url,
       persisted: false,
       is_enabled: true,
-       url: s.url ?? '',
+      url: s.url ?? '',
     }));
     setPreviewItemsState([...existing, ...staged]);
   }, [slideItems, stagedItems, markedForDelete]);
 
-  // 並び替え
   const move = (from: number, to: number) => {
     setPreviewItemsState((prev) => {
       if (to < 0 || to >= prev.length) return prev;
@@ -94,11 +93,8 @@ const TopImageListPage: React.FC = () => {
     });
   };
 
-  // 新規削除
   const removeAt = (idx: number) => {
     setPreviewItemsState((prev) => prev.filter((_, i) => i !== idx));
-
-    // 削除対象のプレビューアイテムを特定
     setStagedItems((prev) => {
       const target = previewItemsState[idx];
       if (!target) return prev;
@@ -106,27 +102,26 @@ const TopImageListPage: React.FC = () => {
     });
   };
 
-  // 既存削除マーク
   const toggleMarkDelete = (id: number) => {
     setMarkedForDelete((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
-  // 反映処理
+  // ▼ 反映処理（登録）
   const handlePublish = async () => {
     if (!previewItemsState.length) return;
     setIsPublishing(true);
-
     try {
       const items = previewItemsState
         .filter((p) => !p.markedForDelete)
-        .map((p) => {
+        .map((p, order) => {
           const base: any = {
             is_enabled: p.is_enabled ?? true,
             url: (p as any).url !== undefined
               ? (String((p as any).url || '').trim() || null)
               : null,
+            sort_order: order + 1, // 任意：順序を伝えられるなら付与
           };
           if (p.persisted && p.id) {
             base.id = p.id;
@@ -136,7 +131,7 @@ const TopImageListPage: React.FC = () => {
           return base;
         });
 
-      console.log('📨 /api/TopImage/sync payload', items);
+      console.debug('📨 /api/TopImage/sync payload', items);
       await axios.post('/api/TopImage/sync', { items });
 
       await fetchSlideItems();
@@ -147,10 +142,37 @@ const TopImageListPage: React.FC = () => {
     }
   };
 
-  const togglePreviewEnabled = (idx: number) => {
+  // ▼ 表示/非表示トグル
+  //   - 既存（persisted=true,idあり）: その場で API を叩いて永続化
+  //   - 新規プレビュー（persisted=false）: ローカル状態だけ反転（登録で反映）
+  const togglePreviewEnabled = async (idx: number) => {
+    const target = previewItemsState[idx];
+    if (!target) return;
+
+    // 楽観的更新（UI反応を速く）
     setPreviewItemsState((prev) =>
       prev.map((p, i) => (i === idx ? { ...p, is_enabled: !p.is_enabled } : p))
     );
+
+    // 既存は即API保存
+    if (target.persisted && target.id) {
+      setTogglingIdx(idx);
+      try {
+        console.debug('🔁 toggle request', { id: target.id });
+        await axios.post(`/api/TopImage/${target.id}/toggle`);
+        console.debug('✅ toggled on server', { id: target.id });
+        // 念のため再取得で整合
+        await fetchSlideItems();
+      } catch (e) {
+        console.error('❌ toggle failed - revert local', e);
+        // 失敗時は元に戻す
+        setPreviewItemsState((prev) =>
+          prev.map((p, i) => (i === idx ? { ...p, is_enabled: !p.is_enabled } : p))
+        );
+      } finally {
+        setTogglingIdx(null);
+      }
+    }
   };
 
   const sliderSettings = useMemo(
@@ -170,7 +192,6 @@ const TopImageListPage: React.FC = () => {
     }),
     []
   );
-
 
   return (
     <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
@@ -196,7 +217,6 @@ const TopImageListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ▼ プレビュー */}
       {previewItemsState.length > 0 && (
         <div className="mb-8">
           <h3 className="mb-2">プレビュー</h3>
@@ -204,6 +224,7 @@ const TopImageListPage: React.FC = () => {
             <Slider {...sliderSettings}>
               {previewItemsState.map((p, i) => {
                 const isNew = !p.persisted;
+                const isBusy = togglingIdx === i;
 
                 return (
                   <div key={`${p.persisted ? 'e' : 'n'}-${p.image_id}-${i}`} className="px-2">
@@ -213,7 +234,6 @@ const TopImageListPage: React.FC = () => {
                       }`}
                     >
                       <div className="top-preview-media" style={{ position: 'relative' }}>
-                        {/* 順番ラベル */}
                         <div
                           className="absolute top-2 left-2 w-6 h-6 rounded-full grid place-items-center text-white text-xs font-bold"
                           style={{ background: 'rgba(0,0,0,0.6)', zIndex: 1 }}
@@ -222,19 +242,13 @@ const TopImageListPage: React.FC = () => {
                           {i + 1}
                         </div>
 
-                        {/* 画像 */}
                         <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
                           {p.src ? (
                             <img
                               src={p.src}
                               alt={`preview-${i}`}
                               onError={() => console.warn('[Image load error]', p.src)}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'contain',
-                                display: 'block',
-                              }}
+                              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                             />
                           ) : (
                             <div className="w-full h-full grid place-items-center text-xs text-gray-500">
@@ -264,37 +278,30 @@ const TopImageListPage: React.FC = () => {
                         />
                       </div>
 
-
-                      {/* 操作ボタン列の上に「表示/非表示」トグルを追加 */}
+                      {/* 表示/非表示 */}
                       <div className="mt-2">
                         <button
-                          className="px-3 py-1 rounded text-sm font-bold"
+                          className="px-3 py-1 rounded text-sm font-bold disabled:opacity-60"
                           style={{
-                            background: '#FFD400',      // ベースの黄色
+                            background: '#FFD400',
                             color: '#333',
                             border: '1px solid rgba(0,0,0,.15)',
                             boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.4)',
                           }}
                           onClick={() => togglePreviewEnabled(i)}
                           title={p.is_enabled ? '表示中' : '非表示'}
+                          disabled={isBusy}
                         >
-                          {p.is_enabled ? '表示中' : '非表示'}
+                          {isBusy ? '更新中…' : (p.is_enabled ? '表示中' : '非表示')}
                         </button>
                       </div>
 
-
-                      {/* 操作ボタン (並び順統一: ↑ ↓ 削除/削除取消) */}
+                      {/* 操作ボタン */}
                       <div className="mt-2 flex gap-2">
-                        <button className="btn btn-sm" onClick={() => move(i, i - 1)}>
-                          ↑
-                        </button>
-                        <button className="btn btn-sm" onClick={() => move(i, i + 1)}>
-                          ↓
-                        </button>
+                        <button className="btn btn-sm" onClick={() => move(i, i - 1)}>↑</button>
+                        <button className="btn btn-sm" onClick={() => move(i, i + 1)}>↓</button>
                         {isNew ? (
-                          <button className="btn btn-danger btn-sm" onClick={() => removeAt(i)}>
-                            削除
-                          </button>
+                          <button className="btn btn-danger btn-sm" onClick={() => removeAt(i)}>削除</button>
                         ) : (
                           <button
                             className={`btn btn-sm ${p.markedForDelete ? '' : 'btn-danger'}`}
@@ -313,7 +320,6 @@ const TopImageListPage: React.FC = () => {
         </div>
       )}
 
-      {/* 画像選択モーダル */}
       <ImageSelectModal
         open={isModalOpen}
         onClose={() => setModalOpen(false)}

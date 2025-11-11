@@ -117,6 +117,8 @@ class SalesService
             'barcode'         => null,
             'has_invoice'     => (bool) ($sales->has_invoice ?? 0),
             'delivery'        => $deliveryData,
+            'square_payment_id' => $sales->square_payment_id ?? null,
+            'square_status'     => $sales->square_status ?? null,
         ];
     }
 

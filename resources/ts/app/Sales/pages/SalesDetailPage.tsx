@@ -55,6 +55,12 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
   const details = useMemo(() => (Array.isArray(state?.details) ? state.details : []), [state?.details]);
   const safeNumber = (v: number | string | undefined, p: number = 0) => numberFormat((v as number) ?? 0, p);
 
+  // Square 決済ボタン表示条件
+  const canShowSquareActions =
+    !!id &&
+    !!state?.square_payment_id &&
+    state?.square_status === 'authorized';
+
   // ---------- 簡易バリデーション（必須未入力でも保存できてしまう問題の暫定ガード） ----------
   const validateBeforeSave = useCallback((): string[] => {
     const msgs: string[] = [];
@@ -80,7 +86,12 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     if (!details.length) {
       msgs.push('明細（少なくとも1行）');
     } else {
-      const invalidQty = details.some((r: any) => r?.quantity === null || r?.quantity === undefined || Number(r.quantity) <= 0);
+      const invalidQty = details.some(
+        (r: any) =>
+          r?.quantity === null ||
+          r?.quantity === undefined ||
+          Number(r.quantity) <= 0
+      );
       if (invalidQty) msgs.push('明細の数量（0以下の行があります）');
     }
 
@@ -96,6 +107,75 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     // フック側の保存を呼ぶ
     onClickSave();
   }, [onClickSave, validateBeforeSave]);
+
+  // Square 決済実行（キャプチャ）
+  const handleSquarePayment = useCallback(async () => {
+    if (!id) {
+      alert('IDが不明なため、カード決済を実行できません。');
+      return;
+    }
+    if (!window.confirm('この売上のカード決済を実行しますか？')) return;
+
+    try {
+      const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+
+      const res = await fetch(`/api/sales/${id}/square/complete`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrf,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.message ?? 'カード決済の実行に失敗しました。');
+        return;
+      }
+
+      alert('カード決済を実行しました。');
+      // 再読込してステータス反映
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      alert('通信エラーが発生しました。');
+    }
+  }, [id]);
+
+  // Square オーソリキャンセル
+  const handleSquareCancel = useCallback(async () => {
+    if (!id) {
+      alert('IDが不明なため、キャンセルできません。');
+      return;
+    }
+    if (!window.confirm('この売上のカード仮決済をキャンセルしますか？')) return;
+
+    try {
+      const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+
+      const res = await fetch(`/api/sales/${id}/square/cancel`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrf,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.message ?? 'カード仮決済のキャンセルに失敗しました。');
+        return;
+      }
+
+      alert('カード仮決済をキャンセルしました。');
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      alert('通信エラーが発生しました。');
+    }
+  }, [id]);
 
   return (
     <PageWrapper
@@ -141,7 +221,11 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             <Forms.FormGroupInputDate
               labelText="売上日"
               name="sales_at"
-              value={state.sales_at ? state.sales_at.substring(0, 10).replace(/-/g, '/') : ''}
+              value={
+                state.sales_at
+                  ? state.sales_at.substring(0, 10).replace(/-/g, '/')
+                  : ''
+              }
               error={errors?.sales_at}
               onChange={onChange}
               groupClassName="mt-0"
@@ -168,7 +252,11 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                 className="max-w-lg"
                 readOnly
               />
-              <input type="hidden" name="customer_id" value={state.customer_id ?? ''} />
+              <input
+                type="hidden"
+                name="customer_id"
+                value={state.customer_id ?? ''}
+              />
               <button className="btn ml-2 py-0 px-2" onClick={openCustomerDialog}>
                 ...
               </button>
@@ -316,10 +404,14 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                   />
                 </div>
               </div>
-              {errors?.barcode && <div className="form-error">{errors.barcode}</div>}
+              {errors?.barcode && (
+                <div className="form-error">{errors.barcode}</div>
+              )}
             </div>
             <div className="ml-auto flex justify-end items-center">
-              <p className="text-xs flex-shrink-0 mr-2">※金額は全て税込価格です</p>
+              <p className="text-xs flex-shrink-0 mr-2">
+                ※金額は全て税込価格です
+              </p>
               {!state.receive_order_id && (
                 <button className="btn" onClick={onClickAddDetail}>
                   新規追加
@@ -346,7 +438,10 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             <tbody>
               {details.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-4 text-sm text-gray-500">
+                  <td
+                    colSpan={9}
+                    className="text-center py-4 text-sm text-gray-500"
+                  >
                     明細がありません。バーコード入力または「新規追加」から追加してください。
                   </td>
                 </tr>
@@ -365,21 +460,35 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                       <div>{r?.item_name}</div>
                       <div>{r?.item_name_jp}</div>
                     </td>
-                    <td className="text-right">{safeNumber(r?.sales_unit_price, 2)}</td>
+                    <td className="text-right">
+                      {safeNumber(r?.sales_unit_price, 2)}
+                    </td>
                     <td className="text-right">{r?.rate ?? ''}</td>
-                    <td className="text-right">{safeNumber(r?.unit_price, 2)}</td>
+                    <td className="text-right">
+                      {safeNumber(r?.unit_price, 2)}
+                    </td>
                     <td
                       className={classNames(
                         'text-right',
-                        errors && (`quantity_${r?.id ?? r?.no}` in errors) ? 'bg-red-200' : ''
+                        errors &&
+                          (`quantity_${r?.id ?? r?.no}` in errors)
+                          ? 'bg-red-200'
+                          : ''
                       )}
                     >
                       {r?.quantity}
                     </td>
-                    <td className="text-right">{safeNumber(r?.amount, 0)}</td>
+                    <td className="text-right">
+                      {safeNumber(r?.amount, 0)}
+                    </td>
                     <td className="col-btn">
                       {/* button にしてフォーカス可能＆data-noはr.noを優先 */}
-                      <button type="button" onClick={onClickEditDetail} data-no={r?.no} className="underline">
+                      <button
+                        type="button"
+                        onClick={onClickEditDetail}
+                        data-no={r?.no}
+                        className="underline"
+                      >
                         編集
                       </button>
                     </td>
@@ -389,8 +498,12 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             </tbody>
           </table>
 
-          {errors?.details && <div className="form-error ml-2">{errors.details}</div>}
-          {errors?.quantity && <div className="form-error ml-2">{errors.quantity}</div>}
+          {errors?.details && (
+            <div className="form-error ml-2">{errors.details}</div>
+          )}
+          {errors?.quantity && (
+            <div className="form-error ml-2">{errors.quantity}</div>
+          )}
 
           <CommonDataDetailDialog
             title={title}
@@ -479,6 +592,17 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             <button className="btn ml-6" onClick={onClickPrintInvoice}>
               請求書発行
             </button>
+
+            {canShowSquareActions && (
+              <>
+                <button className="btn ml-6" onClick={handleSquarePayment}>
+                  支払い実行
+                </button>
+                <button className="btn-delete ml-2" onClick={handleSquareCancel}>
+                  注文キャンセル
+                </button>
+              </>
+            )}
           </div>
         </div>
         {id && !from_receive && (

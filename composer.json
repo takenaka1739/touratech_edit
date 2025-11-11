@@ -16,6 +16,7 @@
     "phpoffice/phpspreadsheet": "^5.1",
     "setasign/fpdi": "^2.3",
     "setasign/fpdi-tcpdf": "^2.3",
+    "square/square": "^43.2",
     "tecnickcom/tcpdf": "^6.3",
     "zetacomponents/mail": "^1.9"
   },
