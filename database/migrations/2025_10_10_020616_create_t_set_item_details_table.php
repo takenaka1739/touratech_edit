@@ -45,14 +45,14 @@ return new class extends Migration {
         });
 
         // 旧名互換 VIEW
-        DB::statement('DROP VIEW IF EXISTS `set_item_details`');
-        DB::statement('CREATE VIEW `set_item_details` AS SELECT * FROM `t_set_item_details`');
+        DB::statement('DROP VIEW IF EXISTS `t_set_item_details`');
+        DB::statement('CREATE VIEW `t_set_item_details` AS SELECT * FROM `t_set_item_details`');
     }
 
     public function down(): void
     {
         // 互換VIEWを先に削除
-        DB::statement('DROP VIEW IF EXISTS `set_item_details`');
+        DB::statement('DROP VIEW IF EXISTS `t_set_item_details`');
 
         // 外部キー解除（存在しなくても続行）
         try { DB::statement('ALTER TABLE `t_set_item_details` DROP FOREIGN KEY `t_set_item_details_item_id_foreign`'); } catch (\Throwable $e) {}
