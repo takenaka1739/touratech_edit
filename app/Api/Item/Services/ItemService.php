@@ -155,10 +155,7 @@ class ItemService
       'm_items.is_payment_id3',
       'm_items.is_payment_id4',
       'm_items.is_payment_id5',
-      //'m_categories.name',
-      //'suppliers.name'
-      //'item_classifications.name',
-      //'suppliers.name',
+      'm_items.is_set_item',
       'm_categories.id AS category_id',
       'm_categories.name AS category_name',
 
@@ -332,24 +329,15 @@ class ItemService
       ['new1', '', '', '', '', '', '']
     ];
   }
-
-    //\log::debug('$test');
-    //\log::debug($test);
-
     $selectItems['codeList'] = $codeList;
     $selectItems['specialSalesList'] = $specialSalesList;
     $selectItems['itemNumberItem'] = $itemNumberItem;
     $selectItems['salesPriceItem'] = $salesPriceItem;
-    //$selectItems['testArra'] = $testArra;
-    //$selectItems['testArra'] = $test;
     $selectItems['variItems'] = $variItems;
     $selectItems['backVariItems'] = $backVariItems;
     $selectItems['image_name'] = $sss;
     $selectItems['imageList'] = $ssss;
     $selectItems['combIdList'] = $d;
-
-    \log::debug('variItems');
-    \log::debug($variItems);
 
     return $selectItems;
   }
@@ -385,51 +373,20 @@ class ItemService
    */
   public function store(array $data)
   {
+    \Log::debug('登録されたItem:');
     $data['domestic_stocks'] = $data['domestic_stocks'] ?? 0;
     $data['overseas_stocks'] = $data['overseas_stocks'] ?? 0;
+    $data['is_set_item'] = false;
+    //\Log::debug('登録されたItem:', ['item' => $item]);
+    \Log::debug('登録されたItem:', ['item' => $data]);
 
     $newId = DB::transaction(function () use ($data) {
         $item = Item::create($data);
-        \Log::debug('登録されたItem:', ['item' => $item]);
 
         return $item->id; // ← これがそのまま $newId に入る
     });
 
     return $newId;
-
-
-    //DB::transaction(function () use ($data) {
-    //  $data['domestic_stock'] = $data['domestic_stock'] ?? 0;
-    //  $data['overseas_stock'] = $data['overseas_stock'] ?? 0;
-    //  Item::create($data);
-    //});
-
-    //return DB::transaction(function () use ($data) {
-    //    $data['domestic_stock'] = $data['domestic_stock'] ?? 0;
-    //    $data['overseas_stock'] = $data['overseas_stock'] ?? 0;
-//
-    //    $item = Item::create($data); // ← 登録されたモデルインスタンス
-//
-    //    \Log::debug('登録されたItem:', ['item' => $item]);
-//
-    //    return $item->id; // ← ここでIDを返す
-    //});
-
-    //$newId = null;
-
-    //DB::transaction(function () use ($data, &$newId) {
-    //    $data['domestic_stock'] = $data['domestic_stock'] ?? 0;
-    //    $data['overseas_stock'] = $data['overseas_stock'] ?? 0;
-//
-    //    $item = Item::create($data);
-    //    \Log::debug('登録されたItem:', ['item' => $item]);
-//
-    //    $newId = $item->id;
-    //});
-//
-    //return $newId;
-
-
   }
 
   /**
@@ -460,6 +417,7 @@ class ItemService
       $m->display_status = $data->get('display_status');
       $m->additional_shipping_fee = $data->get('additional_shipping_fee');
       $m->purchase_price = $data->get('purchase_price');
+      $m->is_set_item = $data->get('is_set_item');
       //$m->name = $data->get('name');
       //$m->category_id = $data->get('category_id');
       $m->sales_unit_price = $data->get('sales_unit_price');

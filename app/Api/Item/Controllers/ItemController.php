@@ -86,12 +86,7 @@ class ItemController extends BaseController
    */
   public function edit(int $id)
   {
-    \log::debug('デバッグ：ItemController.edit');
-    \log::debug($id);
-
     $data = $this->service->get($id);
-    \log::debug('$data');
-    \log::debug($data);
     return $this->success($data);
   }
 

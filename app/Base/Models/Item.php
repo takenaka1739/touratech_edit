@@ -76,7 +76,7 @@ class Item extends Model
     'is_payment_id3',
     'is_payment_id4',
     'is_payment_id5',
-    //'is_set_item'
+    'is_set_item'
   ];
 
   protected $hidden = [
