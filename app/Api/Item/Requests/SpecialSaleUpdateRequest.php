@@ -14,9 +14,6 @@ class SpecialSaleUpdateRequest extends BaseRequest
 
   public function rules()
   {
-    \log::debug('SpecialSaleUpdateRequest.rules');
-    \log::debug($this->commonRules());
-
     return $this->commonRules();
   }
 }

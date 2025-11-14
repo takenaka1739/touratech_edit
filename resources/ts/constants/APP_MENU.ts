@@ -44,6 +44,7 @@ export const APP_MENU: {
     { name: 'セット品マスタ', url: '/set_item' },
     { name: 'クーポンマスタ', url: '/coupon' },
     { name: 'スライドショーマスタ', url: '/TopImage' },
+    { name: 'カレンダーマスタ', url: '/calendar' },
     { name: '情報管理', url: '/info_management' },
     { name: '環境設定', url: '/config', className: 'pt-4' },
   ],

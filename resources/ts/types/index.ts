@@ -12,6 +12,7 @@ export { Item } from './Item';
 export { Image } from './Image';
 export { ItemClassification } from './ItemClassification';
 export { Category } from './Category';
+export { Calendar } from './Calendar';
 export { PageErrors } from './PageErrors';
 export { Pager } from './Pager';
 export { Supplier } from './Supplier';

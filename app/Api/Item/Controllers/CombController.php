@@ -21,8 +21,6 @@ class CombController extends BaseController
    */
   public function __construct(CombService $service)
   {
-    \Log::debug('デバッグ：CombController.__construct');
-
     $this->service = $service;
   }
 
@@ -31,10 +29,7 @@ class CombController extends BaseController
    */
   public function store(CombStoreRequest $request)
   {
-    \Log::debug('CombController');
-
     $this->service->store($request->validated());
-
     return $this->success();
   }
 
@@ -45,11 +40,7 @@ class CombController extends BaseController
    */
   public function update(CombUpdateRequest $request, int $id)
   {
-    \Log::debug('CombController.update');
-    \Log::debug($id);
-
     $this->service->update($id, $request->validated());
-
     return $this->success();
   }
 }

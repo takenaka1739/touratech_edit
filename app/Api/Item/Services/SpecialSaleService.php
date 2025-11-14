@@ -14,12 +14,8 @@ class SpecialSaleService
 { 
   public function store(array $data)
   {
-    //$imageMaxId = SpecialSale::max('id') + 1;
-    \log::debug('SpecialSaleService.store');
-    \log::debug($data);
     DB::transaction(function () use ($data) {
       SpecialSale::create([
-              //'id' => $imageMaxId,
               'is_sales_members_only' => $data['is_sales_members_only'],
               'item_id' => $data['item_id'],
               'start_at' => $data['start_at'],
@@ -38,8 +34,6 @@ class SpecialSaleService
    */
   public function update(int $id, array $data)
   {
-    \log::debug('SpecialSaleService.update');
-
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = SpecialSale::find($id);
@@ -59,8 +53,6 @@ class SpecialSaleService
    */
   public function delete(int $id)
   {
-    \Log::debug('ImageService.delete');
-
     DB::transaction(function () use ($id) {
       SpecialSale::destroy($id);
     });

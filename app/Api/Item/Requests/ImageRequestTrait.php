@@ -9,10 +9,7 @@ trait ImageRequestTrait
 {
   public function commonRules()
   {
-    \Log::debug('デバッグ：ImageRequestTrait');
-
     return [
-    //  //'id' => 'unsigned',
       'category_id' => 'nullable|integer|exists:m_categories,id',
       'item_id' => 'nullable|integer|exists:m_items,id',
       'name' => 'string|max:200',

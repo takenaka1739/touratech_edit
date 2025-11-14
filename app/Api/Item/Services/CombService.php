@@ -19,9 +19,6 @@ class CombService
    */
   public function store(array $data)
   {
-    //$imageMaxId = Image::max('id') + 1;
-    \Log::debug('CombService.store');
-    \Log::debug($data);
     DB::transaction(function () use ($data) {
       ItemCategoryCombination::create([
               'category_id' => $data['category_id'],
@@ -38,10 +35,6 @@ class CombService
    */
   public function update(int $id, array $data)
   {
-    \Log::debug('CombService.update');
-    \Log::debug($id);
-    \Log::debug($data);
-
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = ItemCategoryCombination::find($id);

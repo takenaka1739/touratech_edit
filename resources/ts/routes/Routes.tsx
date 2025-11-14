@@ -7,6 +7,7 @@ import { SimpleSearchDetailPage } from '@/app/SimpleSearch/pages/SimpleSearchDet
 
 const RouteConfig = React.lazy(() => import('./RouteConfig'));
 const RouteCustomer = React.lazy(() => import('./RouteCustomer'));
+const RouteCalendar = React.lazy(() => import('./RouteCalendar'));
 const RouteEstimate = React.lazy(() => import('./RouteEstimate'));
 const RouteHiden = React.lazy(() => import('./RouteHiden'));
 const RouteHomeDataImport = React.lazy(() => import('./RouteHomeDataImport'));
@@ -45,6 +46,7 @@ const Routes: React.VFC = () => {
         <Route exact path="/" component={TopPage} />
         <Route path="/config" component={RouteConfig} />
         <Route path="/coupon" component={RouteCoupon} />
+        <Route path="/calendar" component={RouteCalendar} />
         <Route path="/customer" component={RouteCustomer} />
         <Route path="/estimate" component={RouteEstimate} />
         <Route path="/hiden" component={RouteHiden} />

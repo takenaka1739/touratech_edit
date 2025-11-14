@@ -13,8 +13,6 @@ class CombStoreRequest extends BaseRequest
 
   public function rules(): array
   {
-    \Log::debug('デバッグ：ImageStoreRequest');
-
     return $this->commonRules();
   }
 

@@ -14,8 +14,6 @@ class ItemUpdateRequest extends BaseRequest
 
   public function rules()
   {
-    \log::debug('ItemUpdateRequest.rules');
-
     return [
       'item_number' => [
         'required',

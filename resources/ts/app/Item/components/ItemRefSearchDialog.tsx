@@ -7,9 +7,6 @@ import { useComposing } from '@/uses';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { AppActions } from '@/app/App/modules/appModule';
-//import { Link } from 'react-router-dom';
-//import { useState } from 'react';
-//import { useHistory  } from 'react-router-dom';
 
 type ItemSearchDialogProps = {
   selectId:number | undefined;
@@ -34,7 +31,6 @@ type ItemSearchDialogConditionsState = {
  */
 export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
   onChangeState,
-  //selectId,
   isShown,
   isSetItem,
   onSelected,
@@ -63,25 +59,17 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
     onCancel
   );
 
-  //const [restate, setstate] = useState(state.rows);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
   const dispatch = useDispatch();
-  //const navigation = useHistory();
-  //const [reState, setState] = useState(state);
 
   const onClickDetail:(id : number | undefined) => Promise<void> = async id => {
-    console.log(`id：${id}`);
     const res = await axios.get(`/api/item/edit/${id}`);
-    console.dir(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
-      console.dir(res);
       onChangeState(res.data.data);
       onClickCancel();
     } else {
-      // dispatch(AppActions.failed('データの取得に失敗しました。'));
       dispatch(AppActions.success());
-      //history.push('/404');
     }
   }
 
@@ -90,10 +78,8 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
       <tr key={r.id}>
         <td>
           <span data-id={r.id} onClick={onClickSelect} className="link">
-            {/*<div className="text-xs">{r.item_number}</div>*/}
             <div className="text-xs">{r.itemNumberItem}</div>
             <div>{r.name}</div>
-            {/*<div>{r.name_jp}</div>*/}
             <div>{r.name_note}</div>
           </span>
         </td>
@@ -102,7 +88,6 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
         <td className="text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
         <td className="text-right">{numberFormat(r.overseas_stocks ?? 0, 0)}</td>
         <td className="col-btn">
-          {/*<span data-id={r.id} onClick={() => onClickDetail(r.id)}>*/}
           <span data-id={r.id} onClick={() => onClickDetail(r.id)}>
             選択
           </span>

@@ -11,8 +11,6 @@ trait SpecialSaleRequestTrait
 {
   public function commonRules()
   {
-    \log::debug('SpecialSaleRequestTrait.commonRules');
-    
     return [
       'item_id' => 'nullable|integer|exists:m_items,id',
       'is_sales_members_only' => 'nullable|boolean',

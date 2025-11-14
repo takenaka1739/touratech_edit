@@ -13,28 +13,6 @@ class Item extends Model
   use HasFactory;
   use SoftDeletes;
 
-  //protected $table = 'm_items';
-
-  //protected $fillable = [
-  //  'item_number',
-  //  'name',
-  //  'name_jp',
-  //  'name_label',
-  //  'item_classification_id',
-  //  'sales_unit_price',
-  //  'purchase_unit_price',
-  //  'sample_price',
-  //  'supplier_id',
-  //  'is_discontinued',
-  //  'discontinued_date',
-  //  'is_display',
-  //  'is_set_item',
-  //  'domestic_stock',
-  //  'overseas_stock',
-  //  'stock_display',
-  //  'remarks'
-  //];
-
   protected $table = 'm_items';
 
   protected $fillable = [
@@ -69,7 +47,6 @@ class Item extends Model
     'is_shipping_fee',
     'is_cash_delivery_fee',
     'additional_shipping_fee',
-    'is_special_sale',
     'shipping_pay',
     'is_payment_id1',
     'is_payment_id2',

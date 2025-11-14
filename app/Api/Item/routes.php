@@ -4,8 +4,6 @@ namespace App\Api\Item\Controllers;
 
 use Illuminate\Support\Facades\Route;
 
-  \Log::debug('デバッグ：Item.Route');
-
 Route::group([
   'prefix' => 'api/item',
   'middleware' => ['api', 'auth', 'check.general']
