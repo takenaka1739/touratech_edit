@@ -21692,21 +21692,21 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #item-name {
-  border: 1px solid #ffffffff;
+  border: 1px solid white;
   border-radius: 5px;
   width: 550px;
   height: 70px;
   font-size: 30px;
-  color: #c9d7e8f8;
+  color: rgba(201, 215, 232, 0.9725490196);
 }
 
 #shop-image #input-area #item-info #item-name:hover {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-name:focus {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 5px;
 }
 
@@ -21728,18 +21728,18 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #price-col #input-price {
-  border: 1px solid #ffffffff;
+  border: 1px solid white;
   border-radius: 5px;
-  color: #c9d7e8f8;
+  color: rgba(201, 215, 232, 0.9725490196);
 }
 
 #shop-image #input-area #item-info #price-col #input-price:hover {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #price-col #input-price:focus {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 5px;
 }
 
@@ -21761,26 +21761,24 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail {
-  word-wrap: break-word;
-  /* 長い単語を折り返す */
-  white-space: normal;
-  /* テキストを通常の折り返しにする */
+  word-wrap: break-word; /* 長い単語を折り返す */
+  white-space: normal; /* テキストを通常の折り返しにする */
   font-size: 20px;
-  border: 1px solid #ffffffff;
+  border: 1px solid white;
   border-radius: 5px;
-  color: #c9d7e8f8;
+  color: rgba(201, 215, 232, 0.9725490196);
   margin-top: 20px;
   width: 450px;
   height: 300px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:hover {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:focus {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 5px;
 }
 
@@ -21810,18 +21808,18 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-name-row .input-text {
-  color: #c9d7e8f8;
-  border: 1px solid #c9d7e8f8;
+  color: rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   height: 25px;
   width: 350px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-name-row .plus-button {
-  color: #c9d7e8f8;
+  color: rgba(201, 215, 232, 0.9725490196);
   height: 30px;
   width: 30px;
   margin-left: 5px;
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   border-radius: 100px;
 }
 
@@ -21831,21 +21829,21 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind {
-  border: 1px solid #c9d7e8f8;
+  border: 1px solid rgba(201, 215, 232, 0.9725490196);
   display: flex;
   margin-right: 10px;
   margin-left: 10px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .vari-row-input {
-  color: #c9d7e8f8;
-  border: #FFFFFFFF;
+  color: rgba(201, 215, 232, 0.9725490196);
+  border: white;
   width: 50px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .dele-button {
-  color: #c9d7e8f8;
-  border-left: 1px solid #c9d7e8f8;
+  color: rgba(201, 215, 232, 0.9725490196);
+  border-left: 1px solid rgba(201, 215, 232, 0.9725490196);
   padding: 2px 5px 2px 5px;
 }
 

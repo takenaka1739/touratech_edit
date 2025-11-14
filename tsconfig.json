@@ -19,7 +19,11 @@
         "paths": {
             "@/*": ["resources/ts/*"]
         },
+
+        /* ✅ 以下2行が重要 */
         "skipLibCheck": true,
+        "noEmitOnError": false,
+
         "sourceMap": true,
         "strict": true
     },
@@ -29,7 +33,7 @@
     ],
     "exclude": [
         "node_modules",
-        "**/*.spec.ts",
-        // "**/*.stories.tsx",
+        "**/*.spec.ts"
+        // "**/*.stories.tsx"
     ]
 }
