@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 //import { PageWrapper, BoxConditions, TableWrapper, Forms } from '@/components';
-import { PageWrapper, TableWrapper } from '@/components';
+//import { PageWrapper, TableWrapper } from '@/components';
+import { PageWrapper, BoxConditions, TableWrapper, Forms } from '@/components';
 //import { numberFormat } from '@/utils/numberFormat';
 //import { useComposing } from '@/uses';
 import { useCalendarListPage } from '../uses/useCalendarListPage';
+import { useComposing } from '@/uses';
 import dayjs from 'dayjs';
 
 /**
@@ -16,10 +18,15 @@ export const CalendarListPage: React.VFC = () => {
   const {
     isLoading,
     state,
+    onChange,
     onChangePage,
+    onClickSearchButton,
+    onClickClearButton,
     addDetail,
+    conditions,
     isDisabled,
   } = useCalendarListPage(slug);
+  const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
   const tables = useMemo(() => {
     const tbody = state.rows.map(r => (
@@ -60,6 +67,28 @@ export const CalendarListPage: React.VFC = () => {
 
   return (
     <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
+      <BoxConditions
+        onClickSearchButton={onClickSearchButton}
+        onClickClearButton={onClickClearButton}
+      >
+        <Forms.FormGroupInputText
+          labelText="文字列"
+          name="c_keyword"
+          value={conditions.c_keyword}
+          onChange={onChange}
+          onCompositionStart={onCompositionStart}
+          onCompositionEnd={onCompositionEnd}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !composing) {
+              onClickSearchButton();
+            }
+          }}
+          maxLength={30}
+          groupClassName="max-w-sm"
+          removeOptionalLabel
+        />
+      </BoxConditions>
+
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
       </TableWrapper>
