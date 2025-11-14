@@ -43,7 +43,6 @@ class SetItemService
     $query = Item::select(
       'm_items.item_number',
       'm_items.id',
-      //'items.name_jp',
       'm_items.name_note',
       'm_items.sales_unit_price',
       't_set_items.total_quantity',
@@ -51,14 +50,7 @@ class SetItemService
     //->leftJoin('t_set_items', 'm_items.id', '=', 't_set_items.item_id');
     $query = $this->setCondition($query, $cond);
     $query->orderBy('item_number', 'asc');
-    \Log::debug('55行目');
-    \Log::debug('$query->paginate(config(const.paginate.per_page))->toArray()');
-    \Log::debug($query->paginate(config('const.paginate.per_page'))->toArray());
     return $query->paginate(config('const.paginate.per_page'))->toArray();
-    //$query = $query->orderBy('item_number', 'asc')
-    //               ->paginate(config('const.paginate.per_page'));
-    //
-    //return $query->toArray();
   }
 
   /**
@@ -70,14 +62,53 @@ class SetItemService
   public function get(int $id)
   {
     $data = Item::select(
+      //'m_items.id',
+      //'m_items.item_number',
+      ////'items.name_jp',
+      //'m_items.name_note',
+      //'m_items.sales_unit_price',
+      ////'items.discontinued_date',
+      //'m_items.discontinued_at',
+      //'m_items.is_display',
+
       'm_items.id',
+      'm_items.supplier_id',
+      'm_items.code',
+      'm_items.name',
       'm_items.item_number',
-      //'items.name_jp',
+      'm_items.variations1',
+      'm_items.variations2',
+      'm_items.variations3',
+      'm_items.variations4',
+      'm_items.explanation',
+      'm_items.explanation_details',
       'm_items.name_note',
+      'm_items.name_label',
+      'm_items.is_sell',
+      'm_items.purchase_price',
+      'm_items.sales_price',
       'm_items.sales_unit_price',
-      //'items.discontinued_date',
+      'm_items.purchase_unit_price',
+      'm_items.sample_price',
+      'm_items.is_discontinued',
       'm_items.discontinued_at',
       'm_items.is_display',
+      'm_items.domestic_stocks',
+      'm_items.overseas_stocks',
+      'm_items.display_status',
+      'm_items.remarks',
+      'm_items.number_reservations',
+      'm_items.is_shipping_fee',
+      'm_items.shipping_pay',
+      'm_items.is_cash_delivery_fee',
+      'm_items.additional_shipping_fee',
+      'm_items.is_point_rebates',
+      'm_items.is_payment_id1',
+      'm_items.is_payment_id2',
+      'm_items.is_payment_id3',
+      'm_items.is_payment_id4',
+      'm_items.is_payment_id5',
+      'm_items.is_set_item',
     )
       ->where('m_items.id', $id)
       ->first()
@@ -98,8 +129,51 @@ class SetItemService
     DB::transaction(function () use ($data) {
       $m = Item::make($data->toArray());
       //$m->is_discontinued = $data->has('discontinued_date');
-      $m->is_discontinued = $data->has('discontinued_at');
-      $m->is_set_item = true;
+      //$m->discontinued_at = $data->has('discontinued_at');
+      //$m->discontinued_at = $data->has('discontinued_at')
+      //    ? $data->get('discontinued_at')
+      //    : null;
+      //$m->supplier_id = 0;
+//
+      //$m->is_set_item = true;
+      $m->supplier_id             = $data->has('supplier_id') ? $data->get('supplier_id') : 1;
+      $m->code                    = $data->has('code') ? $data->get('code') : 0;
+      $m->name                    = $data->has('name') ? $data->get('name') : 'non';
+      $m->item_number             = $data->has('item_number') ? $data->get('item_number') : 0;
+      $m->variations1             = $data->has('variations1') ? $data->get('variations1') : null;
+      $m->variations2             = $data->has('variations2') ? $data->get('variations2') : null;
+      $m->variations3             = $data->has('variations3') ? $data->get('variations3') : null;
+      $m->variations4             = $data->has('variations4') ? $data->get('variations4') : null;
+      $m->explanation             = $data->has('explanation') ? $data->get('explanation') : null;
+      $m->explanation_details     = $data->has('explanation_details') ? $data->get('explanation_details') : null;
+      $m->name_note               = $data->has('name_note') ? $data->get('name_note') : 'non';
+      $m->name_label              = $data->has('name_label') ? $data->get('name_label') : 'non';
+      $m->is_sell                 = $data->has('is_sell') ? $data->get('is_sell') : false;
+      $m->purchase_price          = $data->has('purchase_price') ? $data->get('purchase_price') : null;
+      $m->sales_price             = $data->has('sales_price') ? $data->get('sales_price') : 0;
+      $m->sales_unit_price        = $data->has('sales_unit_price') ? $data->get('sales_unit_price') : null;
+      $m->purchase_unit_price     = $data->has('purchase_unit_price') ? $data->get('purchase_unit_price') : null;
+      $m->sample_price            = $data->has('sample_price') ? $data->get('sample_price') : null;
+      $m->is_discontinued         = $data->has('is_discontinued') ? $data->get('is_discontinued') : false;
+      $m->discontinued_at         = $data->has('discontinued_at') ? $data->get('discontinued_at') : null;
+      $m->is_display              = $data->has('is_display') ? $data->get('is_display') : false;
+      $m->domestic_stocks         = $data->has('domestic_stocks') ? $data->get('domestic_stocks') : 0;
+      $m->overseas_stocks         = $data->has('overseas_stocks') ? $data->get('overseas_stocks') : 0;
+      $m->display_status          = $data->has('display_status') ? $data->get('display_status') : 1;
+      $m->remarks                 = $data->has('remarks') ? $data->get('remarks') : null;
+      $m->number_reservations     = $data->has('number_reservations') ? $data->get('number_reservations') : null;
+      $m->is_shipping_fee         = $data->has('is_shipping_fee') ? $data->get('is_shipping_fee') : false;
+      $m->shipping_pay            = $data->has('shipping_pay') ? $data->get('shipping_pay') : null;
+      $m->is_cash_delivery_fee    = $data->has('is_cash_delivery_fee') ? $data->get('is_cash_delivery_fee') : false;
+      $m->additional_shipping_fee = $data->has('additional_shipping_fee') ? $data->get('additional_shipping_fee') : null;
+      $m->is_point_rebates        = $data->has('is_point_rebates') ? $data->get('is_point_rebates') : false;
+      $m->is_payment_id1          = $data->has('is_payment_id1') ? $data->get('is_payment_id1') : false;
+      $m->is_payment_id2          = $data->has('is_payment_id2') ? $data->get('is_payment_id2') : false;
+      $m->is_payment_id3          = $data->has('is_payment_id3') ? $data->get('is_payment_id3') : false;
+      $m->is_payment_id4          = $data->has('is_payment_id4') ? $data->get('is_payment_id4') : false;
+      $m->is_payment_id5          = $data->has('is_payment_id5') ? $data->get('is_payment_id5') : false;
+      $m->is_set_item             = $data->has('is_set_item') ? $data->get('is_set_item') : true;
+
       $m->save();
 
       $details = $data->get('details');
@@ -118,16 +192,52 @@ class SetItemService
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = Item::find($id);
-      $m->item_number = $data->get('item_number');
-      //$m->name_jp = $data->get('name_jp');
-      $m->name_note = $data->get('name_note');
-      $m->sales_unit_price = $data->get('sales_unit_price');
-      //$discontinued_date = $data->get('discontinued_date');
-      $discontinued_at = $data->get('discontinued_at');
-      //$m->is_discontinued = $discontinued_date ? true : false;
-      $m->is_discontinued = $discontinued_at ? true : false;
-      //$m->discontinued_date = $discontinued_date;
-      $m->is_display = $data->get('is_display');
+      //$m->item_number = $data->get('item_number');
+      //$m->name_note = $data->get('name_note');
+      //$m->sales_unit_price = $data->get('sales_unit_price');
+      //$discontinued_at = $data->get('discontinued_at');
+      ////$m->is_discontinued = $discontinued_at ? true : false;
+      //$m->is_discontinued = $data->get('is_discontinued');
+      ////$m->discontinued_date = $discontinued_date;
+      //$m->is_display = $data->get('is_display');
+      $m->supplier_id             = $data->has('supplier_id') ? $data->get('supplier_id') : 1;
+      $m->code                    = $data->has('code') ? $data->get('code') : 0;
+      $m->name                    = $data->has('name') ? $data->get('name') : 'non';
+      $m->item_number             = $data->has('item_number') ? $data->get('item_number') : 0;
+      $m->variations1             = $data->has('variations1') ? $data->get('variations1') : null;
+      $m->variations2             = $data->has('variations2') ? $data->get('variations2') : null;
+      $m->variations3             = $data->has('variations3') ? $data->get('variations3') : null;
+      $m->variations4             = $data->has('variations4') ? $data->get('variations4') : null;
+      $m->explanation             = $data->has('explanation') ? $data->get('explanation') : null;
+      $m->explanation_details     = $data->has('explanation_details') ? $data->get('explanation_details') : null;
+      $m->name_note               = $data->has('name_note') ? $data->get('name_note') : 'non';
+      $m->name_label              = $data->has('name_label') ? $data->get('name_label') : 'non';
+      $m->is_sell                 = $data->has('is_sell') ? $data->get('is_sell') : false;
+      $m->purchase_price          = $data->has('purchase_price') ? $data->get('purchase_price') : null;
+      $m->sales_price             = $data->has('sales_price') ? $data->get('sales_price') : 0;
+      $m->sales_unit_price        = $data->has('sales_unit_price') ? $data->get('sales_unit_price') : null;
+      $m->purchase_unit_price     = $data->has('purchase_unit_price') ? $data->get('purchase_unit_price') : null;
+      $m->sample_price            = $data->has('sample_price') ? $data->get('sample_price') : null;
+      $m->is_discontinued         = $data->has('is_discontinued') ? $data->get('is_discontinued') : false;
+      $m->discontinued_at         = $data->has('discontinued_at') ? $data->get('discontinued_at') : null;
+      $m->is_display              = $data->has('is_display') ? $data->get('is_display') : false;
+      $m->domestic_stocks         = $data->has('domestic_stocks') ? $data->get('domestic_stocks') : 0;
+      $m->overseas_stocks         = $data->has('overseas_stocks') ? $data->get('overseas_stocks') : 0;
+      $m->display_status          = $data->has('display_status') ? $data->get('display_status') : 1;
+      $m->remarks                 = $data->has('remarks') ? $data->get('remarks') : null;
+      $m->number_reservations     = $data->has('number_reservations') ? $data->get('number_reservations') : null;
+      $m->is_shipping_fee         = $data->has('is_shipping_fee') ? $data->get('is_shipping_fee') : false;
+      $m->shipping_pay            = $data->has('shipping_pay') ? $data->get('shipping_pay') : null;
+      $m->is_cash_delivery_fee    = $data->has('is_cash_delivery_fee') ? $data->get('is_cash_delivery_fee') : false;
+      $m->additional_shipping_fee = $data->has('additional_shipping_fee') ? $data->get('additional_shipping_fee') : null;
+      $m->is_point_rebates        = $data->has('is_point_rebates') ? $data->get('is_point_rebates') : false;
+      $m->is_payment_id1          = $data->has('is_payment_id1') ? $data->get('is_payment_id1') : false;
+      $m->is_payment_id2          = $data->has('is_payment_id2') ? $data->get('is_payment_id2') : false;
+      $m->is_payment_id3          = $data->has('is_payment_id3') ? $data->get('is_payment_id3') : false;
+      $m->is_payment_id4          = $data->has('is_payment_id4') ? $data->get('is_payment_id4') : false;
+      $m->is_payment_id5          = $data->has('is_payment_id5') ? $data->get('is_payment_id5') : false;
+      $m->is_set_item             = $data->has('is_set_item') ? $data->get('is_set_item') : true;
+
       $m->save();
 
       $details = $data->get('details');

@@ -21,7 +21,9 @@ trait SetItemRequestTrait
       'details.*.id' => 'required|integer',
       'details.*.item_id' => 'required|integer|exists:m_items,id',
       'details.*.quantity' => 'required|integer|between:0,999',
-      'details.*.set_price' => 'required|numeric|price'
+      'details.*.set_price' => 'required|numeric|price',
+
+      'supplier_id' => 'bail|nullable|integer|exists:m_suppliers,id',
     ];
   }
 

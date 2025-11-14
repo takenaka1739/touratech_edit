@@ -80,6 +80,9 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
   const edit: (id: number) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
     const res = await axios.put(`/api/${slug}/edit/${id}`, state);
+    console.log(state);
+    console.log(`/api/${slug}/edit/${id}`);
+    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {

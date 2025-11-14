@@ -9,8 +9,6 @@ trait ImageRequestTrait
 {
   public function commonRules()
   {
-    \Log::debug('デバッグ：ImageRequestTrait');
-
     return [
     //  //'id' => 'unsigned',
       'category_id' => 'integer|exists:m_categories,id',
