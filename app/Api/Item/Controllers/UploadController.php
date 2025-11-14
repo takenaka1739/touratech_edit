@@ -10,9 +10,6 @@ class UploadController extends BaseController
 {
   public function store(Request $request)
   {
-    \Log::debug('UploadController.store');
-    \Log::debug($request);
-
     $request->validate([
         'file' => 'required|file|image|max:2048',
     ]);
@@ -24,9 +21,6 @@ class UploadController extends BaseController
     // 保存（storage/app/public/images に保存される）
     //$path = $file->storeAs('public/images', $filename);
     $path = $file->storeAs('public/images', $filename);
-
-    \Log::debug('$path');
-    \Log::debug($path);
 
     if (!$path) {
         \Log::error('$path：ファイル保存に失敗しました');

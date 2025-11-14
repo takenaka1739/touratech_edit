@@ -25,18 +25,9 @@ class ItemService
       'm_items.id',
       'm_items.code',
       'm_items.name',
-      //'name',
       'm_items.sales_unit_price',
       'm_items.purchase_unit_price',
-
-      //'id',
-      //'code',
-      //'name',
-      //'name',
-      //'sales_unit_price',
-      //'purchase_unit_price',
     );
-    //$query = $this->setCondition($query, $cond);
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
@@ -54,15 +45,7 @@ class ItemService
       'name',
       'sales_unit_price',
       'purchase_unit_price',
-
-      //'id',
-      //'code',
-      //'name',
-      //'name',
-      //'sales_unit_price',
-      //'purchase_unit_price',
     );
-    //$query = $this->setCondition($query, $cond);
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
@@ -78,7 +61,6 @@ class ItemService
     $query = Item::select(
       'id',
       'code',
-      //'variation_code1',
       'item_number',
       'name',
       'name',
@@ -118,7 +100,6 @@ class ItemService
     $selectItems = Item::select(
       'm_items.id',
       'm_items.supplier_id',
-      //'m_items.consumption_tax_id',
       'm_items.code',
       'm_items.name',
       'm_items.item_number',
@@ -148,7 +129,6 @@ class ItemService
       'm_items.shipping_pay',
       'm_items.is_cash_delivery_fee',
       'm_items.additional_shipping_fee',
-      'm_items.is_special_sale',
       'm_items.is_point_rebates',
       'm_items.is_payment_id1',
       'm_items.is_payment_id2',
@@ -246,9 +226,6 @@ class ItemService
       ->sortBy(fn($row) => $row[2])
       ->sortBy(fn($row) => $row[1]) // 最優先キー
         ->values();
-
-    \log::debug('$sorted');
-    \log::debug($sorted);
 
     if(count($sorted) > 1){
       $previous = ['', '', '', ''];
@@ -373,13 +350,9 @@ class ItemService
    */
   public function store(array $data)
   {
-    \Log::debug('登録されたItem:');
     $data['domestic_stocks'] = $data['domestic_stocks'] ?? 0;
     $data['overseas_stocks'] = $data['overseas_stocks'] ?? 0;
     $data['is_set_item'] = false;
-    //\Log::debug('登録されたItem:', ['item' => $item]);
-    \Log::debug('登録されたItem:', ['item' => $data]);
-
     $newId = DB::transaction(function () use ($data) {
         $item = Item::create($data);
 
@@ -397,14 +370,9 @@ class ItemService
    */
   public function update(int $id, array $data)
   {
-    \log::debug('ItemService.update');
-
     $data = new Collection($data);
-    \log::debug($data);
     DB::transaction(function () use ($id, $data) {
       $m = Item::find($id);
-      \log::debug($m);
-      //$m->code = '00000';
       $m->code = $data->get('code');
       $m->name = $data->get('name');
       $m->name_label = $data->get('name_label');
@@ -418,8 +386,6 @@ class ItemService
       $m->additional_shipping_fee = $data->get('additional_shipping_fee');
       $m->purchase_price = $data->get('purchase_price');
       $m->is_set_item = $data->get('is_set_item');
-      //$m->name = $data->get('name');
-      //$m->category_id = $data->get('category_id');
       $m->sales_unit_price = $data->get('sales_unit_price');
       $m->purchase_unit_price = $data->get('purchase_unit_price');
       $m->sample_price = $data->get('sample_price');
@@ -437,7 +403,6 @@ class ItemService
       $m->shipping_pay = $data->get('shipping_pay');
 
       $m->is_display = $data->get('is_display');
-      //$m->stock_display = $data->get('stock_display');
       $m->remarks = $data->get('remarks');
       $m->is_payment_id1 = $data->get('is_payment_id1');
       $m->is_payment_id2 = $data->get('is_payment_id2');

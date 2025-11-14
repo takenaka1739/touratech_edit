@@ -77,9 +77,7 @@ export const SetItemDetailPage: React.VFC<SetItemDetailPageProps> = () => {
             <Forms.FormGroupInputDate
               labelText="廃盤日"
               name="discontinued_at"
-              //value={state.discontinued_date ?? ''}
               value={state.discontinued_at ?? ''}
-              //error={errors?.discontinued_date}
               error={errors?.discontinued_at}
               onChange={onChange}
             />

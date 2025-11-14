@@ -19,9 +19,6 @@ class ImageService
    */
   public function store(array $data)
   {
-    //$imageMaxId = Image::max('id') + 1;
-    \Log::debug('ImageService.store');
-    \Log::debug($data);
     DB::transaction(function () use ($data) {
       Image::create([
               //'id' => $imageMaxId,
@@ -56,8 +53,6 @@ class ImageService
    */
   public function delete(int $id)
   {
-    \Log::debug('ImageService.delete');
-
     DB::transaction(function () use ($id) {
       Image::destroy($id);
     });

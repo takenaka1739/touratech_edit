@@ -16,6 +16,7 @@ import {
   ItemClassificationListPageReducer,
 } from '@/app/ItemClassification/modules/itemClassificationListPageModule';
 import { ItemListPageState, ItemListPageReducer } from '@/app/Item/modules/itemListPageModule';
+import { CalendarListPageState, CalendarListPageReducer } from '@/app/Calendar/modules/calendarListPageModule';
 import {
   SetItemListPageState,
   SetItemListPageReducer,
@@ -69,6 +70,7 @@ export type RootState = {
   customerListPage: CustomerListPageState;
   itemClassificationListPage: ItemClassificationListPageState;
   itemListPage: ItemListPageState;
+  calendarListPage: CalendarListPageState;
   setItemListPage: SetItemListPageState;
   estimateListPage: EstimateListPageState;
   receiveOrderListPage: ReceiveOrderListPageState;
@@ -88,6 +90,7 @@ const store = createStore(
     userListPage: UserListPageReducer,
     supplierListPage: SupplierListPageReducer,
     customerListPage: CustomerListPageReducer,
+    calendarListPage: CalendarListPageReducer,
     itemClassificationListPage: ItemClassificationListPageReducer,
     itemListPage: ItemListPageReducer,
     setItemListPage: SetItemListPageReducer,

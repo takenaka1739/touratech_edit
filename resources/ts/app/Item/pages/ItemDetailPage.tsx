@@ -2,33 +2,21 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
-//import { Item, ItemClassification, Supplier, SpecialSale } from '@/types';
-//import { Item, ItemClassification, Supplier, SpecialSale } from '@/types';
 import { Item, ItemClassification, Supplier } from '@/types';
-//import { Item, ItemClassification, Supplier } from '@/types';
-//import { Item, Category, Supplier } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
-//import { CategorySearchDialog } from '@/app/Category/components/CategorySearchDialog';
 import { ItemClassificationSearchDialog } from '@/app/ItemClassification/components/ItemClassificationSearchDialog';
 import { SupplierSearchDialog } from '@/app/Supplier/components/SupplierSearchDialog';
-//import { ItemSearchDialog } from '@/app/Item/components/ItemSearchDialog';
 import { ItemRefSearchDialog } from '@/app/Item/components/ItemRefSearchDialog';
 import { SpecialSalesDialog } from '@/app/Item/components/SpecialSalesDialog';
 import { useSpecialSalesPage } from '@/app/Item/uses/useSpecialSalesPage';
 import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
-//import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-//import { forEach } from 'lodash';
-//import { ShopImagePage } from './ShopImagePage';
 import { useHistory, useLocation  } from 'react-router-dom';
 import { appAlert } from '@/components';
-//import { PageErrors } from '@/types';
-//import { ConfirmModal } from '@/components/appConfirm';
-//import { ConfirmModal } from '@/components/appConfirm';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -53,13 +41,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     updateErrors,
     onChange,
     setErrors,
-    //onChangeItem,
-    //onClickSave,
     onClickDelete,
   } = useCommonDetailPage<Item & {selected: number[] | undefined;}>(slug, {
     id: undefined,
     supplier_id: undefined,
-    //consumption_tax_id: undefined,
     code: '',
     name: '',
     item_number: undefined,
@@ -89,7 +74,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     is_shipping_fee: false,
     is_cash_delivery_fee: false,
     additional_shipping_fee: undefined,
-    is_special_sale: false,
     is_payment_id1: false,
     is_payment_id2: false,
     is_payment_id3: false,
@@ -140,12 +124,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.itemNumberItem[0]);
 
   const [variItems, setVariItems] = useState([['', '', '', '', '', '', '']]);
-  //const [salesPriceItems, setsalesPriceItems] = useState(state.salesPriceItem);
-  //const [purchase_price, setPurchasePricee] = useState(state.purchase_price);
-  //const [number_reservations, setnumberReservations] = useState(state.number_reservations);
   const [checkBock, setCheckBock] = useState({color:'#EDF2F7', flag:false});
   const [backColor, setbackColor] = useState('#ffffff');
-  //const [backVariItems, setBackVariItems] = useState(state.backVariItems);
   const [variChangeItem, setVariChangeItem] = useState<string[][]>([]);
   const dispatch = useDispatch();
   const [onFocusItem, setonFocusItem] = useState<string[]>();
@@ -154,7 +134,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const location = useLocation<any>();
   const [categoryChangeFlag, setCategoryChangeFlag]= useState(false);
   const [supplierChangeFlag, setSupplierChangeFlag]= useState(false);
-  //const [errors, setErrors] = useState<PageErrors>(undefined);
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
 
@@ -164,10 +143,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     state.variItems.length > 0 &&
                     state.variItems[0].length > 0;
     setVariItems(isValid ? state.variItems : [['new1', '', '', '', '', '', '']]);
-    //setBackVariItems(state.backVariItems);
-    //setsalesPriceItems(state.salesPriceItem);
     setSpecialItem(state.specialSalesList);
-    //setImageItems(state.image_name);
     if ((!imageItems || !Array.isArray(imageItems)) && (Array.isArray(state.image_name))) {
       setImageItems(state.image_name);
     }
@@ -178,7 +154,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         variItems: [['new1', '', '', '', '', '', '']],
       }));
     }
-    //setState(state);
   }, [state, state.variItems, state.itemNumberItem, state.salesPriceItem, state.purchase_price, state.number_reservations, 
       state.specialSalesList, state.image_name]);
 
@@ -192,20 +167,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }, []);
 
-  // 初期値設定
-  //useEffect(() => {
-  //  state.variItems = variItems;
-  //}, [state]);
-
   const {
     open: openItemClassDialog,
     searchDialogProps: itemClassSearchDialogProps,
   } = useCommonSearchDialogProps<ItemClassification>('item_classification', async props => {
-  //} = useCommonSearchDialogProps<Category>('category', async props => {
     const { id, name } = props;
     updateState({
       category_id: id,
-      //item_classification_name: name,
       category_name: name,
     });
     setCategoryChangeFlag(true);
@@ -233,7 +201,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     searchDialogProps: itemListSearchDialogProps,
   } = useCommonSearchDialogProps<Item>('m_items', async props => {
     const { id, name } = props;
-    console.dir(props);
     {updateState({
       id: id,
       name: name,
@@ -262,7 +229,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   const changeState = (value: any) => {
-    console.log(value);
     setState(prev => ({
       ...prev,
       item_number: value['item_number'],
@@ -309,7 +275,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       imageList: value['imageList'],
       image_name: value['image_name'],
       is_sales_members_only: value['is_sales_members_only'],
-      is_special_sale: value['is_special_sale'],
       itemNumberItem: value['itemNumberItem'],
       refund_rate: value['refund_rate'],
       salesPriceItem: value['salesPriceItem'],
@@ -334,10 +299,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     setSupplierChangeFlag(false);
     setvariClickFlag(false);
     setVariDelItem([]);
-    //setVariItems(value['variItems']);
-    //setsalesPriceItems(value['salesPriceItem']);
-    //setPurchasePricee(value['purchase_price']);
-    //setnumberReservations(value['number_reservations']);
   }
 
   const onClickPrint = async () => {
@@ -346,8 +307,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
-        // updateErrors(undefined);
-
         const { file_id } = res.data.data;
         const link = document.createElement('a');
         link.href = `/web/${slug}/output/${file_id}`;
@@ -371,8 +330,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
-        // updateErrors(undefined);
-
         const { file_id } = res.data.data;
         const link = document.createElement('a');
         link.href = `/web/${slug}/output/${file_id}`;
@@ -415,13 +372,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     ) {
       insertIndex++;
     };
-
-    // 挿入処理
-    //setState((variItems) => [
-    //  ...variItems.slice(0, insertIndex),
-    //  arr,
-    //  ...variItems.slice(insertIndex),
-    //])
 
     // 挿入処理
     setState(prev => ({
@@ -468,8 +418,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   // チェックボックスのチェックが変更された場合、Stateの更新
   const handleCheck = (e:any) => {
     // 操作したチェックボックスの値
-    //const choice = e.target.value;
-
     // チェックされている場合
     if (e.target.checked) {
         // 値の追加
@@ -484,8 +432,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   // 子コンポーネントから受け取った値を格納するstate
-  //const [value, setValue] = useState<SpecialSale>();
-
   // 子コンポーネントから受け取った値を親コンポーネントのstateに格納
   const handleValueChange = (newValue: any) => {
     state.specialSalesDelFlag = newValue.specialSalesDelFlag
@@ -522,14 +468,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const onChangeValue = (event: React.ChangeEvent<HTMLInputElement>, select:number, selectIndex:number) => {
     setvariClickFlag(true);
     event.persist();
-    //setVariItems(variItems => 
-    //  variItems.map((row, rIdx) =>
-    //    rIdx === select
-    //    ? row.map((val, cIdx) => (cIdx === selectIndex ? event.target.value : val))
-    //    : row
-    //  )
-    //);
-
     setState(prev => ({
       ...prev,
       variItems: prev.variItems.map((row, rowIndex) =>
@@ -551,7 +489,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           : row
       ),
     }));
-
 
     setState(prev => ({
       ...prev,
@@ -576,7 +513,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     setonFocusItem(item);
   };
 
-  //const outForcus = (item: string[], selectIndex:number) => {
   const outForcus = (item: string[]) => {
     setvariClickFlag(true);
     // 変更されたバリデーションが何もない時
@@ -584,7 +520,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       let targetChangeItem:any = [];
       // バリデーションが1行以上ある時
       if(variItems.length > 1){
-        //setChangeItem((changeItem) => [...changeItem, item]);
         // 変更したバリデーションの中に現在変更中のバリデーションが存在しているか
         const target =  variChangeItem.filter(row => row[0] === item[0]);
         // 編集している行の一つ上のインデックスの取得
@@ -613,7 +548,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 let fallbackValue = indexItem[index];
                 // indexItem[index] が null の場合、variChangeItem を上に辿って補完
                 if (fallbackValue === null) {
-                  //let searchRowIndex = variItems.length - 1;
                   let searchRowIndex = targetIndex;
                   while (searchRowIndex >= 0) {
                     const previousRow = variItems[searchRowIndex];
@@ -665,7 +599,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const useMovePage = () => {
     navigation.push({ pathname: '/item/shop-image',
                       state: { item_id:state.id,
-                               //itemName:state.name,
                                preVariItem:variItems,
                                exDetail:state.explanation_details,
                                variItems:filledItems,
@@ -677,9 +610,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                                items: state}});
   }
 
-  //const [changeImageItem, setChangeImageItem] = useState<imageItem[]>();
-  //const [formItem, setFormItem] = useState<File[]>();
-
 // ショップイメージから戻ってきた時の値取得
   useEffect(() => {
     if (location.state !== undefined){
@@ -690,7 +620,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         const form = new FormData();
         setCategoryChangeFlag(location.state.categoryChangeFlag);
         setSupplierChangeFlag(location.state.supplierChangeFlag);
-        //updateState(location.state.preState);
         location.state.imageItem.forEach((item: any) => {
           const matchedRows = Array.isArray(location.state.preImageItem)
             ? location.state.preImageItem.filter((row: any) => row[0] === item[0])
@@ -719,23 +648,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           }
         });
         setImageItems(location.state.imageItem);
-        //setImageItems((prev: imageItem[]) => [...prev, ...matrix]);
       }
 
       if(variClickFlag !== true){
-        console.log('編集したい');
-        console.log(variClickFlag);
-        //if(location.state.transFlag){
         setVariChangeItem(location.state.variChangeItem);
         setState(prev => {
-          //const updatedVariItems = prev.variItems.map((row, index) => {
-          //  const newRow = [...row];
-          //  newRow[6] = location.state.variItems?.[index]?.[6] ?? row[6];
-          //  return newRow;
-          //});
-
-          console.log(location.state.exDetail);
-
           return {
             ...prev,
             category_name: location.state.preState.category_name,
@@ -749,21 +666,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           };
         });
       }
-      //}
-      //setState(prev => ({...prev, explanation_details: location.state.exDetail}));
-//
-      //setState(prev => ({
-      //  ...prev,
-      //  variItems: prev.variItems.map((row, index) => {
-      //    const newRow = [...row];
-      //    newRow[6] = location.state.variItems?.[index]?.[6] ?? row[6];
-      //    return newRow;
-      //  }),
-      //}));
     }
-
-  //}, [location, state.explanation_details, state.name]);
-  //}, [location, state.explanation_details, state.name, state.variItems]);
   }, [location, state.explanation_details, state.name, state.variItems]);
 
   useEffect(() => {
@@ -774,9 +677,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   const edit: (url: string) => Promise<boolean> = async url => {
     dispatch(AppActions.request());
-    //const res = await axios.put(`/api/${slug}/edit/${id}`, state);
     const res = await axios.put(`/api/${url}`, state);
-    console.dir(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
@@ -789,17 +690,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   };
 
-  //const categoryEdit = async (url: string, item:any): Promise<boolean> => {
   const categoryEdit = async (url: string): Promise<boolean> => {
     dispatch(AppActions.request());
     const res = await axios.put(`/api/${url}`, state);
-    //const res = await axios.put(`/api/${url}`, item);
     if (res.status === 200) {
-    //if (false) {
       dispatch(AppActions.success());
       if (res.data.success) {
-      //if (false) {
-        //await appAlert('編集保存しました。');
         return true;
       } else {
         //setErrors(res.data.errors);
@@ -817,13 +713,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const store: (url: string) => Promise<any> = async url => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${url}`, state);
-    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
-        //setErrors(undefined);
-        //await appAlert('新規保存しました。');
-        //backPage();
         return res;
       } else {
         //setErrors(res.data.errors);
@@ -837,7 +729,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const destroy: (url: string) => Promise<boolean> = async url => {
     dispatch(AppActions.request());
     const res = await axios.delete(url);
-    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
@@ -854,7 +745,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     return false;
   };
 
-  //const imageSave = async (url: string, curd: string, variIndex:string | number | null): Promise<boolean> => {
   const imageSave = async (variIndex:string | number | null): Promise<boolean> => {
     let res: any = {};
     let serverRes: any = {};
@@ -967,8 +857,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           state.refund_rate = specialItem[0].refund_rate !== state.refund_rate ?
                                        state.refund_rate : specialItem[0].refund_rate;
           state.item_id = state.id;
-          //state.is_sales_members_only = state.is_sales_members_only !== null ? state.is_sales_members_only : false;
-          //specialSaleSaveFlag = (await specialSaleSave(`item/special_sale_update/${state.special_sale_id}`, 'edit')).success;
+
           specialSaleSaveFlag = await edit(`item/special_sale_update/${state.special_sale_id}`); // ✅ ここで await が使える！
         }else{
           specialSaleSaveFlag = await store("item/special_sale_store");
@@ -987,7 +876,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const categorySave = async (url: string, curd: string): Promise<{success: boolean; id?: number;}> => {
     let res: any = {};
     if (curd === 'store') {
-      //state.item_id = id;
       res = await store(url);
     }
 
@@ -1005,33 +893,21 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   // 保存処理
   const storeSavaItem: (variIndex:string | number | null, crud: string) => Promise<boolean> = async (variIndex, crud) => {
     let reFlag = false;
-    //let imageSaveRes = false;
     const itemSaveRes = await itemSave("item/store", 'store');
-    console.log(itemSaveRes);
     // 項目の保存
     if(itemSaveRes.success){
       if(crud === 'store') state.item_id = itemSaveRes.id;
       // カテゴリーの保存
       const categorySaveRes = await categorySave("item/category_store", crud);
-      console.log(categorySaveRes);
       // 特売設定の保存
       const specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
-      console.log(specilSaleSaveRes);
       // 画像の保存
-      console.log(variIndex);
       const imageSaveRes = await imageSave(variIndex);
-      console.log(imageSaveRes);
 
       reFlag = categorySaveRes.success && specilSaleSaveRes.success && imageSaveRes;
     }else{
       reFlag = false;
     }
-
-    //if(reFlag){
-    //  await appAlert('新規保存しました。');
-    //  backPage();
-    //}
-
     return reFlag;
   }
 
@@ -1043,74 +919,48 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     let categoryCombSaveFlag = false;
 
     if(pattern === '2'){
-      console.log('pattern === 2');
       itemSaveFlag = await edit(`item/update/${variIndex}`);
-      console.log(itemSaveFlag);
       imgSaveFlag = await imageSave(variIndex);
-      console.log(imgSaveFlag);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      console.log(specialSaleSaveFlag);
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
 
     }else if(pattern === '3'){
-      console.log('pattern === 3');
-      console.log(state.id);
       itemSaveFlag = await edit(`item/update/${state.id}`);
-      console.log(itemSaveFlag);
       imgSaveFlag = await imageSave(Number(state.id));
-      console.log(imgSaveFlag);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      console.log(specialSaleSaveFlag);
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
     }else if(pattern === '4'){
-      console.log('pattern === 4');
       state.item_id = Number(variIndex);
       itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-      console.log(itemSaveFlag);
       if(itemSaveFlag){
         if(((state.combination_id !== null) && (state.combination_id !== undefined))){
           categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-          console.log(categoryCombSaveFlag);
         }else{
           categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-          console.log(categoryCombSaveFlag);
         }
       }
 
       imgSaveFlag = await imageSave(Number(state.id));
-      console.log(imgSaveFlag);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      console.log(specialSaleSaveFlag);
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
     }else if(pattern === '5'){
-      console.log('pattern === 5');
       state.item_id = Number(variIndex);
 
       itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-      console.log(`itemSaveFlag：${itemSaveFlag}`);
       if(itemSaveFlag){
         if(((state.combination_id !== null) && (state.combination_id !== undefined))){
           categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-          console.log(`categoryCombSaveFlag：${categoryCombSaveFlag}`);
         }else{
           categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-          console.log(`categoryCombSaveFlag：${categoryCombSaveFlag}`);
         }
       }
 
       imgSaveFlag = await imageSave(Number(state.id));
-      console.log(`imgSaveFlag：${imgSaveFlag}`);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      console.log(`specialSaleSaveFlag：${specialSaleSaveFlag}`);
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
     }
-
-    //if(reFlag){
-    //  await appAlert('編集保存しました。');
-    //  backPage();
-    //}
 
     return reFlag;
   }
@@ -1121,7 +971,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       for (let i = variDelItem.length - 1; i >= 0; i--) {
         const id = Number(variDelItem[i][0]);
         delFlag = await destroy(`/api/item/delete/${id}`);
-        console.log(delFlag);
         variDelItem.splice(i, 1); // 戻り値に関係なく削除
       }
     }else{
@@ -1142,9 +991,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
        (state.is_payment_id5 !== null) && (state.is_payment_id5 !== undefined)){
       // 新規登録
       if(state.id === undefined){
-        console.log('1163行');
-        console.log('新規登録');
-        console.dir(state);
         let saveFlag = false;
         let crud = 'store';
         // バリエーションが複数ある場合
@@ -1177,12 +1023,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               state.variations4 = value[4];
               state.item_number = value[5];
               state.sales_price = Number(value[6]);
-
-              //if(await savaItem(value[0])) backPage();
-              //if(await storeSavaItem(value[0], crud)){
-                //saveFlag = await appAlert('新規保存しました。');
-                //backPage();
-              //}
             }
             if(saveFlag){
               await appAlert('新規保存しました。');
@@ -1230,7 +1070,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
                 //if(variChangeItem.length === 1)
                 storeSaveFlag = true;
-                console.log('true');
                 updateSaveFlag = await upDateSaveItem(Number(value[0]), '2');
               // バリデーションの新規登録
               } else {
@@ -1241,17 +1080,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 state.variations4 = value[4];
                 state.item_number = value[5];
                 state.sales_price = Number(value[6]);
-              
-                console.log('false');
-                //if(variChangeItem.length === 1)
                 updateSaveFlag = true;
                 storeSaveFlag = await storeSavaItem(value[0], 'store');
-                //variSaveFlag = await store("item/store"); // ✅ ここで await が使える！
               }
             }
-
-            console.log(updateSaveFlag);
-            console.log(storeSaveFlag);
             if(updateSaveFlag && storeSaveFlag){
               if(await delFanc()){
                 await appAlert('編集保存しました。');
@@ -1268,7 +1100,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 // すでに登録されているかの確認
                 if (state.codeList.find(e => e.id === value[0])) {
                   const matchedRow = state.codeList.find(item => item.id === value[0]);
-                  //const combId = state.combIdList.find(item => item?.item_id === value[0]);
                   const combId = Array.isArray(state.combIdList)
                                  ? state.combIdList.find(item => item?.item_id === value[0])
                                  : undefined;
@@ -1289,8 +1120,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                   state.sales_price = matchedRow.sales_price;
                   state.special_sale_id = matchedRow.special_sale_id;
 
-                  //await upDateSaveItem(Number(value[0]), '5');
-
                 }
                 flag = await upDateSaveItem(Number(state.id), '3')
               }
@@ -1304,7 +1133,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 dispatch(AppActions.failed('データの保存に失敗しました。'));
               }
             }else{
-              //await upDateSaveItem(Number(state.id), '3');
               if(await upDateSaveItem(Number(state.id), '3')){
                 if(await delFanc()){
                   await appAlert('編集保存しました。');
@@ -1347,8 +1175,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                   const changeItem = variChangeItem.find(item => item[0] === value[0]);
                   const matchedRow = state.codeList.find(item => item.id === value[0]);
                   // カテゴリに変更がなければ既存のカテゴリで保存
-                  //if(categoryChangeFlag === false){
-                    const combId = Array.isArray(state.combIdList)
+                  const combId = Array.isArray(state.combIdList)
                                    ? state.combIdList.find(item => item?.item_id === value[0])
                                    : state.combination_id;
                   if (combId) {
@@ -1376,39 +1203,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 
                   if(supplierChangeFlag === false) state.supplier_id = matchedRow.supplier_id;
                   state.category_id = category_id;
-                  //state.code = matchedRow.code;
-                  //state.name = matchedRow.name;
-                  //state.item_number = matchedRow.item_number;
-                  //state.explanation = matchedRow.explanation;
-                  //state.explanation_details = matchedRow.explanation_details;
-                  //state.name_note = matchedRow.name_note;
-                  //state.name_label = matchedRow.name_label;
-                  //state.is_sell = matchedRow.is_sell;
-                  //state.purchase_price = matchedRow.purchase_price;
-                  //state.sales_price = matchedRow.sales_price;
-                  //state.sales_unit_price = matchedRow.sales_unit_price;
-                  //state.purchase_unit_price = matchedRow.purchase_unit_price;
-                  //state.sample_price = matchedRow.sample_price;
-                  //state.is_discontinued = matchedRow.is_discontinued;
-                  //state.discontinued_at = matchedRow.discontinued_at;
-                  //state.is_display = matchedRow.is_display;
-                  //state.domestic_stock = matchedRow.domestic_stock;
-                  //state.overseas_stock = matchedRow.overseas_stock;
-                  //state.display_status = matchedRow.display_status;
-                  //state.remarks = matchedRow.remarks;
-                  //state.number_reservations = matchedRow.number_reservations;
-                  //state.is_shipping_fee = matchedRow.is_shipping_fee;
-                  //state.is_cash_delivery_fee = matchedRow.is_cash_delivery_fee;
-                  //state.additional_shipping_fee = matchedRow.additional_shipping_fee;
-                  //state.is_special_sale = matchedRow.is_special_sale;
-                  //state.is_point_rebates = matchedRow.is_point_rebates;
-                  //state.shipping_pay = matchedRow.shipping_pay;
-                  //state.is_payment_id1 = matchedRow.is_payment_id1;
-                  //state.is_payment_id2 = matchedRow.is_payment_id2;
-                  //state.is_payment_id3 = matchedRow.is_payment_id3;
-                  //state.is_payment_id4 = matchedRow.is_payment_id4;
-                  //state.is_payment_id5 = matchedRow.is_payment_id5;
-                
                   updateSaveFlag = await upDateSaveItem(Number(value[0]), '4');
                 }
               }else{
@@ -1426,11 +1220,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
                   storeSaveFlag = await storeSavaItem(value[0], 'store');
                 }
-                //variSaveFlag = await store("item/store"); // ✅ ここで await が使える！
               }
             }
-            console.log(updateSaveFlag);
-            console.log(storeSaveFlag);
             if(updateSaveFlag && storeSaveFlag){
               if(await delFanc()){
                 await appAlert('編集保存しました。');
@@ -1446,7 +1237,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 // すでに登録されているかの確認
                 if (state.codeList.find(e => e.id === value[0])) {
                   const matchedRow = state.codeList.find(item => item.id === value[0]);
-                  //const combId = state.combIdList.find(item => item?.item_id === value[0]);
                   const combId = Array.isArray(state.combIdList)
                                  ? state.combIdList.find(item => item?.item_id === value[0])
                                  : undefined;
@@ -1458,8 +1248,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
                   state.id = Number(value[0]);
                   state.item_id = Number(value[0]);
-                  //state.combination_id = combId.id;
-
                   state.variations1 = matchedRow.variations1;
                   state.variations2 = matchedRow.variations2;
                   state.variations3 = matchedRow.variations3;
@@ -1468,50 +1256,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                   state.sales_price = matchedRow.sales_price;
 
                   if(supplierChangeFlag === false) state.supplier_id = matchedRow.supplier_id;
-                  //state.supplier_id = matchedRow.supplier_id;
-                  //state.code = matchedRow.code;
-                  //state.name = matchedRow.name;
-                  //state.item_number = matchedRow.item_number;
-                  //state.explanation = matchedRow.explanation;
-                  //state.explanation_details = matchedRow.explanation_details;
-                  //state.name_note = matchedRow.name_note;
-                  //state.name_label = matchedRow.name_label;
-                  //state.is_sell = matchedRow.is_sell;
-                  //state.purchase_price = matchedRow.purchase_price;
-                  //state.sales_price = matchedRow.sales_price;
-                  //state.sales_unit_price = matchedRow.sales_unit_price;
-                  //state.purchase_unit_price = matchedRow.purchase_unit_price;
-                  //state.sample_price = matchedRow.sample_price;
-                  //state.is_discontinued = matchedRow.is_discontinued;
-                  //state.discontinued_at = matchedRow.discontinued_at;
-                  //state.is_display = matchedRow.is_display;
-                  //state.domestic_stock = matchedRow.domestic_stock;
-                  //state.overseas_stock = matchedRow.overseas_stock;
-                  //state.display_status = matchedRow.display_status;
-                  //state.remarks = matchedRow.remarks;
-                  //state.number_reservations = matchedRow.number_reservations;
-                  //state.is_shipping_fee = matchedRow.is_shipping_fee;
-                  //state.is_cash_delivery_fee = matchedRow.is_cash_delivery_fee;
-                  //state.additional_shipping_fee = matchedRow.additional_shipping_fee;
-                  //state.is_special_sale = matchedRow.is_special_sale;
-                  //state.is_point_rebates = matchedRow.is_point_rebates;
-                  //state.shipping_pay = matchedRow.shipping_pay;
-                  //state.is_payment_id1 = matchedRow.is_payment_id1;
-                  //state.is_payment_id2 = matchedRow.is_payment_id2;
-                  //state.is_payment_id3 = matchedRow.is_payment_id3;
-                  //state.is_payment_id4 = matchedRow.is_payment_id4;
-                  //state.is_payment_id5 = matchedRow.is_payment_id5;
-
-                  //await upDateSaveItem(Number(value[0]), '5');
                   updateSaveFlag = await upDateSaveItem(Number(value[0]), '5');
-                  //if(await upDateSaveItem(Number(value[0]), '5')){
-                  //  if(await delFanc()){
-                  //    await appAlert('編集保存しました。');
-                  //    backPage();
-                  //  }
-                  //}else{
-                  //  dispatch(AppActions.failed('データの保存に失敗しました。'));
-                  //}
                 }
               }
 
@@ -1520,7 +1265,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                   await appAlert('編集保存しました。');
                   backPage();
                 }else{
-                  console.log('elseだよ');
+                  // 処理なし
                 }
               }else{
                 dispatch(AppActions.failed('データの保存に失敗しました。'));
@@ -1564,9 +1309,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           labelText="品番"
           name="item_number"
           value={state.item_number}
-          //value={state.itemNumberItem}
           error={errors?.item_number}
-          //error={errors?.itemNumberItem}
           onChange={onChange}
           groupClassName="mt-0"
           className="max-w-lg"
@@ -1586,9 +1329,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         <Forms.FormGroupInputText
           labelText="商品名（納品書）"
           name="name_note"
-          //value={state.name_jp ?? ''}
           value={state.name_note ?? ''}
-          //error={errors?.name_jp}
           error={errors?.name_note}
           onChange={onChange}
           className="max-w-lg"
@@ -1609,7 +1350,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             <div className="flex">
               <Forms.FormInputText
                 name="category_name"
-                //value={state.item_classification_name ?? ''}
                 value={state.category_name}
                 error={errors?.category_name}
                 className="max-w-lg"
@@ -1695,7 +1435,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 name="is_discontinued"
                 checked={state.is_discontinued}
                 onChange={onChange}
-                //onChange={() => a()}
               />
             </Forms.FormGroup>
           </div>
@@ -1703,9 +1442,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             <Forms.FormGroupInputDate
               labelText="廃盤日"
               name="discontinued_at"
-              //value={state.discontinued_date}
               value={state.discontinued_at}
-              //error={errors?.discontinued_date}
               error={errors?.discontinued_at}
               onChange={onChange}
               readOnly={!state.is_discontinued}
@@ -1789,20 +1526,16 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           <hr className="border-dashed border-gray-400 mt-4 mb-4" />
           <div className="button-erea" style={{display: 'flex', justifyContent: 'flex-end'}}>
             <button onClick={useMovePage} className="btn ml-5">ショップイメージ</button>
-            {/*<a className="shop-image" href={"/item/shop-image"}>ショップイメージ</a>*/}
-            {/*<Route path="/Senni" element={<Senni id={1} text={'ID1'} />} />*/}
             <button className="btn ml-5" onClick={openItemListDialog}>
               他商品情報参照
             </button>
             <ItemRefSearchDialog selectId={state.id} {...itemListSearchDialogProps} onChangeState={changeState}/>
             <button className="btn ml-5" onClick={openSpecialSalesDialog}>
-            {/*<button className="ref-items" onClick={clickSpecialSalesDialog}>*/}
               特売設定
             </button>
             <SpecialSalesDialog
               state={state}
               {...specialSalesProps}
-              //{...state}
               onValueChange={handleValueChange}
             />
           </div>
@@ -1846,7 +1579,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 <label style={{marginLeft: "100px"}}>金額</label>
               </div>
               <div style={{display: 'flex', marginLeft: "150px"}}>
-                {/*<div>{variItems.map((item, itemIndex) => {*/}
                 <div>{state.variItems.map((item, itemIndex) => {
                   return (
                     <div key={itemIndex} style={{display: 'flex'}}>{
@@ -1924,16 +1656,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               className="max-w-8"
               min={0}
             />
-            {/*<div className="price-erea" style={{marginLeft: '60px', marginTop: '13px'}}>
-              <label>仕入価格</label>
-              <label className="label-required">必須</label>
-              <input className="input-text" value={purchase_price} onChange={(event) => setPurchasePricee(Number(event.target.value))}/>
-            </div>*/}
-            {/*<div className="pre-order" style={{marginLeft: '49px', marginTop: '13px'}}>
-              <label>予約受付数</label>
-              <label className="label-optional">任意</label>
-              <input className="input-text" value={number_reservations} onChange={(event) => setnumberReservations(Number(event.target.value))}/>
-            </div>*/}
             <Forms.FormGroup
               labelText="送料適用"
               error={errors?.is_shipping_fee}
@@ -2097,7 +1819,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       </div>
       <div className="flex justify-between">
         <div>
-          {/*<button className="btn" onClick={onClickSave} disabled={isDisabled}>*/}
           <button className="btn" onClick={() => saveClick()} disabled={isDisabled}>
             保存
           </button>

@@ -22,8 +22,6 @@ class ImageController extends BaseController
    */
   public function __construct(ImageService $service)
   {
-    \Log::debug('デバッグ：ImageController.__construct');
-
     $this->service = $service;
   }
 
@@ -32,12 +30,7 @@ class ImageController extends BaseController
    */
   public function store(ImageStoreRequest $request)
   {
-    \Log::debug('ImageStoreRequest');
-    \Log::debug('$request->validated()');
-    \Log::debug($request->validated());
-
     $this->service->store($request->validated());
-
     return $this->success();
   }
 
@@ -61,24 +54,6 @@ class ImageController extends BaseController
     }
   }
 
-  //public function videoServerStore(Request $request){
-  //  $request->validate([
-  //      'video' => 'required|mimetypes:video/mp4, video/quicktime, video/avi, video/mpeg|max:51200', // 最大50MB
-  //      'filename' => 'nullable|string',
-  //  ]);
-//
-  //  $filename = $request->input('filename');
-  //  $path = 'images/' . $filename;
-//
-  //  if (!(Storage::disk('public')->exists($path))) {
-  //    $file = $request->file('video');
-  //    $filename = $request->input('filename') ?? uniqid() . '.' . $file->getClientOriginalExtension();
-  //    $path = $file->storeAs('images', $filename, 'public');
-  //    return response()->json(['path' => $path], 201);
-  //  }else{
-  //    return response()->json(['path' => $path], 404);
-  //  }
-  //}
   public function videoServerStore(Request $request)
   {
     $request->validate([
@@ -118,11 +93,7 @@ class ImageController extends BaseController
    */
   public function update(ImageUpdateRequest $request, int $id)
   {
-    \Log::debug('ImageController.update');
-    \Log::debug($id);
-
     $this->service->update($id, $request->validated());
-
     return $this->success();
   }
 //
@@ -133,10 +104,7 @@ class ImageController extends BaseController
 //   */
   public function delete($id)
   {
-    \Log::debug('ImageController.delete');
-    \Log::debug($id);
     $this->service->delete($id);
-
     return $this->success();
   }
 }

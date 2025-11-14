@@ -37,7 +37,6 @@ const Template: Story<ItemDetailPageProps> = args => {
       success: true,
       data: {
         id: 1,
-        //item_number: ['A0001'],
         item_number: 'A0001',
         code: '',
         name: '商品名01',

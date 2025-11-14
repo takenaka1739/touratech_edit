@@ -43,11 +43,8 @@ const Template: Story<ItemSearchDialogProps & { props: number }> = args => {
     rows = Array.from(new Array(20)).map((v, i) => {
       return {
         id: i + 1,
-        //item_number: `01-000-0000-${i + 1}`,
-        //item_number: [],
         code: `01-000-0000-${i + 1}`,
         name: `商品名${i + 1}`,
-        //name_jp: `商品名JP${i + 1}`,
         name_note: `商品名JP${i + 1}`,
         sales_unit_price: 123456789.12,
         sales_price: 0,
@@ -57,7 +54,6 @@ const Template: Story<ItemSearchDialogProps & { props: number }> = args => {
         salesPriceItem: [],
         combination_id: undefined,
         purchase_unit_price: 4200,
-        //discontinued_date: undefined,
         discontinued_at: undefined,
         is_display: true,
         is_set_item: false,

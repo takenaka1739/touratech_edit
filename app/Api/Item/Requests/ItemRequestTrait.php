@@ -11,36 +11,7 @@ trait ItemRequestTrait
 {
   public function commonRules()
   {
-    \log::debug('ItemRequestTrait.commonRules');
-    
     return [
-      //'item_number' => [
-      //  'bail',
-      //  'required',
-      //  'string',
-      //  'max:50',
-      //  Rule::unique('items', 'item_number')->where(function ($q) {
-      //    return $q->whereNull('deleted_at');
-      //  })
-      //],
-      //'name' => 'required|string|max:400',
-      //'name_jp' => 'required|string|max:400',
-      //'name_label' => 'nullable|string|max:36',
-      //'category_id' => 'bail|nullable|integer|exists:item_classifications,id',
-      //'sales_unit_price' => 'nullable|numeric|price',
-      //'purchase_unit_price' => 'nullable|numeric|price',
-      //'sample_price' => 'nullable|numeric|price',
-      //'supplier_id' => 'required|integer|exists:suppliers,id',
-      //'is_discontinued' => 'required|boolean',
-      //'discontinued_date' => 'nullable|date',
-      //'is_display' => 'required|boolean',
-      //'stock_display' => [
-      //  'required',
-      //  'integer',
-      //  Rule::in([1, 2, 3]),
-      //],
-      //'remarks' => 'nullable|string|max:200',
-
       'supplier_id' => 'bail|nullable|integer|exists:m_suppliers,id',
       'consumption_tax_id' => 'bail|nullable|integer|exists:t_consumption_taxes,id',
       'code' => 'required|string|max:30',
@@ -79,7 +50,6 @@ trait ItemRequestTrait
       'is_shipping_fee' => 'required|boolean',
       'is_cash_delivery_fee' => 'required|boolean',
       'additional_shipping_fee' => 'nullable|numeric|price',
-      'is_special_sale' => 'required|boolean',
       'is_point_rebates' => 'required|boolean',
       'is_payment_id1' => 'required|boolean',
       'is_payment_id2' => 'required|boolean',
@@ -88,7 +58,6 @@ trait ItemRequestTrait
       'is_payment_id5' => 'required|boolean',
       'shipping_pay' => 'nullable|numeric|price',
       'is_set_item' => 'required|boolean',
-      //'category_id' => 'bail|nullable|integer|exists:m_categories,id',
     ];
   }
 

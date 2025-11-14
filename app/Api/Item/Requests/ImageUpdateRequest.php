@@ -13,8 +13,6 @@ class ImageUpdateRequest extends BaseRequest
 
   public function rules()
   {
-    \Log::debug('デバッグ：ImageUpdateRequest');
-
     return $this->commonRules();
   }
 }

@@ -188,6 +188,7 @@ return [
         App\Api\Item\ItemServiceProvider::class,
         App\Api\SetItem\SetItemServiceProvider::class,
         App\Api\Coupon\CouponServiceProvider::class,
+        App\Api\Calendar\CalendarServiceProvider::class,
         App\Api\TopImage\TopImageServiceProvider::class,
         App\Api\info\InfoServiceProvider::class,
         App\Api\Estimate\EstimateServiceProvider::class,

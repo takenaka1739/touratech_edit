@@ -29,8 +29,6 @@ class ItemController extends BaseController
    */
   public function __construct(ItemService $service)
   {
-    \log::debug('デバッグ：ItemController.__construct');
-
     $this->service = $service;
   }
 
@@ -95,9 +93,6 @@ class ItemController extends BaseController
    */
   public function store(ItemStoreRequest $request)
   {
-    //$this->service->store($request->validated());
-    //return $this->success();
-
     $newId = $this->service->store($request->validated());
 
     return response()->json([
@@ -113,11 +108,7 @@ class ItemController extends BaseController
    */
   public function update(ItemUpdateRequest $request, int $id)
   {
-    \log::debug('デバッグ：ItemController.update');
-    \log::debug($request->validated());
-
     $this->service->update($id, $request->validated());
-
     return $this->success();
   }
 

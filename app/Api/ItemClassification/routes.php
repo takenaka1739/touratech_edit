@@ -3,9 +3,6 @@
 namespace App\Api\ItemClassification\Controllers;
 
 use Illuminate\Support\Facades\Route;
-
-  \Log::debug('デバッグ：ItemClassification.Route');
-
 Route::group([
   'prefix' => 'api/item_classification',
   'middleware' => ['api', 'auth', 'check.general']

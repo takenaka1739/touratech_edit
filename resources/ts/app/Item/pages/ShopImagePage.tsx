@@ -1,18 +1,7 @@
-//import { useState } from 'react';
-//import { RouteComponentProps } from 'react-router-dom';
-//import { forEach } from 'lodash';
-//import { forEach } from 'lodash';
+
 import { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-//import { useCallback, useRef, useMemo, useState } from 'react';
-//import { useMemo } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-//import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
-//import { Item } from '@/types';
-//import SimpleBar from 'simplebar-react';
 import { useLocation, useHistory } from 'react-router-dom';
-//import { TableScrollbar } from 'react-table-scrollbar';
-//import { ScrollView} from 'react-native';
-//import { useNavigate } from "react-router-dom";
 
 export type ItemDetailPageProps = {};
 

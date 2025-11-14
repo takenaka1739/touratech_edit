@@ -53,7 +53,6 @@
  * @param is_shipping_fee
  * @param is_cash_delivery_fee
  * @param additional_shipping_fee
- * @param is_special_sale
  * @param is_payment_id1
  * @param is_payment_id2
  * @param is_payment_id3
@@ -62,30 +61,9 @@
  */
 
 export interface Item {
-  //id: number | undefined;
-  //item_number?: string | undefined;
-  //name?: string | undefined;
-  //name_jp: string | undefined;
-  //name_label?: string | undefined;
-  //category_id?: number | undefined;
-  //item_classification_name?: string | undefined;
-  //sales_unit_price: number | undefined;
-  //purchase_unit_price?: number | undefined;
-  //sample_price?: number | undefined;
-  //supplier_id?: number | undefined;
-  //supplier_name?: string | undefined;
-  //is_discontinued?: boolean | undefined;
-  //discontinued_date: string | undefined;
-  //is_display: boolean | undefined;
-  //is_set_item: boolean | undefined;
-  //domestic_stock?: number | undefined;
-  //overseas_stock?: number | undefined;
-  //stock_display?: number | undefined;
-  //remarks?: string | undefined;
 
   id: number | undefined;
   supplier_id?: number | undefined;
-  //consumption_tax_id?: number | undefined;
   code: string | undefined;
   name: string | undefined;
   item_number: string | undefined;
@@ -116,7 +94,6 @@ export interface Item {
   is_shipping_fee?: boolean | undefined;
   is_cash_delivery_fee?: boolean | undefined;
   additional_shipping_fee?: number | undefined;
-  is_special_sale?: boolean | undefined;
   is_payment_id1?: boolean | undefined;
   is_payment_id2?: boolean | undefined;
   is_payment_id3?: boolean | undefined;
