@@ -713,12 +713,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const store: (url: string) => Promise<any> = async url => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${url}`, state);
+    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
         return res;
       } else {
-        //setErrors(res.data.errors);
+        setErrors(res.data.errors);
+        return false;
       }
     } else {
       dispatch(AppActions.failed('データの保存に失敗しました。'));
@@ -887,6 +889,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if (curd === 'store') {
       res = await store(url);
     }
+
+    console.log(res);
     return {success: res.data.success, id: res.data.id};
   }
 
