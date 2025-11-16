@@ -33,8 +33,6 @@ export const ItemListPage: React.VFC = () => {
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
         <td>
-          {console.log(r)}
-          {console.log(r.variations1)}
           {/*<div className="text-xs">{r.item_number}</div>*/}
           <div className="text-xs">{r.itemNumberItem}</div>
           <div>{r.name + '　' +
