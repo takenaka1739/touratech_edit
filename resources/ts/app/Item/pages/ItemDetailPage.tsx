@@ -904,17 +904,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if(itemSaveRes.success){
       //if(crud === 'store') state.item_id = itemSaveRes.id;
       state.item_id = itemSaveRes.id;
-      //setState(prev => ({
-      //  ...prev,
-      //  variItems: prev.variItems.map((row, rowIndex) =>
-      //    rowIndex === select
-      //      ? row.map((cell, colIndex) =>
-      //          colIndex === selectIndex ? String(event.target.value) : cell
-      //        )
-      //      : row
-      //  ),
-      //}));
-      
+      setState(prev => ({
+        ...prev,
+        item_id: itemSaveRes.id
+      }));
+
       // カテゴリーの保存
       const categorySaveRes = await categorySave("item/category_store", 'store');
       // 特売設定の保存
