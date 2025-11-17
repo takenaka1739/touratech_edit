@@ -8,6 +8,7 @@ use App\Api\Item\Requests\ImageUpdateRequest;
 use App\Api\Item\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 /**
  * 商品分類マスタ
@@ -42,12 +43,15 @@ class ImageController extends BaseController
     ]);
 
     $filename = $request->input('filename');
-    $path = 'images/' . $filename;
+    //$path = 'images/' . $filename;
+    $path = public_path('images/' . $filename);
 
-    if (!(Storage::disk('public')->exists($path))) {
+    //if (!(Storage::disk('public')->exists($path))) {
+    if (!File::exists($path)) {
       $file = $request->file('image');
       $filename = $request->input('filename') ?? uniqid() . '.' . $file->getClientOriginalExtension();
-      $path = $file->storeAs('images', $filename, 'public');
+      //$path = $file->storeAs('images', $filename, 'public');
+      $path = $file->move(public_path('images'), $filename);
       return response()->json(['path' => $path], 201);
     }else{
       return response()->json(['path' => $path], 200);
@@ -74,10 +78,12 @@ class ImageController extends BaseController
     $path = 'images/' . $filename;
     $storedPath = $path;
 
-    if (!Storage::disk('public')->exists($path)) {
-        $storedPath = $file->storeAs('images', $filename, 'public');
+    //if (!Storage::disk('public')->exists($path)) {
+    if (!File::exists($path)) {
+        //$storedPath = $file->storeAs('images', $filename, 'public');
+        $storedPath = $file->move(public_path('images'), $filename);
         if (!$storedPath) {
-            return response()->json(['error' => '保存に失敗しました'], 500);
+          return response()->json(['error' => '保存に失敗しました'], 500);
         }
         return response()->json(['path' => $storedPath], 201);
     } else {

@@ -25,7 +25,7 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
   const [dropErea, setDropErea] = useState("ファイルドロップまたはURLを入力して下さい");
   const [selectImageSrc, setImageSrc] = useState('');
   const [selectImageType, setImageType] = useState(-1);
-  const [files, setFiles] = useState<any[]>(Array.isArray(location.state?.imageItems) ? location.state.imageItems[0] : ['','']);
+  const [files, setFiles] = useState<any[]>(Array.isArray(location.state?.imageItems) ? location.state.imageItems[0] : ['']);
   const [clicked, setClicked] = useState(false);
   const [SelectImage, setSelectImage] = useState('');
 
