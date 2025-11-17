@@ -291,7 +291,8 @@ class ItemService
           if(preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)){
             array_push($ss, $item->name);
           }else{
-            array_push($ss, 'http://localhost:8081/storage/images/' . $item->name);
+            //array_push($ss, 'http://localhost:8081/storage/images/' . $item->name);
+            array_push($ss, '/images/' . $item->name);
           }
         }
       }
@@ -478,7 +479,7 @@ class ItemService
       }
     }
 
-    
+
     $c_is_display = $cond->get('c_is_display');
     if ($c_is_display !== "none") {
       $query->where('is_display', $c_is_display === "1");

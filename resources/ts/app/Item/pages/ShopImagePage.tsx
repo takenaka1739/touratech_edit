@@ -297,62 +297,9 @@ useEffect(() => {
   }
 
   const addMovie = () => {
-    //setFiles((current) => current.concat(movieUrl));
-    //setMovieUrl('');
-
     if (movieUrl.trim() === '') return;
     setFiles((current) => current.concat(movieUrl));
     setMovieUrl('');
-
-    //if (Array.isArray(edtImageItems)) {
-    //  edtImageItems.forEach((item: any, index: number) => {
-    //    if (item[0] === selectId) {
-    //      const updatedMatrix = edtImageItems.filter((_: any, idx: number) => idx !== index);
-    //      const a = edtImageItems[index].concat(movieUrl);
-    //      console.log(a);
-    //      const addItem = [...updatedMatrix.slice(0, index), a, ...updatedMatrix.slice(index)];
-    //      setEdtImageItems(addItem);
-    //    }else{
-    //    }
-    //  });
-    //}else{
-    //  //const a = edtImageItems[index].concat(addFiles);
-    //  //const addItem = [...updatedMatrix.slice(0, index), a, ...updatedMatrix.slice(index)];
-    //  //setEdtImageItems(addFiles);
-    //}
-
-    //if (Array.isArray(edtImageItems)) {
-    //  const index = edtImageItems.findIndex((item: any) => item[0] === selectId);
-    //  if (index !== -1) {
-    //    const updatedItem = edtImageItems[index].concat(movieUrl);
-    //    console.log(updatedItem);
-    //    const updatedMatrix = edtImageItems.map((item: any, idx: number) =>
-    //      idx === index ? updatedItem : item
-    //    );
-    //    setEdtImageItems(updatedMatrix);
-    //  }
-    //} else {
-    //  // setEdtImageItems([addFiles]); // 必要に応じて
-    //}
-
-    //if (Array.isArray(edtImageItems)) {
-    //  const index = edtImageItems.findIndex((item: any) => item[0] === selectId);
-    //  if (index !== -1) {
-    //    const updatedItem = edtImageItems[index].concat(movieUrl);
-    //    const updatedMatrix = edtImageItems.map((item: any, idx: number) =>
-    //      idx === index ? updatedItem : item
-    //    );
-    //    setEdtImageItems(updatedMatrix);
-    //  } else {
-    //    // selectId に一致する item が存在しない場合、新しく追加
-    //    const newItem = [selectId, movieUrl];
-    //    setEdtImageItems([...edtImageItems, newItem]);
-    //  }
-    //} else {
-    //  // edtImageItems が null や undefined の場合、初期化して追加
-    //  const newItem = [selectId, movieUrl];
-    //  setEdtImageItems([newItem]);
-    //}
 
     if (Array.isArray(edtImageItems)) {
       const index = edtImageItems.findIndex((item: any) => item[0] === selectId);
@@ -390,7 +337,7 @@ useEffect(() => {
         const updatedMatrix = edtImageItems.filter((_:any, idx:number) => idx !== index);
         // 編集行の再追加
         const addItem = [...updatedMatrix.slice(0, index), delFile, ...updatedMatrix.slice(index)];
-        fileItem.push(item[0], targetName.replace("http://localhost:8081/storage/images/", ""));
+        fileItem.push(item[0], targetName.replace("public/images/", ""));
         //const addFileItem = [...delimageItem, fileItem];
         // 更新
         setEdtImageItems(addItem); // 内部データの配列更新
