@@ -897,12 +897,24 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   }
 
   // 保存処理
-  const storeSavaItem: (variIndex:string | number | null, crud: string) => Promise<boolean> = async (variIndex, crud) => {
+  const storeSavaItem: (variIndex:string | number | null, crud: string) => Promise<boolean> = async (variIndex) => {
     let reFlag = false;
     const itemSaveRes = await itemSave("item/store", 'store');
     // 項目の保存
     if(itemSaveRes.success){
-      if(crud === 'store') state.item_id = itemSaveRes.id;
+      //if(crud === 'store') state.item_id = itemSaveRes.id;
+      state.item_id = itemSaveRes.id;
+      //setState(prev => ({
+      //  ...prev,
+      //  variItems: prev.variItems.map((row, rowIndex) =>
+      //    rowIndex === select
+      //      ? row.map((cell, colIndex) =>
+      //          colIndex === selectIndex ? String(event.target.value) : cell
+      //        )
+      //      : row
+      //  ),
+      //}));
+      
       // カテゴリーの保存
       const categorySaveRes = await categorySave("item/category_store", 'store');
       // 特売設定の保存
