@@ -755,12 +755,27 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     let type:any = null;
     let fileName:string = '';
     // 画像編集があった場合
+    console.log(location.state);
       if((location.state !== undefined)){
+        console.log(location.state !== undefined);
         if(location.state.imageItem !== undefined){
+          console.log(location.state.imageItem !== undefined);
           const filtered = location.state.imageItem.length > 1
                            ? location.state.imageItem.filter((row: any[]) => row[0] === variIndex)
                            : location.state.imageItem;
           // 画像保存の商品が複数ある場合
+          console.log((Array.isArray(filtered)));
+          console.log((filtered.length > 0));
+          console.log('filtered');
+          console.log(filtered);
+          console.log('filtered[0][2]');
+          console.log(filtered[0][2]);
+          console.log((filtered[0][2] !== undefined));
+          console.log('filtered[0][1]');
+          console.log(filtered[0][1]);
+          console.log((filtered[0][1] !== undefined));
+          console.log(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][2] !== undefined)));
+          // 新規追加
           if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][2] !== undefined))){
             const rows = filtered[0];
             for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
@@ -774,6 +789,65 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               if(type === 'object'){
                 const hasYoutube = rows[rowIndex].name.includes("youtube.com");
                 res = await axios.post(`/api/item/image_store`, image);
+                console.log(res);
+                if(((res.data.success) && (hasYoutube === false))){
+                  const formData = new FormData();
+                  const kaku = fileName.split('.').pop();
+                  if(kaku === 'mp4' || kaku === 'mov'){
+                    formData.append('video', rows[rowIndex]);
+                    formData.append('filename', rows[rowIndex].name); // 任意のファイル名
+                    serverRes = await axios.post('/api/item/video_server_store', formData, {headers: {'Content-Type': 'multipart/form-data',}});
+                  }else{
+                    formData.append('image', rows[rowIndex]);
+                    formData.append('filename', rows[rowIndex].name); // 任意のファイル名
+                    serverRes = await axios.post('/api/item/image_server_store', formData, {headers: {'Content-Type': 'multipart/form-data'}});
+                  }
+                }
+              // データ型がstringの場合は既存ファイルの為、updata処理
+              }else if(type === 'string'){
+                // 既存ファイルかの確認（IDとファイル名）
+                const matchedItems = state.imageList.filter(item => (item[1] === rows[0]) && (item[2] === fileName)).sort((a, b) => b[3] - a[3]);
+                if(matchedItems.length > 0){
+                  for (let index = 0; index < matchedItems.length; index++){
+                    if(matchedItems[index][3] !== rowIndex){
+                      const image: imageItem = { id: matchedItems[index][0], category_id: null, item_id: state.item_id, name: fileName,
+                                                 order_by: rowIndex, url: ''};
+                      res = await axios.put(`/api/item/image_update/${matchedItems[index][0]}`, image);
+                      if(res.data.success === 200){
+                        serverRes.status = 201;
+                      }
+                    }
+                  }
+                }else{
+                  // データベースに情報がなく、youtubeだったら新規登録
+                  const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
+                  const hasYoutube = rows[rowIndex].includes("youtube.com");
+                  if(hasYoutube){
+                    res = await axios.post(`/api/item/image_store`, image);
+                    if(res.data.success === 200){
+                      serverRes.status = 201;
+                    }
+                  }
+                }
+              }else{
+                serverRes.status = 201;
+              }
+            }
+          // 編集
+          }else if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][1] !== undefined))){
+            const rows = filtered[0];
+            for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+              // データ型の取得
+              type = typeof rows[rowIndex];
+              //データ型がナンバー以外で、stringの時は/images/を切り取ったファイル名、objectの場合はnameでファイル名を取得
+              if(type !== 'number') fileName = type === 'string' ? rows[rowIndex].replace('/images/', '')
+                                             : type === 'object' ? rows[rowIndex].name : '';
+              const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
+              // データ型がobjectの場合は新規ファイルの為、store処理
+              if(type === 'object'){
+                const hasYoutube = rows[rowIndex].name.includes("youtube.com");
+                res = await axios.post(`/api/item/image_store`, image);
+                console.log(res);
                 if(((res.data.success) && (hasYoutube === false))){
                   const formData = new FormData();
                   const kaku = fileName.split('.').pop();
@@ -819,6 +893,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             }
           }else{
             const hasNew = typeof variIndex === "string" && variIndex?.toLowerCase().includes("new");
+            console.log('hasNew');
+            console.log(hasNew);
             if(hasNew) serverRes.status = 201;
           }
         }
@@ -903,11 +979,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     // 項目の保存
     if(itemSaveRes.success){
       //if(crud === 'store') state.item_id = itemSaveRes.id;
+      console.log();
       state.item_id = itemSaveRes.id;
-      setState(prev => ({
-        ...prev,
-        item_id: itemSaveRes.id
-      }));
+      //setState(prev => ({
+      //  ...prev,
+      //  item_id: itemSaveRes.id
+      //}));
 
       // カテゴリーの保存
       const categorySaveRes = await categorySave("item/category_store", 'store');
@@ -958,19 +1035,31 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
     }else if(pattern === '5'){
+      console.log('pattern');
+      console.log(pattern);
       state.item_id = Number(variIndex);
 
       itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
+      console.log('itemSaveFlag');
+      console.log(itemSaveFlag);
       if(itemSaveFlag){
         if(((state.combination_id !== null) && (state.combination_id !== undefined))){
           categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
+          console.log('itemSaveFlag');
+          console.log(itemSaveFlag);
         }else{
           categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
+          console.log('itemSaveFlag');
+          console.log(itemSaveFlag);
         }
       }
 
       imgSaveFlag = await imageSave(Number(state.id));
+      console.log('imgSaveFlag');
+      console.log(imgSaveFlag);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      console.log('specialSaleSaveFlag');
+      console.log(specialSaleSaveFlag);
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
     }
 
