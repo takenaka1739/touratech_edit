@@ -45,6 +45,8 @@ class ImageController extends BaseController
     $filename = $request->input('filename');
     //$path = 'images/' . $filename;
     $path = public_path('images/' . $filename);
+    \log::debug('保存先URL');
+    \log::debug($path);
 
     //if (!(Storage::disk('public')->exists($path))) {
     if (!File::exists($path)) {
@@ -52,6 +54,8 @@ class ImageController extends BaseController
       $filename = $request->input('filename') ?? uniqid() . '.' . $file->getClientOriginalExtension();
       //$path = $file->storeAs('images', $filename, 'public');
       $path = $file->move(public_path('images'), $filename);
+      \log::debug('レスポンス');
+      \log::debug($path);
       return response()->json(['path' => $path], 201);
     }else{
       return response()->json(['path' => $path], 200);

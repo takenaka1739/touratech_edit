@@ -750,6 +750,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   const imageSave = async (variIndex:string | number | null): Promise<boolean> => {
+    console.log('データ');
+    console.log(state);
     let res: any = {};
     let serverRes: any = {};
     let type:any = null;
