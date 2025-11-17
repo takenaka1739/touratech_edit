@@ -764,7 +764,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                            : location.state.imageItem;
           // 画像保存の商品が複数ある場合
           // 新規追加
-          if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][2] !== undefined))){
+          if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][1] !== undefined))){
             const rows = filtered[0];
             for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
               let hasYoutube = false; 
@@ -778,6 +778,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               if(type === 'object'){
                 hasYoutube = rows[rowIndex].name.includes("youtube.com");
                 res = await axios.post(`/api/item/image_store`, image);
+                console.log(res);
                 if(((res.data.success) && (hasYoutube === false))){
                   const formData = new FormData();
                   const kaku = fileName.split('.').pop();
@@ -899,6 +900,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         // 処理なしなのでtrue
         serverRes.status = 201;
       }
+      console.log(serverRes);
     return serverRes.status === 201 || serverRes.status === 200;
   }
 
