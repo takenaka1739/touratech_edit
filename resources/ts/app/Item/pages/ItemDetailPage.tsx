@@ -490,6 +490,15 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       ),
     }));
 
+    setState(prev => {
+      return {
+        ...prev,
+        	sales_price: Number(event.target.value)
+      };
+    });
+
+          sales_price: event.target.value,
+
     setState(prev => ({
       ...prev,
       variItems: prev.variItems.map((row, rowIndex) =>

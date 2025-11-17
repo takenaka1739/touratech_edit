@@ -399,6 +399,8 @@ class ItemService
       $m->number_reservations = $data->get('number_reservations');
       $m->is_shipping_fee = $data->get('is_shipping_fee');
       $m->shipping_pay = $data->get('shipping_pay');
+      $m->is_sell = $data->get('is_sell');
+      $m->is_cash_delivery_fee = $data->get('is_cash_delivery_fee');
 
       $m->is_display = $data->get('is_display');
       $m->remarks = $data->get('remarks');
