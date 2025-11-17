@@ -683,6 +683,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       if (res.data.success) {
         return true;
       } else {
+        setErrors(res.data.errors);
         return false;
       }
     } else {
@@ -698,7 +699,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       if (res.data.success) {
         return true;
       } else {
-        //setErrors(res.data.errors);
+        setErrors(res.data.errors);
+        return false;
       }
     } else {
       dispatch(AppActions.failed('データの保存に失敗しました。'));
@@ -713,7 +715,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const store: (url: string) => Promise<any> = async url => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${url}`, state);
-    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
@@ -738,6 +739,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       } else {
         if (res.data.errMsg) {
           await appAlert(res.data.errMsg, 'error');
+          return false;
         }
         //setErrors(res.data.errors);
       }
@@ -902,7 +904,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if(itemSaveRes.success){
       if(crud === 'store') state.item_id = itemSaveRes.id;
       // カテゴリーの保存
-      const categorySaveRes = await categorySave("item/category_store", crud);
+      const categorySaveRes = await categorySave("item/category_store", 'store');
       // 特売設定の保存
       const specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
       // 画像の保存
