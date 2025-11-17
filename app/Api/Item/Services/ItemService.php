@@ -285,7 +285,7 @@ class ItemService
     foreach($idList as $id){
       $ss = [];
       array_push($ss, $id);
-      foreach(Image::where('item_id', '=', $id)->get() as $item){
+      foreach(Image::where('item_id', '=', $id)->whereNull('deleted_at')->get() as $item){
         if($item->name != null && $item->name != ''){
           array_push($ssss, [$item->id, $id, $item->name, $item->order_by]);   // m_imagesの管理ID, item_id, ファイル名の順番
           if(preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)){

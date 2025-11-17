@@ -711,7 +711,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   const history = useHistory();
   const backPage = () => history.push(`/item`);
-
   const store: (url: string) => Promise<any> = async url => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${url}`, state);
@@ -758,6 +757,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     let fileName:string = '';
     // 画像編集があった場合
       if((location.state !== undefined)){
+        let hasYoutube = false; 
         if(location.state.imageItem !== undefined){
           const filtered = location.state.imageItem.length > 1
                            ? location.state.imageItem.filter((row: any[]) => row[0] === variIndex)
@@ -767,7 +767,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][1] !== undefined))){
             const rows = filtered[0];
             for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-              let hasYoutube = false; 
+              //let hasYoutube = false; 
               // データ型の取得
               type = typeof rows[rowIndex];
               //データ型がナンバー以外で、stringの時は/images/を切り取ったファイル名、objectの場合はnameでファイル名を取得
@@ -776,10 +776,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
               // データ型がobjectの場合は新規ファイルの為、store処理
               if(type === 'object'){
-                hasYoutube = rows[rowIndex].name.includes("youtube.com");
                 res = await axios.post(`/api/item/image_store`, image);
+                console.log('782：res');
                 console.log(res);
-                if(((res.data.success) && (hasYoutube === false))){
+                hasYoutube = rows[rowIndex].name.includes("youtube.com");
+                if(((res.data.success) && (!hasYoutube))){
                   const formData = new FormData();
                   const kaku = fileName.split('.').pop();
                   if(kaku === 'mp4' || kaku === 'mov'){
@@ -797,6 +798,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 // データ型がstringで"youtube.com"の文字がない場合は既存ファイルの為、updata処理
                 // 既存ファイルかの確認（IDとファイル名）
                 const matchedItems = state.imageList.filter(item => (item[1] === rows[0]) && (item[2] === fileName)).sort((a, b) => b[3] - a[3]);
+                
                 if((matchedItems.length > 0) && (hasYoutube === false)){
                   for (let index = 0; index < matchedItems.length; index++){
                     if(matchedItems[index][3] !== rowIndex){
@@ -808,12 +810,19 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                       }
                     }
                   }
-                }else{
+                }else if(hasYoutube){
+                  console.log('816：fileName');
+                  console.log(fileName);
+                  console.log('818：hasYoutube');
+                  console.log(hasYoutube);
                   // データベースに情報がなく、youtubeだったら新規登録
-                  const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
-                  //const hasYoutube = rows[rowIndex].includes("youtube.com");
+                  const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName + 'test', order_by: rowIndex, url: ''};
+                  console.log('815：youtubeの保存だよ');
+                  hasYoutube = rows[rowIndex].includes("youtube.com");
                   if(hasYoutube){
                     res = await axios.post(`/api/item/image_store`, image);
+                    console.log('res');
+                    console.log(res);
                     if(res.data.success){
                       serverRes.status = 201;
                     }
@@ -835,9 +844,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
               // データ型がobjectの場合は新規ファイルの為、store処理
               if(type === 'object'){
-                const hasYoutube = rows[rowIndex].name.includes("youtube.com");
                 res = await axios.post(`/api/item/image_store`, image);
-                if(((res.data.success) && (hasYoutube === false))){
+                console.log('843：res');
+                console.log(res);
+                hasYoutube = rows[rowIndex].name.includes("youtube.com");
+                if(((res.data.success) && (!hasYoutube))){
                   const formData = new FormData();
                   const kaku = fileName.split('.').pop();
                   if(kaku === 'mp4' || kaku === 'mov'){
@@ -852,9 +863,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 }
               // データ型がstringの場合は既存ファイルの為、updata処理
               }else if(type === 'string'){
+                hasYoutube = rows[rowIndex].includes("youtube.com");
                 // 既存ファイルかの確認（IDとファイル名）
                 const matchedItems = state.imageList.filter(item => (item[1] === rows[0]) && (item[2] === fileName)).sort((a, b) => b[3] - a[3]);
-                if(matchedItems.length > 0){
+                if((matchedItems.length > 0) && (hasYoutube === false)){
                   for (let index = 0; index < matchedItems.length; index++){
                     if(matchedItems[index][3] !== rowIndex){
                       const image: imageItem = { id: matchedItems[index][0], category_id: null, item_id: state.item_id, name: fileName,
@@ -868,8 +880,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 }else{
                   // データベースに情報がなく、youtubeだったら新規登録
                   const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
-                  const hasYoutube = rows[rowIndex].includes("youtube.com");
+                  hasYoutube = rows[rowIndex].includes("youtube.com");
                   if(hasYoutube){
+                    console.log('876：youtubeの保存だよ');
                     res = await axios.post(`/api/item/image_store`, image);
                     if(res.data.success === 200){
                       serverRes.status = 201;
@@ -889,8 +902,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         // 削除されたデータあった場合
         if(location.state.delimageItem.length !== 0){
           for (const delItem of location.state.delimageItem ?? []){
-            const matchedItems = state.imageList.filter(item => ((item[1] === delItem[0]) && (item[2] === delItem[1])));
-
+            hasYoutube = delItem[1].includes("youtube.com");
+            let fileName = '';
+            if(!hasYoutube) fileName = delItem[1].replace('/images/', '');
+            else fileName = delItem[1];
+            //const matchedItems = state.imageList.filter(item => ((item[1] === delItem[0]) && (item[2] === delItem[1])));
+            const matchedItems = state.imageList.filter(item => ((item[1] === delItem[0]) && (item[2] === fileName)));
             if (matchedItems.length > 0 && matchedItems[0][0] !== undefined) {
               await destroy(`/api/item/image_delete/${Number(matchedItems[0][0])}`);
             }
@@ -1671,7 +1688,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                         ) : null
                       )
                     }
-                    <button className="btn-delete" style={{ marginLeft:'1px', height: '26px', paddingTop: '0px', paddingBottom: '0px'}}
+                    <button type="button" className="btn-delete" style={{ marginLeft:'1px', height: '26px', paddingTop: '0px', paddingBottom: '0px'}}
                             onClick={() => delButton(itemIndex)} disabled={isDisabled}>
                       削除
                     </button>

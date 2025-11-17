@@ -29,44 +29,16 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
   const [clicked, setClicked] = useState(false);
   const [SelectImage, setSelectImage] = useState('');
 
-  //const [variButton, setVariButton] = useState('');
-  //const [files, setFiles] = useState<any[]>(
-  //  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
-  //    ? location.state.imageItems
-  //    : ['', ''] // 初期要素を追加（必要に応じて内容を変更）
-  //);
-  //const [files, setFiles] = useState<any[]>(
-  //  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
-  //    ? location.state.imageItems : Array.isArray(location.state.variItems)
-  //    ? Array.from({ length: variKindItem.length }, () => ['']) : ['', '']// variKindItemの数だけ [''] を作成
-  //);
-
-  //const [edtImageItems, setEdtImageItems] = useState(Array.isArray(location.state?.imageItems) ? location.state.imageItems : [['', '']]);
-  //const [edtImageItems, setEdtImageItems] = useState(
-  //  Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
-  //    ? location.state.imageItems : Array.isArray(location.state.variItems)
-  //    ? [['', '']].concat(Array.from({ length: variKindItem.length }, () => [''])) : [['', '']]);
-  //const [edtImageItems, setEdtImageItems] = useState(
-  //  Array.isArray(location.state?.imageItems) ? location.state.imageItems : 
-  //  Array.isArray(location.state.variItems) ? location.state.variItems.forEach((value:any) => 
-  //    {
-  //      setEdtImageItems((prev:any) => [...(prev || []), [value[0]]])
-  //    }) : [['', '']]
-  //);
-
 const [selectId, setSelectId] = useState(
   Array.isArray(location.state?.imageItems) && location.state.imageItems.length > 0
     ? location.state.imageItems[0][0]
     : null
 );
 
-const [selectIndex, setSelectIndex] = useState(0);
+console.dir('files');
+console.dir(files);
 
-//const [edtImageItems, setEdtImageItems] = useState<any[][]>(
-//  Array.isArray(location.state?.imageItems)
-//    ? location.state.imageItems
-//    : [['', '']]
-//)
+const [selectIndex, setSelectIndex] = useState(0);
 
 const variItems = Array.isArray(location.state?.variItems)
   ? location.state.variItems
@@ -101,9 +73,7 @@ useEffect(() => {
   }
 }, [])
 
-  //const [selectId, setSelectId] = useState(location.state.imageItems[0][0]);
   const [delimageItem, setDelImageItem] = useState<string[][]>([]);
-  //const [selectVari, setSelectVari] = useState(0);
   const history = useHistory();
 
   // 各入力欄の値設定
@@ -143,7 +113,6 @@ useEffect(() => {
         return variChangeItem.map((row:any) => {
           if (row[0] === selectId) {
             const newRow = [...row];
-            //location.state.preVariItem.find((row: any) => row[0] === selectId)[6] = priceText;
             newRow[6] = priceText;
             console.dir(location.state.preVariItem);
             return newRow;
@@ -213,10 +182,6 @@ useEffect(() => {
     e.preventDefault();
     e.stopPropagation();
 
-    //if(files.length === 0){
-    //  setFiles(['']);
-    //}
-
     const addFiles = Array.from(e.dataTransfer.items)
       .map((item) => item.getAsFile())
       .filter((file): file is File => file !== null);
@@ -282,14 +247,6 @@ useEffect(() => {
     //setselectImage({pTag:'hidden', imgvisible:imgvisible, vdovisible:vdovisible});
   };
 
-  //const imageConversion = async (uuid: string): Promise<string> => {
-  //  const res = await fetch(`/api/file-info/${uuid}`);
-  //  const data = await res.json();
-  //  return data.filename;
-  //};
-
-
-
   const youtubeClick = (src:string, type:number) => {
     setImageSrc(src);
     setImageType(type);
@@ -321,34 +278,48 @@ useEffect(() => {
   }
 
   const removeFileByName = (targetName: string) => {
+    console.log('targetName');
     console.log(targetName);
+    console.dir('edtImageItems');
     console.dir(edtImageItems);
     edtImageItems.map((item:any, index:number) => {
       let fileItem: string[] = [];
       if(item[0] === files[0]){
+        console.log('item[0]');
+        console.log(item[0]);
         let delFile = [];
         // 該当ファイルの削除処理
         if(targetName.includes("blob:")){
           delFile = edtImageItems[index].filter((file:File) => file.name !== SelectImage);
+          console.log('targetName.includes(blob:)');
         }else{
           delFile = edtImageItems[index].filter((file:string) => file !== targetName);
+          console.log('targetName.includes(blob:)のelse文');
+          console.dir(delFile);
         }
         // 編集行の削除
         const updatedMatrix = edtImageItems.filter((_:any, idx:number) => idx !== index);
         // 編集行の再追加
         const addItem = [...updatedMatrix.slice(0, index), delFile, ...updatedMatrix.slice(index)];
-        fileItem.push(item[0], targetName.replace("public/images/", ""));
+        //fileItem.push(item[0], targetName.replace("public/images/", ""));
+        fileItem.push(item[0], targetName.replace("/images/", ""));
+        console.log('fileItem');
+        console.log(fileItem);
         //const addFileItem = [...delimageItem, fileItem];
         // 更新
         setEdtImageItems(addItem); // 内部データの配列更新
         setFiles(delFile); // ユーザーに表示される部分の配列更新
         //setDelImageItem(addFileItem);
         setDelImageItem(prev => [...prev, fileItem]);
+        console.dir(addItem);
 
         setImageSrc('');
       }
     });
   };
+
+  console.dir(`delimageItem：`);
+  console.dir(delimageItem);
 
   const clickVariItem = (index:number) => {
     setSelectIndex(index);
@@ -359,26 +330,6 @@ useEffect(() => {
     }else{
       setFiles([]);
     }
-
-    //if (Array.isArray(edtImageItems)){
-    //  setFiles(edtImageItems[index]);
-    //  setSelectId(edtImageItems[index][0]);
-    //}else{
-    //  setFiles(['']);
-    //  setSelectId(variKindItem[index][0]);
-    //}
-
-    //setFiles(edtImageItems[index]);
-    //(edtImageItems[index][0]);
-    //if (Array.isArray(edtImageItems) && edtImageItems[index] && Array.isArray(edtImageItems[index])) {
-    //  console.log('if文の中');
-    //  setFiles(edtImageItems[index]);
-    //  setSelectId(edtImageItems[index][0]);
-    //}else{
-    //  if(edtImageItems[index] !== undefined) setSelectId(edtImageItems[index][0]);
-    //  else setSelectId(variKindItem[index][0]);
-    //  console.log('test');
-    //}
 
     if(Number(variKindItem[index][6]) >= 100) setpoint(String(Number(variKindItem[index][6]) / 100))
     else setpoint('0');
