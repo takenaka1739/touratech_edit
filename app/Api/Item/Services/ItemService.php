@@ -142,9 +142,6 @@ class ItemService
       'm_suppliers.id AS supplier_id',
       'm_suppliers.name AS supplier_name',
 
-      't_stocks.domestic_stocks AS domestic_stocks',
-      't_stocks.overseas_stocks AS overseas_stocks',
-
       't_special_sales.id AS special_sale_id',
       't_special_sales.item_id AS special_sale_item_id',
       't_special_sales.is_sales_members_only AS is_sales_members_only',
@@ -163,7 +160,7 @@ class ItemService
     ->leftJoin('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
     ->leftJoin('m_configs', 'm_items.supplier_id', '=', 'm_configs.id')
     ->leftJoin('m_suppliers', 'm_items.supplier_id', '=', 'm_suppliers.id')
-    ->leftJoin('t_stocks', 'm_items.id', '=', 't_stocks.item_id')
+
     ->leftJoin('t_special_sales', function ($join) {
         $join->on('m_items.id', '=', 't_special_sales.item_id')
     ->whereNull('t_special_sales.deleted_at');})
