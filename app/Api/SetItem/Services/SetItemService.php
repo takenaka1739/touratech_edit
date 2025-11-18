@@ -23,7 +23,8 @@ class SetItemService
     $query = Item::select(
       'm_items.item_number',
       'm_items.id',
-      'm_items.name_jp',
+      //'m_items.name_jp',
+      'm_items.name_note',
       'm_items.sales_unit_price',
       't_set_items.total_quantity',
     );
@@ -40,6 +41,7 @@ class SetItemService
    */
   public function fetch(array $cond)
   {
+    \Log::debug('fetch');
     $query = Item::select(
       'm_items.item_number',
       'm_items.id',
@@ -47,7 +49,6 @@ class SetItemService
       'm_items.sales_unit_price',
       't_set_items.total_quantity',
     );
-    //->leftJoin('t_set_items', 'm_items.id', '=', 't_set_items.item_id');
     $query = $this->setCondition($query, $cond);
     $query->orderBy('item_number', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -61,6 +62,7 @@ class SetItemService
    */
   public function get(int $id)
   {
+    \Log::debug('get');
     $data = Item::select(
       //'m_items.id',
       //'m_items.item_number',
@@ -165,7 +167,7 @@ class SetItemService
       $m->is_shipping_fee         = $data->has('is_shipping_fee') ? $data->get('is_shipping_fee') : false;
       $m->shipping_pay            = $data->has('shipping_pay') ? $data->get('shipping_pay') : null;
       $m->is_cash_delivery_fee    = $data->has('is_cash_delivery_fee') ? $data->get('is_cash_delivery_fee') : false;
-      $m->additional_shipping_fee = $data->has('additional_shipping_fee') ? $data->get('additional_shipping_fee') : null;
+      $m->additional_shipping_fee = $data->has('additional_shipping_fee') ? $data->get('additional_shipping_fee') : 0;
       $m->is_point_rebates        = $data->has('is_point_rebates') ? $data->get('is_point_rebates') : false;
       $m->is_payment_id1          = $data->has('is_payment_id1') ? $data->get('is_payment_id1') : false;
       $m->is_payment_id2          = $data->has('is_payment_id2') ? $data->get('is_payment_id2') : false;
@@ -229,7 +231,7 @@ class SetItemService
       $m->is_shipping_fee         = $data->has('is_shipping_fee') ? $data->get('is_shipping_fee') : false;
       $m->shipping_pay            = $data->has('shipping_pay') ? $data->get('shipping_pay') : null;
       $m->is_cash_delivery_fee    = $data->has('is_cash_delivery_fee') ? $data->get('is_cash_delivery_fee') : false;
-      $m->additional_shipping_fee = $data->has('additional_shipping_fee') ? $data->get('additional_shipping_fee') : null;
+      $m->additional_shipping_fee = $data->has('additional_shipping_fee') ? $data->get('additional_shipping_fee') : 0;
       $m->is_point_rebates        = $data->has('is_point_rebates') ? $data->get('is_point_rebates') : false;
       $m->is_payment_id1          = $data->has('is_payment_id1') ? $data->get('is_payment_id1') : false;
       $m->is_payment_id2          = $data->has('is_payment_id2') ? $data->get('is_payment_id2') : false;

@@ -671,7 +671,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             variItems: location.state.preVariItem,
             supplier_name: location.state.preState.supplier_name,
             supplier_id: location.state.preState.supplier_id,
-
           };
         });
       }
@@ -715,7 +714,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       dispatch(AppActions.failed('データの保存に失敗しました。'));
       return false;
     }
-    return res.data.success;
+    //return res.data.success;
   };
 
   const history = useHistory();
@@ -980,21 +979,25 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const storeSavaItem: (variIndex:string | number | null, crud: string) => Promise<boolean> = async (variIndex) => {
     let reFlag = false;
     const itemSaveRes = await itemSave("item/store", 'store');
+    let categorySaveRes: { success: boolean; id?: number } | null = null;
+    let specilSaleSaveRes: { success: boolean; id?: number } | null = null;
+    let imageSaveRes: boolean = false;
+
     // 項目の保存
     if(itemSaveRes.success){
-      //if(crud === 'store') state.item_id = itemSaveRes.id;
       state.item_id = itemSaveRes.id;
-      //setState(prev => ({
-      //  ...prev,
-      //  item_id: itemSaveRes.id
-      //}));
 
       // カテゴリーの保存
-      const categorySaveRes = await categorySave("item/category_store", 'store');
+      categorySaveRes = await categorySave("item/category_store", 'store');
+      if(categorySaveRes.success) {
+        specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
+      }else{
+
+      }
       // 特売設定の保存
-      const specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
+      specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
       // 画像の保存
-      const imageSaveRes = await imageSave(variIndex);
+      imageSaveRes = await imageSave(variIndex);
 
       reFlag = categorySaveRes.success && specilSaleSaveRes.success && imageSaveRes;
     }else{
