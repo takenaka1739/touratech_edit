@@ -758,8 +758,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   const imageSave = async (variIndex:string | number | null): Promise<boolean> => {
-    console.log('データ');
-    console.log(state);
     let res: any = {};
     let serverRes: any = {};
     let type:any = null;
@@ -768,8 +766,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     // 画像編集があった場合
       if((location.state !== undefined)){
         if(location.state.imageItem !== undefined){
-          console.log('location.state.imageItem');
-          console.log(location.state.imageItem);
           const filtered = location.state.imageItem.length > 1
                            ? location.state.imageItem.filter((row: any[]) => row[0] === variIndex)
                            : location.state.imageItem;
@@ -778,6 +774,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][1] !== undefined))){
             const rows = filtered[0];
             for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+              fileName = '';
               hasYoutube = false;
               //let hasYoutube = false; 
               // データ型の取得
@@ -786,8 +783,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               if(type !== 'number') fileName = type === 'string' ? rows[rowIndex].replace('/images/', '')
                                              : type === 'object' ? rows[rowIndex].name : '';
               const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
-              console.log('1');
-              console.log(fileName);
               // データ型がobjectの場合は新規ファイルの為、store処理
               if(type === 'object'){
                 hasYoutube = rows[rowIndex].name.includes("youtube.com");
@@ -799,8 +794,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     formData.append('video', rows[rowIndex]);
                     formData.append('filename', rows[rowIndex].name); // 任意のファイル名
                     serverRes = await axios.post('/api/item/video_server_store', formData, {headers: {'Content-Type': 'multipart/form-data',}});
-                    console.log('852：serverRes');
-                    console.log(serverRes);
                   }else{
                     formData.append('image', rows[rowIndex]);
                     formData.append('filename', rows[rowIndex].name); // 任意のファイル名
@@ -823,7 +816,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                       }
                     }
                   }
-                }else{
+                }else if((matchedItems.length < 1) && (hasYoutube)){
                   // データベースに情報がなく、youtubeだったら新規登録
                   const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
                   //const hasYoutube = rows[rowIndex].includes("youtube.com");
@@ -842,7 +835,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           }else if(((Array.isArray(filtered)) && (filtered.length > 0) && (filtered[0][1] !== undefined))){
             const rows = filtered[0];
             for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-              hasYoutube = false;
+              fileName = '';
+              //hasYoutube = false;
               // データ型の取得
               type = typeof rows[rowIndex];
               //データ型がナンバー以外で、stringの時は/images/を切り取ったファイル名、objectの場合はnameでファイル名を取得
@@ -860,8 +854,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     formData.append('video', rows[rowIndex]);
                     formData.append('filename', rows[rowIndex].name); // 任意のファイル名
                     serverRes = await axios.post('/api/item/video_server_store', formData, {headers: {'Content-Type': 'multipart/form-data',}});
-                    console.log('852：serverRes');
-                    console.log(serverRes);
                   }else{
                     formData.append('image', rows[rowIndex]);
                     formData.append('filename', rows[rowIndex].name); // 任意のファイル名
@@ -884,7 +876,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                       }
                     }
                   }
-                }else{
+                }else if((matchedItems.length < 1) && (hasYoutube)){
                   // データベースに情報がなく、youtubeだったら新規登録
                   const image: imageItem = { id: null, category_id: null, item_id: state.item_id, name: fileName, order_by: rowIndex, url: ''};
                   hasYoutube = rows[rowIndex].includes("youtube.com");
@@ -913,11 +905,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             let fileName = '';
             if(!hasYoutube) fileName = delItem[1].replace('/images/', '');
             else fileName = delItem[1];
-            //const matchedItems = state.imageList.filter(item => ((item[1] === delItem[0]) && (item[2] === delItem[1])));
             const matchedItems = state.imageList.filter(item => ((item[1] === delItem[0]) && (item[2] === fileName)));
-            state.imageList.filter(item => (console.log(`item[1] === delItem[0]：${item[1] === delItem[0]}`), 
-                                            console.log(`item[2] === delItem[1]：${item[2] === delItem[1]}`),
-                                            console.log(`item[2]：${item[2]}`), console.log(`delItem[1]：${delItem[1]}}`)));
             if (matchedItems.length > 0 && matchedItems[0][0] !== undefined) {
               await destroy(`/api/item/image_delete/${Number(matchedItems[0][0])}`);
             }
@@ -927,7 +915,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         // 処理なしなのでtrue
         serverRes.status = 201;
       }
-      console.log(serverRes);
     return serverRes.status === 201 || serverRes.status === 200;
   }
 
