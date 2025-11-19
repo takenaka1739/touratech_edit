@@ -19,12 +19,15 @@ class CombService
    */
   public function store(array $data)
   {
-    DB::transaction(function () use ($data) {
-      ItemCategoryCombination::create([
-              'category_id' => $data['category_id'],
-              'item_id' => $data['item_id'],
-          ]);
+    $newId = DB::transaction(function () use ($data) {
+      $item = ItemCategoryCombination::create([
+        'category_id' => $data['category_id'],
+        'item_id' => $data['item_id'],
+      ]);
+      return $item->id;
     });
+
+    return $newId;
   }
 
 /**
@@ -41,6 +44,18 @@ class CombService
       $m->item_id = $data->get('item_id');
       $m->category_id = $data->get('category_id');
       $m->save();
+    });
+  }
+
+  /**
+   * 削除
+   *
+   * @param int $id 商品分類ID
+   */
+  public function delete(int $id)
+  {
+    DB::transaction(function () use ($id) {
+      ItemCategoryCombination::destroy($id);
     });
   }
 }

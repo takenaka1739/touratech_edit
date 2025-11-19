@@ -32,9 +32,15 @@ class SpecialSaleController extends BaseController
    */
   public function store(SpecialSaleStoreRequest $request)
   {
-    $this->service->store($request->validated());
-
-    return $this->success();
+    //$this->service->store($request->validated());
+//
+    //return $this->success();
+    $newId = $this->service->store($request->validated());
+    //return $this->success();
+    return response()->json([
+        'success' => true,
+        'id' => $newId,
+    ]);
   }
 
   /**

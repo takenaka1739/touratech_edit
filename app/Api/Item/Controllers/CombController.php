@@ -29,8 +29,12 @@ class CombController extends BaseController
    */
   public function store(CombStoreRequest $request)
   {
-    $this->service->store($request->validated());
-    return $this->success();
+    $newId = $this->service->store($request->validated());
+    //return $this->success();
+    return response()->json([
+        'success' => true,
+        'id' => $newId,
+    ]);
   }
 
   /**
@@ -41,6 +45,18 @@ class CombController extends BaseController
   public function update(CombUpdateRequest $request, int $id)
   {
     $this->service->update($id, $request->validated());
+    return $this->success();
+  }
+
+  /**
+   * 削除
+   *
+   * @param int $id 商品ID
+   */
+  public function delete(int $id)
+  {
+    $this->service->delete($id);
+
     return $this->success();
   }
 }
