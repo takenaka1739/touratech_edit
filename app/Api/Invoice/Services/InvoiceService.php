@@ -64,8 +64,8 @@ class InvoiceService
 
     DB::transaction(function () use ($invoice_month, $cutoff_date) {
       if ($cutoff_date) {
-        Invoice::join('t_customers', 't_customers.id', '=', 'invoices.customer_id')
-          ->where('invoices.invoice_month', $invoice_month)
+        Invoice::join('t_customers', 't_customers.id', '=', 't_invoices.customer_id')
+          ->where('t_invoices.invoice_month', $invoice_month)
           ->where('t_customers.cutoff_date', '=', $cutoff_date)
           ->delete();
       } else {
@@ -129,7 +129,7 @@ class InvoiceService
           $detail['no'] = $key + 1;
           return $detail;
         });
-        DB::table('invoice_details')->insert($details->toArray());
+        DB::table('t_invoice_details')->insert($details->toArray());
 
         // 売上請求連結データを登録する
         $this->insertSalesInvoice($sales, $m->id);
@@ -173,7 +173,7 @@ class InvoiceService
     $configs = Config::getSelf();
 
     $query = Invoice::select([
-      'invoices.id',
+      't_invoices.id',
       'invoice_date',
       'customer_id',
       'customer_name',
@@ -189,7 +189,7 @@ class InvoiceService
       'total_invoice',
       // 'link_sales_invoice.sales_id',
     ]);
-      // ->leftJoin('link_sales_invoice', 'link_sales_invoice.invoice_id', '=', 'invoices.id');
+      // ->leftJoin('t_link_sales_invoice', 't_link_sales_invoice.invoice_id', '=', 't_invoices.id');
     $query = $this->setCondition($query, $cond);
     $rows = $query->whereIn('id', $selected)
       ->orderBy('invoice_date', 'desc')
@@ -280,16 +280,16 @@ class InvoiceService
     $rows = DB::table('t_customers')
       ->whereExists(function ($query) use ($tmp_dt) {
         $query->select(DB::raw(1))
-          ->from('sales')
-          ->whereRaw('sales.customer_id = t_customers.id')
-          ->where('sales.sales_at', '>=', $tmp_dt);
+          ->from('t_sales')
+          ->whereRaw('t_sales.customer_id = t_customers.id')
+          ->where('t_sales.sales_at', '>=', $tmp_dt);
       })
       ->orWhere(function($query) use ($tmp_dt) {
         $query->whereExists(function ($query) use ($tmp_dt) {
           $query->select(DB::raw(1))
-            ->from('receipts')
-            ->whereRaw('receipts.customer_id = t_customers.id')
-            ->where('receipts.receipt_date', '>=', $tmp_dt);
+            ->from('t_receipts')
+            ->whereRaw('t_receipts.customer_id = t_customers.id')
+            ->where('t_receipts.receipt_date', '>=', $tmp_dt);
         });
       })
       ->get();
@@ -371,13 +371,13 @@ class InvoiceService
    */
   private function getLatestInvoices(string $invoice_month)
   {
-    $rows = DB::table('invoices')
-    ->join(DB::raw("(SELECT b.customer_id, MAX(b.invoice_month) AS invoice_month FROM invoices b WHERE b.invoice_month < '" . $invoice_month . "' GROUP BY b.customer_id) AS x"), function ($join) {
-      $join->on('x.invoice_month', "=", 'invoices.invoice_month')
-        ->on('x.customer_id', "=", 'invoices.customer_id');
+    $rows = DB::table('t_invoices')
+    ->join(DB::raw("(SELECT b.customer_id, MAX(b.invoice_month) AS invoice_month FROM t_invoices b WHERE b.invoice_month < '" . $invoice_month . "' GROUP BY b.customer_id) AS x"), function ($join) {
+      $join->on('x.invoice_month', "=", 't_invoices.invoice_month')
+        ->on('x.customer_id', "=", 't_invoices.customer_id');
     })
     ->select(
-      'invoices.customer_id',
+      't_invoices.customer_id',
       'total_invoice'
     )
     ->get();
@@ -516,7 +516,7 @@ class InvoiceService
         'invoice_id' => $invoice_id,
       ];
     }
-    DB::table('link_sales_invoice')->insert($data);
+    DB::table('t_link_sales_invoice')->insert($data);
   }
 
 
@@ -546,13 +546,13 @@ class InvoiceService
    */
   private function getSalesDetails(int $salesId)
   {
-    $rows = SalesDetail::where('sales_details.sales_id', '=', $salesId)
-      ->leftJoin('sales_details as x', 'x.id', '=', 'sales_details.parent_id')
+    $rows = SalesDetail::where('t_sales_details.sales_id', '=', $salesId)
+      ->leftJoin('t_sales_details as x', 'x.id', '=', 't_sales_details.parent_id')
       ->select([
-        'sales_details.*',
+        't_sales_details.*',
         'x.item_name as parent_item_name'
       ])
-      ->where('sales_details.item_kind', '<>', 2)
+      ->where('t_sales_details.item_kind', '<>', 2)
       ->get();
 
     return $rows;
@@ -596,20 +596,20 @@ class InvoiceService
    */
   private function getInvoiceFromRemainingBill($invoice_month)
   {
-    return DB::table('invoices')
+    return DB::table('t_invoices')
       ->select([
-        'invoices.customer_id',
+        't_invoices.customer_id',
         'total_invoice',
       ])
-      ->join(DB::raw("(SELECT b.customer_id, MAX(b.invoice_month) AS invoice_month FROM invoices b WHERE b.invoice_month < '" . $invoice_month . "' GROUP BY b.customer_id) AS x"), function ($join) {
-        $join->on('x.invoice_month', "=", 'invoices.invoice_month')
-          ->on('x.customer_id', "=", 'invoices.customer_id');
+      ->join(DB::raw("(SELECT b.customer_id, MAX(b.invoice_month) AS invoice_month FROM t_invoices b WHERE b.invoice_month < '" . $invoice_month . "' GROUP BY b.customer_id) AS x"), function ($join) {
+        $join->on('x.invoice_month', "=", 't_invoices.invoice_month')
+          ->on('x.customer_id', "=", 't_invoices.customer_id');
       })
       ->whereNotExists(function ($q) use ($invoice_month) {
         $q->select(DB::raw(1))
-          ->from('invoices as z')
+          ->from('t_invoices as z')
           ->where('z.invoice_month', '=', $invoice_month)
-          ->whereRaw('z.customer_id = invoices.customer_id');
+          ->whereRaw('z.customer_id = t_invoices.customer_id');
       })
       ->where('total_invoice', '<>', 0)
       ->get();

@@ -461,9 +461,9 @@ class SalesService
     if ($c_item_number) {
       $query->whereExists(function ($q) use ($c_item_number) {
         $q->select(DB::raw(1))
-          ->from('sales_details')
-          ->whereRaw('sales_details.sales_id = sales.id')
-          ->where('sales_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
+          ->from('t_sales_details')
+          ->whereRaw('t_sales_details.sales_id = sales.id')
+          ->where('t_sales_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
       });
     }
 
@@ -471,11 +471,11 @@ class SalesService
     if ($c_name) {
       $query->whereExists(function ($q) use ($c_name) {
         $q->select(DB::raw(1))
-          ->from('sales_details')
-          ->whereRaw('sales_details.sales_id = sales.id')
+          ->from('t_sales_details')
+          ->whereRaw('t_sales_details.sales_id = sales.id')
           ->where(function($q) use ($c_name) {
-            $q->where('sales_details.item_name', 'like', '%' . escape_like($c_name) . '%')
-              ->orWhere('sales_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
+            $q->where('t_sales_details.item_name', 'like', '%' . escape_like($c_name) . '%')
+              ->orWhere('t_sales_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
       });
     }
@@ -496,9 +496,9 @@ class SalesService
    */
   private function getDetails(int $sales_id)
   {
-    return DB::table('sales_details')
+    return DB::table('t_sales_details')
       ->select(
-        'sales_details.*',
+        't_sales_details.*',
       )
       ->where('sales_id', $sales_id)
       ->whereIn('item_kind', [1, 2])
@@ -669,7 +669,7 @@ class SalesService
     if ($item_kind === 2) {
       if ($prev->item_id != $m->item_id) {
         // 商品IDが変わった場合、セット品の明細を削除する
-        DB::table('sales_details')->where('parent_id', $id)->delete();
+        DB::table('t_sales_details')->where('parent_id', $id)->delete();
         $this->createSetItems($m);
 
       } else if ($prev->quantity != $m->quantity) {
@@ -715,7 +715,7 @@ class SalesService
         'parent_id' => $parent->id,
       ];
     }
-    DB::table('sales_details')->insert($data);
+    DB::table('t_sales_details')->insert($data);
   }
 
   /**
@@ -725,10 +725,10 @@ class SalesService
    */
   private function updateSetItems($parent) {
     $details = SalesDetail::select([
-      'sales_details.id',
+      't_sales_details.id',
       't_set_item_details.quantity',
     ])
-      ->join('t_set_item_details', 't_set_item_details.id', '=', 'sales_details.item_id')
+      ->join('t_set_item_details', 't_set_item_details.id', '=', 't_sales_details.item_id')
       ->where('parent_id', $parent->id)
       ->where('set_item_id', $parent->item_id)
       ->get();
@@ -740,7 +740,7 @@ class SalesService
       $quantity = $d->quantity * $parent->quantity;
       [$amount, $sales_tax] = calc_amount($unit_price, $quantity, $parent->sales_tax_rate, $parent->fraction);
 
-      DB::table('sales_details')
+      DB::table('t_sales_details')
         ->where('id', $d->id)
         ->update([
           'rate' => $rate,
@@ -765,7 +765,7 @@ class SalesService
     // 変更前のIDと更新されたIDの差分を取得する
     $deleteIds = array_diff($prevIds, $currentIds);
 
-    DB::table('sales_details')
+    DB::table('t_sales_details')
       ->whereIn('id', $deleteIds)
       ->delete();
   }
@@ -777,7 +777,7 @@ class SalesService
    * @return array
    */
   private function getPrevDetailIds(int $sales_id) {
-    $data =  DB::table('sales_details')
+    $data =  DB::table('t_sales_details')
       ->where('sales_id', $sales_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')
@@ -818,7 +818,7 @@ class SalesService
    */
   private function updateSalesCompleted(int $receive_order_id)
   {
-    DB::update("UPDATE receive_order_details AS rd LEFT JOIN (SELECT x.receive_order_detail_id, sum(y.quantity) AS quantity FROM link_r_order_sales_detail x INNER JOIN sales_details y ON y.id = x.sales_detail_id GROUP BY x.receive_order_detail_id) AS sd ON sd.receive_order_detail_id = rd.id
+    DB::update("UPDATE receive_order_details AS rd LEFT JOIN (SELECT x.receive_order_detail_id, sum(y.quantity) AS quantity FROM link_r_order_sales_detail x INNER JOIN t_sales_details y ON y.id = x.sales_detail_id GROUP BY x.receive_order_detail_id) AS sd ON sd.receive_order_detail_id = rd.id
       SET sales_completed = CASE WHEN rd.quantity <= sd.quantity THEN 1 ELSE 0 END
       WHERE rd.receive_order_id = ?", [$receive_order_id]);
   }
@@ -840,7 +840,7 @@ class SalesService
       ])
       ->join('receive_order_details as rd', 'rd.receive_order_id', '=', 'r.id')
       ->leftJoin('link_r_order_sales_detail as l', 'l.receive_order_detail_id', '=', 'rd.id')
-      ->leftJoin('sales_details as sd', 'sd.id', '=', 'l.sales_detail_id')
+      ->leftJoin('t_sales_details as sd', 'sd.id', '=', 'l.sales_detail_id')
       ->where('r.id', '=', $receive_order_id)
       ->whereIn('rd.item_kind', [1, 2])
       ->get();
@@ -885,7 +885,7 @@ class SalesService
       , d.item_number
       , d.quantity
       , CURRENT_TIMESTAMP
-    FROM sales s INNER JOIN sales_details d ON d.sales_id = s.id
+    FROM sales s INNER JOIN t_sales_details d ON d.sales_id = s.id
     WHERE s.id = :id AND d.item_kind <> 2 ", ['id' => $sales_id]);
   }
 

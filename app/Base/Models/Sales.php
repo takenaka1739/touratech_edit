@@ -84,7 +84,7 @@ class Sales extends Model
      */
     public function getItemNumbers()
     {
-        return DB::table('sales_details')
+        return DB::table('t_sales_details')
             ->where('sales_id', $this->id)
             ->whereIn('item_kind', [1, 3])
             ->pluck('item_number')

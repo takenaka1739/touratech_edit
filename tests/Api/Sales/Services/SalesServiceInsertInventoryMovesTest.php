@@ -27,7 +27,7 @@ class SalesServiceInsertInventoryMovesTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('sales_details')->delete();
+    DB::table('t_sales_details')->delete();
     DB::table('sales')->delete();
     DB::table('sales')->insert([
       [
@@ -52,7 +52,7 @@ class SalesServiceInsertInventoryMovesTest extends TestCase
         'total_amount' => 1103,
       ],
     ]);
-    DB::table('sales_details')->insert([
+    DB::table('t_sales_details')->insert([
       [
         'id' => 21,
         'sales_id' => 2,

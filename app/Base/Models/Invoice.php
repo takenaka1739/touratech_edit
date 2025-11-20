@@ -8,7 +8,7 @@ use Carbon\Carbon;
 class Invoice extends Model
 {
   public $timestamps = false;
-  protected $table = 't_inventories';
+  protected $table = 't_invoices';
   protected $fillable = [
     'invoice_date',
     'invoice_month',
