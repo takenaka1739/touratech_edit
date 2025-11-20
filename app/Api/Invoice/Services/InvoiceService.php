@@ -536,7 +536,7 @@ class InvoiceService
         'invoice_id' => $invoice_id,
       ];
     }
-    DB::table('link_receipt_invoice')->insert($data);
+    DB::table('t_link_receipt_invoice')->insert($data);
   }
 
   /**

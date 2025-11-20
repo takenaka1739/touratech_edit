@@ -72,7 +72,7 @@ class ReceiptService
    */
   public function hasInvoice(int $receipt_id)
   {
-    return DB::table('link_receipt_invoice')
+    return DB::table('t_link_receipt_invoice')
       ->where('receipt_id', $receipt_id)
       ->count() > 0;
   }
