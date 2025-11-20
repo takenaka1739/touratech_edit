@@ -24,10 +24,11 @@ class ReceiptService
   public function fetch(array $cond)
   {
     $query = Receipt::select(
-      'receipts.id',
+      't_receipts.id',
       'receipt_date',
       'customer_name',
       'total_amount',
+      'm_personnels.id AS user_id',
       'm_personnels.name AS user_name',
     );
     $query = $this->setCondition($query, $cond);
@@ -44,11 +45,11 @@ class ReceiptService
   public function get(int $receipt_id)
   {
     $data = Receipt::select(
-      'receipts.*',
+      't_receipts.*',
       'm_personnels.name AS user_name',
     )
-      ->leftJoin('m_personnels', 'm_personnels.id', '=', 'receipts.user_id')
-      ->where('receipts.id', $receipt_id)
+      ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receipts.user_id')
+      ->where('t_receipts.id', $receipt_id)
       ->first();
 
     $customer_id = $data->customer_id;
@@ -123,7 +124,7 @@ class ReceiptService
       $m = Receipt::find($receipt_id);
       $m->receipt_date = $data->get('receipt_date');
       $m->user_id = $data->get('user_id');
-      $m->delivery_day = $data->get('delivery_day');
+      //$m->delivery_day = $data->get('delivery_day');
       $m->total_amount = $data->get('total_amount');
       $m->remarks = $data->get('remarks');
       $m->save();
@@ -154,13 +155,13 @@ class ReceiptService
     $row = Customer::select([
         't_customers.id',
         't_customers.name',
-        'invoices.total_amount',
-        'invoices.total_tax',
-        'invoices.total_invoice',
+        't_invoices.total_amount',
+        't_invoices.total_tax',
+        't_invoices.total_invoice',
       ])
       ->where('t_customers.id', '=', $customer_id)
-      ->leftJoin('invoices', 'invoices.customer_id', '=', 't_customers.id')
-      ->orderBy('invoices.invoice_month', 'DESC')
+      ->leftJoin('t_invoices', 't_invoices.customer_id', '=', 't_customers.id')
+      ->orderBy('t_invoices.invoice_month', 'DESC')
       ->first();
 
     return [
@@ -180,7 +181,7 @@ class ReceiptService
    */
   private function setCondition($query, array $cond)
   {
-    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 'receipts.user_id');
+    $query->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receipts.user_id');
 
     $cond = new Collection($cond);
 
