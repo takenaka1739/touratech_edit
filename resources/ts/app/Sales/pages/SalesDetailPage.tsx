@@ -458,7 +458,8 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                     <td>
                       <div className="text-xs">{r?.item_number}</div>
                       <div>{r?.item_name}</div>
-                      <div>{r?.item_name_jp}</div>
+                      {/*<div>{r?.item_name_jp}</div>*/}
+                      <div>{r?.item_name_note}</div>
                     </td>
                     <td className="text-right">
                       {safeNumber(r?.sales_unit_price, 2)}

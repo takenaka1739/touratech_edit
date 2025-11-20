@@ -9,7 +9,11 @@ use Illuminate\Support\Facades\DB;
 class Purchase extends Model
 {
   protected $table = 't_purchases';
+  protected $primaryKey = 'id';
+  public $incrementing = false;   // ← AUTO_INCREMENT なしなので必須
+
   protected $fillable = [
+    'id',
     'purchase_number',
     'purchase_date',
     'user_id',

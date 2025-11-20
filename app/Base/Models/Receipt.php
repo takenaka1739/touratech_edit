@@ -7,6 +7,7 @@ use Carbon\Carbon;
 
 class Receipt extends Model
 {
+  protected $table = 't_receipts';
   protected $fillable = [
     'receipt_date',
     'customer_id',

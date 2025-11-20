@@ -14,7 +14,7 @@ import { useSpecialSalesPage } from '@/app/Item/uses/useSpecialSalesPage';
 import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef  } from 'react';
 import { useHistory, useLocation  } from 'react-router-dom';
 import { appAlert } from '@/components';
 
@@ -136,6 +136,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [supplierChangeFlag, setSupplierChangeFlag]= useState(false);
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
+  const [backUpState, setBackUpState] = useState<object>();
+  //const [rollBackUpItem, setRollBackUpItem] = useState<object[][]>();
 
   // 初期値設定
   useEffect(() => {
@@ -165,7 +167,23 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         setState({...state, shipping_pay:state.send_personal})
       }
     }
+    setBackUpState(state);
   }, []);
+
+  const prevIdRef = useRef(state.id);
+  useEffect(() => {
+  // 前回の id を保持する ref
+
+  if (prevIdRef.current === undefined && state.id !== undefined) {
+    setBackUpState(state);
+  }
+
+  // 次回のために更新
+  prevIdRef.current = state.id;
+  }, [state.id]); // id の変化だけ監視
+
+  console.log('backUpState');
+  console.log(backUpState);
 
   const {
     open: openItemClassDialog,
@@ -919,10 +937,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   const specialSaleSave = async (url: string, curd: string): Promise<{success: boolean; id?: number;}> => {
     let specialSaleSaveFlag:boolean = false;
-    state.is_sales_members_only = state.is_sales_members_only !== null ? state.is_sales_members_only : false;
-    state.special_sale_id = state.specialSalesList[0]?.special_sale_id ?? undefined;
-
+    
     if((state.start_at !== null) && (state.start_at !== '') && (state.start_at !== undefined)){
+      state.is_sales_members_only = state.is_sales_members_only !== null ? state.is_sales_members_only : false;
+      state.special_sale_id = state.specialSalesList[0]?.special_sale_id ?? undefined;
+
       if(curd === 'store'){
         specialSaleSaveFlag = await store(url);
       }else{
@@ -946,10 +965,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           }
         }
       }
-    }else if((state.specialSalesList[0].special_sale_id !== null) && (state.specialSalesList[0].special_sale_id !== '') && (state.specialSalesList[0].special_sale_id !== undefined)){
-      state.special_sale_id = state.specialSalesList[0].special_sale_id;
-      if(state.special_sale_id !== null){
-        specialSaleSaveFlag = await destroy(`/api/item/special_sale_delete/${Number(state.special_sale_id)}`);
+    }else if(state.specialSalesList[0] !== undefined){
+      if((state.specialSalesList[0].special_sale_id !== null) && (state.specialSalesList[0].special_sale_id !== '') && (state.specialSalesList[0].special_sale_id !== undefined)){
+        state.special_sale_id = state.specialSalesList[0].special_sale_id;
+        if(state.special_sale_id !== null){
+          specialSaleSaveFlag = await destroy(`/api/item/special_sale_delete/${Number(state.special_sale_id)}`);
+        }
       }
     }else{
       return {success: true, id: state.special_sale_id};
@@ -977,33 +998,54 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   // 保存処理
   const storeSavaItem: (variIndex:string | number | null, crud: string) => Promise<boolean> = async (variIndex) => {
-    let reFlag = false;
-    const itemSaveRes = await itemSave("item/store", 'store');
-    let categorySaveRes: { success: boolean; id?: number } | null = null;
-    let specilSaleSaveRes: { success: boolean; id?: number } | null = null;
+    //let reFlag = false;
+    let categorySaveRes: { success: boolean; id?: number } = { success: false };;
+    let specilSaleSaveRes: { success: boolean; id?: number } = { success: false };;
     let imageSaveRes: boolean = false;
 
-    // 項目の保存
+    // 商品マスタ保存
+    const itemSaveRes = await itemSave("item/store", 'store');
+    // 関連テーブルの保存
     if(itemSaveRes.success){
       state.item_id = itemSaveRes.id;
 
       // カテゴリーの保存
       categorySaveRes = await categorySave("item/category_store", 'store');
+
+      // カテゴリーの保存に成功
       if(categorySaveRes.success) {
+        // 特売設定の保存
         specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
       }else{
-
+        // 商品マスタのロールバック処理
+        await destroy(`/api/item/delete/${state.item_id}`);
+        return false;
       }
-      // 特売設定の保存
-      specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
-      // 画像の保存
-      imageSaveRes = await imageSave(variIndex);
 
-      reFlag = categorySaveRes.success && specilSaleSaveRes.success && imageSaveRes;
+      // 特売設定の保存に成功
+      if(specilSaleSaveRes.success){
+        // 画像の保存
+        imageSaveRes = await imageSave(variIndex);
+      }else{
+        // 商品マスタのロールバック処理
+        await destroy(`/api/item/delete/${state.item_id}`);
+        await destroy(`/api/item/category_delete/${categorySaveRes.id}`);
+        return false;
+      }
+
+      // 画像の保存に失敗した時
+      if(!imageSaveRes){
+        await destroy(`/api/item/delete/${state.item_id}`);
+        await destroy(`/api/item/category_delete/${categorySaveRes.id}`);
+        // specilSaleSaveRes.id === undefinedは特売設定の登録がない時
+        if(specilSaleSaveRes.id !== undefined) await destroy(`/api/item/special_sale_delete/${specilSaleSaveRes.id}`);
+        return false;
+      }
+
+      return categorySaveRes.success && specilSaleSaveRes.success && imageSaveRes;
     }else{
-      reFlag = false;
+      return false;
     }
-    return reFlag;
   }
 
   const upDateSaveItem: (variIndex:string | number | null, pattern:string) => Promise<boolean> = async (variIndex, pattern) => {

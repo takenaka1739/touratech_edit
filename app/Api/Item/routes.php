@@ -38,6 +38,7 @@ Route::group([
 
     Route::post('/category_store', [CombController::class, 'store']);
     Route::put('/category_edit/{id}', [CombController::class, 'update']);
+    Route::delete('/category_delete/{id}', [CombController::class, 'delete']);
 
     Route::post('image_upload', [UploadController::class, 'store']);
   });

@@ -351,6 +351,8 @@ class ItemService
     $data['domestic_stocks'] = $data['domestic_stocks'] ?? 0;
     $data['overseas_stocks'] = $data['overseas_stocks'] ?? 0;
     $data['is_set_item'] = false;
+    $data['sales_unit_price'] = $data['sales_unit_price'] ?? 0;
+    $data['purchase_unit_price'] = $data['purchase_unit_price'] ?? 0;
     $newId = DB::transaction(function () use ($data) {
         $item = Item::create($data);
 
@@ -384,8 +386,8 @@ class ItemService
       $m->additional_shipping_fee = $data->get('additional_shipping_fee');
       $m->purchase_price = $data->get('purchase_price');
       $m->is_set_item = $data->get('is_set_item');
-      $m->sales_unit_price = $data->get('sales_unit_price');
-      $m->purchase_unit_price = $data->get('purchase_unit_price');
+      $m->sales_unit_price = $data->get('sales_unit_price') ?? 0;
+      $m->purchase_unit_price = $data->get('purchase_unit_price') ?? 0;
       $m->sample_price = $data->get('sample_price');
       $m->supplier_id = $data->get('supplier_id');
       $m->item_number = $data->get('item_number');

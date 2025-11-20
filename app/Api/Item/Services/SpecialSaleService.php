@@ -14,16 +14,19 @@ class SpecialSaleService
 { 
   public function store(array $data)
   {
-    DB::transaction(function () use ($data) {
-      SpecialSale::create([
-              'is_sales_members_only' => $data['is_sales_members_only'],
-              'item_id' => $data['item_id'],
-              'start_at' => $data['start_at'],
-              'end_at' => $data['end_at'],
-              'special_sale_price' => $data['special_sale_price'],
-              'refund_rate' => $data['refund_rate'],
-          ]);
+    $newId = DB::transaction(function () use ($data) {
+      $item = SpecialSale::create([
+        'is_sales_members_only' => $data['is_sales_members_only'],
+        'item_id' => $data['item_id'],
+        'start_at' => $data['start_at'],
+        'end_at' => $data['end_at'],
+        'special_sale_price' => $data['special_sale_price'],
+        'refund_rate' => $data['refund_rate'],
+      ]);
+      return $item->id;
     });
+
+    return $newId;
   }
 
   /**
