@@ -106,7 +106,7 @@ class PurchaseService
       }
 
       $m = Purchase::create($payload);
-      $m->save();
+      //$m->save();
 
       // 発注仕入連結テーブルを登録する
       $place_order_id = $data->get('place_order_id');

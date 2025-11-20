@@ -152,7 +152,8 @@ export const usePurchaseDetailPage = (slug: string) => {
   const store: () => Promise<boolean> = async () => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${slug}/store`, state);
-
+    console.log('res');
+    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
