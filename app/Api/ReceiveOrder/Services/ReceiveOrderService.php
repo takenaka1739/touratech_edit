@@ -199,7 +199,7 @@ class ReceiveOrderService
    */
   public function validate_delete(int $receive_order_id)
   {
-    $has_place = DB::table('link_r_order_p_order')
+    $has_place = DB::table('t_link_r_order_p_order')
       ->where('receive_order_id', '=', $receive_order_id)
       ->exists();
 

@@ -210,7 +210,7 @@ export const usePlaceOrderDetailPage = (slug: string, from_receive: boolean) => 
   const edit: (id: number) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
     const res = await axios.put(`/api/${slug}/edit/${id}`, state);
-
+    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {

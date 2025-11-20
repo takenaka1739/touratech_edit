@@ -146,7 +146,7 @@ export const PlaceOrderDetailPage: React.VFC<DetailPageProps> = ({ from_receive 
                     <div>{r.item_name}</div>
                     <div>{r.item_name_jp}</div>
                   </td>
-                  <td className="text-right">{numberFormat(r.unit_price, 2)}</td>
+                  <td className="text-right">{numberFormat(r.unit_price ?? 0, 2)}</td>
                   <td className="text-right">{r.quantity}</td>
                   <td className="text-right">{numberFormat(r.amount, 0)}</td>
                   <td className="col-btn">

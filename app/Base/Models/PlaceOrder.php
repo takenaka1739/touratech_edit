@@ -36,7 +36,7 @@ class PlaceOrder extends Model
    */
   public function getReceiveOrderId()
   {
-    $r = DB::table('link_r_order_p_order')
+    $r = DB::table('t_link_r_order_p_order')
       ->select('receive_order_id')
       ->where('place_order_id', $this->id)
       ->first();

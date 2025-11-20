@@ -18,7 +18,7 @@ return new class extends Migration {
                     ->comment('発注日');
 
                 // ★カラム名は旧システムのまま user_id を使用（参照先だけ t_customers）
-                $table->unsignedBigInteger('user_id')->nullable()->comment('取引先ID（t_customers.id）');
+                $table->unsignedBigInteger('user_id')->nullable()->comment('取引先ID（m_personnels.id）');
 
                 $table->string('delivery_day', 30)->nullable()->comment('納期/回答日など');
                 $table->decimal('total_amount', 12, 2)->nullable()->comment('合計金額');

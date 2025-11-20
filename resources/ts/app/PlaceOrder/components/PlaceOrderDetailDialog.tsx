@@ -47,12 +47,12 @@ export const PlaceOrderDetailDialog: React.VFC<PlaceOrderDetailDialogProps> = ({
     'item',
     async props => {
       //const { id, item_number, name, name_jp, purchase_unit_price, is_set_item } = props;
-      const { id, name, name_note, purchase_unit_price, is_set_item } = props;
+      const { id, item_number, name, name_note, purchase_unit_price, is_set_item } = props;
       const ret = calcAmount(purchase_unit_price, 1, salesTaxRate, fraction);
       updateState({
         item_kind: is_set_item ? 2 : 1,
         item_id: id,
-        //item_number,
+        item_number: item_number,
         item_name: name,
         //item_name_jp: name_jp,
         item_name_jp: name_note,
@@ -105,7 +105,7 @@ export const PlaceOrderDetailDialog: React.VFC<PlaceOrderDetailDialogProps> = ({
               <Forms.FormInputText
                 name="item_number"
                 value={state.item_number ?? ''}
-                error={errors?.item_id}
+                error={errors?.item_number}
                 className="max-w-lg"
                 readOnly
               />
@@ -137,7 +137,8 @@ export const PlaceOrderDetailDialog: React.VFC<PlaceOrderDetailDialogProps> = ({
           <Forms.FormGroupInputText
             labelText="単価"
             name="unit_price"
-            value={numberFormat(state.unit_price, 2)}
+            value={numberFormat(state.unit_price ?? 0, 2)}
+            error={errors?.unit_price}
             className="max-w-8 text-right"
             readOnly
             removeOptionalLabel
