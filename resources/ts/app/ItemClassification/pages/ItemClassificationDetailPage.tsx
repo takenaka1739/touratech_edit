@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import { RouteComponentProps, useHistory } from 'react-router-dom';
 import { ItemClassification } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
@@ -20,6 +20,8 @@ type Mode = 'parent' | 'child';
 export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPageProps> = () => {
   const title = '商品分類マスタ';
   const slug = 'item_classification';
+
+  const history = useHistory(); // ★ 一覧に戻るための history
 
   const {
     isLoading,
@@ -327,6 +329,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     }
   };
 
+  /** 保存ボタン：新規・編集どちらでも保存後は一覧へ戻る */
   const onClickSave = async () => {
     const resCore = await saveCore();
     if (!resCore.ok) return;
@@ -338,7 +341,22 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     }
 
     const okImg = await saveImage(categoryId);
-    if (okImg) appAlert('保存しました。');
+    if (!okImg) return;
+
+    appAlert('保存しました。');
+
+    // ★ 新規・編集問わず、保存成功後は一覧へ
+    history.push(`/${slug}`);
+  };
+
+  /** 削除ボタン：削除成功後は一覧へ戻る */
+  const handleDelete = async () => {
+    if (!id) return;
+    // onClickDelete が true/false を返す前提で見ておく（void でも undefined なので true扱い）
+    const result: any = await onClickDelete();
+    if (result !== false) {
+      history.push(`/${slug}`);
+    }
   };
 
   /** 親セレクト */
@@ -480,7 +498,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
 
       <div className="flex justify-between">
         <button className="btn" onClick={onClickSave} disabled={isDisabled}>保存</button>
-        {id && <button className="btn-delete" onClick={onClickDelete} disabled={isDisabled}>削除</button>}
+        {id && <button className="btn-delete" onClick={handleDelete} disabled={isDisabled}>削除</button>}
       </div>
 
       {/* 既存画像ピッカー（★ 現在カテゴリIDを渡す） */}

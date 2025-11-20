@@ -7,6 +7,7 @@ use App\Base\Models\Image;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 商品分類マスタサービス
@@ -97,9 +98,56 @@ class ItemClassificationService
     $newId = 0;
 
     DB::transaction(function () use ($data, &$newId) {
-      // AUTO_INCREMENT に任せる
-      $model = ItemClassification::create($data);
-      $newId = (int)$model->id;
+      $collection = new Collection($data);
+      $code       = $collection->get('code');
+
+      // 同一コードのレコード（削除済みも含む）を検索
+      $existing = ItemClassification::withTrashed()
+        ->where('code', $code)
+        ->first();
+
+      if ($existing) {
+        if ($existing->trashed()) {
+          // ★ ソフトデリート済み → 復活＆上書き更新として扱う
+          Log::info('ItemClassificationService@store:restore deleted classification', [
+            'code' => $code,
+            'id'   => $existing->id,
+          ]);
+
+          $existing->fill([
+            'name'        => $collection->get('name'),
+            'code'        => $code,
+            'parent_code' => $collection->get('parent_code'),
+            'is_display'  => $collection->get('is_display', 1),
+            'sort_order'  => $collection->get('sort_order', 0),
+            'remarks'     => $collection->get('remarks'),
+          ]);
+
+          // restore() は deleted_at を null にして save() まで行う
+          $existing->restore();
+
+          $newId = (int) $existing->id;
+        } else {
+          // 既に生きているコード → バリデーションエラーとして扱う
+          Log::warning('ItemClassificationService@store: duplicate active code', [
+            'code' => $code,
+            'id'   => $existing->id,
+          ]);
+
+          throw ValidationException::withMessages([
+            'code' => ['このコードは既に使用されています。'],
+          ]);
+        }
+      } else {
+        // 完全新規作成
+        $model = ItemClassification::create($data);
+        $newId = (int) $model->id;
+
+        Log::info('ItemClassificationService@store:created new classification', [
+          'id'   => $newId,
+          'code' => $code,
+        ]);
+      }
     });
 
     Log::info('ItemClassificationService@store:done', ['id' => $newId]);
