@@ -78,10 +78,10 @@ class SalesService
       'sales.*',
       'm_personnels.name AS user_name',
       DB::raw('EXISTS(SELECT * FROM link_sales_invoice x WHERE x.sales_id = sales.id) AS has_invoice'),
-      'link_r_order_sales.receive_order_id',
+      't_link_r_order_sales.receive_order_id',
     )
       ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_sales.personnel_id')
-      ->leftJoin('link_r_order_sales', 'link_r_order_sales.sales_id', '=', 'sales.id')
+      ->leftJoin('t_link_r_order_sales', 't_link_r_order_sales.sales_id', '=', 'sales.id')
       ->where('sales.id', $sales_id)
       ->first()
       ->toArray();
@@ -792,7 +792,7 @@ class SalesService
    * @param int $sales_id 売上ID
    */
   private function insertReceiveOrderSales(int $receive_order_id, int $sales_id) {
-    DB::table('link_r_order_sales')->insert([
+    DB::table('t_link_r_order_sales')->insert([
       ['receive_order_id' => $receive_order_id, 'sales_id' => $sales_id]
     ]);
   }
@@ -805,7 +805,7 @@ class SalesService
    */
   private function insertReceiveOrderDetailSalesDetail($receive_order_detail_id, int $sales_detail_id) {
     if ($receive_order_detail_id) {
-      DB::table('link_r_order_sales_detail')->insert([
+      DB::table('t_link_r_order_sales_detail')->insert([
         ['receive_order_detail_id' => $receive_order_detail_id, 'sales_detail_id' => $sales_detail_id]
       ]);
     }

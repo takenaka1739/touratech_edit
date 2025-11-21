@@ -71,7 +71,7 @@ class Sales extends Model
      */
     public function getReceiveOrderId()
     {
-        $r = DB::table('link_r_order_sales')
+        $r = DB::table('t_link_r_order_sales')
             ->select('receive_order_id')
             ->where('sales_id', $this->id)
             ->first();

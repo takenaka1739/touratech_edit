@@ -121,7 +121,7 @@ class ReceiveOrderService
    */
   public function hasSales(int $receive_order_id)
   {
-    return DB::table('link_r_order_sales')
+    return DB::table('t_link_r_order_sales')
       ->where('receive_order_id', $receive_order_id)
       ->count() > 0;
   }
