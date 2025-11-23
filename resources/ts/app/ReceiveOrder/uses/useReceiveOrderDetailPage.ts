@@ -9,6 +9,11 @@ import { useCommonDataDetailPage } from '@/app/App/uses/useCommonDataDetailPage'
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 
 type ReceiveOrderDetailPageState = ReceiveOrder & {
+  // ▼ Square連携用（追加）
+  square_payment_id?: string | null;
+  square_status?: 'authorized' | 'captured' | 'canceled' | 'voided' | 'failed' | null;
+
+  // 既存
   details_amount: number;
   barcode: string | undefined;
 };
@@ -59,6 +64,10 @@ export const useReceiveOrderDetailPage = (slug: string) => {
     details_amount: 0,
     barcode: undefined,
     estimate_id: undefined,
+
+    // ▼ Square 連携（初期は未連携）
+    square_payment_id: undefined,
+    square_status: undefined,
   });
 
   const {
@@ -126,7 +135,15 @@ export const useReceiveOrderDetailPage = (slug: string) => {
       const st = toState(res.data.data);
       const sales_tax_rate = getRate(st.receive_order_date);
       const has_sales = st.has_sales ?? 0;
-      setState({ ...state, ...st, sales_tax_rate, has_sales });
+
+      // st の中に square_payment_id / square_status も含まれていれば
+      // ここで一緒に state にマージされる
+      setState({
+        ...state,
+        ...st,
+        sales_tax_rate,
+        has_sales,
+      });
 
       dispatch(AppActions.success());
       return true;

@@ -10,9 +10,6 @@ import { useCommonDataDetailPage } from '@/app/App/uses/useCommonDataDetailPage'
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 
 type SalesDetailPageState = Sales & {
-  // ▼ Square連携用（追加）
-  square_payment_id?: string | null;
-  square_status?: 'authorized' | 'completed' | 'canceled' | 'failed' | null;
 
   // 既存
   details_amount: number;
@@ -73,10 +70,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       barcode: undefined,
       prev_title: from_receive ? '受注状況一覧' : undefined,
       prev_url: from_receive ? '/receive_order_status' : `/${slug}`,
-
-      // ▼ 追加（初期は未連携状態）
-      square_payment_id: undefined,
-      square_status: undefined,
     },
     from_receive ? '/receive_order_status' : `/${slug}`
   );

@@ -59,14 +59,4 @@ Route::group([
   Route::post('output/invoice', [SalesController::class, 'output_invoice'])
       ->name('api.sales.output_invoice_legacy');
   // =====================================================
-
-  // ===== Square 決済：オーソリ完了／キャンセル =====
-  // POST /api/sales/{id}/square/complete
-  Route::post('{id}/square/complete', [SalesSquareController::class, 'complete'])
-      ->name('api.sales.square.complete');
-
-  // POST /api/sales/{id}/square/cancel
-  Route::post('{id}/square/cancel', [SalesSquareController::class, 'cancel'])
-      ->name('api.sales.square.cancel');
-  // =====================================================
 });

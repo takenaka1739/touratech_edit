@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 class ReceiveOrder extends Model
 {
   protected $table = 't_receive_orders';
+
   protected $fillable = [
     'receive_order_date',
     'delivery_date',
@@ -31,6 +32,9 @@ class ReceiveOrder extends Model
     'remarks',
     'rate',
     'fraction',
+    // ★ Square 関連（テーブルに追加済みのカラム）
+    'square_payment_id',
+    'square_status',
   ];
 
   protected $hidden = [
@@ -52,7 +56,7 @@ class ReceiveOrder extends Model
    * 明細毎の売上数量を取得する
    *
    * @param int $receive_order_id 受注ID
-   * @return Collection
+   * @return \Illuminate\Support\Collection
    */
   public static function getSalesQuantityGroups(int $receive_order_id)
   {
@@ -76,7 +80,7 @@ class ReceiveOrder extends Model
    * 明細毎の発注数量を取得する
    *
    * @param int $receive_order_id 受注ID
-   * @return Collection
+   * @return \Illuminate\Support\Collection
    */
   public static function getPlaceQuantityGroups(int $receive_order_id)
   {

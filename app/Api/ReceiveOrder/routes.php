@@ -20,4 +20,14 @@ Route::group([
   Route::delete('delete/{id}', [ReceiveOrderController::class, 'delete']);
   Route::post('detail', [ReceiveOrderController::class, 'detail']);
   Route::post('output', [ReceiveOrderController::class, 'output']);
+
+  // ===== Square 決済：オーソリ完了／キャンセル（受注画面用） =====
+  // POST /api/receive_order/{id}/square/complete
+  Route::post('{id}/square/complete', [ReceiveOrderSquareController::class, 'complete'])
+      ->name('api.receive_order.square.complete');
+
+  // POST /api/receive_order/{id}/square/cancel
+  Route::post('{id}/square/cancel', [ReceiveOrderSquareController::class, 'cancel'])
+      ->name('api.receive_order.square.cancel');
+  // =====================================================
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
 import { CommonDataDetailDialog } from '@/app/App/components/CommonDataDetailDialog';
@@ -64,6 +64,85 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
       hasPlaceName = '発注済';
       break;
   }
+
+  // --- Square 関連 ---
+
+  // Square 決済ボタン表示条件
+  const canShowSquareActions =
+    !!id &&
+    !!state?.square_payment_id &&
+    state?.square_status === 'authorized';
+
+  // Square 決済実行（キャプチャ）
+  const handleSquarePayment = useCallback(async () => {
+    if (!id) {
+      alert('IDが不明なため、カード決済を実行できません。');
+      return;
+    }
+    if (!window.confirm('この受注のカード決済を実行しますか？')) return;
+
+    try {
+      const csrf =
+        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+
+      const res = await fetch(`/api/receive_order/${id}/square/complete`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrf,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.message ?? 'カード決済の実行に失敗しました。');
+        return;
+      }
+
+      alert('カード決済を実行しました。');
+      // 再読込してステータス反映
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      alert('通信エラーが発生しました。');
+    }
+  }, [id]);
+
+  // Square オーソリキャンセル
+  const handleSquareCancel = useCallback(async () => {
+    if (!id) {
+      alert('IDが不明なため、キャンセルできません。');
+      return;
+    }
+    if (!window.confirm('この受注のカード仮決済をキャンセルしますか？')) return;
+
+    try {
+      const csrf =
+        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+
+      const res = await fetch(`/api/receive_order/${id}/square/cancel`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrf,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.message ?? 'カード仮決済のキャンセルに失敗しました。');
+        return;
+      }
+
+      alert('カード仮決済をキャンセルしました。');
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      alert('通信エラーが発生しました。');
+    }
+  }, [id]);
 
   return (
     <PageWrapper
@@ -413,6 +492,17 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
               <button className="btn ml-6" onClick={onClickPrint}>
                 承り書発行
               </button>
+            )}
+
+            {canShowSquareActions && (
+              <>
+                <button className="btn ml-6" onClick={handleSquarePayment}>
+                  支払い実行
+                </button>
+                <button className="btn-delete ml-2" onClick={handleSquareCancel}>
+                  注文キャンセル
+                </button>
+              </>
             )}
           </div>
         </div>

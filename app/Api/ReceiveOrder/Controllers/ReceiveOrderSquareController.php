@@ -1,29 +1,28 @@
 <?php
 
-namespace App\Api\Sales\Controllers;
+namespace App\Api\ReceiveOrder\Controllers;
 
 use App\Base\Http\Controllers\Controller;
-use App\Base\Models\Sales;
+use App\Base\Models\ReceiveOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
-class SalesSquareController extends Controller
+class ReceiveOrderSquareController extends Controller
 {
     /**
      * Square オーソリ済み決済を「実売上（キャプチャ）」する
      */
     public function complete(int $id): JsonResponse
     {
-        /** @var Sales $sale */
-        $sale = Sales::findOrFail($id);
+        /** @var ReceiveOrder $order */
+        $order = ReceiveOrder::findOrFail($id);
 
-        if (!$sale->square_payment_id) {
+        if (!$order->square_payment_id) {
             return response()->json(['message' => 'Square決済IDが登録されていません。'], 400);
         }
 
-        // 既に完了している場合は何もしない（フロントから連打されても安全に）
-        if ($sale->square_status === 'captured') {
+        if ($order->square_status === 'captured') {
             return response()->json(['message' => '既に支払い済みです。'], 200);
         }
 
@@ -33,26 +32,24 @@ class SalesSquareController extends Controller
             : 'https://connect.squareupsandbox.com';
 
         try {
-            $url = $baseUrl . '/v2/payments/' . $sale->square_payment_id . '/complete';
+            $url = $baseUrl . '/v2/payments/' . $order->square_payment_id . '/complete';
 
-            // ★ body を明示的に '{}' の JSON 文字列で送る
             $response = Http::withToken(config('services.square.token'))
                 ->withHeaders([
                     'Square-Version' => '2023-12-13',
                     'Content-Type'   => 'application/json',
                 ])
-                ->send('POST', $url, [
-                    'body' => '{}',
-                ]);
+                ->send('POST', $url, ['body' => '{}']);
 
             if ($response->failed()) {
                 $body   = $response->json();
-                $errors = $body['errors'] ?? [];
-                $msg    = collect($errors)->map(fn($e) => $e['detail'] ?? 'Unknown error')->implode(' / ');
+                $msg    = collect($body['errors'] ?? [])
+                    ->map(fn($e) => $e['detail'] ?? 'Unknown error')
+                    ->implode(' / ');
 
-                Log::error('[SalesSquare] completePayment HTTPエラー', [
-                    'sale_id'           => $sale->id,
-                    'square_payment_id' => $sale->square_payment_id,
+                Log::error('[ReceiveOrderSquare] completePayment HTTPエラー', [
+                    'receive_order_id'  => $order->id,
+                    'square_payment_id' => $order->square_payment_id,
                     'status'            => $response->status(),
                     'body'              => $body,
                 ]);
@@ -60,24 +57,24 @@ class SalesSquareController extends Controller
                 return response()->json(['message' => $msg ?: 'Square決済APIエラーが発生しました。'], 400);
             }
 
-            $payment = $response->json('payment') ?? [];
+            // ▼▼ remarks に履歴を追記 ▼▼
+            $timestamp = now()->format('Y-m-d H:i');
+            $appendMsg = "/クレジット支払い実行（{$timestamp}）";
 
-            // DB 更新：ステータス＋入金日
-            $sale->square_status = 'captured';
-            $sale->payment_at    = now(); // ← 管理画面で「支払い実行」したタイミング
-            $sale->save();
+            $order->remarks = trim(($order->remarks ?? '') . $appendMsg);
+            $order->square_status = 'captured';
+            $order->save();
 
-            Log::info('[SalesSquare] completePayment 成功', [
-                'sale_id'           => $sale->id,
-                'square_payment_id' => $sale->square_payment_id,
-                'status'            => $payment['status'] ?? null,
+            Log::info('[ReceiveOrderSquare] completePayment 成功', [
+                'receive_order_id'  => $order->id,
+                'square_payment_id' => $order->square_payment_id,
             ]);
 
             return response()->json(['message' => '支払いを実行しました。']);
         } catch (\Throwable $e) {
-            Log::error('[SalesSquare] completePayment 致命的エラー', [
-                'sale_id' => $sale->id,
-                'error'   => $e->getMessage(),
+            Log::error('[ReceiveOrderSquare] completePayment 致命的エラー', [
+                'receive_order_id' => $order->id ?? $id,
+                'error'           => $e->getMessage(),
             ]);
 
             return response()->json(['message' => '支払い実行中にエラーが発生しました。'], 500);
@@ -89,15 +86,14 @@ class SalesSquareController extends Controller
      */
     public function cancel(int $id): JsonResponse
     {
-        /** @var Sales $sale */
-        $sale = Sales::findOrFail($id);
+        /** @var ReceiveOrder $order */
+        $order = ReceiveOrder::findOrFail($id);
 
-        if (!$sale->square_payment_id) {
+        if (!$order->square_payment_id) {
             return response()->json(['message' => 'Square決済IDが登録されていません。'], 400);
         }
 
-        // 既にキャンセル or 未オーソリなら何もしない
-        if (in_array($sale->square_status, ['canceled', 'voided'], true)) {
+        if (in_array($order->square_status, ['canceled', 'voided'], true)) {
             return response()->json(['message' => '既にキャンセル済みです。'], 200);
         }
 
@@ -107,26 +103,24 @@ class SalesSquareController extends Controller
             : 'https://connect.squareupsandbox.com';
 
         try {
-            $url = $baseUrl . '/v2/payments/' . $sale->square_payment_id . '/cancel';
+            $url = $baseUrl . '/v2/payments/' . $order->square_payment_id . '/cancel';
 
-            // こちらも '{}' を送る
             $response = Http::withToken(config('services.square.token'))
                 ->withHeaders([
                     'Square-Version' => '2023-12-13',
                     'Content-Type'   => 'application/json',
                 ])
-                ->send('POST', $url, [
-                    'body' => '{}',
-                ]);
+                ->send('POST', $url, ['body' => '{}']);
 
             if ($response->failed()) {
                 $body   = $response->json();
-                $errors = $body['errors'] ?? [];
-                $msg    = collect($errors)->map(fn($e) => $e['detail'] ?? 'Unknown error')->implode(' / ');
+                $msg    = collect($body['errors'] ?? [])
+                    ->map(fn($e) => $e['detail'] ?? 'Unknown error')
+                    ->implode(' / ');
 
-                Log::error('[SalesSquare] cancelPayment HTTPエラー', [
-                    'sale_id'           => $sale->id,
-                    'square_payment_id' => $sale->square_payment_id,
+                Log::error('[ReceiveOrderSquare] cancelPayment HTTPエラー', [
+                    'receive_order_id'  => $order->id,
+                    'square_payment_id' => $order->square_payment_id,
                     'status'            => $response->status(),
                     'body'              => $body,
                 ]);
@@ -134,20 +128,24 @@ class SalesSquareController extends Controller
                 return response()->json(['message' => $msg ?: 'Square決済APIエラーが発生しました。'], 400);
             }
 
-            $sale->square_status = 'canceled';
-            $sale->payment_at    = null;  // 入金日はクリアしておく
-            $sale->save();
+            // ▼▼ remarks に履歴を追記 ▼▼
+            $timestamp = now()->format('Y-m-d H:i');
+            $appendMsg = "/クレジット支払いキャンセル（{$timestamp}）";
 
-            Log::info('[SalesSquare] cancelPayment 成功', [
-                'sale_id'           => $sale->id,
-                'square_payment_id' => $sale->square_payment_id,
+            $order->remarks = trim(($order->remarks ?? '') . $appendMsg);
+            $order->square_status = 'canceled';
+            $order->save();
+
+            Log::info('[ReceiveOrderSquare] cancelPayment 成功', [
+                'receive_order_id'  => $order->id,
+                'square_payment_id' => $order->square_payment_id,
             ]);
 
             return response()->json(['message' => '決済をキャンセルしました。']);
         } catch (\Throwable $e) {
-            Log::error('[SalesSquare] cancelPayment 致命的エラー', [
-                'sale_id' => $sale->id,
-                'error'   => $e->getMessage(),
+            Log::error('[ReceiveOrderSquare] cancelPayment 致命的エラー', [
+                'receive_order_id' => $order->id ?? $id,
+                'error'           => $e->getMessage(),
             ]);
 
             return response()->json(['message' => '決済キャンセル中にエラーが発生しました。'], 500);
