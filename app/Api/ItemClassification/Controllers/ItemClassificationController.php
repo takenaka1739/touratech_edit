@@ -20,7 +20,6 @@ class ItemClassificationController extends BaseController
 
     public function __construct(ItemClassificationService $service)
     {
-        Log::debug('デバッグ：ItemClassification.__construct');
         $this->service = $service;
     }
 
@@ -35,7 +34,6 @@ class ItemClassificationController extends BaseController
     /** 選択 */
     public function selected(int $id)
     {
-      Log::debug('デバッグ：ItemClassification.selected');
         $data = $this->service->get($id);
         return $this->success($data);
     }
