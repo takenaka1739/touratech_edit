@@ -2,116 +2,123 @@
 
 namespace App\Api\info\Controllers;
 
-use App\Base\Http\Controllers\Api\BaseController;
+use App\Base\Http\Controllers\Controller;
+use App\Api\info\Requests\InfoRequest;
 use App\Api\info\Services\InfoService;
-use App\Api\info\Requests\StoreInfoRequest;
-use App\Api\info\Requests\UpdateInfoRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
-class InfoController extends BaseController
+class InfoController extends Controller
 {
-    public function __construct(private InfoService $service)
+    /**
+     * 投稿一覧取得
+     * GET /api/info/posts?type=shop|product
+     */
+    public function index(Request $request, InfoService $service): JsonResponse
     {
-        Log::info('[InfoController] __construct'); // ★
+        $type = $request->query('type'); // 'shop' | 'product' | null
+
+        Log::info('[InfoController][index] enter', [
+            'type' => $type,
+        ]);
+
+        $rows = $service->getPosts($type);
+
+        return response()->json([
+            'rows' => $rows,
+        ]);
     }
 
-    public function indexShop(Request $req)
+    /**
+     * 投稿新規登録
+     * POST /api/info/posts
+     */
+    public function store(InfoRequest $request, InfoService $service): JsonResponse
     {
-        Log::info('[InfoController] indexShop', ['q' => $req->query()]);
-        return $this->indexByType('shop', $req);
+        Log::info('[InfoController][store] enter', [
+            'payload' => $request->all(),
+        ]);
+
+        $post = $service->createPost($request->validated());
+
+        return response()->json($post, 201);
     }
 
-    public function indexProduct(Request $req)
+    /**
+     * 投稿更新
+     * PUT /api/info/posts/{id}
+     */
+    public function update(int $id, InfoRequest $request, InfoService $service): JsonResponse
     {
-        Log::info('[InfoController] indexProduct', ['q' => $req->query()]);
-        return $this->indexByType('product', $req);
+        Log::info('[InfoController][update] enter', [
+            'id'      => $id,
+            'payload' => $request->all(),
+        ]);
+
+        $post = $service->updatePost($id, $request->validated());
+
+        return response()->json($post);
     }
 
-    protected function indexByType(string $type, Request $req)
+    /**
+     * 投稿削除（ソフトデリート想定）
+     * DELETE /api/info/posts/{id}
+     */
+    public function destroy(int $id, InfoService $service): JsonResponse
     {
-        $onlyPublic = (int)$req->query('only_public', 0) === 1;
-        $limit      = (int)$req->query('limit', 0);
-        Log::info('[InfoController] indexByType', compact('type', 'onlyPublic', 'limit')); // ★
+        Log::info('[InfoController][destroy] enter', [
+            'id' => $id,
+        ]);
 
-        try {
-            $rows = $this->service->listByType($type, $onlyPublic, $limit);
-            return response()->json($rows);
-        } catch (\Throwable $e) {
-            Log::error('[InfoController] index error', ['type' => $type, 'ex' => $e]);
-            return response()->json(['message' => 'failed to fetch'], 500);
-        }
+        $service->deletePost($id);
+
+        return response()->json([
+            'success' => true,
+        ]);
     }
 
-    public function storeShop(StoreInfoRequest $req)
+    /**
+     * 商品検索（Items 用モーダル）
+     * GET /api/info/items?keyword=&page=
+     */
+    public function searchItems(Request $request, InfoService $service): JsonResponse
     {
-        Log::info('[InfoController] storeShop', ['payload' => $req->all()]); // ★
-        return $this->storeByType('shop', $req);
+        $keyword = $request->query('keyword');
+        $page    = (int)$request->query('page', 1);
+
+        Log::info('[InfoController][searchItems] enter', [
+            'keyword' => $keyword,
+            'page'    => $page,
+        ]);
+
+        $result = $service->searchItems($keyword, $page);
+
+        // フロント側が rows / pager 形式を期待しているのでそれに合わせる
+        return response()->json($result);
     }
 
-    public function storeProduct(StoreInfoRequest $req)
+    /**
+     * カテゴリ検索（カテゴリそのものを選択するモーダル用）
+     * GET /api/info/categories?keyword=&parent_code=
+     *
+     * ここでは「カテゴリ自身」を1件選ぶための一覧データを返す。
+     * 最終的に EC 側で /category-detail/... へのリンクに使える情報を持たせる。
+     */
+    public function searchCategories(Request $request, InfoService $service): JsonResponse
     {
-        Log::info('[InfoController] storeProduct', ['payload' => $req->all()]); // ★
-        return $this->storeByType('product', $req);
-    }
+        $keyword    = $request->query('keyword');
+        $parentCode = $request->query('parent_code'); // 必要なら親コードで絞り込み
 
-    protected function storeByType(string $type, StoreInfoRequest $req)
-    {
-        try {
-            $row = $this->service->create($type, $req->validated(), auth()->id());
-            Log::info('[InfoController] store ok', ['type' => $type, 'id' => $row['id'] ?? null]); // ★
-            return response()->json($row, 201);
-        } catch (\Throwable $e) {
-            Log::error('[InfoController] store error', ['type' => $type, 'ex' => $e]);
-            return response()->json(['message' => 'failed to create'], 500);
-        }
-    }
+        Log::info('[InfoController][searchCategories] enter', [
+            'keyword'     => $keyword,
+            'parent_code' => $parentCode,
+        ]);
 
-    public function updateShop(UpdateInfoRequest $req, int $id)
-    {
-        Log::info('[InfoController] updateShop', ['id' => $id, 'payload' => $req->all()]); // ★
-        return $this->updateByType('shop', $id, $req);
-    }
+        $rows = $service->searchCategories($keyword, $parentCode);
 
-    public function updateProduct(UpdateInfoRequest $req, int $id)
-    {
-        Log::info('[InfoController] updateProduct', ['id' => $id, 'payload' => $req->all()]); // ★
-        return $this->updateByType('product', $id, $req);
-    }
-
-    protected function updateByType(string $type, int $id, UpdateInfoRequest $req)
-    {
-        try {
-            $row = $this->service->update($type, $id, $req->validated(), auth()->id());
-            Log::info('[InfoController] update ok', ['type' => $type, 'id' => $id]); // ★
-            return response()->json($row);
-        } catch (\Throwable $e) {
-            Log::error('[InfoController] update error', ['type' => $type, 'id' => $id, 'ex' => $e]);
-            return response()->json(['message' => 'failed to update'], 500);
-        }
-    }
-
-    public function destroyShop(int $id)
-    {
-        Log::info('[InfoController] destroyShop', ['id' => $id]); // ★
-        return $this->destroyByType('shop', $id);
-    }
-
-    public function destroyProduct(int $id)
-    {
-        Log::info('[InfoController] destroyProduct', ['id' => $id]); // ★
-        return $this->destroyByType('product', $id);
-    }
-
-    protected function destroyByType(string $type, int $id)
-    {
-        try {
-            $this->service->delete($type, $id, auth()->id());
-            Log::info('[InfoController] destroy ok', ['type' => $type, 'id' => $id]); // ★
-            return response()->json(['ok' => true]);
-        } catch (\Throwable $e) {
-            Log::error('[InfoController] destroy error', ['type' => $type, 'id' => $id, 'ex' => $e]);
-            return response()->json(['message' => 'failed to delete'], 500);
-        }
+        return response()->json([
+            'rows' => $rows,
+        ]);
     }
 }

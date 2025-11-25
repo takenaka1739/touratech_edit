@@ -1,517 +1,388 @@
-import { useEffect, useMemo, useState } from "react";
+// resources/ts/app/info/pages/InfoManagementPage.tsx
 
-type TabType = "shop" | "product";
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { PageWrapper } from '@/components';
+import {
+  InfoItemSelectModal,
+  type InfoItem,
+} from '@/app/info/components/InfoItemSelectModal';
+import { InfoPostList } from '@/app/info/components/InfoPostList';
+import { InfoPostForm } from '@/app/info/components/InfoPostForm';
 
-type InfoItem = {
+type InfoPostType = 'shop' | 'product'; // UI上は「Topics」「Items」として表示
+type InfoPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
+
+export interface InfoPost {
   id: number;
-  published_at: string;
+  type: InfoPostType;
+  status: InfoPostStatus;
   title: string;
-  body: string;
-  status?: "draft" | "scheduled" | "published" | "archived";
-  is_pinned?: boolean;
-  priority?: number;
+  slug?: string | null;
+  excerpt?: string | null;
+  body_md?: string | null;
+  body_html?: string | null;
+  cover_image_id?: number | null;
+  published_at?: string | null;
   visible_from?: string | null;
   visible_until?: string | null;
+  is_pinned: boolean | number;
+  pin_until?: string | null;
+  priority: number;
   related_product_id?: number | null;
-  meta?: { external_url?: string | null };
+  author_id?: number | null;
+  updated_by?: number | null;
+  meta?: any;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface EditFormState {
+  id?: number;
+  type: InfoPostType;
+  status: InfoPostStatus;
+  title: string;
+  body_md: string;
+
+  // Items のときだけ使う
+  related_product_id: string;
+  related_product_name: string;
+
+  // 公開系（シンプル）
+  published_at: string; // 公開日時
+
+  // ピン系
+  is_pinned: boolean;
+  priority: string;
+
+  // 詳細設定（デフォルト非表示）
+  visible_from: string;
+  visible_until: string;
+  pin_until: string;
+  external_url: string; // リンクURL（外部URL or 相対パス）
+}
+
+const defaultFormState: EditFormState = {
+  id: undefined,
+  type: 'shop',
+  status: 'draft',
+  title: '',
+  body_md: '',
+  related_product_id: '',
+  related_product_name: '',
+  published_at: '',
+  is_pinned: false,
+  priority: '0',
+  visible_from: '',
+  visible_until: '',
+  pin_until: '',
+  external_url: '',
 };
 
-type ItemSuggest = {
-  id: number;
-  item_number: string;
-  name: string;
-  label: string; // 表示用（"[ITEMNUM] 名前" など）
-};
-
-const TAB_LABEL: Record<TabType, string> = {
-  shop: "ショップ情報",
-  product: "商品情報",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "下書き",
-  published: "公開",
-  archived: "非公開",
-};
-
-const API_BASE: Record<
-  TabType,
-  { list: string; create: string; update: (id: number) => string; destroy: (id: number) => string }
-> = {
-  shop: {
-    list: "/api/info/topics",
-    create: "/api/info/topics",
-    update: (id: number) => `/api/info/topics/${id}`,
-    destroy: (id: number) => `/api/info/topics/${id}`,
-  },
-  product: {
-    list: "/api/info/item-topics",
-    create: "/api/info/item-topics",
-    update: (id: number) => `/api/info/item-topics/${id}`,
-    destroy: (id: number) => `/api/info/item-topics/${id}`,
-  },
-};
-
-const getDefaultHeaders = () => {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
-  if (meta?.content) headers["X-CSRF-TOKEN"] = meta.content;
-  return headers;
-};
-
-const emptyDraft: InfoItem = {
-  id: 0,
-  published_at: "",
-  title: "",
-  body: "",
-  status: "draft",
-  related_product_id: undefined,
-  meta: { external_url: "" },
-};
-
-export default function InfoManagementPage() {
-  const [tab, setTab] = useState<TabType>("shop");
-  const [items, setItems] = useState<InfoItem[]>([]);
+const InfoManagementPage: React.FC = () => {
+  const [posts, setPosts] = useState<InfoPost[]>([]);
   const [loading, setLoading] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<InfoItem>(emptyDraft);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ▼ サジェスト（関連商品）用状態
-  const [rpInput, setRpInput] = useState<string>("");                // 入力欄の文字列
-  const [rpList, setRpList] = useState<ItemSuggest[]>([]);           // 候補
-  const [rpLoading, setRpLoading] = useState<boolean>(false);        // 読み込み中表示
-  const [rpOpen, setRpOpen] = useState<boolean>(false);              // ドロップダウン表示
+  // 画面上部のタブ（Topics / Items）
+  const [activeType, setActiveType] = useState<InfoPostType>('shop');
 
-  const api = useMemo(() => API_BASE[tab], [tab]);
+  const [form, setForm] = useState<EditFormState>({
+    ...defaultFormState,
+    type: activeType,
+  });
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  const normalizeArray = (json: any): InfoItem[] => {
-    if (Array.isArray(json)) return json;
-    if (Array.isArray(json?.data)) return json.data;
-    if (Array.isArray(json?.items)) return json.items;
-    if (Array.isArray(json?.data?.data)) return json.data.data;
-    return [];
-  };
+  // 商品選択モーダル
+  const [itemModalOpen, setItemModalOpen] = useState(false);
 
-  const fetchList = async () => {
-    setError(null);
+  // === 一覧取得 ===
+  const fetchPosts = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(api.list, { credentials: "same-origin" });
-      const json = await res.json();
-      setItems(normalizeArray(json));
+      const res = await axios.get('/api/info/posts', {
+        params: {
+          type: activeType,
+        },
+      });
+
+      let data = res.data;
+      let rows: InfoPost[] = [];
+
+      if (Array.isArray(data)) {
+        rows = data;
+      } else if (Array.isArray(data?.data)) {
+        rows = data.data;
+      } else if (Array.isArray(data?.rows)) {
+        rows = data.rows;
+      } else {
+        rows = [];
+      }
+
+      setPosts(rows);
     } catch (e: any) {
-      console.error("[Info] fetch error", e);
-      setError("一覧の取得に失敗しました。");
-      setItems([]);
+      console.error(e);
+      setError('一覧の取得に失敗しました。API のパスやレスポンス形式を確認してください。');
+      setPosts([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // 初回 + タブ切替時に再取得
   useEffect(() => {
-    setEditId(null);
-    setDraft(emptyDraft);
-    setRpInput("");
-    setRpList([]);
-    setRpOpen(false);
-    fetchList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api]);
-
-  const handleSave = async () => {
-    if (!draft.title || !draft.body) {
-      alert("タイトル・内容は必須です");
-      return;
-    }
-    const payload = {
-      published_at: draft.published_at || new Date().toISOString().slice(0, 10),
-      title: draft.title,
-      body: draft.body,
-      status: draft.status,
-      related_product_id: draft.related_product_id ?? null,
-      meta: { external_url: draft.meta?.external_url || "" },
-    };
-
-    try {
-      if (editId) {
-        await fetch(api.update(editId), {
-          method: "PUT",
-          headers: getDefaultHeaders(),
-          credentials: "same-origin",
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(api.create, {
-          method: "POST",
-          headers: getDefaultHeaders(),
-          credentials: "same-origin",
-          body: JSON.stringify(payload),
-        });
-      }
-      await fetchList();
-      setEditId(null);
-      setDraft(emptyDraft);
-      setRpInput("");
-      setRpList([]);
-      setRpOpen(false);
-    } catch (e: any) {
-      console.error("[Info] save error", e);
-      setError("保存に失敗しました。");
-    }
-  };
-
-  const handleEdit = (item: InfoItem) => {
-    setEditId(item.id);
-    setDraft({
-      ...item,
-      meta: { external_url: item.meta?.external_url || "" },
-      published_at: (item.published_at || "").slice(0, 10),
+    fetchPosts();
+    // タブ切替時はフォームもリセット
+    setForm({
+      ...defaultFormState,
+      type: activeType,
     });
-    // 既存に関連IDがあれば簡易表示（実名取得は行わずそのまま）
-    setRpInput(item.related_product_id ? `ID:${item.related_product_id}` : "");
-    setRpList([]);
-    setRpOpen(false);
+    setSelectedId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeType]);
+
+  // === フォーム関連 ===
+  const startCreate = () => {
+    setForm({
+      ...defaultFormState,
+      type: activeType,
+    });
+    setSelectedId(null);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("本当に削除しますか？")) return;
+  const startEdit = (p: InfoPost) => {
+    setActiveType(p.type); // タブも対象タイプに切り替え
+
+    setForm({
+      id: p.id,
+      type: p.type,
+      status: p.status,
+      title: p.title ?? '',
+      body_md: p.body_md ?? '',
+      related_product_id: p.related_product_id != null ? String(p.related_product_id) : '',
+      related_product_name: '', // 必要なら別APIで名前を引く
+      published_at: toInputDateTime(p.published_at),
+      is_pinned: !!p.is_pinned,
+      priority: String(p.priority ?? 0),
+      visible_from: toInputDateTime(p.visible_from),
+      visible_until: toInputDateTime(p.visible_until),
+      pin_until: toInputDateTime(p.pin_until),
+      external_url: p.meta?.external_url ?? '',
+    });
+    setSelectedId(p.id);
+  };
+
+  const resetForm = () => {
+    setForm({
+      ...defaultFormState,
+      type: activeType,
+    });
+    setSelectedId(null);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    const { name } = target;
+
+    let value: string | boolean = (target as HTMLInputElement).value;
+
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+      value = target.checked;
+    } else {
+      value = target.value;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value as any,
+    }));
+  };
+
+  // === 保存 ===
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
     try {
-      await fetch(api.destroy(id), {
-        method: "DELETE",
-        headers: getDefaultHeaders(),
-        credentials: "same-origin",
-      });
-      await fetchList();
-      if (editId === id) {
-        setEditId(null);
-        setDraft(emptyDraft);
-        setRpInput("");
-        setRpList([]);
-        setRpOpen(false);
+      const payload = formToPayload(form);
+
+      if (form.id) {
+        await axios.put(`/api/info/posts/${form.id}`, payload);
+      } else {
+        await axios.post('/api/info/posts', payload);
       }
+
+      await fetchPosts();
+      resetForm();
     } catch (e: any) {
-      console.error("[Info] delete error", e);
-      setError("削除に失敗しました。");
+      console.error(e);
+      setError('保存に失敗しました。入力値と API 側のバリデーションを確認してください。');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const onChange = <K extends keyof InfoItem>(key: K, value: any) => {
-    setDraft((d) => ({ ...d, [key]: value }));
-  };
-
-  // ===== サジェスト：入力のデバウンス取得 =====
-  useEffect(() => {
-    const q = rpInput.trim();
-    if (q === "") {
-      setRpList([]);
-      setRpOpen(false);
+  // === 削除 ===
+  const handleDelete = async (post: InfoPost) => {
+    if (!window.confirm(`「${post.title}」を削除してよろしいですか？`)) {
       return;
     }
-    let alive = true;
-    const timer = setTimeout(async () => {
-      setRpLoading(true);
-      try {
-        const res = await fetch(`/api/info/items/lookup?q=${encodeURIComponent(q)}&limit=15`, {
-          credentials: "same-origin",
-        });
-        const json = (await res.json()) as ItemSuggest[];
-        if (!alive) return;
-        setRpList(Array.isArray(json) ? json : []);
-        setRpOpen(true);
-      } catch (e) {
-        if (!alive) return;
-        setRpList([]);
-        setRpOpen(false);
-      } finally {
-        if (alive) setRpLoading(false);
+    try {
+      await axios.delete(`/api/info/posts/${post.id}`);
+      if (selectedId === post.id) {
+        resetForm();
       }
-    }, 300); // 300ms デバウンス
-
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [rpInput]);
-
-  const pickSuggestion = (s: ItemSuggest) => {
-    setDraft((d) => ({ ...d, related_product_id: s.id }));
-    setRpInput(s.label);
-    setRpOpen(false);
+      await fetchPosts();
+    } catch (e: any) {
+      console.error(e);
+      setError('削除に失敗しました。');
+    }
   };
 
-  const clearRelated = () => {
-    setDraft((d) => ({ ...d, related_product_id: undefined }));
-    setRpInput("");
-    setRpList([]);
-    setRpOpen(false);
-  };
-
-  // ドロップダウンをクリックで閉じないよう、blurで少し遅らせる
-  const closeDropdownLater = () => setTimeout(() => setRpOpen(false), 150);
+  // === 表示用 ===
+  const filteredPosts = useMemo<InfoPost[]>(() => {
+    if (!Array.isArray(posts)) return [];
+    return posts;
+  }, [posts]);
 
   return (
-    <div className="p-6">
-      {/* タブ */}
-      <div className="mb-4 flex gap-2">
-        {(["shop", "product"] as TabType[]).map((t) => (
+    <PageWrapper prefix="Info" title="サイトお知らせ管理">
+      <div className="space-y-4">
+        {/* タブ */}
+        <div className="border-b flex gap-2">
           <button
-            key={t}
-            className={`px-4 py-2 rounded ${tab === t ? "bg-yellow-400" : "bg-gray-200"}`}
-            onClick={() => setTab(t)}
+            type="button"
+            className={`px-4 py-2 text-sm border-b-2 ${
+              activeType === 'shop'
+                ? 'border-sky-600 text-sky-700 font-semibold'
+                : 'border-transparent text-gray-500'
+            }`}
+            onClick={() => setActiveType('shop')}
           >
-            {TAB_LABEL[t]}
+            Topics（ショップ情報）
           </button>
-        ))}
-      </div>
+          <button
+            type="button"
+            className={`px-4 py-2 text-sm border-b-2 ${
+              activeType === 'product'
+                ? 'border-sky-600 text-sky-700 font-semibold'
+                : 'border-transparent text-gray-500'
+            }`}
+            onClick={() => setActiveType('product')}
+          >
+            Items（商品情報）
+          </button>
+        </div>
 
-      <div className="bg-white rounded-lg p-4 shadow">
-        <h2 className="text-lg font-bold mb-3">{TAB_LABEL[tab]}</h2>
-
+        {/* エラー表示 */}
         {error && (
-          <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="border border-red-300 bg-red-50 text-red-700 px-3 py-2 rounded text-sm">
             {error}
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed border border-gray-200">
-            <colgroup>
-              <col style={{ width: "200px" }} />
-              <col style={{ width: "32%" }} />
-              <col />
-              <col style={{ width: "140px" }} />
-            </colgroup>
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="p-2 border-b">公開状態 / 公開日</th>
-                <th className="p-2 border-b">タイトル / 外部URL</th>
-                <th className="p-2 border-b">内容 / 関連商品</th>
-                <th className="p-2 border-b">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* 入力行 */}
-              <tr className="bg-white align-top">
-                <td className="p-2">
-                  <select
-                    className="border rounded px-2 py-1 w-full"
-                    value={draft.status}
-                    onChange={(e) => onChange("status", e.target.value)}
-                  >
-                    {Object.entries(STATUS_LABEL).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+        {/* 一覧 + フォーム */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+          <InfoPostList
+            activeType={activeType}
+            posts={filteredPosts}
+            selectedId={selectedId}
+            loading={loading}
+            onRowClick={startEdit}
+            onDelete={handleDelete}
+            onCreate={startCreate}
+          />
 
-                  <label className="block mt-2 text-sm text-gray-600">
-                    {draft.published_at ? "公開日" : "公開日付"}
-                  </label>
-                  <input
-                    type="date"
-                    className="border rounded px-2 py-1 w-full"
-                    value={draft.published_at}
-                    onChange={(e) => onChange("published_at", e.target.value)}
-                  />
-                </td>
-
-                <td className="p-2">
-                  <input
-                    type="text"
-                    placeholder="タイトル"
-                    className="border rounded px-2 py-1 w-full mb-2"
-                    value={draft.title}
-                    onChange={(e) => onChange("title", e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder="外部サイトURL"
-                    className="border rounded px-2 py-1 w-full text-sm"
-                    value={draft.meta?.external_url || ""}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        meta: { ...d.meta, external_url: e.target.value },
-                      }))
-                    }
-                  />
-                </td>
-
-                <td className="p-2">
-                  <textarea
-                    placeholder="内容"
-                    className="border rounded px-2 py-1 w-full h-20"
-                    value={draft.body}
-                    onChange={(e) => onChange("body", e.target.value)}
-                  />
-
-                  {/* ▼ 関連商品（サジェスト） */}
-                  <div className="mt-2">
-                    <label className="text-sm text-gray-600 mr-2">関連商品：</label>
-                    <div className="relative inline-block min-w-[320px] align-top">
-                      <input
-                        type="text"
-                        className="border rounded px-2 py-1 w-full pr-20"
-                        placeholder="商品番号・名称・ID で検索"
-                        value={rpInput}
-                        onChange={(e) => setRpInput(e.target.value)}
-                        onFocus={() => rpList.length > 0 && setRpOpen(true)}
-                        onBlur={closeDropdownLater}
-                      />
-                      <div className="absolute right-1 top-1 flex gap-1">
-                        {draft.related_product_id ? (
-                          <a
-                            className="text-blue-600 underline text-xs px-1 py-0.5"
-                            href={`/products/${draft.related_product_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            商品ページ
-                          </a>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="text-gray-500 border rounded px-1 text-xs"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={clearRelated}
-                          title="クリア"
-                        >
-                          クリア
-                        </button>
-                      </div>
-
-                      {/* ドロップダウン */}
-                      {rpOpen && (
-                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded border bg-white shadow">
-                          {rpLoading && (
-                            <div className="px-3 py-2 text-sm text-gray-500">検索中…</div>
-                          )}
-                          {!rpLoading && rpList.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-gray-500">候補がありません</div>
-                          )}
-                          {!rpLoading &&
-                            rpList.map((s) => (
-                              <button
-                                key={s.id}
-                                type="button"
-                                className="block w-full text-left px-3 py-2 hover:bg-yellow-50"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => pickSuggestion(s)}
-                                title={`ID:${s.id}`}
-                              >
-                                <div className="text-sm">{s.label}</div>
-                                <div className="text-xs text-gray-500">ID:{s.id}</div>
-                              </button>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                    {draft.related_product_id && (
-                      <div className="text-xs text-gray-600 mt-1">
-                        選択中: ID {draft.related_product_id}
-                      </div>
-                    )}
-                  </div>
-                  {/* ▲ 関連商品（サジェスト） */}
-                </td>
-
-                <td className="p-2 align-top">
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={handleSave}
-                      className="bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded"
-                    >
-                      {editId ? "更新" : "新規追加"}
-                    </button>
-                    {editId && (
-                      <button
-                        className="text-gray-500 underline text-sm"
-                        onClick={() => {
-                          setEditId(null);
-                          setDraft(emptyDraft);
-                          setRpInput("");
-                          setRpList([]);
-                          setRpOpen(false);
-                        }}
-                      >
-                        ｷｬﾝｾﾙ
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-
-              {/* 既存データ */}
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="p-4 text-gray-500">
-                    読み込み中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-4 text-gray-500">
-                    保存済みデータはありません
-                  </td>
-                </tr>
-              ) : (
-                items.map((it) => (
-                  <tr key={it.id} className={editId === it.id ? "bg-yellow-50" : ""}>
-                    <td className="p-2 border-t align-top">
-                      <span className="block">{STATUS_LABEL[it.status || "draft"]}</span>
-                      <span className="text-xs text-gray-500">
-                        {(it.published_at || "").slice(0, 10)}
-                      </span>
-                    </td>
-                    <td className="p-2 border-t align-top">
-                      <div className="font-semibold">{it.title}</div>
-                      {it.meta?.external_url && (
-                        <a
-                          href={it.meta.external_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline text-sm break-all"
-                        >
-                          {it.meta.external_url}
-                        </a>
-                      )}
-                    </td>
-                    <td className="p-2 border-t align-top">
-                      <div className="whitespace-pre-wrap">{it.body}</div>
-                      {it.related_product_id && (
-                        <a
-                          href={`/products/${it.related_product_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline text-xs block mt-1"
-                        >
-                          関連商品を見る
-                        </a>
-                      )}
-                    </td>
-                    <td className="p-2 border-t align-top">
-                      <button
-                        className="text-blue-600 underline mr-3"
-                        onClick={() => handleEdit(it)}
-                      >
-                        編集
-                      </button>
-                      <button
-                        className="text-red-600 underline"
-                        onClick={() => handleDelete(it.id)}
-                      >
-                        削除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <InfoPostForm
+            activeType={activeType}
+            form={form}
+            saving={saving}
+            onChange={handleChange}
+            onSave={handleSave}
+            onReset={resetForm}
+            onOpenItemModal={() => setItemModalOpen(true)}
+          />
         </div>
       </div>
-    </div>
+
+      {/* 商品選択モーダル（Items のときだけ開く） */}
+      <InfoItemSelectModal
+        isOpen={itemModalOpen && activeType === 'product'}
+        initialSelectedId={
+          form.related_product_id ? Number(form.related_product_id) : null
+        }
+        onClose={() => setItemModalOpen(false)}
+        onConfirm={(item: InfoItem | null) => {
+          if (item) {
+            setForm((prev) => ({
+              ...prev,
+              related_product_id: String(item.id),
+              related_product_name: item.name,
+            }));
+          }
+          setItemModalOpen(false);
+        }}
+      />
+    </PageWrapper>
   );
+};
+
+// ==== ユーティリティ ====
+
+// DB からの ISO 文字列などを datetime-local 入力用に変換
+function toInputDateTime(value?: string | null): string {
+  if (!value) return '';
+  try {
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
+      return value.slice(0, 16);
+    }
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  } catch {
+    return '';
+  }
 }
+
+// フォーム → API ペイロード変換
+export function formToPayload(form: EditFormState) {
+  const numOrNull = (v: string): number | null =>
+    v.trim() === '' ? null : Number(v);
+
+  const dtOrNull = (v: string): string | null =>
+    v.trim() === '' ? null : v;
+
+  const meta: any = {};
+  if (form.external_url.trim() !== '') {
+    meta.external_url = form.external_url.trim();
+  }
+
+  return {
+    type: form.type,
+    status: form.status,
+    title: form.title.trim(),
+    // スラッグは一旦使わない（常に null）
+    slug: null,
+    body_md: form.body_md,
+    // カバー画像も一旦使わない（常に null）
+    cover_image_id: null,
+    published_at: dtOrNull(form.published_at),
+    visible_from: dtOrNull(form.visible_from),
+    visible_until: dtOrNull(form.visible_until),
+    is_pinned: form.is_pinned ? 1 : 0,
+    pin_until: dtOrNull(form.pin_until),
+    priority: Number(form.priority || '0'),
+    related_product_id: numOrNull(form.related_product_id),
+    meta: Object.keys(meta).length ? meta : null,
+  };
+}
+
+export default InfoManagementPage;

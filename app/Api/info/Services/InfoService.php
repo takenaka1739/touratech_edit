@@ -2,206 +2,376 @@
 
 namespace App\Api\info\Services;
 
-use App\Base\Models\Infoposts;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class InfoService
 {
+    /** @var string テーブル名 */
+    private string $table = 't_info_posts';
+
     /**
-     * 種別ごとの一覧取得
+     * 投稿一覧を取得
      *
-     * @param string $type       'shop' | 'product'
-     * @param bool   $onlyPublic 公開中のみ（予約・期限考慮）
-     * @param int    $limit      0以下で全件（安全のため最大1000件に丸め）
-     * @return array<array<string,mixed>>  フロント互換のDTO配列
+     * @param string|null $type 'shop' | 'product' | null
+     * @return \Illuminate\Support\Collection
      */
-    public function listByType(string $type, bool $onlyPublic = false, int $limit = 0): array
+    public function getPosts(?string $type)
     {
-        $q = Infoposts::query()->type($type);
+        $query = DB::table($this->table)
+            ->whereNull('deleted_at');
 
-        if ($onlyPublic) {
-            $q->PublishedAndVisibleNow();
+        if ($type) {
+            $query->where('type', $type);
         }
 
-        $q->ListOrder();
+        $rows = $query
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('priority')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'type',
+                'status',
+                'title',
+                'slug',
+                'excerpt',
+                'body_md',
+                'body_html',
+                'cover_image_id',
+                'published_at',
+                'visible_from',
+                'visible_until',
+                'is_pinned',
+                'pin_until',
+                'priority',
+                'related_product_id',
+                'author_id',
+                'updated_by',
+                'meta',
+                'created_at',
+                'updated_at',
+            ]);
 
-        if ($limit > 0) {
-            $q->limit(min($limit, 1000));
-        }
-
-        $rows = $q->get();
-
-        return $this->toDtoList($rows);
+        // meta(JSON) を array に変換して返す
+        return $rows->map(function ($row) {
+            if (isset($row->meta) && $row->meta !== null && $row->meta !== '') {
+                $decoded = json_decode($row->meta, true);
+                $row->meta = $decoded ?? null;
+            } else {
+                $row->meta = null;
+            }
+            return $row;
+        });
     }
 
     /**
-     * 作成
+     * 投稿を1件作成
      *
-     * 既存フロント互換として、payloadの `body` は body_md に格納。
-     * `published_at` 未指定時は now()、`status` 未指定時は 'published' とする。
+     * @param array $data validated data from InfoRequest
+     * @return object|null
      */
-    public function create(string $type, array $payload, ?int $userId = null): array
+    public function createPost(array $data)
     {
-        $data = $this->normalizePayloadForWrite($payload, true);
+        $now    = Carbon::now();
+        $userId = optional(auth()->user())->id;
 
-        $post = new Infoposts();
-        $post->fill($data + [
-            'type'       => $type,
-            'author_id'  => $userId,
-            'updated_by' => $userId,
+        // A案: status=published かつ published_at 未指定なら即時公開扱いで now をセット
+        if (($data['status'] ?? null) === 'published' && empty($data['published_at'])) {
+            $data['published_at'] = $now->toDateTimeString();
+        }
+
+        $insert = $this->buildSaveColumns($data);
+        $insert['author_id']  = $userId;
+        $insert['updated_by'] = $userId;
+        $insert['created_at'] = $now->toDateTimeString();
+        $insert['updated_at'] = $now->toDateTimeString();
+
+        $id = DB::table($this->table)->insertGetId($insert);
+
+        Log::info('[InfoService][createPost] created', [
+            'id' => $id,
         ]);
 
-        // 既存UIは公開運用を想定 → 明示がなければ公開扱い
-        if (empty($post->status)) {
-            $post->status = Infoposts::STATUS_PUBLISHED;
-        }
-        // 公開日が未指定なら「今」にする（フロントで空の場合でも受け入れ）
-        if (empty($post->published_at)) {
-            $post->published_at = now();
-        }
-
-        $post->save();
-
-        return $this->toDto($post);
+        return $this->findPost($id);
     }
 
     /**
-     * 更新
+     * 投稿を1件更新
+     *
+     * @param int   $id
+     * @param array $data
+     * @return object|null
      */
-    public function update(string $type, int $id, array $payload, ?int $userId = null): array
+    public function updatePost(int $id, array $data)
     {
-        /** @var Infoposts $post */
-        $post = Infoposts::query()
-            ->where('type', $type)
-            ->findOrFail($id);
+        $now    = Carbon::now();
+        $userId = optional(auth()->user())->id;
 
-        $data = $this->normalizePayloadForWrite($payload, false);
-        $data['updated_by'] = $userId;
-
-        $post->fill($data);
-        $post->save();
-
-        return $this->toDto($post);
-    }
-
-    /**
-     * 削除（ソフトデリート）
-     */
-    public function delete(string $type, int $id, ?int $userId = null): void
-    {
-        $post = Infoposts::query()
-            ->where('type', $type)
-            ->findOrFail($id);
-
-        $post->delete();
-    }
-
-    /***************************************************************************
-     * 内部：DTO / 正規化
-     ***************************************************************************/
-
-    /**
-     * Eloquent → フロント互換DTO
-     * - body: body_md 優先（なければ body_html をテキスト化して返す）
-     * - published_at: 'Y-m-d'
-     * - meta: array（external_url を含む）
-     */
-    protected function toDto(Infoposts $m): array
-    {
-        // body_html しかない場合はタグを軽く除去（最低限）
-        $body = $m->body_md ?? null;
-        if ($body === null && $m->body_html) {
-            $body = trim(strip_tags((string)$m->body_html));
+        if (($data['status'] ?? null) === 'published' && empty($data['published_at'])) {
+            $data['published_at'] = $now->toDateTimeString();
         }
 
-        // メタは array に正規化（DBに文字列JSONで入っている場合も吸収）
-        $meta = is_array($m->meta)
-            ? $m->meta
-            : (is_string($m->meta) ? (json_decode($m->meta, true) ?: []) : []);
+        $update = $this->buildSaveColumns($data);
+        $update['updated_by'] = $userId;
+        $update['updated_at'] = $now->toDateTimeString();
+
+        DB::table($this->table)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->update($update);
+
+        Log::info('[InfoService][updatePost] updated', [
+            'id' => $id,
+        ]);
+
+        return $this->findPost($id);
+    }
+
+    /**
+     * 投稿をソフトデリート
+     *
+     * @param int $id
+     * @return void
+     */
+    public function deletePost(int $id): void
+    {
+        $now    = Carbon::now();
+        $userId = optional(auth()->user())->id;
+
+        DB::table($this->table)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->update([
+                'deleted_at' => $now->toDateTimeString(),
+                'updated_by' => $userId,
+                'updated_at' => $now->toDateTimeString(),
+            ]);
+
+        Log::info('[InfoService][deletePost] soft-deleted', [
+            'id' => $id,
+        ]);
+    }
+
+    /**
+     * 商品検索（Items 用モーダル）
+     *
+     * @param string|null $keyword
+     * @param int         $page
+     * @return array { rows: […], pager: { page, lastPage, total } }
+     */
+    public function searchItems(?string $keyword, int $page = 1): array
+    {
+        $perPage = 20;
+
+        $query = DB::table('m_items')
+            ->whereNull('deleted_at');
+
+        if ($keyword) {
+            $like = '%' . $keyword . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('name', 'like', $like)
+                    ->orWhere('item_number', 'like', $like)
+                    ->orWhere('code', 'like', $like);
+            });
+        }
+
+        $total = $query->count();
+        $page  = max(1, $page);
+        $lastPage = max(1, (int)ceil($total / $perPage));
+
+        $rows = $query
+            ->orderBy('id', 'desc')
+            ->forPage($page, $perPage)
+            ->get([
+                'id',
+                'name',
+                'code',
+                'item_number',
+            ])
+            ->map(function ($row) {
+                // フロントで扱いやすいように整形
+                return [
+                    'id'   => $row->id,
+                    'name' => $row->name,
+                    // 品番かコードか、どちらかあれば補足情報として返す
+                    'code' => $row->item_number ?: $row->code,
+                ];
+            })
+            ->values()
+            ->all();
 
         return [
-            'id'            => $m->id,
-            'published_at'  => optional($m->published_at)->toDateString() ?? '',
-            'title'         => (string)$m->title,
-            'body'          => (string)($body ?? ''),
-            'status'        => $m->status,
-            'is_pinned'     => (bool)$m->is_pinned,
-            'priority'      => (int)$m->priority,
-            'visible_from'  => optional($m->visible_from)->toDateTimeString(),
-            'visible_until' => optional($m->visible_until)->toDateTimeString(),
-            'related_product_id' => $m->related_product_id,
-            'meta'          => $meta, // ★ フロントの external_url 用に返却
+            'rows'  => $rows,
+            'pager' => [
+                'page'     => $page,
+                'lastPage' => $lastPage,
+                'total'    => $total,
+            ],
         ];
     }
 
     /**
-     * 複数 → DTO配列
-     * @param \Illuminate\Support\Collection<int,Infoposts> $rows
-     * @return array<int,array<string,mixed>>
+     * カテゴリ検索（カテゴリそのものを選択するため）
+     *
+     * @param string|null $keyword
+     * @param string|null $parentCode
+     * @return array [ { code, name }, … ]
      */
-    protected function toDtoList(Collection $rows): array
+    public function searchCategories(?string $keyword, ?string $parentCode): array
     {
-        return $rows->map(fn (Infoposts $m) => $this->toDto($m))->all();
+        $query = DB::table('m_categories')
+            ->whereNull('deleted_at')
+            ->where('is_display', 1);
+
+        if ($parentCode) {
+            $query->where('parent_code', $parentCode);
+        }
+
+        if ($keyword) {
+            $like = '%' . $keyword . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like);
+            });
+        }
+
+        $rows = $query
+            ->orderBy('parent_code')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->limit(100)
+            ->get([
+                'code',
+                'parent_code',
+                'name',
+                'url',
+            ])
+            ->map(function ($row) {
+                return [
+                    'code'        => $row->code,
+                    'parent_code' => $row->parent_code,
+                    'name'        => $row->name,
+                    // 将来的にリンク生成に使えるように url も返しておく
+                    'url'         => $row->url,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return $rows;
+    }
+
+    // ==========================
+    // 内部ユーティリティ
+    // ==========================
+
+    /**
+     * 保存用カラムを組み立てる（未知のキーは無視）
+     *
+     * @param array $data
+     * @return array
+     */
+    private function buildSaveColumns(array $data): array
+    {
+        // テーブルに存在する主なカラムだけを明示的に許可
+        $allowed = [
+            'type',
+            'status',
+            'title',
+            'slug',
+            'excerpt',
+            'body_md',
+            'body_html',
+            'cover_image_id',
+            'published_at',
+            'visible_from',
+            'visible_until',
+            'is_pinned',
+            'pin_until',
+            'priority',
+            'related_product_id',
+            'meta',
+        ];
+
+        $save = [];
+
+        foreach ($allowed as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $value = $data[$key];
+
+            if ($key === 'meta') {
+                // meta は array|null を JSON 文字列に変換して保存
+                if (is_array($value) && !empty($value)) {
+                    $save['meta'] = json_encode($value, JSON_UNESCAPED_UNICODE);
+                } else {
+                    $save['meta'] = null;
+                }
+                continue;
+            }
+
+            $save[$key] = $value;
+        }
+
+        // body_html は現時点では未使用なので null 固定（将来 Markdown パースで生成）
+        if (!array_key_exists('body_html', $save)) {
+            $save['body_html'] = null;
+        }
+
+        return $save;
     }
 
     /**
-     * フロントからの簡易payloadをDB項目へ正規化
-     * - body → body_md
-     * - published_at は date/datetime 文字列を Carbon 化（空は除外）
-     * - meta.external_url は meta 配列に束ねる
+     * 1件取得して meta を array にデコードして返す
+     *
+     * @param int $id
+     * @return object|null
      */
-    protected function normalizePayloadForWrite(array $payload, bool $isCreate): array
+    private function findPost(int $id)
     {
-        $out = [];
+        $row = DB::table($this->table)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first([
+                'id',
+                'type',
+                'status',
+                'title',
+                'slug',
+                'excerpt',
+                'body_md',
+                'body_html',
+                'cover_image_id',
+                'published_at',
+                'visible_from',
+                'visible_until',
+                'is_pinned',
+                'pin_until',
+                'priority',
+                'related_product_id',
+                'author_id',
+                'updated_by',
+                'meta',
+                'created_at',
+                'updated_at',
+            ]);
 
-        // タイトル・本文
-        if (array_key_exists('title', $payload)) {
-            $out['title'] = (string)$payload['title'];
-        }
-        if (array_key_exists('body', $payload)) {
-            $out['body_md'] = (string)$payload['body'];
-        }
-
-        // 公開状態
-        if (!empty($payload['status'])) {
-            $out['status'] = (string)$payload['status'];
-        }
-        if (array_key_exists('is_pinned', $payload)) {
-            $out['is_pinned'] = (bool)$payload['is_pinned'];
-        }
-        if (array_key_exists('priority', $payload)) {
-            $out['priority'] = (int)$payload['priority'];
-        }
-
-        // 日付系
-        foreach (['published_at', 'visible_from', 'visible_until', 'pin_until'] as $key) {
-            if (!empty($payload[$key])) {
-                $out[$key] = Carbon::parse($payload[$key]);
-            }
-        }
-
-        // 関連商品
-        if (array_key_exists('related_product_id', $payload)) {
-            $out['related_product_id'] = $payload['related_product_id'] ? (int)$payload['related_product_id'] : null;
+        if (!$row) {
+            return null;
         }
 
-        // メタ
-        // - 配列が来ていればそのまま
-        // - external_url 単体でも取り込む
-        $meta = [];
-        if (isset($payload['meta']) && is_array($payload['meta'])) {
-            $meta = $payload['meta'];
-        }
-        if (isset($payload['meta']['external_url'])) {
-            $url = trim((string)$payload['meta']['external_url']);
-            $meta['external_url'] = $url;
-        }
-        if (!empty($meta)) {
-            $out['meta'] = $meta;
+        if (isset($row->meta) && $row->meta !== null && $row->meta !== '') {
+            $decoded = json_decode($row->meta, true);
+            $row->meta = $decoded ?? null;
+        } else {
+            $row->meta = null;
         }
 
-        return $out;
-        }
+        return $row;
+    }
 }

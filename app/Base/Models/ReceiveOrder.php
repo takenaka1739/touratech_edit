@@ -91,7 +91,7 @@ class ReceiveOrder extends Model
         'pd.quantity as p_quantity',
       ])
       ->join('t_receive_order_details as rd', 'rd.receive_order_id', '=', 'r.id')
-      ->leftJoin('link_r_order_p_order_detail as l', 'l.receive_order_detail_id', '=', 'rd.id')
+      ->leftJoin('t_link_r_order_p_order_detail as l', 'l.receive_order_detail_id', '=', 'rd.id')
       ->leftJoin('t_place_order_details as pd', 'pd.id', '=', 'l.place_order_detail_id')
       ->where('r.id', '=', $receive_order_id)
       ->whereIn('rd.item_kind', [1, 2])

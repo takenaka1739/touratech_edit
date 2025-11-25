@@ -1,41 +1,22 @@
 <?php
 
-use Illuminate\Support\Facades\Log;   // ★ 追加
 use Illuminate\Support\Facades\Route;
 use App\Api\info\Controllers\InfoController;
-use App\Api\info\Controllers\InfoLookupController;
 
-Log::info('[info/routes] file included'); // ★ 追加：ファイル読み込み確認
-
-// 疎通確認用：/api/info/ping
-Route::get('/api/info/ping', function () {
-    Log::info('[info/routes] /api/info/ping hit'); // ★
-    return response()->json(['pong' => true, 'ts' => now()->toDateTimeString()]);
-});
-
-// 本番API
 Route::group([
     'prefix'     => 'api/info',
-    'middleware' => ['api', 'auth', 'check.general'], // 必要に応じて 'api' のみに
+    'middleware' => ['api', 'auth', 'check.general'],
 ], function () {
-    Log::info('[info/routes] group registered'); // ★
 
-    // 一覧
-    Route::get('topics', [InfoController::class, 'indexShop']);
-    Route::get('item-topics', [InfoController::class, 'indexProduct']);
+    // 投稿一覧
+    Route::get('posts', [InfoController::class, 'index']);
+    Route::post('posts', [InfoController::class, 'store']);
+    Route::put('posts/{id}', [InfoController::class, 'update'])->whereNumber('id');
+    Route::delete('posts/{id}', [InfoController::class, 'destroy'])->whereNumber('id');
 
-    // 作成
-    Route::post('topics', [InfoController::class, 'storeShop']);
-    Route::post('item-topics', [InfoController::class, 'storeProduct']);
+    // 商品検索（Items用）
+    Route::get('items', [InfoController::class, 'searchItems']);
 
-    // 更新
-    Route::put('topics/{id}', [InfoController::class, 'updateShop']);
-    Route::put('item-topics/{id}', [InfoController::class, 'updateProduct']);
-
-    // 削除
-    Route::delete('topics/{id}', [InfoController::class, 'destroyShop']);
-    Route::delete('item-topics/{id}', [InfoController::class, 'destroyProduct']);
-
-    // サジェスト
-    Route::get('items/lookup', [InfoLookupController::class, 'items']);
+    // カテゴリ選択用（カテゴリ1つを選ぶモーダル）
+    Route::get('categories', [InfoController::class, 'searchCategories']);
 });
