@@ -65,7 +65,7 @@ trait ItemRequestTrait
     return [
       'item_number' => '品番',
       'name' => '商品名',
-      'name_jp' => '商品名（納品書）',
+      'name_note' => '商品名（納品書）',
       'name_label' => '商品名（ラベル用）',
       'category_id' => '商品分類',
       'sales_unit_price' => '売上単価',

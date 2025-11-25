@@ -41,7 +41,6 @@ class SetItemService
    */
   public function fetch(array $cond)
   {
-    \Log::debug('fetch');
     $query = Item::select(
       'm_items.item_number',
       'm_items.id',
@@ -62,7 +61,6 @@ class SetItemService
    */
   public function get(int $id)
   {
-    \Log::debug('get');
     $data = Item::select(
       //'m_items.id',
       //'m_items.item_number',

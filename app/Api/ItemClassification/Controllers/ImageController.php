@@ -22,7 +22,6 @@ class ImageController extends BaseController
      */
     public function __construct(ImageService $service)
     {
-        Log::debug('ImageController::__construct');
         $this->service = $service;
     }
 
@@ -42,9 +41,6 @@ class ImageController extends BaseController
      */
     public function store(ImageStoreRequest $request)
     {
-        Log::debug('ImageStoreRequest');
-        Log::debug('validated', $request->validated());
-
         $this->service->store($request->validated());
 
         return $this->success();
@@ -57,7 +53,6 @@ class ImageController extends BaseController
      */
     public function update(ImageUpdateRequest $request, int $id)
     {
-        Log::debug('ImageUpdateRequest');
         Log::info('ImageController@update:start', [
             'id'    => $id,
             'input' => $request->validated(),

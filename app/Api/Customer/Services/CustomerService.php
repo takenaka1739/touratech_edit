@@ -122,7 +122,6 @@ class CustomerService
       $p['rate']         = $p['rate']         ?? 100;
       $p['fraction']     = $p['fraction']     ?? 3;
 
-
       Customer::create($p);
     });
   }
