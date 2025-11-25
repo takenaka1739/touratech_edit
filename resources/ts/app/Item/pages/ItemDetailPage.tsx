@@ -1168,9 +1168,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     let specialSaleSaveFlag = false;
     let categoryCombSaveFlag = false;
 
-    console.log('pattern');
-    console.log(pattern);
-
     if(pattern === '2'){
       itemSaveFlag = await edit(`item/update/${variIndex}`);
       console.log(itemSaveFlag);
