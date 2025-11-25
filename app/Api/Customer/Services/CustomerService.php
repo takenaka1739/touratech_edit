@@ -81,7 +81,12 @@ class CustomerService
           fax,
           distinguish,
           rate,
-          fraction
+          fraction,
+          corporate_class,
+          bank_class,
+          cutoff_date,
+          notice AS remarks,
+          email_pc AS email
       ")->find($id);
 
       if (!$customer) {
@@ -131,29 +136,74 @@ class CustomerService
   public function update(int $id, array $data)
   {
     $data = new Collection($data);
+
     DB::transaction(function () use ($id, $data) {
       $m = Customer::find($id);
-      $m->name = $data->get('name');
-      $m->kana = $data->get('kana');
-      $m->zip_code = $data->get('zip_code');
-      $m->address1 = $data->get('address1');
-      $m->address2 = $data->get('address2');
-      $m->tel = $data->get('tel');
-      $m->fax = $data->get('fax');
-      $m->email = $data->get('email');
-      $m->fraction = $data->get('fraction');
-      $m->corporate_class = $data->get('corporate_class');
-      $m->bank_class = $data->get('bank_class');
-      $m->cutoff_date = $data->get('cutoff_date');
-      $m->rate = $data->get('rate');
-      $m->remarks = $data->get('remarks');
-      $m->distinguish = $data->get('distinguish', $m->distinguish);
-      if ($data->has('rank_id'))   { $m->rank_id  = $data->get('rank_id') ?? $m->rank_id; }
-      if ($data->has('nickname'))  { $m->nickname = $data->get('nickname') ?? $m->nickname; }
-      if ($data->has('gender'))    { $m->gender   = $data->get('gender')   ?? $m->gender; }
+      if (!$m) {
+        return;
+      }
+
+      // 基本情報
+      $m->name        = $data->get('name',        $m->name);
+      $m->kana        = $data->get('kana',        $m->kana);
+      $m->zip_code    = $data->get('zip_code',    $m->zip_code);
+      $m->tel         = $data->get('tel',         $m->tel);
+      $m->fax         = $data->get('fax',         $m->fax);
+
+      // 住所（3分割）
+      // Controller 側で normalizeAddress 済みの値をそのまま使う
+      $m->prefectures  = $data->get('prefectures',  $m->prefectures);
+      $m->municipality = $data->get('municipality', $m->municipality);
+      $m->number       = $data->get('number',       $m->number);
+
+      // 掛率・端数処理
+      if ($data->has('rate')) {
+        $m->rate = (int) $data->get('rate', $m->rate);
+      }
+      if ($data->has('fraction')) {
+        $m->fraction = (int) $data->get('fraction', $m->fraction);
+      }
+
+      // 支払方法 / 口座選択 / 締日
+      if ($data->has('corporate_class')) {
+        $m->corporate_class = $data->get('corporate_class', $m->corporate_class);
+      }
+      if ($data->has('bank_class')) {
+        $m->bank_class = $data->get('bank_class', $m->bank_class);
+      }
+      if ($data->has('cutoff_date')) {
+        $m->cutoff_date = $data->get('cutoff_date', $m->cutoff_date);
+      }
+
+      // 区分・ランク・ニックネーム・性別
+      if ($data->has('distinguish')) {
+        $m->distinguish = $data->get('distinguish', $m->distinguish);
+      }
+      if ($data->has('rank_id')) {
+        $m->rank_id = $data->get('rank_id', $m->rank_id);
+      }
+      if ($data->has('nickname')) {
+        $m->nickname = $data->get('nickname', $m->nickname);
+      }
+      if ($data->has('gender')) {
+        $m->gender = $data->get('gender', $m->gender);
+      }
+
+      // メール（得意先マスタでは email を PC メールとして扱う想定）
+      if ($data->has('email')) {
+        $m->email_pc = $data->get('email', $m->email_pc);
+      }
+
+      // 備考：リクエスト側は remarks、DB カラムは notice
+      if ($data->has('remarks')) {
+        $m->notice = $data->get('remarks', $m->notice);
+      }
+
+      // パスワード変更が指定されていれば反映
       if ($data->has('password') && $data->get('password')) {
         $m->password = Hash::make($data->get('password'));
       }
+
       $m->save();
     });
   }
@@ -274,7 +324,7 @@ class CustomerService
             ->orWhere('number', 'like', '%' . escape_like($key) . '%')
             ->orWhere('tel', 'like', '%' . escape_like($key) . '%')
             ->orWhere('fax', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('email', 'like', '%' . escape_like($key) . '%');
+            ->orWhere('email_pc', 'like', '%' . escape_like($key) . '%');
         });
       }
     }
