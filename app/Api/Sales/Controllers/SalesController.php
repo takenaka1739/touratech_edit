@@ -82,14 +82,18 @@ class SalesController extends BaseController
    */
   public function store(SalesStoreRequest $request)
   {
-    $ret = $this->service->store($request->validated());
-    if (!$ret["success"]) {
-      return $this->error("", $ret["errors"]);
-    }
+      \Log::warning('[SalesController@store] called', [
+          'payload_keys' => array_keys($request->all()),
+      ]);
 
-    return $this->success([
-      'id' => $ret['id']
-    ]);
+      $ret = $this->service->store($request->validated());
+      if (!$ret["success"]) {
+          return $this->error("", $ret["errors"]);
+      }
+
+      return $this->success([
+          'id' => $ret['id']
+      ]);
   }
 
   /**

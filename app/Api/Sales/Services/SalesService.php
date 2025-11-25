@@ -10,9 +10,7 @@ use App\Base\Models\DeliveryAddress;
 
 class SalesService
 {
-    /**
-     * 編集用データ取得
-     */
+    
     public function getEditData($id): ?array
     {
         $sales = Sales::with(['details.item', 'customer', 'personnel', 'payment'])->find($id);
@@ -38,11 +36,14 @@ class SalesService
             }
         }
 
-        // 掛率
-        $rate = optional($sales->customer)->rate;
+        // 掛率（得意先レベル）
+        $customerRate = optional($sales->customer)->rate;
 
         // 明細（配列化）
-        $details = collect($sales->details)->map(function ($d) use ($rate) {
+        $details = collect($sales->details)->map(function ($d) use ($customerRate) {
+            // 明細の rate を最優先 → 無ければ得意先 → それも無ければ 100
+            $detailRate = $d->rate ?? $customerRate ?? 100;
+
             return [
                 'id'               => $d->id,
                 'item_id'          => $d->item_id,
@@ -51,7 +52,7 @@ class SalesService
                 'item_name'        => optional($d->item)->name,
                 'item_name_jp'     => optional($d->item)->name_note,
                 'sales_unit_price' => $d->sales_unit_price,
-                'rate'             => $rate,
+                'rate'             => $detailRate,
                 'unit_price'       => $d->unit_price,
                 'quantity'         => $d->quantity,
                 'amount'           => $d->amount,
@@ -88,35 +89,35 @@ class SalesService
         $flatTel      = $deliveryData['tel']    ?? ($sales->tel ?? null);
 
         return [
-            'id'              => (int) $sales->id,
-            'sales_at'        => $sales->sales_at,
-            'delivery_date'   => $sales->delivery_date ?? null,
-            'customer_id'     => $sales->customer_id,
-            'customer_name'   => optional($sales->customer)->name,
-            'send_flg'        => $sendFlag,
-            'name'            => $flatName,
-            'zip_code'        => $flatZip,
-            'address1'        => $flatAddress1,
-            'address2'        => $flatAddress2,
-            'tel'             => $flatTel,
-            'fax'             => $sales->fax ?? null,
-            'corporate_class' => $corporateClass,
-            'user_id'         => $sales->personnel_id ?? null,
-            'user_name'       => optional($sales->personnel)->name,
-            'shipping_amount' => $sales->shipping_amount ?? 0,
-            'fee'             => $sales->fee ?? 0,
-            'discount'        => $sales->discount ?? 0,
-            'total_amount'    => (int) ($sales->total_amount ?? 0),
-            'order_no'        => $sales->order_no ?? null,
-            'remarks'         => $sales->remarks ?? null,
-            'rate'            => $rate,
-            'sales_tax_rate'  => $sales->sales_tax_rate ?? null,
-            'fraction'        => $sales->fraction ?? 1,
-            'details'         => $details,
-            'details_amount'  => $detailsAmount,
-            'barcode'         => null,
-            'has_invoice'     => (bool) ($sales->has_invoice ?? 0),
-            'delivery'        => $deliveryData,
+            'id'                => (int) $sales->id,
+            'sales_at'          => $sales->sales_at,
+            'delivery_date'     => $sales->delivery_date ?? null,
+            'customer_id'       => $sales->customer_id,
+            'customer_name'     => optional($sales->customer)->name,
+            'send_flg'          => $sendFlag,
+            'name'              => $flatName,
+            'zip_code'          => $flatZip,
+            'address1'          => $flatAddress1,
+            'address2'          => $flatAddress2,
+            'tel'               => $flatTel,
+            'fax'               => $sales->fax ?? null,
+            'corporate_class'   => $corporateClass,
+            'user_id'           => $sales->personnel_id ?? null,
+            'user_name'         => optional($sales->personnel)->name,
+            'shipping_amount'   => $sales->shipping_amount ?? 0,
+            'fee'               => $sales->fee ?? 0,
+            'discount'          => $sales->discount ?? 0,
+            'total_amount'      => (int) ($sales->total_amount ?? 0),
+            'order_no'          => $sales->order_no ?? null,
+            'remarks'           => $sales->remarks ?? null,
+            'rate'              => $customerRate ?? 100, // ヘッダ用（得意先 or 100）
+            'sales_tax_rate'    => $sales->sales_tax_rate ?? null,
+            'fraction'          => $sales->fraction ?? 1,
+            'details'           => $details,
+            'details_amount'    => $detailsAmount,
+            'barcode'           => null,
+            'has_invoice'       => (bool) ($sales->has_invoice ?? 0),
+            'delivery'          => $deliveryData,
             'square_payment_id' => $sales->square_payment_id ?? null,
             'square_status'     => $sales->square_status ?? null,
         ];
@@ -145,8 +146,6 @@ class SalesService
         if (empty($norm['sales_at']))           $errs['sales_at']        = '売上日を入力してください。';
         if (empty($norm['tel']))                $errs['tel']             = 'TELを入力してください。';
         if (!isset($norm['corporate_class']))   $errs['corporate_class'] = '支払方法（法人区分）を選択してください。';
-        // 担当者は任意
-        if (empty($norm['customer_id']))        $errs['customer_id']     = '得意先を選択してください。';
 
         // 発送ありの場合の必須
         if (!empty($norm['send_flg'])) {
@@ -230,7 +229,16 @@ class SalesService
                 'item_kind'        => isset($d['item_kind']) ? (int)$d['item_kind'] : null,
                 'item_id'          => isset($d['item_id']) ? (int)$d['item_id'] : null,
                 'sales_unit_price' => $num($d['sales_unit_price'] ?? 0, 2),
-                'rate'             => isset($d['rate']) ? (int)$d['rate'] : 100,
+
+                // ★ 明細から rate が送られてきたときだけ整数キャスト。無ければ null
+                'rate'             => (
+                    array_key_exists('rate', $d)
+                    && $d['rate'] !== null
+                    && $d['rate'] !== ''
+                )
+                    ? (int)$d['rate']
+                    : null,
+
                 'unit_price'       => $num($d['unit_price'] ?? 0, 2),
                 'quantity'         => isset($d['quantity']) ? (int)$d['quantity'] : 0,
                 'amount'           => $num($d['amount'] ?? 0, 0),
@@ -270,6 +278,39 @@ class SalesService
             }
             $fallback = DB::table($table)->orderBy('id')->value('id');
             if ($fallback) return (int)$fallback;
+        }
+
+        return null;
+    }
+
+    /**
+     * 顧客TEL取得ヘルパ
+     * - t_customers / m_customers / customers のいずれかから TEL 系カラムを探す
+     */
+    private function getCustomerTel(?int $customerId): ?string
+    {
+        if (!$customerId) {
+            return null;
+        }
+
+        $tables = ['t_customers', 'm_customers', 'customers'];
+        $telColumns = ['tel', 'phone', 'phone_number'];
+
+        foreach ($tables as $tbl) {
+            if (!Schema::hasTable($tbl)) {
+                continue;
+            }
+
+            $row = DB::table($tbl)->where('id', $customerId)->first();
+            if (!$row) {
+                continue;
+            }
+
+            foreach ($telColumns as $col) {
+                if (Schema::hasColumn($tbl, $col) && !empty($row->$col)) {
+                    return (string) $row->$col;
+                }
+            }
         }
 
         return null;
@@ -354,16 +395,48 @@ class SalesService
      */
     public function newData(): array
     {
+        \Log::info('[SalesService][newData] start');
+
         $d = $this->getInitialData();
-        $data = is_object($d) && method_exists($d, 'toArray') ? $d->toArray() : (array)$d;
+        $data = is_object($d) && method_exists($d, 'toArray')
+            ? $d->toArray()
+            : (array)$d;
+
+        // 画面が壊れないための最低限のデフォルト
         $data += [
             'details'     => [],
             'has_invoice' => false,
             'sales_at'    => date('Y/m/d'),
         ];
+
+        // ★ デフォルト担当者（管理者）を取得
+        $defaultPersonnel = $this->getDefaultPersonnel();
+
+        if ($defaultPersonnel) {
+            // まだ何も入っていない場合だけ管理者で補完
+            if (empty($data['user_id'])) {
+                $data['user_id'] = $defaultPersonnel['id'];
+            }
+            if (empty($data['user_name'])) {
+                $data['user_name'] = $defaultPersonnel['name'];
+            }
+
+            \Log::info('[SalesService][newData] set default personnel', [
+                'user_id'   => $data['user_id'],
+                'user_name' => $data['user_name'],
+            ]);
+        } else {
+            \Log::warning('[SalesService][newData] default personnel not found');
+        }
+
+        \Log::info('[SalesService][newData] end', [
+            'sales_at' => $data['sales_at'],
+            'user_id'  => $data['user_id'] ?? null,
+        ]);
+
         return $data;
     }
-
+    
     /**
      * 元コントローラー互換: 受注IDから売上初期データを生成
      * 過去のコントローラー実装（DB直読み）をこのサービスに移植
@@ -379,7 +452,10 @@ class SalesService
             ->where('receive_order_id', $id)
             ->orderBy('no')
             ->get()
-            ->map(function ($d) {
+            ->map(function ($d) use ($r) {
+                // 受注明細の rate → 受注ヘッダの rate → 100 の順で初期値を決定
+                $headerRate = $r->rate ?? 100;
+
                 return [
                     'id'               => $d->id,
                     'no'               => $d->no,
@@ -389,7 +465,7 @@ class SalesService
                     'item_name'        => $d->item_name,
                     'item_name_jp'     => $d->item_name_jp,
                     'sales_unit_price' => $d->sales_unit_price,
-                    'rate'             => $d->rate ?? 100,
+                    'rate'             => $d->rate ?? $headerRate,
                     'unit_price'       => $d->unit_price,
                     'quantity'         => $d->quantity,
                     'amount'           => $d->amount,
@@ -400,6 +476,18 @@ class SalesService
             })
             ->values()
             ->all();
+
+        $userId   = $r->user_id ?? null;
+        $userName = null;
+
+        // 受注に担当者が入っていなければ、デフォルト担当者（管理者）を使う
+        if (!$userId) {
+            $defaultPersonnel = $this->getDefaultPersonnel();
+            if ($defaultPersonnel) {
+                $userId   = $defaultPersonnel['id'];
+                $userName = $defaultPersonnel['name'];
+            }
+        }
 
         return [
             'id'               => null,
@@ -415,8 +503,8 @@ class SalesService
             'tel'              => $r->tel ?? null,
             'fax'              => $r->fax ?? null,
             'corporate_class'  => (int)($r->corporate_class ?? 1),
-            'user_id'          => $r->user_id ?? null,
-            'user_name'        => null,
+            'user_id'          => $userId,
+            'user_name'        => $userName,
             'shipping_amount'  => $r->shipping_amount ?? 0,
             'fee'              => $r->fee ?? 0,
             'discount'         => $r->discount ?? 0,
@@ -606,7 +694,30 @@ class SalesService
         ];
     }
 
-    
+    private function getDefaultPersonnel(): ?array
+    {
+        if (!Schema::hasTable('m_personnels')) {
+            return null;
+        }
+
+        $query = DB::table('m_personnels');
+
+        // login_id カラムがある場合は admin を優先
+        if (Schema::hasColumn('m_personnels', 'login_id')) {
+            $row = $query->where('login_id', 'admin')->first();
+        } else {
+            $row = $query->orderBy('id')->first();
+        }
+
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'id'   => (int) $row->id,
+            'name' => $row->name ?? null,
+        ];
+    }
 
     /**
      * 元コントローラー互換: 更新用バリデーションだけを行い、真偽を返す
@@ -641,15 +752,34 @@ class SalesService
         return false;
     }
 
+    /**
+     * 実処理：登録（例外を上位に投げる）
+     */
     private function storeInternal(array $norm): int
     {
         return DB::transaction(function () use ($norm) {
 
+            // ログ：受け取ったキーとヘッダ情報
+            \Log::info('[SalesService][storeInternal] start', [
+                'keys'              => array_keys($norm),
+                'customer_id'       => $norm['customer_id'] ?? null,
+                'send_flg'          => $norm['send_flg'] ?? null,
+                'rate_header'       => $norm['rate'] ?? null,
+                'details_count'     => isset($norm['details']) && is_array($norm['details']) ? count($norm['details']) : 0,
+            ]);
+
             // 「届け先入力があれば send_flg に関係なく配送先を保存」する
-            $hasDeliveryInput = !empty($norm['name']) || !empty($norm['zip_code']) || !empty($norm['address1']) || !empty($norm['address2']) || !empty($norm['tel']);
+            $hasDeliveryInput =
+                !empty($norm['name']) ||
+                !empty($norm['zip_code']) ||
+                !empty($norm['address1']) ||
+                !empty($norm['address2']) ||
+                !empty($norm['tel']);
 
             $deliveryId = null;
-            if (!empty($norm['send_flg']) || $hasDeliveryInput) {
+
+            // customer_id があるときだけ m_delivery_addresses を作成
+            if (!empty($norm['customer_id']) && (!empty($norm['send_flg']) || $hasDeliveryInput)) {
                 $delivery = new DeliveryAddress();
                 $delivery->recipient_name = $norm['name'] ?? '';
                 $delivery->zip_code       = $norm['zip_code'] ?? '';
@@ -657,20 +787,32 @@ class SalesService
                 $delivery->municipality   = ($norm['address1'] ?? '') ?: '-';
                 $delivery->number         = ($norm['address2'] ?? '') ?: '-';
                 $delivery->tel            = $norm['tel'] ?? '';
+
                 if (Schema::hasColumn($delivery->getTable(), 'customer_id')) {
-                    $delivery->customer_id = $norm['customer_id'] ?? null;
+                    $delivery->customer_id = $norm['customer_id'];
                 }
+
                 $delivery->save();
                 $deliveryId = $delivery->id;
+
+                \Log::info('[SalesService][storeInternal] delivery saved', [
+                    'delivery_id' => $deliveryId,
+                ]);
+            } elseif (empty($norm['customer_id']) && (!empty($norm['send_flg']) || $hasDeliveryInput)) {
+                \Log::warning('[SalesService][storeInternal] skip delivery insert because customer_id is empty', [
+                    'customer_id' => $norm['customer_id'] ?? null,
+                ]);
             }
 
             // Sales 本体
             $sales = new Sales();
             $table = $sales->getTable();
 
-            $sales->sales_at = $norm['sales_at'];
-            if (Schema::hasColumn($table, 'delivery_date')) $sales->delivery_date = $norm['delivery_date'];
-            $sales->customer_id = $norm['customer_id'];
+            $sales->sales_at = $norm['sales_at'] ?? null;
+            if (Schema::hasColumn($table, 'delivery_date')) {
+                $sales->delivery_date = $norm['delivery_date'] ?? null;
+            }
+            $sales->customer_id = $norm['customer_id'] ?? null;
 
             // send_flg / is_send 両対応（UI表示用フラグであり、配送先の保存とは切り離す）
             if (Schema::hasColumn($table, 'send_flg')) {
@@ -684,33 +826,53 @@ class SalesService
             if (Schema::hasColumn($table, 'zip_code')) $sales->zip_code = $norm['zip_code'] ?? null;
             if (Schema::hasColumn($table, 'address1')) $sales->address1 = $norm['address1'] ?? null;
             if (Schema::hasColumn($table, 'address2')) $sales->address2 = $norm['address2'] ?? null;
-            if (Schema::hasColumn($table, 'tel'))      $sales->tel      = $norm['tel'] ?? null;
-            if (Schema::hasColumn($table, 'fax'))      $sales->fax      = $norm['fax'] ?? null;
 
-            if (Schema::hasColumn($table, 'personnel_id'))     $sales->personnel_id    = $norm['user_id'];
-            if (Schema::hasColumn($table, 'shipping_amount'))  $sales->shipping_amount = $norm['shipping_amount'];
-            if (Schema::hasColumn($table, 'fee'))              $sales->fee             = $norm['fee'];
-            if (Schema::hasColumn($table, 'discount'))         $sales->discount        = $norm['discount'];
-            $sales->total_amount = $norm['total_amount'];
+            // TEL / 送り先系（存在するカラムにだけ入れる）
+            if (Schema::hasColumn($table, 'tel'))              $sales->tel              = $norm['tel'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_tel'))      $sales->ship_to_tel      = $norm['tel'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_name'))     $sales->ship_to_name     = $norm['name'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_zip_code')) $sales->ship_to_zip_code = $norm['zip_code'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_address1')) $sales->ship_to_address1 = $norm['address1'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_address2')) $sales->ship_to_address2 = $norm['address2'] ?? null;
+
+            if (Schema::hasColumn($table, 'fax')) $sales->fax = $norm['fax'] ?? null;
+
+            // ★ 担当者（personnel_id）：未指定なら管理者を補完
+            $personnelId = $norm['user_id'] ?? null;
+            if (!$personnelId) {
+                $defaultPersonnel = $this->getDefaultPersonnel();
+                $personnelId = $defaultPersonnel['id'] ?? null;
+            }
+            if (Schema::hasColumn($table, 'personnel_id')) {
+                $sales->personnel_id = $personnelId;
+            }
+
+            if (Schema::hasColumn($table, 'shipping_amount'))  $sales->shipping_amount = $norm['shipping_amount'] ?? 0;
+            if (Schema::hasColumn($table, 'fee'))              $sales->fee             = $norm['fee'] ?? 0;
+            if (Schema::hasColumn($table, 'discount'))         $sales->discount        = $norm['discount'] ?? 0;
+            $sales->total_amount = $norm['total_amount'] ?? 0;
             if (Schema::hasColumn($table, 'order_no'))         $sales->order_no        = $norm['order_no'] ?? null;
             if (Schema::hasColumn($table, 'remarks'))          $sales->remarks         = $norm['remarks'] ?? null;
-            if (Schema::hasColumn($table, 'rate'))             $sales->rate            = $norm['rate'];
-            if (Schema::hasColumn($table, 'sales_tax_rate'))   $sales->sales_tax_rate  = $norm['sales_tax_rate'];
-            if (Schema::hasColumn($table, 'fraction'))         $sales->fraction        = $norm['fraction'];
+            if (Schema::hasColumn($table, 'rate'))             $sales->rate            = $norm['rate'] ?? 100;
+            if (Schema::hasColumn($table, 'sales_tax_rate'))   $sales->sales_tax_rate  = $norm['sales_tax_rate'] ?? null;
+            if (Schema::hasColumn($table, 'fraction'))         $sales->fraction        = $norm['fraction'] ?? 1;
             if (Schema::hasColumn($table, 'delivery_id'))      $sales->delivery_id     = $deliveryId;
             if (Schema::hasColumn($table, 'has_invoice'))      $sales->has_invoice     = !empty($norm['has_invoice']) ? 1 : 0;
             if (Schema::hasColumn($table, 'receive_order_id')) $sales->receive_order_id= $norm['receive_order_id'] ?? null;
 
             // payment_id（列がある場合に設定）
             if (Schema::hasColumn($table, 'payment_id')) {
-                $sales->payment_id = $this->resolvePaymentId($norm['corporate_class']);
+                $sales->payment_id = $this->resolvePaymentId($norm['corporate_class'] ?? null);
             }
 
             // ヘッダ item_id（列がある場合は明細の先頭 item_id を補完）
             if (Schema::hasColumn($table, 'item_id')) {
                 $firstItemId = null;
-                foreach ($norm['details'] as $d) {
-                    if (!empty($d['item_id'])) { $firstItemId = (int)$d['item_id']; break; }
+                foreach (($norm['details'] ?? []) as $d) {
+                    if (!empty($d['item_id'])) {
+                        $firstItemId = (int)$d['item_id'];
+                        break;
+                    }
                 }
                 $sales->item_id = $firstItemId ?? 0;
             }
@@ -720,22 +882,52 @@ class SalesService
             // 明細（可変カラム存在チェックつき）
             $dtTable = $sales->details()->getModel()->getTable();
             $payload = [];
-            foreach ($norm['details'] as $d) {
+
+            // ヘッダ掛率（得意先掛率など）を fallback 用に保持
+            $headerRate = $norm['rate'] ?? 100;
+
+            foreach (($norm['details'] ?? []) as $idx => $d) {
+                $detailRate = $d['rate'] ?? $headerRate ?? 100;
+
                 $row = [
-                    'no'         => $d['no'],
-                    'item_id'    => $d['item_id'],
-                    'unit_price' => $d['unit_price'],
-                    'quantity'   => $d['quantity'],
-                    'amount'     => $d['amount'],
+                    'no'         => $d['no']        ?? ($idx + 1),
+                    'item_id'    => $d['item_id']   ?? null,
+                    'unit_price' => $d['unit_price']?? 0,
+                    'quantity'   => $d['quantity']  ?? 0,
+                    'amount'     => $d['amount']    ?? 0,
                 ];
-                if (Schema::hasColumn($dtTable, 'item_kind'))        $row['item_kind']        = $d['item_kind'];
-                if (Schema::hasColumn($dtTable, 'sales_unit_price')) $row['sales_unit_price'] = $d['sales_unit_price'];
-                if (Schema::hasColumn($dtTable, 'rate'))             $row['rate']             = $d['rate'];
-                if (Schema::hasColumn($dtTable, 'sales_tax_rate'))   $row['sales_tax_rate']   = $d['sales_tax_rate'];
-                if (Schema::hasColumn($dtTable, 'fraction'))         $row['fraction']         = $d['fraction'];
+
+                if (Schema::hasColumn($dtTable, 'item_kind'))        $row['item_kind']        = $d['item_kind'] ?? null;
+                if (Schema::hasColumn($dtTable, 'sales_unit_price')) $row['sales_unit_price'] = $d['sales_unit_price'] ?? 0;
+
+                // ★ 明細ごとの rate → 無ければヘッダ rate → さらに無ければ 100
+                if (Schema::hasColumn($dtTable, 'rate')) {
+                    $row['rate'] = (int)$detailRate;
+                }
+
+                if (Schema::hasColumn($dtTable, 'sales_tax_rate'))   $row['sales_tax_rate']   = $d['sales_tax_rate'] ?? null;
+                if (Schema::hasColumn($dtTable, 'fraction'))         $row['fraction']         = $d['fraction'] ?? 1;
+
+                \Log::debug('[SalesService][storeInternal] detail row', [
+                    'no'           => $row['no'],
+                    'item_id'      => $row['item_id'],
+                    'rate_in'      => $d['rate'] ?? null,
+                    'rate_saved'   => $row['rate'] ?? null,
+                    'header_rate'  => $headerRate,
+                ]);
+
                 $payload[] = $row;
             }
-            $sales->details()->createMany($payload);
+
+            if (!empty($payload)) {
+                $sales->details()->createMany($payload);
+            }
+
+            \Log::info('[SalesService][storeInternal] completed', [
+                'sale_id'      => $sales->id,
+                'delivery_id'  => $deliveryId,
+                'personnel_id' => $sales->personnel_id,
+            ]);
 
             return (int)$sales->id;
         });
@@ -753,10 +945,24 @@ class SalesService
             $sales = Sales::with(['details'])->findOrFail($id);
             $table = $sales->getTable();
 
-            // 「届け先入力があれば send_flg に関係なく配送先を保存」
-            $hasDeliveryInput = !empty($norm['name']) || !empty($norm['zip_code']) || !empty($norm['address1']) || !empty($norm['address2']) || !empty($norm['tel']);
+            \Log::info('[SalesService][updateInternal] start', [
+                'sale_id'          => $id,
+                'keys'             => array_keys($norm),
+                'customer_id'      => $norm['customer_id'] ?? null,
+                'send_flg'         => $norm['send_flg'] ?? null,
+                'rate_header'      => $norm['rate'] ?? null,
+                'details_count'    => isset($norm['details']) && is_array($norm['details']) ? count($norm['details']) : 0,
+            ]);
 
-            if (!empty($norm['send_flg']) || $hasDeliveryInput) {
+            // 「届け先入力があれば send_flg に関係なく配送先を保存」
+            $hasDeliveryInput =
+                !empty($norm['name']) ||
+                !empty($norm['zip_code']) ||
+                !empty($norm['address1']) ||
+                !empty($norm['address2']) ||
+                !empty($norm['tel']);
+
+            if (!empty($norm['customer_id']) && (!empty($norm['send_flg']) || $hasDeliveryInput)) {
                 $delivery = $sales->delivery_id
                     ? DeliveryAddress::find($sales->delivery_id)
                     : new DeliveryAddress();
@@ -767,19 +973,31 @@ class SalesService
                 $delivery->municipality   = ($norm['address1'] ?? '') ?: '-';
                 $delivery->number         = ($norm['address2'] ?? '') ?: '-';
                 $delivery->tel            = $norm['tel'] ?? '';
+
                 if (Schema::hasColumn($delivery->getTable(), 'customer_id')) {
-                    $delivery->customer_id = $norm['customer_id'] ?? null;
+                    $delivery->customer_id = $norm['customer_id'];
                 }
+
                 $delivery->save();
                 if (Schema::hasColumn($table, 'delivery_id')) {
                     $sales->delivery_id = $delivery->id;
                 }
+
+                \Log::info('[SalesService][updateInternal] delivery saved/updated', [
+                    'delivery_id' => $delivery->id,
+                ]);
+            } elseif (empty($norm['customer_id']) && (!empty($norm['send_flg']) || $hasDeliveryInput)) {
+                \Log::warning('[SalesService][updateInternal] skip delivery insert because customer_id is empty', [
+                    'customer_id' => $norm['customer_id'] ?? null,
+                ]);
             }
 
             // 本体
-            $sales->sales_at = $norm['sales_at'];
-            if (Schema::hasColumn($table, 'delivery_date')) $sales->delivery_date = $norm['delivery_date'];
-            $sales->customer_id = $norm['customer_id'];
+            $sales->sales_at = $norm['sales_at'] ?? null;
+            if (Schema::hasColumn($table, 'delivery_date')) {
+                $sales->delivery_date = $norm['delivery_date'] ?? null;
+            }
+            $sales->customer_id = $norm['customer_id'] ?? null;
 
             // send_flg / is_send 両対応
             if (Schema::hasColumn($table, 'send_flg')) {
@@ -793,32 +1011,52 @@ class SalesService
             if (Schema::hasColumn($table, 'zip_code')) $sales->zip_code = $norm['zip_code'] ?? null;
             if (Schema::hasColumn($table, 'address1')) $sales->address1 = $norm['address1'] ?? null;
             if (Schema::hasColumn($table, 'address2')) $sales->address2 = $norm['address2'] ?? null;
-            if (Schema::hasColumn($table, 'tel'))      $sales->tel      = $norm['tel'] ?? null;
-            if (Schema::hasColumn($table, 'fax'))      $sales->fax      = $norm['fax'] ?? null;
 
-            if (Schema::hasColumn($table, 'personnel_id'))     $sales->personnel_id    = $norm['user_id'];
-            if (Schema::hasColumn($table, 'shipping_amount'))  $sales->shipping_amount = $norm['shipping_amount'];
-            if (Schema::hasColumn($table, 'fee'))              $sales->fee             = $norm['fee'];
-            if (Schema::hasColumn($table, 'discount'))         $sales->discount        = $norm['discount'];
-            $sales->total_amount = $norm['total_amount'];
+            // TEL / 送り先系
+            if (Schema::hasColumn($table, 'tel'))              $sales->tel              = $norm['tel'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_tel'))      $sales->ship_to_tel      = $norm['tel'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_name'))     $sales->ship_to_name     = $norm['name'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_zip_code')) $sales->ship_to_zip_code = $norm['zip_code'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_address1')) $sales->ship_to_address1 = $norm['address1'] ?? null;
+            if (Schema::hasColumn($table, 'ship_to_address2')) $sales->ship_to_address2 = $norm['address2'] ?? null;
+
+            if (Schema::hasColumn($table, 'fax')) $sales->fax = $norm['fax'] ?? null;
+
+            // ★ 担当者（personnel_id）：送られてきた user_id を優先しつつ、なければ既存値 or 管理者
+            $personnelId = $norm['user_id'] ?? $sales->personnel_id ?? null;
+            if (!$personnelId) {
+                $defaultPersonnel = $this->getDefaultPersonnel();
+                $personnelId = $defaultPersonnel['id'] ?? null;
+            }
+            if (Schema::hasColumn($table, 'personnel_id')) {
+                $sales->personnel_id = $personnelId;
+            }
+
+            if (Schema::hasColumn($table, 'shipping_amount'))  $sales->shipping_amount = $norm['shipping_amount'] ?? 0;
+            if (Schema::hasColumn($table, 'fee'))              $sales->fee             = $norm['fee'] ?? 0;
+            if (Schema::hasColumn($table, 'discount'))         $sales->discount        = $norm['discount'] ?? 0;
+            $sales->total_amount = $norm['total_amount'] ?? 0;
             if (Schema::hasColumn($table, 'order_no'))         $sales->order_no        = $norm['order_no'] ?? null;
             if (Schema::hasColumn($table, 'remarks'))          $sales->remarks         = $norm['remarks'] ?? null;
-            if (Schema::hasColumn($table, 'rate'))             $sales->rate            = $norm['rate'];
-            if (Schema::hasColumn($table, 'sales_tax_rate'))   $sales->sales_tax_rate  = $norm['sales_tax_rate'];
-            if (Schema::hasColumn($table, 'fraction'))         $sales->fraction        = $norm['fraction'];
+            if (Schema::hasColumn($table, 'rate'))             $sales->rate            = $norm['rate'] ?? 100;
+            if (Schema::hasColumn($table, 'sales_tax_rate'))   $sales->sales_tax_rate  = $norm['sales_tax_rate'] ?? null;
+            if (Schema::hasColumn($table, 'fraction'))         $sales->fraction        = $norm['fraction'] ?? 1;
             if (Schema::hasColumn($table, 'has_invoice'))      $sales->has_invoice     = !empty($norm['has_invoice']) ? 1 : 0;
             if (Schema::hasColumn($table, 'receive_order_id')) $sales->receive_order_id= $norm['receive_order_id'] ?? null;
 
             // payment_id（列がある場合に設定）
             if (Schema::hasColumn($table, 'payment_id')) {
-                $sales->payment_id = $this->resolvePaymentId($norm['corporate_class']);
+                $sales->payment_id = $this->resolvePaymentId($norm['corporate_class'] ?? null);
             }
 
             // ヘッダ item_id（列がある場合は明細の先頭 item_id を補完）
             if (Schema::hasColumn($table, 'item_id')) {
                 $firstItemId = null;
-                foreach ($norm['details'] as $d) {
-                    if (!empty($d['item_id'])) { $firstItemId = (int)$d['item_id']; break; }
+                foreach (($norm['details'] ?? []) as $d) {
+                    if (!empty($d['item_id'])) {
+                        $firstItemId = (int)$d['item_id'];
+                        break;
+                    }
                 }
                 $sales->item_id = $firstItemId ?? 0;
             }
@@ -831,25 +1069,53 @@ class SalesService
             // 明細（可変カラム存在チェックつき）
             $dtTable = $sales->details()->getModel()->getTable();
             $payload = [];
-            foreach ($norm['details'] as $d) {
+
+            // ヘッダ掛率（得意先掛率など）を fallback 用に保持
+            $headerRate = $norm['rate'] ?? 100;
+
+            foreach (($norm['details'] ?? []) as $idx => $d) {
+                $detailRate = $d['rate'] ?? $headerRate ?? 100;
+
                 $row = [
-                    'no'         => $d['no'],
-                    'item_id'    => $d['item_id'],
-                    'unit_price' => $d['unit_price'],
-                    'quantity'   => $d['quantity'],
-                    'amount'     => $d['amount'],
+                    'no'         => $d['no']        ?? ($idx + 1),
+                    'item_id'    => $d['item_id']   ?? null,
+                    'unit_price' => $d['unit_price']?? 0,
+                    'quantity'   => $d['quantity']  ?? 0,
+                    'amount'     => $d['amount']    ?? 0,
                 ];
-                if (Schema::hasColumn($dtTable, 'item_kind'))        $row['item_kind']        = $d['item_kind'];
-                if (Schema::hasColumn($dtTable, 'sales_unit_price')) $row['sales_unit_price'] = $d['sales_unit_price'];
-                if (Schema::hasColumn($dtTable, 'rate'))             $row['rate']             = $d['rate'];
-                if (Schema::hasColumn($dtTable, 'sales_tax_rate'))   $row['sales_tax_rate']   = $d['sales_tax_rate'];
-                if (Schema::hasColumn($dtTable, 'fraction'))         $row['fraction']         = $d['fraction'];
+
+                if (Schema::hasColumn($dtTable, 'item_kind'))        $row['item_kind']        = $d['item_kind'] ?? null;
+                if (Schema::hasColumn($dtTable, 'sales_unit_price')) $row['sales_unit_price'] = $d['sales_unit_price'] ?? 0;
+
+                // ★ 明細ごとの rate → 無ければヘッダ rate → さらに無ければ 100
+                if (Schema::hasColumn($dtTable, 'rate')) {
+                    $row['rate'] = (int)$detailRate;
+                }
+
+                if (Schema::hasColumn($dtTable, 'sales_tax_rate'))   $row['sales_tax_rate']   = $d['sales_tax_rate'] ?? null;
+                if (Schema::hasColumn($dtTable, 'fraction'))         $row['fraction']         = $d['fraction'] ?? 1;
+
+                \Log::debug('[SalesService][updateInternal] detail row', [
+                    'no'           => $row['no'],
+                    'item_id'      => $row['item_id'],
+                    'rate_in'      => $d['rate'] ?? null,
+                    'rate_saved'   => $row['rate'] ?? null,
+                    'header_rate'  => $headerRate,
+                ]);
+
                 $payload[] = $row;
             }
-            $sales->details()->createMany($payload);
+
+            if (!empty($payload)) {
+                $sales->details()->createMany($payload);
+            }
+
+            \Log::info('[SalesService][updateInternal] completed', [
+                'sale_id'      => $sales->id,
+                'personnel_id' => $sales->personnel_id,
+            ]);
         });
     }
-
     private function cfg(array $config, array $keys, $default = '')
     {
         foreach ($keys as $k) {

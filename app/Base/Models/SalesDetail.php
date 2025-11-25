@@ -17,11 +17,13 @@ class SalesDetail extends Model
         'no',
         'item_kind',
         'sales_unit_price',
+        'rate',          // ★ 掛率（今回追加）
         'unit_price',
         'quantity',
         'amount',
         'sales_tax_rate',
         'sales_tax',
+        'fraction',      // ★ 端数処理（あれば一緒に入れておく）
         'parent_id',
     ];
 

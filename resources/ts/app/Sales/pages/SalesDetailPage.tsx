@@ -1,5 +1,5 @@
 // [UPDATE] resources/ts/app/Sales/pages/SalesDetailPage.tsx
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
 import { CommonDataDetailDialog } from '@/app/App/components/CommonDataDetailDialog';
@@ -54,53 +54,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
   // ---------- 安全なデフォルト（壊れないための保険） ----------
   const details = useMemo(() => (Array.isArray(state?.details) ? state.details : []), [state?.details]);
   const safeNumber = (v: number | string | undefined, p: number = 0) => numberFormat((v as number) ?? 0, p);
-
-  // ---------- 簡易バリデーション（必須未入力でも保存できてしまう問題の暫定ガード） ----------
-  const validateBeforeSave = useCallback((): string[] => {
-    const msgs: string[] = [];
-    const s = state || {};
-
-    // 基本必須
-    if (!s.sales_at) msgs.push('売上日');
-    if (!s.tel) msgs.push('TEL');
-    if (!s.corporate_class && s.corporate_class !== 0) msgs.push('法人区分');
-
-    // 発送ありの場合の必須
-    if (s.send_flg) {
-      if (!s.name) msgs.push('届け先名');
-      if (!s.zip_code) msgs.push('郵便番号');
-      if (!s.address1) msgs.push('住所1');
-    }
-
-    // 担当・得意先（要件により外して良ければ調整可）
-    if (!s.user_id) msgs.push('担当者');
-    if (!s.customer_id) msgs.push('得意先');
-
-    // 明細
-    if (!details.length) {
-      msgs.push('明細（少なくとも1行）');
-    } else {
-      const invalidQty = details.some(
-        (r: any) =>
-          r?.quantity === null ||
-          r?.quantity === undefined ||
-          Number(r.quantity) <= 0
-      );
-      if (invalidQty) msgs.push('明細の数量（0以下の行があります）');
-    }
-
-    return msgs;
-  }, [state, details]);
-
-  const handleSave = useCallback(() => {
-    const msgs = validateBeforeSave();
-    if (msgs.length > 0) {
-      alert(`未入力/不正があります。\n\n・${msgs.join('\n・')}`);
-      return;
-    }
-    // フック側の保存を呼ぶ
-    onClickSave();
-  }, [onClickSave, validateBeforeSave]);
 
   return (
     <PageWrapper
@@ -508,8 +461,8 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>
-            {/* onClickSave 直呼び→ handleSave で暫定バリデーション */}
-            <button className="btn" onClick={handleSave} disabled={state.has_invoice}>
+            {/* バリデーションはバックエンドに委譲し、フロント側はそのまま保存 */}
+            <button className="btn" onClick={onClickSave} disabled={state.has_invoice}>
               保存
             </button>
             <button className="btn ml-6" onClick={onClickPrintDelivery}>

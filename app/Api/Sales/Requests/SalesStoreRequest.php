@@ -16,8 +16,10 @@ class SalesStoreRequest extends FormRequest
     {
         return [
             // ヘッダ
-            'sales_at'          => ['required', 'string'],         // 例: "2025/10/01" 等。形式チェックはサービス側で吸収
-            'customer_id'       => ['required', 'integer'],
+            'sales_at'          => ['required', 'string'],
+
+            'customer_id'       => ['nullable', 'integer'],
+
             'corporate_class'   => ['required', 'integer'],        // 支払方法（法人区分）
             'tel'               => ['required', 'string'],
 
@@ -76,7 +78,6 @@ class SalesStoreRequest extends FormRequest
     {
         return [
             'sales_at.required'                 => ':attributeを入力してください。',
-            'customer_id.required'              => ':attributeを選択してください。',
             'corporate_class.required'          => ':attributeを選択してください。',
             'tel.required'                      => ':attributeを入力してください。',
 

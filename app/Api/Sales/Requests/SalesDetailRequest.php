@@ -42,7 +42,8 @@ class SalesDetailRequest extends FormRequest
             'remarks'           => ['sometimes', 'nullable', 'string'],
             'rate'              => ['sometimes', 'integer'],
             'sales_tax_rate'    => ['sometimes', 'integer'],
-            'fraction'          => ['sometimes', 'integer'],
+            // ★ fraction は任意 + 整数
+            'fraction'          => ['sometimes', 'nullable', 'integer'],
 
             // 明細（配列なら要素チェック。必須ではない）
             'details'                           => ['sometimes', 'array'],
@@ -55,7 +56,8 @@ class SalesDetailRequest extends FormRequest
             'details.*.quantity'                => ['sometimes', 'integer', 'min:1'],
             'details.*.amount'                  => ['sometimes', 'numeric'],
             'details.*.sales_tax_rate'          => ['sometimes', 'integer'],
-            'details.*.fraction'                => ['sometimes', 'integer'],
+            // ★ 明細側の fraction も任意 + 整数
+            'details.*.fraction'                => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
