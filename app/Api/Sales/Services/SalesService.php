@@ -734,21 +734,25 @@ class SalesService
      */
     public function hasInvoice(int $id): bool
     {
+        // 売上がなければ false
         $sales = Sales::find($id);
-        if (!$sales) return false;
+        if (!$sales) {
+            return false;
+        }
 
-        // カラムがあれば最優先
+        // 1. t_sales に has_invoice カラムがある場合はそれを信頼
         if (Schema::hasColumn($sales->getTable(), 'has_invoice')) {
-            return (bool)$sales->has_invoice;
+            return (bool) $sales->has_invoice;
         }
 
-        // 請求テーブルがある場合は存在チェック（名称は候補走査）
-        foreach (['t_invoices', 'invoices', 'sales_invoices'] as $tbl) {
-            if (Schema::hasTable($tbl)) {
-                $exists = DB::table($tbl)->where('sales_id', $id)->exists();
-                if ($exists) return true;
-            }
+        // 2. 旧版の仕様どおりリンクテーブル t_link_sales_invoice を参照
+        if (Schema::hasTable('t_link_sales_invoice')) {
+            return DB::table('t_link_sales_invoice')
+                ->where('sales_id', $id)
+                ->count() > 0;
         }
+
+        // ここまで来たら「請求管理の仕組み自体が未導入」という扱いで false
         return false;
     }
 

@@ -175,7 +175,7 @@ class SalesService
    */
   public function hasInvoice(int $sales_id)
   {
-    return DB::table('link_sales_invoice')
+    return DB::table('t_link_sales_invoice')
       ->where('sales_id', $sales_id)
       ->count() > 0;
   }
