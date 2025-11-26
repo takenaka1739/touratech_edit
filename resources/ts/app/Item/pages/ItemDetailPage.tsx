@@ -450,6 +450,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         // 値の追加
         setCheckBock({color:'#ffffff', flag:true});
         setbackColor('#EDF2F7');
+        setState(prev => ({
+          ...prev,
+          sales_price: 0}));
     } else {
       //チェックがはずされた場合
       //値の削除
@@ -474,19 +477,19 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       ...prev,
       sales_price: salesPrice}));
 
-  setState(prev => ({
-    ...prev,
-    variItems: prev.variItems.map(row =>
-      Number(row[0]) === Number(prev.id)
-        ? [
-            row[0], // idはそのまま
-            row[1], // 必要なら変更
-            row[2], // 必要なら変更
-            row[3], // 例えば sales_price を row[3] に入れるならここ
-            row[4], // 他の値はそのまま
-            row[5],
-            salesPrice,
-          ]
+    setState(prev => ({
+      ...prev,
+      variItems: prev.variItems.map(row =>
+        Number(row[0]) === Number(prev.id)
+          ? [
+              row[0], // idはそのまま
+              row[1], // 必要なら変更
+              row[2], // 必要なら変更
+              row[3], // 例えば sales_price を row[3] に入れるならここ
+              row[4], // 他の値はそのまま
+              row[5],
+              salesPrice,
+            ]
         : row
       ),
     }));
@@ -517,14 +520,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       ),
     }));
 
-    setState(prev => {
-      return {
-        ...prev,
-        	sales_price: Number(event.target.value)
-      };
-    });
+    //setState(prev => {
+    //  return {
+    //    ...prev,
+    //    	sales_price: Number(event.target.value)
+    //  };
+    //});
 
-          sales_price: event.target.value,
+    //      sales_price: event.target.value,
 
     setState(prev => ({
       ...prev,
@@ -555,7 +558,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if(!(onFocusItem?.every((value, index) => value === item[index]))){
       let targetChangeItem:any = [];
       // バリデーションが1行以上ある時
-      if(variItems.length > 1){
+      if(variItems.length > 0){
         // 変更したバリデーションの中に現在変更中のバリデーションが存在しているか
         const target =  variChangeItem.filter(row => row[0] === item[0]);
         // 編集している行の一つ上のインデックスの取得
@@ -749,7 +752,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const store: (url: string) => Promise<any> = async url => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${url}`, state);
-    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
@@ -947,19 +949,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   const specialSaleSave = async (url: string, curd: string): Promise<{success: boolean; id?: number;}> => {
     let specialSaleSaveFlag:boolean = false;
-
-    console.log(state.start_at);
     
     if((state.start_at !== null) && (state.start_at !== '') && (state.start_at !== undefined)){
-      console.log('if文の中');
       state.is_sales_members_only = state.is_sales_members_only !== null ? state.is_sales_members_only : false;
       state.special_sale_id = state.specialSalesList[0]?.special_sale_id ?? undefined;
 
       if(curd === 'store'){
-        console.log('if文の中2');
         specialSaleSaveFlag = await store(url);
       }else{
-        console.log('else文の中2');
         if((state.specialSalesDelFlag === false) || (state.specialSalesDelFlag === undefined)){
           if((state.special_sale_id !== null) && (state.special_sale_id !== undefined)){
             state.is_sales_members_only = specialItem[0].is_sales_members_only !== state.is_sales_members_only ? 
@@ -981,7 +978,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         }
       }
     }else if(state.specialSalesList[0] !== undefined){
-      console.log(state.specialSalesList[0])
       if((state.specialSalesList[0].special_sale_id !== null) && (state.specialSalesList[0].special_sale_id !== '') && (state.specialSalesList[0].special_sale_id !== undefined)){
         state.special_sale_id = state.specialSalesList[0].special_sale_id;
         if(state.special_sale_id !== null){
@@ -1038,7 +1034,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
       // カテゴリーの保存
       categorySaveRes = await categorySave("item/category_store", 'store');
-
       // カテゴリーの保存に成功
       if(categorySaveRes.success) {
         // カテゴリー保存成功時
@@ -1170,20 +1165,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
     if(pattern === '2'){
       itemSaveFlag = await edit(`item/update/${variIndex}`);
-      console.log(itemSaveFlag);
       imgSaveFlag = await imageSave(variIndex);
-      console.log(imgSaveFlag);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      console.log(specialSaleSaveFlag);
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
 
     }else if(pattern === '3'){
       itemSaveFlag = await edit(`item/update/${state.id}`);
-      console.log(itemSaveFlag);
       imgSaveFlag = await imageSave(Number(state.id));
-      console.log(imgSaveFlag);
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      console.log(specialSaleSaveFlag);
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
     }else if(pattern === '4'){
@@ -1297,49 +1286,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     //  return false;
     //}
   }
-
-  //const a: () => void = async () => {
-  //  if((state.item_number !== null) && (state.item_number !== undefined) && (state.name !== null) && (state.name !== undefined) &&
-  //     (state.name_note !== null) && (state.name_note !== undefined) && (state.category_name !== null) && (state.category_name !== undefined) &&
-  //     (state.supplier_name !== null) && (state.supplier_name !== undefined) && (state.supplier_name !== '') &&
-  //     (state.display_status !== null) && (state.display_status !== undefined) &&
-  //     (state.code !== null) && (state.code !== undefined) && (state.code !== '') &&
-  //     (state.is_payment_id1 !== null) && (state.is_payment_id1 !== undefined) && (state.is_payment_id2 !== null) && (state.is_payment_id2 !== undefined) &&
-  //     (state.is_payment_id3 !== null) && (state.is_payment_id3 !== undefined) && (state.is_payment_id4 !== null) && (state.is_payment_id4 !== undefined) &&
-  //     (state.is_payment_id5 !== null) && (state.is_payment_id5 !== undefined)){
-  //      // 新規登録
-  //      if(state.id === undefined){
-  //        let saveFlag = false;
-  //        let crud = 'store';
-  //        // バリエーションが複数ある場合
-  //        if(variChangeItem.length > 1){
-  //          for (const value of variChangeItem) {
-  //            state.variations1 = value[1];
-  //            state.variations2 = value[2];
-  //            state.variations3 = value[3];
-  //            state.variations4 = value[4];
-  //            state.item_number = value[5];
-  //            state.sales_price = Number(value[6]);
-  //            saveFlag = await storeSavaItem(value[0], crud);
-  //            if(!saveFlag) break;
-  //          }
-  //          if(saveFlag){
-  //            console.log('rollBackId');
-  //            console.log(rollBackId);
-  //            console.dir(rollBackId);
-  //            console.log('rollBackDelId');
-  //            console.log(rollBackDelId);
-  //            console.dir(rollBackDelId);
-  //            await appAlert('新規保存しました。');
-  //            backPage();
-  //          }else{
-  //            await rollBack();
-  //            dispatch(AppActions.failed('データの保存に失敗しました。'));
-  //          }
-  //        }
-  //      }
-  //    }
-  //  }
 
   const saveClick: () => void = async () => {
     if((state.item_number !== null) && (state.item_number !== undefined) && (state.name !== null) && (state.name !== undefined) &&
@@ -1489,9 +1435,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     //state.item_number = matchedRow.item_number;
                     //state.sales_price = matchedRow.sales_price;
                     //state.special_sale_id = matchedRow.special_sale_id;
-
-                    console.log('state.variItems.length');
-                    console.log(state.variItems.length);
                   }
                   flag = await upDateSaveItem(Number(state.id), '3')
                 }
@@ -1529,9 +1472,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     state.item_number = matchedRow.item_number;
                     state.sales_price = matchedRow.sales_price;
                     state.special_sale_id = matchedRow.special_sale_id;
-
-                    console.log('state.variItems.length');
-                    console.log(state.variItems.length);
                   }
                   flag = await upDateSaveItem(Number(state.id), '3')
                 }
@@ -1987,7 +1927,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 <label style={{marginLeft: "65px"}}>バリエーション3</label>
                 <label style={{marginLeft: "65px"}}>バリエーション4</label>
                 <label style={{marginLeft: "60px"}}>品番</label>
-                <label style={{marginLeft: "100px"}}>金額</label>
+                <label style={{marginLeft: "100px"}}>販売価格</label>
               </div>
               <div style={{display: 'flex', marginLeft: "150px"}}>
                 <div>{state.variItems.map((item, itemIndex) => {
