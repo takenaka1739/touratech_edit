@@ -82,90 +82,147 @@ class CouponService
      */
     public function store(array $data): void
     {
-        DB::transaction(function () use ($data) {
-            $rules = $data['rules'] ?? [];
+        // ★ 入口ログ
+        Log::debug('【クーポン登録開始】', [
+            'raw_input' => $data,
+        ]);
 
-            if (blank($data['details'] ?? null)) {
-                $data['details'] = $this->generateDetailsFromRules($rules);
-            }
+        try {
+            DB::transaction(function () use ($data) {
+                $rules = $data['rules'] ?? [];
 
-            unset($data['rules']);
-            $coupon = Coupon::create($data);
+                Log::debug('【クーポン登録】整形前ルール一覧', [
+                    'rules' => $rules,
+                ]);
 
-            foreach ($rules as $rule) {
-                // benefit_value の整形（既存）
-                if (isset($rule['benefit_value']) && is_string($rule['benefit_value'])) {
-                    $rule['benefit_value'] = json_decode($rule['benefit_value'], true);
+                if (blank($data['details'] ?? null)) {
+                    $data['details'] = $this->generateDetailsFromRules($rules);
                 }
 
-                // 送料無料
-                if ($rule['benefit_type'] === 'free_shipping') {
-                    $rule['benefit_value'] = [
-                        'type' => 'free_shipping',
-                        'value' => true,
-                    ];
-                }
+                unset($data['rules']);
 
-                // 無料商品
-                if ($rule['benefit_type'] === 'free_item') {
-                    $description = '';
-                    if (is_array($rule['benefit_value']) && isset($rule['benefit_value']['description'])) {
-                        $description = $rule['benefit_value']['description'];
-                    } elseif (is_array($rule['benefit_value']) && isset($rule['benefit_value']['value'])) {
-                        $description = $rule['benefit_value']['value'];
-                    } elseif (is_string($rule['benefit_value'])) {
+                Log::debug('【クーポン登録】Coupon::create 実行前', [
+                    'coupon_payload' => $data,
+                ]);
+
+                $coupon = Coupon::create($data);
+
+                Log::debug('【クーポン登録】クーポン作成完了', [
+                    'coupon_id' => $coupon->id,
+                ]);
+
+                foreach ($rules as $idx => $rule) {
+                    Log::debug('【クーポン登録】ルール整形前', [
+                        'index' => $idx,
+                        'rule'  => $rule,
+                    ]);
+
+                    // benefit_value の整形
+                    if (isset($rule['benefit_value']) && is_string($rule['benefit_value'])) {
                         $decoded = json_decode($rule['benefit_value'], true);
-                        if (json_last_error() === JSON_ERROR_NONE && isset($decoded['description'])) {
-                            $description = $decoded['description'];
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $rule['benefit_value'] = $decoded;
                         }
                     }
-                    $rule['benefit_value'] = [
-                        'type' => 'description',
-                        'value' => $description,
-                    ];
-                }
 
-                // 特別な商品（special_item）は type/valueのみ
-                if ($rule['benefit_type'] === 'special_item') {
-                    $value = '';
-                    if (is_array($rule['benefit_value'])) {
-                        $value = $rule['benefit_value']['value'] ?? '';
+                    // 送料無料
+                    if (($rule['benefit_type'] ?? null) === 'free_shipping') {
+                        $rule['benefit_value'] = [
+                            'type'  => 'free_shipping',
+                            'value' => true,
+                        ];
                     }
-                    $rule['benefit_value'] = [
-                        'type' => 'special_item',
-                        'value' => $value,
-                    ];
-                }
 
-                // 割引タイプのみ値をfloatに
-                if (
-                    isset($rule['benefit_value']) &&
-                    is_array($rule['benefit_value']) &&
-                    isset($rule['benefit_value']['value']) &&
-                    in_array($rule['benefit_value']['type'] ?? null, ['yen', 'percent'], true)
-                ) {
-                    $rule['benefit_value']['value'] = (float) $rule['benefit_value']['value'];
-                }
-
-                // condition_value の整形
-                $conditionValue = $rule['condition_value'];
-                if (is_string($conditionValue)) {
-                    $decoded = json_decode($conditionValue, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $conditionValue = $decoded;
+                    // 無料商品
+                    if (($rule['benefit_type'] ?? null) === 'free_item') {
+                        $description = '';
+                        if (is_array($rule['benefit_value']) && isset($rule['benefit_value']['description'])) {
+                            $description = $rule['benefit_value']['description'];
+                        } elseif (is_array($rule['benefit_value']) && isset($rule['benefit_value']['value'])) {
+                            $description = $rule['benefit_value']['value'];
+                        } elseif (is_string($rule['benefit_value'])) {
+                            $decoded = json_decode($rule['benefit_value'], true);
+                            if (json_last_error() === JSON_ERROR_NONE && isset($decoded['description'])) {
+                                $description = $decoded['description'];
+                            }
+                        }
+                        $rule['benefit_value'] = [
+                            'type'  => 'description',
+                            'value' => $description,
+                        ];
                     }
+
+                    // 特別な商品（special_item）は type/valueのみ
+                    if (($rule['benefit_type'] ?? null) === 'special_item') {
+                        $value = '';
+                        if (is_array($rule['benefit_value'])) {
+                            $value = $rule['benefit_value']['value'] ?? '';
+                        }
+                        $rule['benefit_value'] = [
+                            'type'  => 'special_item',
+                            'value' => $value,
+                        ];
+                    }
+
+                    // 割引タイプのみ値をfloatに
+                    if (
+                        isset($rule['benefit_value']) &&
+                        is_array($rule['benefit_value']) &&
+                        isset($rule['benefit_value']['value']) &&
+                        in_array($rule['benefit_value']['type'] ?? null, ['yen', 'percent'], true)
+                    ) {
+                        $rule['benefit_value']['value'] = (float) $rule['benefit_value']['value'];
+                    }
+
+                    // condition_value の整形
+                    $conditionValue = $rule['condition_value'] ?? null;
+                    if (is_string($conditionValue)) {
+                        $decoded = json_decode($conditionValue, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $conditionValue = $decoded;
+                        }
+                    }
+
+                    $payload = [
+                        'coupon_id'       => $coupon->id,
+                        'condition_type'  => $rule['condition_type'] ?? null,
+                        'condition_value' => $conditionValue,
+                        'price_operator'  => $rule['price_operator'] ?? null,
+                        'benefit_type'    => $rule['benefit_type'] ?? null,
+                        'benefit_value'   => $rule['benefit_value'] ?? [],
+                    ];
+
+                    Log::debug('【クーポン登録】CouponRule::create 実行前', [
+                        'index'                 => $idx,
+                        'payload'               => $payload,
+                        'condition_value_type'  => gettype($conditionValue),
+                        'condition_type'        => $rule['condition_type'] ?? null,
+                    ]);
+
+                    CouponRule::create($payload);
+
+                    Log::debug('【クーポン登録】CouponRule::create 実行後', [
+                        'index'      => $idx,
+                        'coupon_id'  => $coupon->id,
+                    ]);
                 }
 
-                CouponRule::create([
-                    'coupon_id'       => $coupon->id,
-                    'condition_type'  => $rule['condition_type'],
-                    'condition_value' => $conditionValue,
-                    'price_operator'  => $rule['price_operator'] ?? null,
-                    'benefit_type'    => $rule['benefit_type'],
-                    'benefit_value'   => $rule['benefit_value'] ?? [],
+                Log::debug('【クーポン登録】全ルール登録完了', [
+                    'coupon_id' => $coupon->id,
                 ]);
-            }
-        });
+            });
+
+            Log::debug('【クーポン登録完了】トランザクション正常終了');
+        } catch (\Throwable $e) {
+            Log::error('【クーポン登録エラー】', [
+                'message' => $e->getMessage(),
+                'code'    => $e->getCode(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            throw $e; // 呼び出し側に 500 を返す
+        }
     }
 
     public function update(int $id, array $data): void
@@ -205,15 +262,15 @@ class CouponService
                     }
 
                     // 送料無料
-                    if ($rule['benefit_type'] === 'free_shipping') {
+                    if (($rule['benefit_type'] ?? null) === 'free_shipping') {
                         $rule['benefit_value'] = [
-                            'type' => 'free_shipping',
+                            'type'  => 'free_shipping',
                             'value' => true,
                         ];
                     }
 
                     // 無料商品
-                    if ($rule['benefit_type'] === 'free_item') {
+                    if (($rule['benefit_type'] ?? null) === 'free_item') {
                         $description = '';
                         if (is_array($rule['benefit_value']) && isset($rule['benefit_value']['description'])) {
                             $description = $rule['benefit_value']['description'];
@@ -226,19 +283,19 @@ class CouponService
                             }
                         }
                         $rule['benefit_value'] = [
-                            'type' => 'description',
+                            'type'  => 'description',
                             'value' => $description,
                         ];
                     }
 
                     // 特別な商品
-                    if ($rule['benefit_type'] === 'special_item') {
+                    if (($rule['benefit_type'] ?? null) === 'special_item') {
                         $value = '';
                         if (is_array($rule['benefit_value'])) {
                             $value = $rule['benefit_value']['value'] ?? '';
                         }
                         $rule['benefit_value'] = [
-                            'type' => 'special_item',
+                            'type'  => 'special_item',
                             'value' => $value,
                         ];
                     }
@@ -254,7 +311,7 @@ class CouponService
                     }
 
                     // condition_value のデコード
-                    $conditionValue = $rule['condition_value'];
+                    $conditionValue = $rule['condition_value'] ?? null;
                     if (is_string($conditionValue)) {
                         $decoded = json_decode($conditionValue, true);
                         if (json_last_error() === JSON_ERROR_NONE) {
@@ -264,13 +321,12 @@ class CouponService
 
                     $payload = [
                         'coupon_id'       => $coupon->id,
-                        'condition_type'  => $rule['condition_type'],
+                        'condition_type'  => $rule['condition_type'] ?? null,
                         'condition_value' => $conditionValue,
                         'price_operator'  => $rule['price_operator'] ?? null,
-                        'benefit_type'    => $rule['benefit_type'],
+                        'benefit_type'    => $rule['benefit_type'] ?? null,
                         'benefit_value'   => $rule['benefit_value'] ?? [],
                     ];
-
 
                     if (!empty($rule['id']) && $existingRules->has($rule['id'])) {
                         $existingRules[$rule['id']]->update($payload);
@@ -338,26 +394,26 @@ class CouponService
         $descriptions = [];
 
         foreach ($rules as $rule) {
-            $type = $rule['condition_type'] ?? '';
-            $value = $rule['condition_value'] ?? '';
+            $type     = $rule['condition_type'] ?? '';
+            $value    = $rule['condition_value'] ?? '';
             $operator = $rule['price_operator'] ?? '';
 
             $condition = match ($type) {
-                'all_items'     => '全商品',
-                'item_id'       => '特定商品',
-                'category_id'   => '特定カテゴリ',
-                'brand_id'      => '特定ブランド',
-                'price'         => match ($operator) {
-                    'lte' => $value . '円以下',
-                    'eq'  => $value . '円ちょうど',
-                    default => $value . '円以上',
+                'all_items'   => '全商品',
+                'item_id'     => '特定商品',
+                'category_id' => '特定カテゴリ',
+                'brand_id'    => '特定ブランド',
+                'price'       => match ($operator) {
+                    'lte'    => $value . '円以下',
+                    'eq'     => $value . '円ちょうど',
+                    default  => $value . '円以上',
                 },
-                default         => '条件不明',
+                default       => '条件不明',
             };
 
             $benefit = match ($rule['benefit_type'] ?? '') {
                 'discount' => function () use ($rule) {
-                    $val = $rule['benefit_value']['value'] ?? '';
+                    $val  = $rule['benefit_value']['value'] ?? '';
                     $type = $rule['benefit_value']['type'] ?? 'yen';
                     return $type === 'percent' ? "{$val}%割引" : "{$val}円割引";
                 },
@@ -370,10 +426,9 @@ class CouponService
                     return $val ? "特別な商品（{$val}）" : "特別な商品提供";
                 },
                 'free_shipping' => fn() => "送料無料",
-                default => fn() => "特典不明",
+                default         => fn() => "特典不明",
             };
 
-            // match内でクロージャなのでここで呼び出す
             $benefitText = is_callable($benefit) ? $benefit() : $benefit;
 
             $descriptions[] = "{$condition}で{$benefitText}";
