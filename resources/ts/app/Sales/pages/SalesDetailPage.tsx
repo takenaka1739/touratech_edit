@@ -259,7 +259,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
         />
 
         <hr className="border-dashed border-gray-400 mt-6" />
-
         <div className="p-6">
           <div className="flex items-center">
             <div>

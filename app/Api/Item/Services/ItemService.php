@@ -313,6 +313,7 @@ class ItemService
     $selectItems['image_name'] = $sss;
     $selectItems['imageList'] = $ssss;
     $selectItems['combIdList'] = $d;
+    $selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
 
     return $selectItems;
   }
@@ -328,7 +329,6 @@ class ItemService
     return Item::select(
       'm_items.id',
       'm_items.code',
-      'm_items.name',
       'm_items.name',
       'm_items.item_number',
       'm_items.sales_unit_price',

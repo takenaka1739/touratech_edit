@@ -108,6 +108,8 @@ export interface Item {
   supplier_name?: string | undefined;
   domestic_stocks?: number | undefined;
   overseas_stocks?: number | undefined;
+  domestic_url?: string | undefined;
+  overseas_url?: string | undefined;
   display_status: number |undefined;
   remarks?: string | undefined;
   is_set_item: boolean | undefined;

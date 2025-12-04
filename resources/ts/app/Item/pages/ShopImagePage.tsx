@@ -376,7 +376,7 @@ useEffect(() => {
       } else {
         return (
           <div style={{ height: '80px', width: '80px', margin: '10px' }}>
-            <video onClick={() => handleClick(src, 3, file.name)}>
+            <video onClick={() => handleClick(src, 3, file.name)} controls muted>
               <source src={src} type="video/mp4" />
             </video>
           </div>
@@ -395,7 +395,7 @@ useEffect(() => {
           );
         } else if (isVideo) {
           return (
-            <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+            <div style={{ height: '100px', width: '80px', margin: '10px' }}>
               <video onClick={() => handleClick(src, 3, '')}>
                 <source src={src} type="video/mp4" />
               </video>
@@ -458,7 +458,7 @@ useEffect(() => {
                                                          web-share"
                                                   referrerPolicy="strict-origin-when-cross-origin"
                                                   allowFullScreen/>) : 
-                                         (<video className="image-size" controls>
+                                         (<video className="image-size" controls muted>
                                            <source src={selectImageSrc} type="video/mp4"/>
                                          </video>)
           }</div>

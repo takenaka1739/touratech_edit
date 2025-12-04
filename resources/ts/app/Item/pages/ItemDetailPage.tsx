@@ -1809,10 +1809,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               <Forms.FormInputCheck
                 id="is_display"
                 name="is_display"
-                checked={!state.is_display}
-                onChange={(name, value) => {
-                  onChange(name, !value);
-                }}
+                checked={state.is_display}
+                onChange={onChange}
               />
             </Forms.FormGroup>
           </div>
