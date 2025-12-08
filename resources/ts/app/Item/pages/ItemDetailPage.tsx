@@ -2128,8 +2128,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     </div>
                   );
                 })}
-
-  </div>
+            </div>
           </div>
           <button className="category-plus-button" onClick={() => addNewCategory()}>＋</button>
           <ItemClassificationSearchDialog {...itemClassSearchDialogProps} />
