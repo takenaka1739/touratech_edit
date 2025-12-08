@@ -177,6 +177,18 @@
         background-color: #E4E8ED;
       }
 
+      .document_url{
+        font-size: 15px;
+        margin-top: '0';
+        color: #0360B3;
+        border-bottom: 2px solid #0360B3;
+      }
+
+      .document_url:hover {
+        color: #0489FF;
+        border-bottom: 2px solid #0489FF;
+      }
+
       #item-detail-erea {
         display: flex;
         flex-direction:column;

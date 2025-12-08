@@ -21692,21 +21692,21 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #item-name {
-  border: 1px solid white;
+  border: 1px solid #ffffffff;
   border-radius: 5px;
   width: 550px;
   height: 70px;
   font-size: 30px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
 }
 
 #shop-image #input-area #item-info #item-name:hover {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-name:focus {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
@@ -21728,18 +21728,18 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #item-info #price-col #input-price {
-  border: 1px solid white;
+  border: 1px solid #ffffffff;
   border-radius: 5px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
 }
 
 #shop-image #input-area #item-info #price-col #input-price:hover {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #price-col #input-price:focus {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
@@ -21755,30 +21755,44 @@ div[aria-disabled=true]::after {
   background-color: #E4E8ED;
 }
 
+#shop-image #input-area #item-info .document_url {
+  font-size: 15px;
+  margin-top: "0";
+  color: #0360B3;
+  border-bottom: 2px solid #0360B3;
+}
+
+#shop-image #input-area #item-info .document_url:hover {
+  color: #0489FF;
+  border-bottom: 2px solid #0489FF;
+}
+
 #shop-image #input-area #item-info #item-detail-erea {
   display: flex;
   flex-direction: column;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail {
-  word-wrap: break-word; /* 長い単語を折り返す */
-  white-space: normal; /* テキストを通常の折り返しにする */
+  word-wrap: break-word;
+  /* 長い単語を折り返す */
+  white-space: normal;
+  /* テキストを通常の折り返しにする */
   font-size: 20px;
-  border: 1px solid white;
+  border: 1px solid #ffffffff;
   border-radius: 5px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
   margin-top: 20px;
   width: 450px;
   height: 300px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:hover {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:focus {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
@@ -21808,18 +21822,18 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-name-row .input-text {
-  color: rgba(201, 215, 232, 0.9725490196);
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
+  border: 1px solid #c9d7e8f8;
   height: 25px;
   width: 350px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-name-row .plus-button {
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
   height: 30px;
   width: 30px;
   margin-left: 5px;
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 100px;
 }
 
@@ -21829,21 +21843,21 @@ div[aria-disabled=true]::after {
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   display: flex;
   margin-right: 10px;
   margin-left: 10px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .vari-row-input {
-  color: rgba(201, 215, 232, 0.9725490196);
-  border: white;
+  color: #c9d7e8f8;
+  border: #FFFFFFFF;
   width: 50px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .dele-button {
-  color: rgba(201, 215, 232, 0.9725490196);
-  border-left: 1px solid rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
+  border-left: 1px solid #c9d7e8f8;
   padding: 2px 5px 2px 5px;
 }
 
@@ -21862,6 +21876,20 @@ div[aria-disabled=true]::after {
   width: 20px;
   margin-top: 3px;
   margin-right: 10px;
+  border: 1px solid #a0aec0;
+  border-radius: 50%;
+}
+
+.category-plus-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  background-color: #FFFFFF;
+  text-align: center;
+  height: 25px;
+  width: 25px;
+  margin-top: 5px;
   border: 1px solid #a0aec0;
   border-radius: 50%;
 }
@@ -22054,6 +22082,44 @@ label {
   font-size: 0.75rem;
   width: 400px;
   height: 150px;
+}
+
+.type_name {
+  width: 100px;
+  margin-right: 40px;
+}
+
+.file_name {
+  width: 435px;
+}
+
+.file_max-w-lg {
+  max-width: 32rem;
+}
+
+.file_btn {
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.file_btn:hover, .file_btn:focus {
+  background-color: transparent;
+  border-color: #f9dc06;
+}
+
+.file_btn:disabled {
+  background-color: #edf2f7;
+  border-color: #edf2f7;
+  color: #a0aec0;
+  cursor: not-allowed;
 }
 
 table {

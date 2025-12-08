@@ -19,6 +19,20 @@
   border-radius: 50%;
 }
 
+.category-plus-button{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  background-color: #FFFFFF;
+  text-align: center;
+  height: 25px;
+  width: 25px;
+  margin-top: 5px;
+  border: 1px solid #a0aec0;
+  border-radius: 50%;
+}
+
 .item-explanation {
   display: flex;
   margin-top: 10px;
@@ -208,3 +222,97 @@ label {
   width: 400px;
   height: 150px;
 }
+
+.type_name{
+  width: 100px;
+  margin-right: 40px;
+}
+
+.file_name{
+  width: 435px;
+}
+
+.file_max-w-lg{
+  max-width: 32rem;
+}
+
+.file_btn {
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.file_btn:hover, .file_btn:focus {
+  background-color: transparent;
+  border-color: #f9dc06;
+}
+
+.file_btn:disabled {
+  background-color: #edf2f7;
+  border-color: #edf2f7;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+//.file_btn-outline {
+//  background-color: transparent;
+//  border: 1px solid #f9dc06;
+//  font-size: 0.75rem;
+//  padding-top: 0.25rem;
+//  padding-bottom: 0.25rem;
+//  padding-left: 1rem;
+//  padding-right: 1rem;
+//  border-radius: 0.125rem;
+//  outline: 2px solid transparent;
+//  outline-offset: 2px;
+//}
+//
+//.file_btn-outline:hover, .file_btn-outline:focus {
+//  background-color: #f9dc06;
+//  border-color: transparent;
+//  border-color: transparent;
+//  --bg-opacity: 1;
+//  background-color: #f9dc06;
+//  background-color: rgba(249, 220, 6, var(--bg-opacity));
+//}
+//
+//.file_btn-outline:disabled {
+//  background-color: #edf2f7;
+//  border-color: #edf2f7;
+//  color: #a0aec0;
+//  cursor: not-allowed;
+//}
+//
+//.file_btn-delete {
+//  background-color: transparent;
+//  border: 1px solid #c53030;
+//  color: #c53030;
+//  font-size: 0.75rem;
+//  padding-top: 0.25rem;
+//  padding-bottom: 0.25rem;
+//  padding-left: 1rem;
+//  padding-right: 1rem;
+//  border-radius: 0.125rem;
+//  outline: 2px solid transparent;
+//  outline-offset: 2px;
+//}
+//
+//.file_btn-delete:hover, .file_btn-delete:focus {
+//  background-color: #c53030;
+//  border-color: transparent;
+//  color: #fff;
+//}
+//
+//.file_btn-delete:disabled {
+//  background-color: #edf2f7;
+//  border-color: #edf2f7;
+//  color: #a0aec0;
+//  cursor: not-allowed;
+//}

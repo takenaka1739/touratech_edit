@@ -123,6 +123,7 @@ export interface Item {
   special_sale_price?: number | undefined;
   refund_rate?: number | undefined;
 
+  categoryList: any[];
   codeList: any[];
   specialSalesList: any[];
   specialSalesDelFlag: boolean | undefined;
@@ -132,4 +133,13 @@ export interface Item {
 
   send_trader?: number | undefined;
   send_personal?: number | undefined;
+
+  document_id?: number | undefined;
+  type_status?: number | undefined;
+  document_name?: string | undefined;
+  type_name?: string | undefined;
+  file_name?: string | undefined;
+  pdf?: File;
+  pdfData?: any;
+  documentFileList?: any[];
 }

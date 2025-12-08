@@ -100,6 +100,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     special_sale_price: 0,
     refund_rate:  0,
     codeList: [],
+    categoryList: [],
     specialSalesList: [],
     specialSalesDelFlag: false,
     selected: undefined,
@@ -107,7 +108,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     combination_id: undefined,
     combIdList: [],
     send_trader: undefined,
-    send_personal: undefined
+    send_personal: undefined,
+    type_status: undefined,
+    type_name: '',
+    file_name: '',
+    document_id: undefined,
+    pdf: undefined,
+    documentFileList: []
   });
 
   type imageItem = { id: number | null;
@@ -122,6 +129,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     itemId?: number;
     categoryId?: number;
     specialSaleId?: number;
+    documentId?: number;
     imageId?: number;
   };
 
@@ -143,10 +151,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [supplierChangeFlag, setSupplierChangeFlag]= useState(false);
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
-  const [backUpState, setBackUpState] = useState<object>();
+  const [backUpState, setBackUpState] = useState<any>();
   const [rollBackId, setRollBackId] = useState<any[][]>([]);
   const [rollBackDelId, setRollBackDelId] = useState<RollbackRow[]>([]);
   const rollBackDelIdRef = useRef<RollbackRow[]>([]);
+  const [typeName, setTypeName] = useState('');
+  const [typeNameBackColor, setTypeNameBackColor] = useState('#EDF2F7');
+  const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
+  const [changeCategoryFlag, setChangeCategoryFlag] = useState(false);
 
   // 初期値設定
   useEffect(() => {
@@ -168,6 +180,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   }, [state, state.variItems, state.itemNumberItem, state.salesPriceItem, state.purchase_price, state.number_reservations, 
       state.specialSalesList, state.image_name]);
 
+  // state.categoryListの初期値（新規作成時の1行目の作成）
+  useEffect(() => {
+    if (Array.isArray(state.categoryList) && state.categoryList.length === 0) {
+      addNewCategory();
+    }
+  }, [state.categoryList]);
+
   useEffect(() => {
     if(state.shipping_pay === null || state.shipping_pay === undefined){
       if(state.display_status === 2){
@@ -178,6 +197,44 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
     setBackUpState(state);
   }, []);
+
+  // 取扱説明書の題目名設定
+  useEffect(() => {
+    let name:string|undefined = '';
+    if(state.type_status === 0){
+      name = 'なし';
+    }else if(state.type_status === 1){
+      name = '取扱説明書';
+    }else if(state.type_status === 2){
+      name = 'サイズ表';
+    }else{
+      setTypeNameBackColor('#FFFFFF');
+      setState(prev => ({
+        ...prev,
+        type_name: typeName,
+      }));
+    }
+
+    if(state.type_status !== 3){
+      setTypeName('');
+      setTypeNameBackColor('#EDF2F7');
+      setState(prev => ({
+        ...prev,
+        type_name: name,
+      }));
+    }
+  }, [state.type_status, typeName]);
+
+  const onChangeTypeName = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTypeName(event.target.value);
+  }
+
+  // 取扱説明書の題目名設定
+  useEffect(() => {
+    if(state.type_status === 3){
+      if (state.type_name) setTypeName(state.type_name ?? '');
+    }
+  }, [state.type_name]);
 
   const prevIdRef = useRef(state.id);
   useEffect(() => {
@@ -317,6 +374,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       variations2: value['variations2'],
       variations3: value['variations3'],
       variations4: value['variations4'],
+      document_id: value['document_id'],
+      type_status: value['type_status'],
+      type_name: value['type_name'],
+      file_name: value['file_name']
     }));
 
     setVariChangeItem([]);
@@ -326,6 +387,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     setSupplierChangeFlag(false);
     setvariClickFlag(false);
     setVariDelItem([]);
+    if(value['type_status'] === 3){
+      setTypeName(value['type_name']);
+    }else{
+      setTypeName('');
+    }
   }
 
   const onClickPrint = async () => {
@@ -419,6 +485,197 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       ],
     }));
   }
+
+  // バリエーションの行追加
+  // select:選択された行、index:選択された列
+  const addNewCategory = () => {
+    setChangeCategoryFlag(false);
+
+    type Category = {
+      combId: number | undefined;
+      categoryId: number | undefined;
+      name: string;
+      status: string;
+      initialcategoryId: number | undefined;
+    };
+
+    setState(prev => {
+      // status が "newX" のものを抽出
+      const newStatuses = prev.categoryList
+        .map(item => item.status)
+        .filter(status => /^new\d+$/.test(status));
+
+      // 数字部分を取り出して最大値を算出
+      const maxNumber = newStatuses.length > 0
+        ? Math.max(...newStatuses.map(s => parseInt(s.replace("new", ""), 10)))
+        : 0;
+
+      // 次の番号を作成
+      const nextStatus = `new${maxNumber + 1}`;
+
+      const arr: Category = {
+        combId: undefined,
+        categoryId: undefined,
+        name: "",
+        status: nextStatus,
+        initialcategoryId: undefined
+      };
+
+      return {
+        ...prev,
+        categoryList: [...prev.categoryList, arr]
+      };
+    });
+  };
+
+
+  useEffect(() => {
+        console.log('changeCategoryIndex');
+        console.log(changeCategoryIndex);
+    if (changeCategoryIndex !== null) {
+      const flag = state.categoryList.some(
+        (item) =>
+          item.status !== "del" &&           // del は除外
+          item.categoryId != null &&         // undefined / null は除外
+          item.categoryId === state.category_id
+      );
+
+      setChangeCategoryFlag(flag);
+      if (!flag) {
+        setState(prev => {
+          // コピー元となる del 行を探す
+          const delIndex = prev.categoryList.findIndex(
+            (item, idx) =>
+              item.status === "del" &&
+              item.categoryId === state.category_id &&
+              idx !== changeCategoryIndex
+          );
+
+          if (delIndex !== -1) {
+            const delItem = prev.categoryList[delIndex];
+
+            // まず del 行を削除
+            const filteredList = prev.categoryList.filter(
+              (_, idx) => idx !== delIndex
+            );
+
+            // changeCategoryIndex の行にコピー
+            const nextList = filteredList.map((item, idx) =>
+              idx === changeCategoryIndex
+                ? {
+                    ...item,
+                    combId: delItem.combId,
+                    categoryId: delItem.categoryId,
+                    name: delItem.name,
+                    initialcategoryId: delItem.initialcategoryId,
+                    status:
+                      delItem.categoryId === delItem.initialcategoryId
+                        ? "no update"
+                        : "update",
+                  }
+                : item
+            );
+
+            return { ...prev, categoryList: nextList };
+          }
+
+          // del 行がなければ通常処理
+          return {
+            ...prev,
+            categoryList: prev.categoryList.map((item, index) => {
+              if (index !== changeCategoryIndex) return item;
+
+              if (item.status === "new") {
+                return {
+                  ...item,
+                  categoryId: state.category_id,
+                  name: state.category_name,
+                  status: "new",
+                };
+              } else if (state.category_id === item.initialcategoryId) {
+                return {
+                  ...item,
+                  categoryId: state.category_id,
+                  name: state.category_name,
+                  status: "no update",
+                };
+              } else {
+                return {
+                  ...item,
+                  categoryId: state.category_id,
+                  name: state.category_name,
+                  status: "update",
+                };
+              }
+            }),
+          };
+        });
+      }else{
+        console.log('else文の中');
+        console.log(flag);
+        console.log(changeCategoryIndex);
+      }
+    }
+  }, [state.category_id, state.category_name, changeCategoryIndex]);
+
+  const onChangeCategory = (selectIndex: any, combId: any, status: string) => {
+    const matchIndex = state.categoryList.findIndex(item => {
+      // combId が null/undefined なら status で判定
+      if (item.combId == null) {
+        return item.status === status;
+      }
+      // それ以外は combId で判定
+      return item.combId === combId;
+    });
+
+    console.log('selectIndex');
+    console.log(selectIndex);
+
+    setChangeCategoryFlag(false);
+    setChangeCategoryIndex(matchIndex);
+
+    let a = openItemClassDialog();
+
+    console.log('a');
+    console.log(a);
+  };
+
+  const categoryDelButton = (combId: any, status: string) => {
+    setChangeCategoryFlag(false);
+    const matchIndex = state.categoryList.findIndex(item => {
+      // combId が null/undefined なら status で判定
+      if (item.combId == null) {
+        return item.status === status;
+      }
+      // それ以外は combId で判定
+      return item.combId === combId;
+    });
+    setState(prev => {
+      const target = prev.categoryList[matchIndex];
+
+      // status が new の場合は削除
+      if (target.status.includes("new")) {
+        return {
+          ...prev,
+          categoryList: prev.categoryList.filter((_, index) => index !== matchIndex),
+        };
+      }
+
+      // update / no update の場合は status を del に変更
+      return {
+        ...prev,
+        categoryList: prev.categoryList.map((item, index) =>
+          index === matchIndex
+            ? { ...item, status: "del" }
+            : item
+        ),
+      };
+    });
+  };
+
+
+  console.log('state.categoryList');
+  console.log(state.categoryList);
 
   const delButton = (selectIndex:number) => {
     setvariClickFlag(true);
@@ -519,15 +776,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           : row
       ),
     }));
-
-    //setState(prev => {
-    //  return {
-    //    ...prev,
-    //    	sales_price: Number(event.target.value)
-    //  };
-    //});
-
-    //      sales_price: event.target.value,
 
     setState(prev => ({
       ...prev,
@@ -691,6 +939,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
       if(variClickFlag !== true){
         setVariChangeItem(location.state.variChangeItem);
+        if(location.state.preState.type_status === 3) setTypeName(location.state.preState.type_name);
         setState(prev => {
           return {
             ...prev,
@@ -701,6 +950,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             variItems: location.state.preVariItem,
             supplier_name: location.state.preState.supplier_name,
             supplier_id: location.state.preState.supplier_id,
+            type_status: location.state.preState.type_status,
+            type_name: location.state.preState.type_name,
+            file_name: location.state.preState.file_name,
           };
         });
       }
@@ -712,6 +964,29 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       updateState(location.state.preState);
     }
   }, []);
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const url = URL.createObjectURL(file); // プレビュー用URL
+
+      setState(prev => ({
+        ...prev,
+        file_name: file.name,
+        document_url: url,
+        pdf: file, // ← ファイルそのものも state に保持
+      }));
+    }
+  };
+
+
+  const handleClick = () => {
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
+  };
 
   const edit: (url: string) => Promise<boolean> = async url => {
     dispatch(AppActions.request());
@@ -1004,6 +1279,69 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     return {success: res.data.success, id: res.data.id};
   }
 
+  // 取扱説明書設定の保存
+  const documentSave = async (variIndex:string | number | null): Promise<{success: boolean; id?: number;}> => {
+    let res: any = {};
+    let docRes: any = {};
+
+    console.log('取扱説明書設定の保存');
+    console.log(state.type_status);
+    console.log(backUpState.type_status);
+
+    let isImage = false;
+    let isPdf = false;
+    if (state.file_name){
+      // pdfかの確認
+      isPdf = /\.pdf$/i.test(state.file_name);
+      // 画像かの確認
+      isImage = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(state.file_name);
+    }
+
+    // 拡張子が pdf でも画像でもない場合 → true
+    if (!isPdf && !isImage) {
+      return { success: true, id: state.document_id };
+    }
+
+    console.log(`document_id：${state.document_id}`);
+    console.log(`state.document_id === null：${state.document_id === null}`);
+    console.log(`state.document_id === undefined：${state.document_id === undefined}`);
+
+    if ((state.document_id === null) || (state.document_id === undefined)) {
+      if(state.type_status !== 0) res = await store('item/document_store');
+      if(res.data.success){
+        if (state.pdf) {
+          const formData = new FormData();
+          if(isPdf){
+            formData.append("pdf", state.pdf);          // ← Laravel側で $request->file('pdf') で受け取れる
+            formData.append("filename", state.file_name ?? "");
+            await axios.post("/api/item/document_server_store", formData, {headers: {"Content-Type": "multipart/form-data"}});
+          }else if(isImage){
+            formData.append('image', state.pdf);
+            formData.append('filename', state.file_name ?? ""); // 任意のファイル名
+            axios.post('/api/item/image_server_store', formData, {headers: {'Content-Type': 'multipart/form-data'}});
+          }
+        }
+      }
+    }else{
+      console.log(variIndex);
+      if(state.type_status !== 0){
+        let flag = (backUpState.type_status !== state.type_status) || (backUpState.type_name !== state.type_name) ||
+                   (backUpState.file_name !== state.file_name);
+        if(flag){
+          const matchedRows = state.documentFileList?.filter(item => item.item_id === variIndex) ?? [];
+          docRes = await edit(`item/document_update/${matchedRows[0].id}`);
+        }
+      }else{
+        const matchedRows = state.documentFileList?.filter(item => item.item_id === variIndex) ?? [];
+        // 削除処理
+        await destroy(`/api/item/document_delete/${matchedRows[0].id}`);
+      }
+    }
+
+    console.log(docRes);
+    return {success: docRes, id: state.document_id};
+  }
+
   const itemSave = async (url: string, curd: string): Promise<{success: boolean; id?: number;}> => {
     let res: any = {};
     if (curd === 'store') {
@@ -1015,8 +1353,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   // 保存処理
   const storeSavaItem: (variIndex:string | number | null, crud: string) => Promise<boolean> = async (variIndex) => {
     //let reFlag = false;
-    let categorySaveRes: { success: boolean; id?: number } = { success: false };;
-    let specilSaleSaveRes: { success: boolean; id?: number } = { success: false };;
+    let categorySaveRes: { success: boolean; id?: number } = { success: false };
+    let specilSaleSaveRes: { success: boolean; id?: number } = { success: false };
+    let documentSaveRes: { success: boolean; id?: number } = { success: false };
     let imageSaveRes: boolean = false;
 
     // 商品マスタ保存
@@ -1067,6 +1406,24 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           return newArr;
         });
 
+        // ファイルの保存
+        documentSaveRes = await documentSave(null);
+        //imageSaveRes = await imageSave(variIndex);
+      }else{
+        return false;
+      }
+
+      // 取扱説明書設定の保存に成功
+      if(documentSaveRes.success){
+        // 特売保存成功時
+        setRollBackDelId(prev => {
+          const last = prev[prev.length - 1]; // 直前に追加した行
+          const updatedLast = { ...last, documentId: documentSaveRes.id }; // categoryId を追記
+          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
+          rollBackDelIdRef.current = newArr; // 最新配列を保持
+          return newArr;
+        });
+
         // 画像の保存
         imageSaveRes = await imageSave(variIndex);
       }else{
@@ -1084,6 +1441,98 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }
 
+  console.log('backUpState');
+  console.log(backUpState);
+
+  const upDateSaveItem: (variIndex:string | number | null, pattern:string) => Promise<boolean> = async (variIndex, pattern) => {
+    let reFlag = false;
+    let itemSaveFlag = false;
+    let imgSaveFlag = false;
+    let specialSaleSaveFlag = false;
+    let categoryCombSaveFlag = false;
+    let documentSaveFlag = false;
+
+    //documentSaveFlag = (await documentSave()).success;
+
+    if(pattern === '2'){
+      itemSaveFlag = await edit(`item/update/${variIndex}`);
+      if(!itemSaveFlag) return false;
+      imgSaveFlag = await imageSave(variIndex);
+      if(!imgSaveFlag) return false;
+      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      if(!specialSaleSaveFlag) return false;
+
+      documentSaveFlag = (await documentSave(variIndex)).success;
+
+      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
+
+    }else if(pattern === '3'){
+      itemSaveFlag = await edit(`item/update/${state.id}`);
+      if(!itemSaveFlag) return false;
+
+      imgSaveFlag = await imageSave(Number(state.id));
+      if(!imgSaveFlag) return false;
+
+      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      if(!specialSaleSaveFlag) return false;
+
+      documentSaveFlag = (await documentSave(variIndex)).success;
+      if(!documentSaveFlag) return false;
+
+
+      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && documentSaveFlag;
+    }else if(pattern === '4'){
+      state.item_id = Number(variIndex);
+      itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
+      if(!itemSaveFlag) return false;
+      if(itemSaveFlag){
+        if(((state.combination_id !== null) && (state.combination_id !== undefined))){
+          categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
+          if(!categoryCombSaveFlag) return false;
+        }else{
+          categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
+          if(!categoryCombSaveFlag) return false;
+        }
+      }
+
+      imgSaveFlag = await imageSave(Number(state.id));
+      if(!imgSaveFlag) return false;
+      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      if(!specialSaleSaveFlag) return false;
+
+      documentSaveFlag = (await documentSave(variIndex)).success;
+      if(!documentSaveFlag) return false;
+
+      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag && documentSaveFlag;
+    }else if(pattern === '5'){
+      state.item_id = Number(variIndex);
+      itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
+      if(!itemSaveFlag) return false;
+      if(itemSaveFlag){
+        if(((state.combination_id !== null) && (state.combination_id !== undefined))){
+          categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
+          if(!categoryCombSaveFlag) return false;
+        }else{
+          categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
+          if(!categoryCombSaveFlag) return false;
+        }
+      }
+
+      imgSaveFlag = await imageSave(Number(state.id));
+      if(!imgSaveFlag) return false;
+
+      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      if(!specialSaleSaveFlag) return false;
+
+      documentSaveFlag = (await documentSave(variIndex)).success;
+      if(!documentSaveFlag) return false;
+
+      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag && documentSaveFlag;
+    }
+
+    return reFlag;
+  }
+
   //const upDateSaveItem: (variIndex:string | number | null, pattern:string) => Promise<boolean> = async (variIndex, pattern) => {
   //  let reFlag = false;
   //  let itemSaveFlag = false;
@@ -1093,121 +1542,49 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 //
   //  if(pattern === '2'){
   //    itemSaveFlag = await edit(`item/update/${variIndex}`);
-  //    if(!itemSaveFlag) return false;
   //    imgSaveFlag = await imageSave(variIndex);
-  //    if(!imgSaveFlag) return false;
   //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //    if(!specialSaleSaveFlag) return false;
-//
   //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
 //
   //  }else if(pattern === '3'){
   //    itemSaveFlag = await edit(`item/update/${state.id}`);
-  //    if(!itemSaveFlag) return false;
-//
   //    imgSaveFlag = await imageSave(Number(state.id));
-  //    if(!imgSaveFlag) return false;
-//
   //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //    if(!specialSaleSaveFlag) return false;
 //
   //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
   //  }else if(pattern === '4'){
   //    state.item_id = Number(variIndex);
   //    itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-  //    if(!itemSaveFlag) return false;
   //    if(itemSaveFlag){
   //      if(((state.combination_id !== null) && (state.combination_id !== undefined))){
   //        categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-  //        if(!categoryCombSaveFlag) return false;
   //      }else{
   //        categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-  //        if(!categoryCombSaveFlag) return false;
   //      }
   //    }
 //
   //    imgSaveFlag = await imageSave(Number(state.id));
-  //    if(!imgSaveFlag) return false;
   //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //    if(!specialSaleSaveFlag) return false;
 //
   //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
   //  }else if(pattern === '5'){
   //    state.item_id = Number(variIndex);
   //    itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-  //    if(!itemSaveFlag) return false;
   //    if(itemSaveFlag){
   //      if(((state.combination_id !== null) && (state.combination_id !== undefined))){
   //        categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-  //        if(!categoryCombSaveFlag) return false;
   //      }else{
   //        categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-  //        if(!categoryCombSaveFlag) return false;
   //      }
   //    }
 //
   //    imgSaveFlag = await imageSave(Number(state.id));
-  //    if(!imgSaveFlag) return false;
   //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //    if(!specialSaleSaveFlag) return false;
   //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
   //  }
 //
   //  return reFlag;
   //}
-
-  const upDateSaveItem: (variIndex:string | number | null, pattern:string) => Promise<boolean> = async (variIndex, pattern) => {
-    let reFlag = false;
-    let itemSaveFlag = false;
-    let imgSaveFlag = false;
-    let specialSaleSaveFlag = false;
-    let categoryCombSaveFlag = false;
-
-    if(pattern === '2'){
-      itemSaveFlag = await edit(`item/update/${variIndex}`);
-      imgSaveFlag = await imageSave(variIndex);
-      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
-
-    }else if(pattern === '3'){
-      itemSaveFlag = await edit(`item/update/${state.id}`);
-      imgSaveFlag = await imageSave(Number(state.id));
-      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-
-      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
-    }else if(pattern === '4'){
-      state.item_id = Number(variIndex);
-      itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-      if(itemSaveFlag){
-        if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-          categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-        }else{
-          categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-        }
-      }
-
-      imgSaveFlag = await imageSave(Number(state.id));
-      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-
-      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
-    }else if(pattern === '5'){
-      state.item_id = Number(variIndex);
-      itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-      if(itemSaveFlag){
-        if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-          categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-        }else{
-          categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-        }
-      }
-
-      imgSaveFlag = await imageSave(Number(state.id));
-      specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-      reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
-    }
-
-    return reFlag;
-  }
 
   const delFanc: () => Promise<boolean> = async () => {
     let delFlag = false;
@@ -1289,7 +1666,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   const saveClick: () => void = async () => {
     if((state.item_number !== null) && (state.item_number !== undefined) && (state.name !== null) && (state.name !== undefined) &&
-       (state.name_note !== null) && (state.name_note !== undefined) && (state.category_name !== null) && (state.category_name !== undefined) &&
+       (state.name_note !== null) && (state.name_note !== undefined) &&
        (state.supplier_name !== null) && (state.supplier_name !== undefined) && (state.supplier_name !== '') &&
        (state.display_status !== null) && (state.display_status !== undefined) &&
        (state.code !== null) && (state.code !== undefined) && (state.code !== '') &&
@@ -1696,26 +2073,65 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           className="max-w-lg"
           maxLength={401}
         />
-        <div>
-          <Forms.FormGroup labelText="商品分類" required error={errors?.category_name}>
-            <div className="flex">
-              <Forms.FormInputText
-                name="category_name"
-                value={state.category_name}
-                error={errors?.category_name}
-                className="max-w-lg"
-                readOnly
-              />
-              <input
-                type="hidden"
-                name="category_id"
-                value={state.category_id ?? ''}
-              />
-              <button className="btn ml-2 py-0 px-2" onClick={openItemClassDialog}>
-                ...
-              </button>
+        <div style={{display: 'flex', marginTop: '6px'}}>
+          <div style={{width: '790px', display: 'flex'}}>
+            <div style={{display: 'flex', marginTop: '8px', marginLeft: '60px'}}>
+              <label>商品分類</label>
+              <label className="label-required">必須</label>
             </div>
-          </Forms.FormGroup>
+            <div>
+              {state.categoryList
+                .filter(item => item.status !== "del")
+                .map((item, index) => {
+                  // 条件付きでボーダーカラーを決定
+                  const borderColor =
+                    changeCategoryFlag && index === changeCategoryIndex
+                      ? "red"   // 重複している行は赤枠
+                      : "#BCC7D4"; // 通常はグレー枠
+                
+                  return (
+                    <div key={index}>
+                      <div style={{ display: "flex" }}>
+                        <input
+                          className="vari-row-input"
+                          style={{
+                            border: `1px solid ${borderColor}`,
+                            backgroundColor: "#EDF2F7",
+                            marginTop: "5px",
+                            width: "512px",
+                          }}
+                          disabled={!checkBock.flag}
+                          value={item.name}
+                        />
+                        <button
+                          className="btn py-0 px-2"
+                          style={{ marginTop: "5px" }}
+                          onClick={() => onChangeCategory(index, item.combId, item.status)}
+                        >
+                          ...
+                        </button>
+                        {index >= 1 && (
+                          <button
+                            className="btn-delete"
+                            style={{ marginTop: "5px", marginLeft: "5px" }}
+                            onClick={() => categoryDelButton(item.combId, item.status)}
+                          >
+                            削除
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* 重複チェック */}
+                      {changeCategoryFlag && index === changeCategoryIndex && (
+                        <div className="form-error">重複した分類です</div>
+                      )}
+                    </div>
+                  );
+                })}
+
+  </div>
+          </div>
+          <button className="category-plus-button" onClick={() => addNewCategory()}>＋</button>
           <ItemClassificationSearchDialog {...itemClassSearchDialogProps} />
         </div>
         <div className="flex flex-wrap max-w-2xl">
@@ -1741,6 +2157,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               precision={2}
               className="max-w-8"
               min={0}
+              required
             />
           </div>
           <div className="w-1/2">
@@ -1871,6 +2288,67 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           onChange={onChange}
           maxLength={200}
         />
+        <div style={{alignItems: 'center', marginTop: '15px'}}>
+          <div style={{display: 'flex', justifyContent: 'flex-start', width: '627px'}}>
+            <Forms.FormGroupInputRadio
+              labelText="取扱説明書設定"
+              name="type_status"
+              value={state.type_status}
+              error={errors?.type_status}
+              onChange={onChange}
+              items={[
+                {
+                  labelText: 'なし',
+                  id: 'type_status_0',
+                  value: 0,
+                },
+                {
+                  labelText: '取扱説明書',
+                  id: 'type_status_1',
+                  value: 1,
+                },
+                {
+                  labelText: 'サイズ表',
+                  id: 'type_status_2',
+                  value: 2,
+                },
+                {
+                  labelText: 'その他',
+                  id: 'type_status_3',
+                  value: 3,
+                }
+              ]}
+              required={false}
+            />
+            <input className="vari-row-input" /*type={value == null ? 'hidden' : 'text'}*/
+                   disabled={state.type_status !== 3} style={{borderRight: '1px solid #a0aec0', backgroundColor: typeNameBackColor,
+                    width: '200px', }}
+                   value={typeName} onChange={(event) => onChangeTypeName(event)}
+            />
+            {/*<Forms.FormInputText
+              name="type_name"
+              value={typeName}
+              className="type_name"
+            />*/}
+          </div>
+          <div style={{display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginLeft: '160px', marginTop: '10px'}}>
+            <label style={{marginRight: '5px'}}>ファイル選択</label>
+            <Forms.FormInputText
+              name="file_name"
+              value={state.file_name}
+              error={errors?.file_name}
+              className="file_name"
+              readOnly
+            />
+            <button onClick={handleClick} className="file_btn ml-2 py-0 px-2">...</button>
+            <input
+              type="file"
+              ref={inputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+          </div>
+        </div>
         <div>
           <hr className="border-dashed border-gray-400 mt-4 mb-4" />
           <div className="button-erea" style={{display: 'flex', justifyContent: 'flex-end'}}>
@@ -1915,7 +2393,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           <div>
             <div style={{marginTop: '5px'}}>
               <label>バリエーション追加</label>
-              <label className="label-required">必須</label>
+              <label className="label-optional">任意</label>
               <input style={{marginTop: '5px'}} type="checkbox" onChange={handleCheck}/>
             </div>
             <div style={{marginLeft: "10px"}}>

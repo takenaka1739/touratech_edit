@@ -54,6 +54,7 @@ export const useSetItemDetailPage = (slug: string) => {
     special_sale_price: 0,
     refund_rate: 0,
     codeList: [],
+    categoryList: [],
     specialSalesList: [],
     imageList: [[]],
     //is_set_item: false,

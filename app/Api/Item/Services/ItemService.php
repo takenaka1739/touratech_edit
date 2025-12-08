@@ -5,6 +5,8 @@ namespace App\Api\Item\Services;
 use App\Base\Models\Item;
 use App\Base\Models\Image;
 use App\Base\Models\ItemCategoryCombination;
+use App\Base\Models\Category;
+use App\Base\Models\Document;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +26,7 @@ class ItemService
     $query = Item::select(
       'm_items.id',
       'm_items.code',
+      'm_items.item_number',
       'm_items.name',
       'm_items.sales_unit_price',
       'm_items.purchase_unit_price',
@@ -41,6 +44,7 @@ class ItemService
   {
     $query = Item::select(
       'id',
+      'item_number',
       'code',
       'name',
       'sales_unit_price',
@@ -58,17 +62,17 @@ class ItemService
    */
   public function fetch(array $cond)
   {
+    \Log::debug('fetch');
     $query = Item::select(
       'id',
       'code',
       'item_number',
       'name',
-      'name',
       'sales_unit_price',
-      'm_items.variations1',
-      'm_items.variations2',
-      'm_items.variations3',
-      'm_items.variations4',
+      'variations1',
+      'variations2',
+      'variations3',
+      'variations4',
       'purchase_unit_price',
     );
     $query = $this->setCondition($query, $cond);
@@ -136,8 +140,8 @@ class ItemService
       'm_items.is_payment_id4',
       'm_items.is_payment_id5',
       'm_items.is_set_item',
-      'm_categories.id AS category_id',
-      'm_categories.name AS category_name',
+      //'m_categories.id AS category_id',
+      //'m_categories.name AS category_name',
 
       'm_suppliers.id AS supplier_id',
       'm_suppliers.name AS supplier_name',
@@ -150,16 +154,25 @@ class ItemService
       't_special_sales.special_sale_price AS special_sale_price',
       't_special_sales.refund_rate AS refund_rate',
 
-      't_category_item_combinations.id AS combination_id',
+      //'t_category_item_combinations.id AS combination_id',
 
       'm_configs.send_trader AS send_trader',
-      'm_configs.send_personal AS send_personal'
+      'm_configs.send_personal AS send_personal',
+      'm_documents.id AS document_id',
+      'm_documents.type_status AS type_status',
+      'm_documents.type_name AS type_name',
+      'm_documents.file_name AS file_name'
     )
 
-    ->leftJoin('t_category_item_combinations', 'm_items.id', '=', 't_category_item_combinations.item_id')
-    ->leftJoin('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
+    //->leftJoin('t_category_item_combinations', 'm_items.id', '=', 't_category_item_combinations.item_id')
+    //->leftJoin('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
     ->leftJoin('m_configs', 'm_items.supplier_id', '=', 'm_configs.id')
     ->leftJoin('m_suppliers', 'm_items.supplier_id', '=', 'm_suppliers.id')
+    ->leftJoin('m_documents', function($join) {
+        $join->on('m_items.id', '=', 'm_documents.item_id')
+             ->whereNull('m_documents.deleted_at');
+    })
+
 
     ->leftJoin('t_special_sales', function ($join) {
         $join->on('m_items.id', '=', 't_special_sales.item_id')
@@ -189,9 +202,60 @@ class ItemService
     array_push($specialSalesList, $c);
 
     $d = [];
+    $category_list = [];
+    $category_list = ItemCategoryCombination::where('item_id', $selectItems['id'])
+        ->join('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
+        ->select(
+            't_category_item_combinations.id as combId',
+            'm_categories.id as categoryId',
+            'm_categories.name'
+        )
+        ->get()
+        ->unique('categoryId') // ← 最初に出てきた categoryId だけ残す
+        ->map(function ($row) {
+            return [
+                'combId' => $row->combId,
+                'categoryId' => $row->categoryId,
+                'name' => $row->name,
+                'status' => 'no update',
+                'initialcategoryId' => $row->categoryId,
+            ];
+        })
+        ->values() // インデックスを振り直す
+        ->toArray();
+
+
+    //foreach (ItemCategoryCombination::where('item_id', $selectItems['id'])->get() as $item) {
+    //  $category_ids = ItemCategoryCombination::where('item_id', $selectItems['id'])
+    //      ->pluck('category_id')
+    //      ->unique(); // 重複排除
+//
+    //  $category_list = Category::select('id', 'name')
+    //      ->whereIn('id', $category_ids)
+    //      ->get()
+    //      ->map(function ($category) {
+    //          return [
+    //              //'combId' => $category_ids->id,
+    //              'categoryId' => $category->id,
+    //              'name' => $category->name,
+    //              'status' => 'no update',
+    //              'initialcategoryId' => $category->id
+    //          ];
+    //      })
+    //      ->toArray();
+    //}
+    // 重複の削除
+    //$category_list = array_unique($category_list, SORT_REGULAR);
+
+    $documentFileList = [];
 
     foreach(Item::where('code', '=', $selectItems['code'])->get() as $item){
       array_push($d, ItemCategoryCombination::where('item_id', '=', $item->id)->first());
+
+      array_push($documentFileList, Document::where('item_id', $item->id)
+                  ->whereNull('deleted_at')
+                  ->first());
+
 
       array_push($codeList, $item);
 
@@ -299,12 +363,16 @@ class ItemService
       array_push($sss, $ss);
     }
 
-  if (count($variItems) < 1) {
-    $variItems = [
-      ['new1', '', '', '', '', '', '']
-    ];
-  }
+    if (count($variItems) < 1) {
+      $variItems = [
+        ['new1', '', '', '', '', '', '']
+      ];
+    }
+  
+    $selectItems['sales_price'] = count($variItems) > 1 ? 0 : $selectItems['sales_price'];
+    $selectItems['type_status'] = $selectItems['type_status'] === null || $selectItems['type_status'] === '' ? 0 : $selectItems['type_status'];
     $selectItems['codeList'] = $codeList;
+    $selectItems['categoryList'] = $category_list;
     $selectItems['specialSalesList'] = $specialSalesList;
     $selectItems['itemNumberItem'] = $itemNumberItem;
     $selectItems['salesPriceItem'] = $salesPriceItem;
@@ -314,6 +382,8 @@ class ItemService
     $selectItems['imageList'] = $ssss;
     $selectItems['combIdList'] = $d;
     $selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
+    $selectItems['document_url'] = $selectItems['file_name'] !== '' ? '/files/' . $selectItems['file_name'] : '';
+    $selectItems['documentFileList'] = $documentFileList;
 
     return $selectItems;
   }
@@ -478,7 +548,7 @@ class ItemService
         $query->where(function($query) use ($key) {
           $query->where('code', 'like', '%' . escape_like($key) . '%')
             ->orWhere('name', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('name', 'like', '%' . escape_like($key) . '%');
+            ->orWhere('item_number', 'like', '%' . escape_like($key) . '%');
         });
       }
     }

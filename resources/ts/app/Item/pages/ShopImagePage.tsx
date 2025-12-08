@@ -278,10 +278,6 @@ useEffect(() => {
   }
 
   const removeFileByName = (targetName: string) => {
-    console.log('targetName');
-    console.log(targetName);
-    console.dir('edtImageItems');
-    console.dir(edtImageItems);
     edtImageItems.map((item:any, index:number) => {
       let fileItem: string[] = [];
       if(item[0] === files[0]){
@@ -303,8 +299,6 @@ useEffect(() => {
         const addItem = [...updatedMatrix.slice(0, index), delFile, ...updatedMatrix.slice(index)];
         //fileItem.push(item[0], targetName.replace("public/images/", ""));
         fileItem.push(item[0], targetName.replace("/images/", ""));
-        console.log('fileItem');
-        console.log(fileItem);
         //const addFileItem = [...delimageItem, fileItem];
         // 更新
         setEdtImageItems(addItem); // 内部データの配列更新
@@ -348,7 +342,6 @@ useEffect(() => {
                               preImageItem: location.state.imageItems,
                               imageItem: edtImageItems,
                               delimageItem: delimageItem,
-                              //variItems: location.state.variItems,
                               variItems: variKindItem,
                               variChangeItem: variChangeItem,
                               backVariItems: location.state.backVariItems,
@@ -365,7 +358,6 @@ useEffect(() => {
     if (fileType === 'object' && isBlobLike && typeof file !== 'string') {
       const isVideo = typeof file.type === 'string' && file.type.indexOf('video') !== -1;
       const src = useMemo(() => URL.createObjectURL(file), [file]);
-      console.log(src);
     
       if (!isVideo) {
         return (
@@ -532,6 +524,14 @@ useEffect(() => {
             <label className="label-basic">（税込み）</label>
           </div>
           <label className="point-label">ポイント：{pointText}pt</label>
+          {location.state.items.type_status !== 0 && (
+            <div style={{display: 'flex', alignItems: 'baseline', padding: '0', marginTop: '5px' }}>
+              <label style={{fontSize: '15px', marginTop: '0'}}>
+                {location.state.items.type_name}：
+              </label>
+              <a className="document_url" href={location.state.items.document_url}>リンク</a>
+            </div>
+          )}
           <hr/>
           <div id="item-detail-erea">
             <label className="label-basic">この商品について</label>

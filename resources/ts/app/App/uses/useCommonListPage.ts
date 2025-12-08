@@ -61,8 +61,6 @@ export const useCommonListPage = <T, U extends ListPage>(
       }
     );
 
-    console.log('一覧のres');
-    console.log(res);
     if (res) {
       if (res.status === 200) {
         dispatch(AppActions.success());

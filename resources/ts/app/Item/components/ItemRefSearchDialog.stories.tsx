@@ -73,6 +73,7 @@ const Template: Story<ItemSearchDialogProps & { props: number }> = args => {
         special_sale_price: 0,
         refund_rate: 0,
         codeList: [],
+        categoryList: [],
         specialSalesList: [],
         imageList: [[]],
         combIdList: [],

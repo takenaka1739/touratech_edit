@@ -71,6 +71,7 @@ const Template: Story = args => {
         special_sale_price: 0,
         refund_rate: 0,
         codeList: [],
+        categoryList: [],
         specialSalesList: [],
         imageList: [[]],
         combination_id: undefined,
