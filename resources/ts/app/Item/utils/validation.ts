@@ -1,7 +1,10 @@
+import { Item } from '@/types/Item';
+import { ItemCategory } from '@/types/ItemCategory';
+
 /**
  * 商品マスタの未入力項目を検出し、エラーメッセージを返す。
  */
-export const validateItemState = (state: any): Record<string, string> => {
+export const validateItemState = (state: Item): Record<string, string> => {
   const errors: Record<string, string> = {};
 
   // 品番
@@ -17,7 +20,7 @@ export const validateItemState = (state: any): Record<string, string> => {
     errors.name_note = '商品名（納品書）を入力してください';
 
   // 商品分類
-  if (state.categoryList.length > 0 && state.categoryList.every(x => x.categoryId === null))
+  if (state.categoryList.length > 0 && state.categoryList.every((x: ItemCategory) => x.categoryId === null))
     errors.categoryList = '商品分類を入力してください';
 
   // 仕入先
