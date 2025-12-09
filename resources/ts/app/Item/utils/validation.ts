@@ -17,8 +17,8 @@ export const validateItemState = (state: any): Record<string, string> => {
     errors.name_note = '商品名（納品書）を入力してください';
 
   // 商品分類
-  if (state.category_name === null || state.category_name === undefined || state.category_name === '')
-    errors.category_name = '商品分類を入力してください';
+  if (state.categoryList.length === 1 && state.categoryList[0].categoryId === null)
+    errors.categoryList = '商品分類を入力してください';
 
   // 仕入先
   if (state.supplier_name === null || state.supplier_name === undefined || state.supplier_name === '')
