@@ -100,6 +100,7 @@ class ItemService
    */
   public function get(int $id)
   {
+    \Log::debug('getの中だよ');
     //return 
     $selectItems = Item::select(
       'm_items.id',
@@ -173,7 +174,6 @@ class ItemService
              ->whereNull('m_documents.deleted_at');
     })
 
-
     ->leftJoin('t_special_sales', function ($join) {
         $join->on('m_items.id', '=', 't_special_sales.item_id')
     ->whereNull('t_special_sales.deleted_at');})
@@ -204,6 +204,7 @@ class ItemService
     $d = [];
     $category_list = [];
     $category_list = ItemCategoryCombination::where('item_id', $selectItems['id'])
+        ->whereNull('t_category_item_combinations.deleted_at') // ★ ここで削除済みを除外
         ->join('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
         ->select(
             't_category_item_combinations.id as combId',
@@ -211,7 +212,7 @@ class ItemService
             'm_categories.name'
         )
         ->get()
-        ->unique('categoryId') // ← 最初に出てきた categoryId だけ残す
+        ->unique('categoryId')
         ->map(function ($row) {
             return [
                 'combId' => $row->combId,
@@ -221,9 +222,19 @@ class ItemService
                 'initialcategoryId' => $row->categoryId,
             ];
         })
-        ->values() // インデックスを振り直す
+        ->values()
         ->toArray();
 
+    // ★ 空だった場合はダミー行を追加
+    if (empty($category_list)) {
+        $category_list = [[
+            'combId' => null,
+            'categoryId' => null,
+            'name' => '',   // 表示用に文字を入れると分かりやすい
+            'status' => 'new1',      // フロント側が認識できる値にする
+            'initialcategoryId' => null,
+        ]];
+    }
 
     //foreach (ItemCategoryCombination::where('item_id', $selectItems['id'])->get() as $item) {
     //  $category_ids = ItemCategoryCombination::where('item_id', $selectItems['id'])

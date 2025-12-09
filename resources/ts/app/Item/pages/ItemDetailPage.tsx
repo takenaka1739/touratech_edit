@@ -133,6 +133,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     imageId?: number;
   };
 
+  type Category = {
+    combId: number | undefined;
+    categoryId: number | null;
+    name: string;
+    status: string;
+    initialcategoryId: number | undefined;
+  };
+
   //const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
   const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.itemNumberItem[0]);
   //const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
@@ -159,6 +167,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [typeNameBackColor, setTypeNameBackColor] = useState('#EDF2F7');
   const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
   const [changeCategoryFlag, setChangeCategoryFlag] = useState(false);
+  const [preCategoryId, setPreCategoryId] = useState<number | undefined>(undefined);
 
   // 初期値設定
   useEffect(() => {
@@ -175,6 +184,20 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       setState(prev => ({
         ...prev,
         variItems: [['new1', '', '', '', '', '', '']],
+      }));
+    }
+
+    if (state.categoryList.length === 0) {
+      const arr: Category = {
+        combId: undefined,
+        categoryId: null,
+        name: "",
+        status: 'new1',
+        initialcategoryId: undefined,
+      };
+      setState(prev => ({
+        ...prev,
+        categoryList: [arr]
       }));
     }
   }, [state, state.variItems, state.itemNumberItem, state.salesPriceItem, state.purchase_price, state.number_reservations, 
@@ -248,9 +271,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   prevIdRef.current = state.id;
   }, [state.id]); // id の変化だけ監視
 
-  console.log('backUpState');
-  console.log(backUpState);
-
   const {
     open: openItemClassDialog,
     searchDialogProps: itemClassSearchDialogProps,
@@ -260,6 +280,21 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       category_id: id,
       category_name: name,
     });
+
+    if(preCategoryId !== undefined && state.category_id !== undefined){
+      if(preCategoryId === state.category_id){
+        const matched = state.categoryList.find(
+          item => item.categoryId === preCategoryId
+        );
+        if((matched?.status !== 'del') && (matched !== undefined)){
+          setChangeCategoryFlag(true);
+        }else{
+          changeCategory();
+        }
+      }else{
+        changeCategory();
+      }
+    }
     setCategoryChangeFlag(true);
     return true;
   });
@@ -486,158 +521,238 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }));
   }
 
-  // バリエーションの行追加
+  // 商品分類の行追加
   // select:選択された行、index:選択された列
   const addNewCategory = () => {
     setChangeCategoryFlag(false);
 
-    type Category = {
-      combId: number | undefined;
-      categoryId: number | undefined;
-      name: string;
-      status: string;
-      initialcategoryId: number | undefined;
-    };
-
     setState(prev => {
+      // categoryList が未定義/null の場合は空配列にして扱う
+      const currentList = Array.isArray(prev.categoryList) ? prev.categoryList : [];
+
       // status が "newX" のものを抽出
-      const newStatuses = prev.categoryList
+      const newStatuses = currentList
         .map(item => item.status)
         .filter(status => /^new\d+$/.test(status));
 
       // 数字部分を取り出して最大値を算出
-      const maxNumber = newStatuses.length > 0
-        ? Math.max(...newStatuses.map(s => parseInt(s.replace("new", ""), 10)))
-        : 0;
+      const maxNumber =
+        newStatuses.length > 0
+          ? Math.max(...newStatuses.map(s => parseInt(s.replace("new", ""), 10)))
+          : 0;
 
       // 次の番号を作成
       const nextStatus = `new${maxNumber + 1}`;
-
       const arr: Category = {
         combId: undefined,
-        categoryId: undefined,
+        categoryId: null,
         name: "",
         status: nextStatus,
-        initialcategoryId: undefined
+        initialcategoryId: undefined,
       };
 
-      return {
-        ...prev,
-        categoryList: [...prev.categoryList, arr]
-      };
+      const nextList = [...currentList, arr];
+      return { ...prev, categoryList: nextList };
     });
   };
 
-
   useEffect(() => {
-        console.log('changeCategoryIndex');
-        console.log(changeCategoryIndex);
     if (changeCategoryIndex !== null) {
-      const flag = state.categoryList.some(
-        (item) =>
-          item.status !== "del" &&           // del は除外
-          item.categoryId != null &&         // undefined / null は除外
-          item.categoryId === state.category_id
-      );
-
-      setChangeCategoryFlag(flag);
-      if (!flag) {
-        setState(prev => {
-          // コピー元となる del 行を探す
-          const delIndex = prev.categoryList.findIndex(
-            (item, idx) =>
-              item.status === "del" &&
-              item.categoryId === state.category_id &&
-              idx !== changeCategoryIndex
-          );
-
-          if (delIndex !== -1) {
-            const delItem = prev.categoryList[delIndex];
-
-            // まず del 行を削除
-            const filteredList = prev.categoryList.filter(
-              (_, idx) => idx !== delIndex
+      if((state.category_id !== undefined) && (state.category_name !== undefined)){
+        // 同じカテゴリが選択されているかのチェック
+        const flag = state.categoryList.some((item) => {
+          if (item.categoryId == null) {
+            // categoryId が null の場合は status.includes("new") を判定
+            return item.status !== "del" && !item.status?.includes("new");
+          } else {
+            // categoryId がある場合は通常判定
+            return (
+              item.status !== "del" &&
+              item.categoryId === state.category_id
             );
-
-            // changeCategoryIndex の行にコピー
-            const nextList = filteredList.map((item, idx) =>
-              idx === changeCategoryIndex
-                ? {
-                    ...item,
-                    combId: delItem.combId,
-                    categoryId: delItem.categoryId,
-                    name: delItem.name,
-                    initialcategoryId: delItem.initialcategoryId,
-                    status:
-                      delItem.categoryId === delItem.initialcategoryId
-                        ? "no update"
-                        : "update",
-                  }
-                : item
-            );
-
-            return { ...prev, categoryList: nextList };
           }
-
-          // del 行がなければ通常処理
-          return {
-            ...prev,
-            categoryList: prev.categoryList.map((item, index) => {
-              if (index !== changeCategoryIndex) return item;
-
-              if (item.status === "new") {
-                return {
-                  ...item,
-                  categoryId: state.category_id,
-                  name: state.category_name,
-                  status: "new",
-                };
-              } else if (state.category_id === item.initialcategoryId) {
-                return {
-                  ...item,
-                  categoryId: state.category_id,
-                  name: state.category_name,
-                  status: "no update",
-                };
-              } else {
-                return {
-                  ...item,
-                  categoryId: state.category_id,
-                  name: state.category_name,
-                  status: "update",
-                };
-              }
-            }),
-          };
         });
-      }else{
-        console.log('else文の中');
-        console.log(flag);
-        console.log(changeCategoryIndex);
-      }
-    }
-  }, [state.category_id, state.category_name, changeCategoryIndex]);
+        
+        setChangeCategoryFlag(flag);
+        if (!flag) {
+          setState(prev => {
+            const delIndex = prev.categoryList.findIndex(
+              (item, idx) =>
+                item.status === "del" &&
+                item.categoryId === state.category_id &&
+                idx !== changeCategoryIndex
+            );
+          
+            if (delIndex !== -1) {
+              const delItem = prev.categoryList[delIndex];
+              // まず changeCategoryIndex の行にコピー
+              const nextList = prev.categoryList
+                .filter(item => item.status !== "del") // del を除外
+                .map((item, idx) =>
+                  idx === changeCategoryIndex
+                    ? {
+                        ...item,
+                        combId: delItem.combId,
+                        categoryId: delItem.categoryId,
+                        name: delItem.name,
+                        initialcategoryId: delItem.initialcategoryId,
+                        status:
+                          delItem.categoryId === delItem.initialcategoryId
+                            ? "no update"
+                            : "update",
+                      }
+                    : item
+                );
 
-  const onChangeCategory = (selectIndex: any, combId: any, status: string) => {
-    const matchIndex = state.categoryList.findIndex(item => {
-      // combId が null/undefined なら status で判定
+              // その後 del 行を削除
+              //const nextList = copiedList.filter((_, idx) => idx !== delIndex);
+            
+              return { ...prev, categoryList: nextList };
+            }
+          
+            // del 行がなければ通常処理
+            return {
+              ...prev,
+              categoryList: prev.categoryList.map((item, index) => {
+                if (index !== changeCategoryIndex) return item;
+              
+                if (item.status.includes("new")) {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: item.status,
+                  };
+                } else if (state.category_id === item.initialcategoryId) {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: "no update",
+                  };
+                } else {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: "update",
+                  };
+                }
+              }),
+            };
+          });
+        }else{
+          setChangeCategoryFlag(true);
+        }
+      }
+      setPreCategoryId(state.category_id);
+    }
+  }, [state.category_id, state.category_name]);
+
+  const changeCategory = () => {
+    if (changeCategoryIndex !== null) {
+      if((state.category_id !== undefined) && (state.category_name !== undefined)){
+        // 同じカテゴリが選択されているかのチェック
+        const flag = state.categoryList.some((item) => {
+          if (item.categoryId == null) {
+            // categoryId が null の場合は status.includes("new") を判定
+            return item.status !== "del" && !item.status?.includes("new");
+          } else {
+            // categoryId がある場合は通常判定
+            return (
+              item.status !== "del" &&
+              item.categoryId === state.category_id
+            );
+          }
+        });
+        
+        setChangeCategoryFlag(flag);
+        if (!flag) {
+          setState(prev => {
+            const delIndex = prev.categoryList.findIndex(
+              (item, idx) =>
+                item.status === "del" &&
+                item.categoryId === state.category_id &&
+                idx !== changeCategoryIndex
+            );
+          
+            if (delIndex !== -1) {
+              const delItem = prev.categoryList[delIndex];
+            
+              // まず changeCategoryIndex の行にコピー
+              const copiedList = prev.categoryList.map((item, idx) =>
+                idx === changeCategoryIndex
+                  ? {
+                      ...item,
+                      combId: delItem.combId,
+                      categoryId: delItem.categoryId,
+                      name: delItem.name,
+                      initialcategoryId: delItem.initialcategoryId,
+                      status:
+                        delItem.categoryId === delItem.initialcategoryId
+                          ? "no update"
+                          : "update",
+                    }
+                  : item
+              );
+              // その後 del 行を削除
+              const nextList = copiedList.filter((_, idx) => idx !== delIndex);
+            
+              return { ...prev, categoryList: nextList };
+            }
+          
+            // del 行がなければ通常処理
+            return {
+              ...prev,
+              categoryList: prev.categoryList.map((item, index) => {
+                if (index !== changeCategoryIndex) return item;
+              
+                if (item.status.includes("new")) {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: item.status,
+                  };
+                } else if (state.category_id === item.initialcategoryId) {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: "no update",
+                  };
+                } else {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: "update",
+                  };
+                }
+              }),
+            };
+          });
+        }else{
+          setChangeCategoryFlag(true);
+        }
+      }
+      setPreCategoryId(state.category_id);
+    }
+  }
+
+  const onChangeCategory = (combId: any, status: string) => {
+    //let preCategoryId = null;
+    const filteredList = state.categoryList.filter(item => item.status !== "del");
+    const matchIndex = filteredList.findIndex(item => {
       if (item.combId == null) {
         return item.status === status;
       }
-      // それ以外は combId で判定
       return item.combId === combId;
     });
 
-    console.log('selectIndex');
-    console.log(selectIndex);
-
     setChangeCategoryFlag(false);
     setChangeCategoryIndex(matchIndex);
-
-    let a = openItemClassDialog();
-
-    console.log('a');
-    console.log(a);
+    openItemClassDialog();
   };
 
   const categoryDelButton = (combId: any, status: string) => {
@@ -650,6 +765,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       // それ以外は combId で判定
       return item.combId === combId;
     });
+
     setState(prev => {
       const target = prev.categoryList[matchIndex];
 
@@ -671,11 +787,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         ),
       };
     });
+    setChangeCategoryIndex(matchIndex);
   };
-
-
-  console.log('state.categoryList');
-  console.log(state.categoryList);
 
   const delButton = (selectIndex:number) => {
     setvariClickFlag(true);
@@ -953,6 +1066,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             type_status: location.state.preState.type_status,
             type_name: location.state.preState.type_name,
             file_name: location.state.preState.file_name,
+            categoryList: location.state.preState.categoryList
           };
         });
       }
@@ -981,7 +1095,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   };
 
-
   const handleClick = () => {
     if (inputRef.current) {
       inputRef.current.click();
@@ -991,9 +1104,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const edit: (url: string) => Promise<boolean> = async url => {
     dispatch(AppActions.request());
     const res = await axios.put(`/api/${url}`, state);
+    console.log(res);
     if (res.status === 200) {
+      console.log('1109行目');
       dispatch(AppActions.success());
       if (res.data.success) {
+        console.log('1112行目');
         return true;
       } else {
         setErrors(res.data.errors);
@@ -1004,23 +1120,23 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   };
 
-  const categoryEdit = async (url: string): Promise<boolean> => {
-    dispatch(AppActions.request());
-    const res = await axios.put(`/api/${url}`, state);
-    if (res.status === 200) {
-      dispatch(AppActions.success());
-      if (res.data.success) {
-        return true;
-      } else {
-        setErrors(res.data.errors);
-        return false;
-      }
-    } else {
-      dispatch(AppActions.failed('データの保存に失敗しました。'));
-      return false;
-    }
-    //return res.data.success;
-  };
+  //const categoryEdit = async (url: string): Promise<boolean> => {
+  //  dispatch(AppActions.request());
+  //  const res = await axios.put(`/api/${url}`, state);
+  //  if (res.status === 200) {
+  //    dispatch(AppActions.success());
+  //    if (res.data.success) {
+  //      return true;
+  //    } else {
+  //      setErrors(res.data.errors);
+  //      return false;
+  //    }
+  //  } else {
+  //    dispatch(AppActions.failed('データの保存に失敗しました。'));
+  //    return false;
+  //  }
+  //  //return res.data.success;
+  //};
 
   const history = useHistory();
   const backPage = () => history.push(`/item`);
@@ -1283,13 +1399,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const documentSave = async (variIndex:string | number | null): Promise<{success: boolean; id?: number;}> => {
     let res: any = {};
     let docRes: any = {};
-
-    console.log('取扱説明書設定の保存');
-    console.log(state.type_status);
-    console.log(backUpState.type_status);
-
     let isImage = false;
     let isPdf = false;
+
     if (state.file_name){
       // pdfかの確認
       isPdf = /\.pdf$/i.test(state.file_name);
@@ -1297,48 +1409,48 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       isImage = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(state.file_name);
     }
 
-    // 拡張子が pdf でも画像でもない場合 → true
-    if (!isPdf && !isImage) {
-      return { success: true, id: state.document_id };
-    }
+    if((backUpState.type_status !== state.type_status) || (backUpState.type_name !== state.type_name) ||
+       (backUpState.file_name !== state.file_name))
+    {
+      // 拡張子が pdf でも画像でもない場合 → true
+      if (!isPdf && !isImage) {
+        return { success: true, id: state.document_id };
+      }
 
-    console.log(`document_id：${state.document_id}`);
-    console.log(`state.document_id === null：${state.document_id === null}`);
-    console.log(`state.document_id === undefined：${state.document_id === undefined}`);
-
-    if ((state.document_id === null) || (state.document_id === undefined)) {
-      if(state.type_status !== 0) res = await store('item/document_store');
-      if(res.data.success){
-        if (state.pdf) {
-          const formData = new FormData();
-          if(isPdf){
-            formData.append("pdf", state.pdf);          // ← Laravel側で $request->file('pdf') で受け取れる
-            formData.append("filename", state.file_name ?? "");
-            await axios.post("/api/item/document_server_store", formData, {headers: {"Content-Type": "multipart/form-data"}});
-          }else if(isImage){
-            formData.append('image', state.pdf);
-            formData.append('filename', state.file_name ?? ""); // 任意のファイル名
-            axios.post('/api/item/image_server_store', formData, {headers: {'Content-Type': 'multipart/form-data'}});
+      if ((state.document_id === null) || (state.document_id === undefined)) {
+        if(state.type_status !== 0) res = await store('item/document_store');
+        if(res.data.success){
+          if (state.pdf) {
+            const formData = new FormData();
+            if(isPdf){
+              formData.append("pdf", state.pdf);          // ← Laravel側で $request->file('pdf') で受け取れる
+              formData.append("filename", state.file_name ?? "");
+              await axios.post("/api/item/document_server_store", formData, {headers: {"Content-Type": "multipart/form-data"}});
+            }else if(isImage){
+              formData.append('image', state.pdf);
+              formData.append('filename', state.file_name ?? ""); // 任意のファイル名
+              axios.post('/api/item/image_server_store', formData, {headers: {'Content-Type': 'multipart/form-data'}});
+            }
           }
+        }
+      }else{
+        if(state.type_status !== 0){
+          let flag = (backUpState.type_status !== state.type_status) || (backUpState.type_name !== state.type_name) ||
+                     (backUpState.file_name !== state.file_name);
+          if(flag){
+            const matchedRows = state.documentFileList?.filter(item => item.item_id === variIndex) ?? [];
+            docRes = await edit(`item/document_update/${matchedRows[0].id}`);
+          }
+        }else{
+          const matchedRows = state.documentFileList?.filter(item => item.item_id === variIndex) ?? [];
+          // 削除処理
+          await destroy(`/api/item/document_delete/${matchedRows[0].id}`);
         }
       }
     }else{
-      console.log(variIndex);
-      if(state.type_status !== 0){
-        let flag = (backUpState.type_status !== state.type_status) || (backUpState.type_name !== state.type_name) ||
-                   (backUpState.file_name !== state.file_name);
-        if(flag){
-          const matchedRows = state.documentFileList?.filter(item => item.item_id === variIndex) ?? [];
-          docRes = await edit(`item/document_update/${matchedRows[0].id}`);
-        }
-      }else{
-        const matchedRows = state.documentFileList?.filter(item => item.item_id === variIndex) ?? [];
-        // 削除処理
-        await destroy(`/api/item/document_delete/${matchedRows[0].id}`);
-      }
+      docRes = true;
     }
 
-    console.log(docRes);
     return {success: docRes, id: state.document_id};
   }
 
@@ -1372,7 +1484,23 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       });
 
       // カテゴリーの保存
-      categorySaveRes = await categorySave("item/category_store", 'store');
+      for (const item of state.categoryList) {
+        console.log('item');
+        console.log(item);
+        if (item.status?.includes("new")) {
+          console.log("newを含む行:", item);
+          setState(prev => ({
+            ...prev,
+            category_id: item.categoryId,
+            category_name: item.name,
+          }));
+          categorySaveRes = await categorySave("item/category_store", "store");
+          console.log('categorySaveRes');
+          console.log(categorySaveRes);
+        }
+      }
+
+      //categorySaveRes = await categorySave("item/category_store", 'store');
       // カテゴリーの保存に成功
       if(categorySaveRes.success) {
         // カテゴリー保存成功時
@@ -1454,11 +1582,15 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
     //documentSaveFlag = (await documentSave()).success;
 
+    console.log(`pattern：${pattern}`);
+
     if(pattern === '2'){
       itemSaveFlag = await edit(`item/update/${variIndex}`);
       if(!itemSaveFlag) return false;
+
       imgSaveFlag = await imageSave(variIndex);
       if(!imgSaveFlag) return false;
+
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
       if(!specialSaleSaveFlag) return false;
 
@@ -1479,24 +1611,16 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       documentSaveFlag = (await documentSave(variIndex)).success;
       if(!documentSaveFlag) return false;
 
-
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && documentSaveFlag;
+
     }else if(pattern === '4'){
       state.item_id = Number(variIndex);
       itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
       if(!itemSaveFlag) return false;
-      if(itemSaveFlag){
-        if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-          categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-          if(!categoryCombSaveFlag) return false;
-        }else{
-          categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-          if(!categoryCombSaveFlag) return false;
-        }
-      }
 
       imgSaveFlag = await imageSave(Number(state.id));
       if(!imgSaveFlag) return false;
+
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
       if(!specialSaleSaveFlag) return false;
 
@@ -1504,33 +1628,77 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       if(!documentSaveFlag) return false;
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag && documentSaveFlag;
+
     }else if(pattern === '5'){
       state.item_id = Number(variIndex);
       itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
+      console.log('itemSaveFlag');
+      console.log(itemSaveFlag);
       if(!itemSaveFlag) return false;
-      if(itemSaveFlag){
-        if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-          categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-          if(!categoryCombSaveFlag) return false;
-        }else{
-          categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-          if(!categoryCombSaveFlag) return false;
-        }
-      }
 
       imgSaveFlag = await imageSave(Number(state.id));
+      console.log('imgSaveFlag');
+      console.log(imgSaveFlag);
       if(!imgSaveFlag) return false;
 
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      console.log('specialSaleSaveFlag');
+      console.log(specialSaleSaveFlag);
       if(!specialSaleSaveFlag) return false;
 
       documentSaveFlag = (await documentSave(variIndex)).success;
+      console.log('documentSaveFlag');
+      console.log(documentSaveFlag);
       if(!documentSaveFlag) return false;
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag && documentSaveFlag;
     }
 
-    return reFlag;
+    if(itemSaveFlag){
+      for (const item of state.categoryList) {
+        if (item.status?.includes("new")) {
+          console.log('item');
+          console.log(item);
+          setState(prev => ({
+            ...prev,
+            category_id: item.categoryId,
+            category_name: item.name,
+          }));
+          categoryCombSaveFlag = (await categorySave("item/category_store", "store")).success;
+          if(!categoryCombSaveFlag) return false;
+
+        }else if(item.status === 'update') {
+          console.log('item');
+          console.log(item);
+          setState(prev => ({
+            ...prev,
+            combination_id: item.combId,
+            item_id: item.itemId,
+            category_id: item.categoryId,
+            category_name: item.name,
+          }));
+          categoryCombSaveFlag = await edit(`item/category_edit/${item.combId}`);
+          console.log('categoryCombSaveFlag');
+          console.log(categoryCombSaveFlag);
+          if(!categoryCombSaveFlag) return false;
+
+        }else if(item.status === 'del') {
+          console.log('item');
+          console.log(item);
+          categoryCombSaveFlag = await destroy(`/api/item/category_delete/${item.combId}`);
+          if(!categoryCombSaveFlag) return false;
+        }
+      }
+      //if(((state.combination_id !== null) && (state.combination_id !== undefined))){
+      //  categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
+      //  if(!categoryCombSaveFlag) return false;
+      //}else{
+      //  categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
+      //  if(!categoryCombSaveFlag) return false;
+      //}
+    }
+
+    return reFlag && categoryCombSaveFlag;
   }
 
   //const upDateSaveItem: (variIndex:string | number | null, pattern:string) => Promise<boolean> = async (variIndex, pattern) => {
@@ -1793,14 +1961,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                   // すでに登録されているかの確認
                   if (state.codeList.find(e => e.id === value[0])) {
                     const matchedRow = state.codeList.find(item => item.id === value[0]);
-                    const combId = Array.isArray(state.combIdList)
-                                   ? state.combIdList.find(item => item?.item_id === value[0])
-                                   : undefined;
-                    if(combId !== undefined){
-                      state.combination_id = combId.id;
-                    }else{
-                      state.combination_id = undefined;
-                    }
+                    //const combId = Array.isArray(state.combIdList)
+                    //               ? state.combIdList.find(item => item?.item_id === value[0])
+                    //               : undefined;
+                    //if(combId !== undefined){
+                    //  state.combination_id = combId.id;
+                    //}else{
+                    //  state.combination_id = undefined;
+                    //}
 
                     state.id = Number(value[0]);
                     state.item_id = Number(value[0]);
@@ -1878,13 +2046,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             if(variChangeItem.length > 0){
               // 現在編集中の商品ID
               const editId = state.id;
-              const category_id = state.category_id;
+              //const category_id = state.category_id;
               if (state.codeList.find(e => e.id === state.id)) {
                 const changeItem = variChangeItem.find(item => Number(item[0]) === state.id);
                 if (changeItem) {
                   state.id = Number(changeItem[0]);
                   state.item_id = Number(changeItem[0]);
-                  state.category_id = category_id;
+                  //state.category_id = category_id;
 
                   state.variations1 = changeItem[1];
                   state.variations2 = changeItem[2];
@@ -1904,12 +2072,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     const changeItem = variChangeItem.find(item => item[0] === value[0]);
                     const matchedRow = state.codeList.find(item => item.id === value[0]);
                     // カテゴリに変更がなければ既存のカテゴリで保存
-                    const combId = Array.isArray(state.combIdList)
-                                     ? state.combIdList.find(item => item?.item_id === value[0])
-                                     : state.combination_id;
-                    if (combId) {
-                      state.combination_id = combId.id;
-                    }
+                    //const combId = Array.isArray(state.combIdList)
+                    //                 ? state.combIdList.find(item => item?.item_id === value[0])
+                    //                 : state.combination_id;
+                    //if (combId) {
+                    //  state.combination_id = combId.id;
+                    //}
 
                     if (changeItem) {
                       state.id = Number(changeItem[0]);
@@ -1931,14 +2099,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     }
                   
                     if(supplierChangeFlag === false) state.supplier_id = matchedRow.supplier_id;
-                    state.category_id = category_id;
+                    //state.category_id = category_id;
                     updateSaveFlag = await upDateSaveItem(Number(value[0]), '4');
                   }
                 }else{
                   const changeItem = variChangeItem.find(item => item[0] === value[0]);
 
                   if (changeItem) {
-                    state.category_id = category_id;
+                    //state.category_id = category_id;
                     state.id = undefined;          
                     state.variations1 = changeItem[1];
                     state.variations2 = changeItem[2];
@@ -1966,14 +2134,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                   // すでに登録されているかの確認
                   if (state.codeList.find(e => e.id === value[0])) {
                     const matchedRow = state.codeList.find(item => item.id === value[0]);
-                    const combId = Array.isArray(state.combIdList)
-                                   ? state.combIdList.find(item => item?.item_id === value[0])
-                                   : undefined;
-                    if(combId !== undefined){
-                      state.combination_id = combId.id;
-                    }else{
-                      state.combination_id = undefined;
-                    }
+                    //const combId = Array.isArray(state.combIdList)
+                    //               ? state.combIdList.find(item => item?.item_id === value[0])
+                    //               : undefined;
+                    //if(combId !== undefined){
+                    //  state.combination_id = combId.id;
+                    //}else{
+                    //  state.combination_id = undefined;
+                    //}
 
                     state.id = Number(value[0]);
                     state.item_id = Number(value[0]);
@@ -2088,7 +2256,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                     changeCategoryFlag && index === changeCategoryIndex
                       ? "red"   // 重複している行は赤枠
                       : "#BCC7D4"; // 通常はグレー枠
-                
                   return (
                     <div key={index}>
                       <div style={{ display: "flex" }}>
@@ -2100,13 +2267,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                             marginTop: "5px",
                             width: "512px",
                           }}
-                          disabled={!checkBock.flag}
                           value={item.name}
                         />
                         <button
                           className="btn py-0 px-2"
                           style={{ marginTop: "5px" }}
-                          onClick={() => onChangeCategory(index, item.combId, item.status)}
+                          onClick={() => onChangeCategory(item.combId, item.status)}
                         >
                           ...
                         </button>
@@ -2123,7 +2289,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                       
                       {/* 重複チェック */}
                       {changeCategoryFlag && index === changeCategoryIndex && (
-                        <div className="form-error">重複した分類です</div>
+                        <div className="form-error">重複した商品分類です</div>
                       )}
                     </div>
                   );
@@ -2402,7 +2568,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
                 <label style={{marginLeft: "65px"}}>バリエーション3</label>
                 <label style={{marginLeft: "65px"}}>バリエーション4</label>
                 <label style={{marginLeft: "60px"}}>品番</label>
-                <label style={{marginLeft: "100px"}}>販売価格</label>
+                <label style={{marginLeft: "100px"}}>販売価格（税込）</label>
               </div>
               <div style={{display: 'flex', marginLeft: "150px"}}>
                 <div>{state.variItems.map((item, itemIndex) => {
@@ -2454,9 +2620,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               onChange={onChange}
               maxLength={500}
             />
-            <div className="price-erea" style={{marginLeft: '60px', marginTop: '10px'}}>
-              <label>販売価格</label>
-              <label className="label-required">必須</label>
+            <div className="price-erea" style={{marginLeft: '1px', marginTop: '10px'}}>
+              <label style={{marginTop: '5px', marginLeft: '11px', display: "block", textAlign: "right"}}>販売価格（税込）</label>
+              <label style={{marginTop: '5px'}} className="label-required">必須</label>
               <input className="input-text"
                      value={state.sales_price}
                      disabled={checkBock.flag} style={{backgroundColor: backColor}}
