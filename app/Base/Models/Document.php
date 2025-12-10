@@ -16,7 +16,6 @@ class Document extends Model
       'type_status',
       'type_name',
       'file_name',
-      'order_by',
     ];
 
     protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
