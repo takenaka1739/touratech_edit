@@ -11,6 +11,9 @@ trait ItemRequestTrait
 {
   public function commonRules()
   {
+    $id = $this->route('id');
+    \Log::debug('$id');
+    \Log::debug($id);
     return [
       'supplier_id' => 'bail|nullable|integer|exists:m_suppliers,id',
       'consumption_tax_id' => 'bail|nullable|integer|exists:t_consumption_taxes,id',
@@ -21,9 +24,12 @@ trait ItemRequestTrait
         'required',
         'string',
         'max:50',
-        Rule::unique('m_items', 'item_number')->where(function ($q) {
-          return $q->whereNull('deleted_at');
-        })
+        Rule::unique('m_items', 'item_number')
+            ->where(fn($q) => $q->whereNull('deleted_at'))
+            ->ignore($id)
+        //Rule::unique('m_items', 'item_number')->where(function ($q) {
+        //  return $q->whereNull('deleted_at');
+        //})->ignore($id)
       ],
       'variations1' => 'nullable|string|max:50',
       'variations2' => 'nullable|string|max:50',

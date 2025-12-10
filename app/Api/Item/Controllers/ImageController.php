@@ -75,7 +75,8 @@ class ImageController extends BaseController
         $filename = uniqid() . '.' . $file->getClientOriginalExtension();
     }
 
-    $path = 'images/' . $filename;
+    //$path = 'images/' . $filename;
+    $path = public_path('images/' . $filename);
     $storedPath = $path;
 
     //if (!Storage::disk('public')->exists($path)) {

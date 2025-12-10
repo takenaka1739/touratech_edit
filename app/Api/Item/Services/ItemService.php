@@ -141,8 +141,6 @@ class ItemService
       'm_items.is_payment_id4',
       'm_items.is_payment_id5',
       'm_items.is_set_item',
-      //'m_categories.id AS category_id',
-      //'m_categories.name AS category_name',
 
       'm_suppliers.id AS supplier_id',
       'm_suppliers.name AS supplier_name',
@@ -155,8 +153,6 @@ class ItemService
       't_special_sales.special_sale_price AS special_sale_price',
       't_special_sales.refund_rate AS refund_rate',
 
-      //'t_category_item_combinations.id AS combination_id',
-
       'm_configs.send_trader AS send_trader',
       'm_configs.send_personal AS send_personal',
       'm_documents.id AS document_id',
@@ -165,8 +161,6 @@ class ItemService
       'm_documents.file_name AS file_name'
     )
 
-    //->leftJoin('t_category_item_combinations', 'm_items.id', '=', 't_category_item_combinations.item_id')
-    //->leftJoin('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
     ->leftJoin('m_configs', 'm_items.supplier_id', '=', 'm_configs.id')
     ->leftJoin('m_suppliers', 'm_items.supplier_id', '=', 'm_suppliers.id')
     ->leftJoin('m_documents', function($join) {
@@ -528,9 +522,12 @@ class ItemService
   public function delete(int $id)
   {
     DB::transaction(function () use ($id) {
-      $m = Item::find($id);
-      $m->forceDelete();
+        $m = Item::find($id);
+        if ($m) {
+            $m->delete();   // ← ソフトデリートに変更
+        }
     });
+
   }
 
   /**

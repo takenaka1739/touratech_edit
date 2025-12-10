@@ -129,13 +129,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     url: any;
   };
 
-  type RollbackRow = {
-    itemId?: number;
-    categoryId?: number;
-    specialSaleId?: number;
-    documentId?: number;
-    imageId?: number;
-  };
+  //type RollbackRow = {
+  //  itemId?: number;
+  //  categoryId?: number;
+  //  specialSaleId?: number;
+  //  documentId?: number;
+  //  imageId?: number;
+  //};
 
   type Category = {
     combId: number | undefined;
@@ -165,9 +165,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
   const [backUpState, setBackUpState] = useState<any>();
-  const [rollBackId, setRollBackId] = useState<any[][]>([]);
-  const [rollBackDelId, setRollBackDelId] = useState<RollbackRow[]>([]);
-  const rollBackDelIdRef = useRef<RollbackRow[]>([]);
+  //const [rollBackId, setRollBackId] = useState<any[][]>([]);
+  //const [rollBackDelId, setRollBackDelId] = useState<RollbackRow[]>([]);
+  //const rollBackDelIdRef = useRef<RollbackRow[]>([]);
   const [typeName, setTypeName] = useState('');
   const [typeNameBackColor, setTypeNameBackColor] = useState('#EDF2F7');
   const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
@@ -1566,11 +1566,11 @@ useEffect(() => {
       state.item_id = itemSaveRes.id;
       //setRollBackDelId(prev => [...prev, [itemSaveRes.id]]);
       //setRollBackDelId(prev => [...prev, { itemId: itemSaveRes.id }];);
-      setRollBackDelId(prev => {
-        const updated = [...prev, { itemId: itemSaveRes.id }];
-        rollBackDelIdRef.current = updated;
-        return updated;
-      });
+      //setRollBackDelId(prev => {
+      //  const updated = [...prev, { itemId: itemSaveRes.id }];
+      //  rollBackDelIdRef.current = updated;
+      //  return updated;
+      //});
 
       // カテゴリーの保存
       for (const item of state.categoryList) {
@@ -1593,17 +1593,17 @@ useEffect(() => {
       // カテゴリーの保存に成功
       if (categorySaveRes.success) {
         // カテゴリー保存成功時
-        setRollBackDelId(prev => {
-          //const last = prev[prev.length - 1];
-          //const updated = { ...last, categoryId: categorySaveRes.id };
-          //return [...prev.slice(0, -1), updated];
-
-          const last = prev[prev.length - 1]; // 直前に追加した行
-          const updatedLast = { ...last, categoryId: categorySaveRes.id }; // categoryId を追記
-          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
-          rollBackDelIdRef.current = newArr; // 最新配列を保持
-          return newArr;
-        });
+        //setRollBackDelId(prev => {
+        //  //const last = prev[prev.length - 1];
+        //  //const updated = { ...last, categoryId: categorySaveRes.id };
+        //  //return [...prev.slice(0, -1), updated];
+//
+        //  const last = prev[prev.length - 1]; // 直前に追加した行
+        //  const updatedLast = { ...last, categoryId: categorySaveRes.id }; // categoryId を追記
+        //  const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
+        //  rollBackDelIdRef.current = newArr; // 最新配列を保持
+        //  return newArr;
+        //});
         // 特売設定の保存
         specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
       } else {
@@ -1615,13 +1615,13 @@ useEffect(() => {
       // 特売設定の保存に成功
       if (specilSaleSaveRes.success) {
         // 特売保存成功時
-        setRollBackDelId(prev => {
-          const last = prev[prev.length - 1]; // 直前に追加した行
-          const updatedLast = { ...last, specialSaleId: specilSaleSaveRes.id }; // categoryId を追記
-          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
-          rollBackDelIdRef.current = newArr; // 最新配列を保持
-          return newArr;
-        });
+        //setRollBackDelId(prev => {
+        //  const last = prev[prev.length - 1]; // 直前に追加した行
+        //  const updatedLast = { ...last, specialSaleId: specilSaleSaveRes.id }; // categoryId を追記
+        //  const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
+        //  rollBackDelIdRef.current = newArr; // 最新配列を保持
+        //  return newArr;
+        //});
 
         // ファイルの保存
         documentSaveRes = await documentSave(null);
@@ -1633,13 +1633,13 @@ useEffect(() => {
       // 取扱説明書設定の保存に成功
       if (documentSaveRes.success) {
         // 特売保存成功時
-        setRollBackDelId(prev => {
-          const last = prev[prev.length - 1]; // 直前に追加した行
-          const updatedLast = { ...last, documentId: documentSaveRes.id }; // categoryId を追記
-          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
-          rollBackDelIdRef.current = newArr; // 最新配列を保持
-          return newArr;
-        });
+        //setRollBackDelId(prev => {
+        //  const last = prev[prev.length - 1]; // 直前に追加した行
+        //  const updatedLast = { ...last, documentId: documentSaveRes.id }; // categoryId を追記
+        //  const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
+        //  rollBackDelIdRef.current = newArr; // 最新配列を保持
+        //  return newArr;
+        //});
 
         // 画像の保存
         imageSaveRes = await imageSave(variIndex);
@@ -1888,7 +1888,7 @@ useEffect(() => {
               storeSaveFlag = true;
               updateSaveFlag = await upDateSaveItem(Number(value[0]), '2');
               if (updateSaveFlag) {
-                setRollBackId(prev => [...prev, [state.id]]);
+                //setRollBackId(prev => [...prev, [state.id]]);
               } else {
                 break;
               }

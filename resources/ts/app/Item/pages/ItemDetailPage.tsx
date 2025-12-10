@@ -18,6 +18,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { appAlert } from '@/components';
 import { validateItemState } from '@/app/Item/utils/validation';
+import { ItemPayload } from '@/types/ItemPayload';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -128,14 +129,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     url: any;
   };
 
-  type RollbackRow = {
-    itemId?: number;
-    categoryId?: number;
-    specialSaleId?: number;
-    documentId?: number;
-    imageId?: number;
-  };
-
   type Category = {
     combId: number | undefined;
     categoryId: number | null;
@@ -164,9 +157,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
   const [backUpState, setBackUpState] = useState<any>();
-  const [rollBackId, setRollBackId] = useState<any[][]>([]);
-  const [rollBackDelId, setRollBackDelId] = useState<RollbackRow[]>([]);
-  const rollBackDelIdRef = useRef<RollbackRow[]>([]);
   const [typeName, setTypeName] = useState('');
   const [typeNameBackColor, setTypeNameBackColor] = useState('#EDF2F7');
   const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
@@ -824,6 +814,7 @@ useEffect(() => {
   };
 
   const categoryDelButton = (combId: any, status: string) => {
+    setCategoryChangeFlag(true);
     setChangeCategoryFlag(false);
     const matchIndex = state.categoryList.findIndex(item => {
       // combId が null/undefined なら status で判定
@@ -1140,7 +1131,8 @@ useEffect(() => {
             type_status: location.state.preState.type_status,
             type_name: location.state.preState.type_name,
             file_name: location.state.preState.file_name,
-            categoryList: location.state.preState.categoryList
+            categoryList: location.state.preState.categoryList,
+            pdf: location.state.preState.pdf,
           };
         });
       }
@@ -1177,7 +1169,9 @@ useEffect(() => {
 
   const edit: (url: string) => Promise<boolean> = async url => {
     dispatch(AppActions.request());
+    console.log('1180行目');
     const res = await axios.put(`/api/${url}`, state);
+    console.log('res');
     console.log(res);
     if (res.status === 200) {
       console.log('1109行目');
@@ -1194,29 +1188,14 @@ useEffect(() => {
     }
   };
 
-  //const categoryEdit = async (url: string): Promise<boolean> => {
-  //  dispatch(AppActions.request());
-  //  const res = await axios.put(`/api/${url}`, state);
-  //  if (res.status === 200) {
-  //    dispatch(AppActions.success());
-  //    if (res.data.success) {
-  //      return true;
-  //    } else {
-  //      setErrors(res.data.errors);
-  //      return false;
-  //    }
-  //  } else {
-  //    dispatch(AppActions.failed('データの保存に失敗しました。'));
-  //    return false;
-  //  }
-  //  //return res.data.success;
-  //};
-
   const history = useHistory();
   const backPage = () => history.push(`/item`);
+
   const store: (url: string) => Promise<any> = async url => {
     dispatch(AppActions.request());
     const res = await axios.post(`/api/${url}`, state);
+    console.log('res');
+    console.log(res);
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
@@ -1226,7 +1205,7 @@ useEffect(() => {
         return false;
       }
     } else {
-      dispatch(AppActions.failed('データの保存に失敗しました。'));
+      dispatch(AppActions.failed('11データの保存に失敗しました。'));
     }
     return undefined;
   }
@@ -1288,10 +1267,14 @@ useEffect(() => {
                   formData.append('video', rows[rowIndex]);
                   formData.append('filename', rows[rowIndex].name); // 任意のファイル名
                   serverRes = await axios.post('/api/item/video_server_store', formData, { headers: { 'Content-Type': 'multipart/form-data', } });
+                  console.log('画像保存1269行目serverRes');
+                  console.log(serverRes);
                 } else {
                   formData.append('image', rows[rowIndex]);
                   formData.append('filename', rows[rowIndex].name); // 任意のファイル名
                   serverRes = await axios.post('/api/item/image_server_store', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+                  console.log('画像保存1275行目serverRes');
+                  console.log(serverRes);
                 }
               }
             } else if (type === 'string') {
@@ -1307,6 +1290,8 @@ useEffect(() => {
                       order_by: rowIndex, url: ''
                     };
                     res = await axios.put(`/api/item/image_update/${matchedItems[index][0]}`, image);
+                    console.log('画像保存1292行目res');
+                    console.log(res);
                     if (res.data.success === 200) {
                       serverRes.status = 201;
                     }
@@ -1318,6 +1303,8 @@ useEffect(() => {
                 //const hasYoutube = rows[rowIndex].includes("youtube.com");
                 if (hasYoutube) {
                   res = await axios.post(`/api/item/image_store`, image);
+                  console.log('画像保存1305行目res');
+                  console.log(res);
                   if (res.data.success) {
                     serverRes.status = 201;
                   }
@@ -1343,6 +1330,8 @@ useEffect(() => {
             if (type === 'object') {
               hasYoutube = rows[rowIndex].name.includes("youtube.com");
               res = await axios.post(`/api/item/image_store`, image);
+              console.log('画像保存1332行目res');
+              console.log(res);
               if (((res.data.success) && (hasYoutube === false))) {
                 const formData = new FormData();
                 const kaku = fileName.split('.').pop();
@@ -1350,10 +1339,14 @@ useEffect(() => {
                   formData.append('video', rows[rowIndex]);
                   formData.append('filename', rows[rowIndex].name); // 任意のファイル名
                   serverRes = await axios.post('/api/item/video_server_store', formData, { headers: { 'Content-Type': 'multipart/form-data', } });
+                  console.log('画像保存1341行目serverRes');
+                  console.log(serverRes);
                 } else {
                   formData.append('image', rows[rowIndex]);
                   formData.append('filename', rows[rowIndex].name); // 任意のファイル名
                   serverRes = await axios.post('/api/item/image_server_store', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+                  console.log('画像保存1347行目serverRes');
+                  console.log(serverRes);
                 }
               }
               // データ型がstringの場合は既存ファイルの為、updata処理
@@ -1369,6 +1362,8 @@ useEffect(() => {
                       order_by: rowIndex, url: ''
                     };
                     res = await axios.put(`/api/item/image_update/${matchedItems[index][0]}`, image);
+                    console.log('画像保存1364行目res');
+                    console.log(res);
                     if (res.data.success === 200) {
                       serverRes.status = 201;
                     }
@@ -1380,6 +1375,8 @@ useEffect(() => {
                 hasYoutube = rows[rowIndex].includes("youtube.com");
                 if (hasYoutube) {
                   res = await axios.post(`/api/item/image_store`, image);
+                  console.log('画像保存1377行目res');
+                  console.log(res);
                   if (res.data.success === 200) {
                     serverRes.status = 201;
                   }
@@ -1429,7 +1426,7 @@ useEffect(() => {
         if ((state.specialSalesDelFlag === false) || (state.specialSalesDelFlag === undefined)) {
           if ((state.special_sale_id !== null) && (state.special_sale_id !== undefined)) {
             state.is_sales_members_only = specialItem[0].is_sales_members_only !== state.is_sales_members_only ?
-              state.is_sales_members_only : specialItem[0].is_sales_members_only;
+              state.is_sales_members_only != null ? false : true : specialItem[0].is_sales_members_only != null ? false : true;
             state.start_at = specialItem[0].start_at !== state.start_at ?
               state.start_at : specialItem[0].start_at;
             state.end_at = specialItem[0].end_at !== state.end_at ?
@@ -1460,7 +1457,6 @@ useEffect(() => {
     } else {
       return { success: true, id: state.special_sale_id };
     }
-
     return { success: specialSaleSaveFlag, id: state.special_sale_id };
   }
 
@@ -1548,17 +1544,13 @@ useEffect(() => {
     let imageSaveRes: boolean = false;
 
     // 商品マスタ保存
+    console.log('商品保存');
     const itemSaveRes = await itemSave("item/store", 'store');
+    console.log('itemSaveRes');
+    console.log(itemSaveRes);
     // 関連テーブルの保存
     if (itemSaveRes.success) {
       state.item_id = itemSaveRes.id;
-      //setRollBackDelId(prev => [...prev, [itemSaveRes.id]]);
-      //setRollBackDelId(prev => [...prev, { itemId: itemSaveRes.id }];);
-      setRollBackDelId(prev => {
-        const updated = [...prev, { itemId: itemSaveRes.id }];
-        rollBackDelIdRef.current = updated;
-        return updated;
-      });
 
       // カテゴリーの保存
       for (const item of state.categoryList) {
@@ -1566,32 +1558,21 @@ useEffect(() => {
         console.log(item);
         if (item.status?.includes("new")) {
           console.log("newを含む行:", item);
-          setState(prev => ({
-            ...prev,
-            category_id: item.categoryId,
-            category_name: item.name,
-          }));
+          state.category_id = item.categoryId;
+          state.category_name = item.name;
           categorySaveRes = await categorySave("item/category_store", "store");
           console.log('categorySaveRes');
           console.log(categorySaveRes);
+        }else{
+          state.category_id = item.categoryId;
+          state.category_name = item.name;
+          categorySaveRes = await categorySave("item/category_store", "store");
         }
       }
 
       //categorySaveRes = await categorySave("item/category_store", 'store');
       // カテゴリーの保存に成功
       if (categorySaveRes.success) {
-        // カテゴリー保存成功時
-        setRollBackDelId(prev => {
-          //const last = prev[prev.length - 1];
-          //const updated = { ...last, categoryId: categorySaveRes.id };
-          //return [...prev.slice(0, -1), updated];
-
-          const last = prev[prev.length - 1]; // 直前に追加した行
-          const updatedLast = { ...last, categoryId: categorySaveRes.id }; // categoryId を追記
-          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
-          rollBackDelIdRef.current = newArr; // 最新配列を保持
-          return newArr;
-        });
         // 特売設定の保存
         specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
       } else {
@@ -1603,14 +1584,6 @@ useEffect(() => {
       // 特売設定の保存に成功
       if (specilSaleSaveRes.success) {
         // 特売保存成功時
-        setRollBackDelId(prev => {
-          const last = prev[prev.length - 1]; // 直前に追加した行
-          const updatedLast = { ...last, specialSaleId: specilSaleSaveRes.id }; // categoryId を追記
-          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
-          rollBackDelIdRef.current = newArr; // 最新配列を保持
-          return newArr;
-        });
-
         // ファイルの保存
         documentSaveRes = await documentSave(null);
         //imageSaveRes = await imageSave(variIndex);
@@ -1621,13 +1594,6 @@ useEffect(() => {
       // 取扱説明書設定の保存に成功
       if (documentSaveRes.success) {
         // 特売保存成功時
-        setRollBackDelId(prev => {
-          const last = prev[prev.length - 1]; // 直前に追加した行
-          const updatedLast = { ...last, documentId: documentSaveRes.id }; // categoryId を追記
-          const newArr = [...prev.slice(0, -1), updatedLast]; // 最後の要素を置き換え
-          rollBackDelIdRef.current = newArr; // 最新配列を保持
-          return newArr;
-        });
 
         // 画像の保存
         imageSaveRes = await imageSave(variIndex);
@@ -1657,8 +1623,6 @@ useEffect(() => {
     let categoryCombSaveFlag = false;
     let documentSaveFlag = false;
 
-    //documentSaveFlag = (await documentSave()).success;
-
     console.log(`pattern：${pattern}`);
 
     if (pattern === '2') {
@@ -1677,15 +1641,23 @@ useEffect(() => {
 
     } else if (pattern === '3') {
       itemSaveFlag = await edit(`item/update/${state.id}`);
+      console.log('1666行目itemSaveFlag');
+      console.log(itemSaveFlag);
       if (!itemSaveFlag) return false;
 
       imgSaveFlag = await imageSave(Number(state.id));
+      console.log('1671行目imgSaveFlag');
+      console.log(imgSaveFlag);
       if (!imgSaveFlag) return false;
 
       specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
+      console.log('specialSaleSaveFlag');
+      console.log(specialSaleSaveFlag);
       if (!specialSaleSaveFlag) return false;
 
       documentSaveFlag = (await documentSave(variIndex)).success;
+      console.log('documentSaveFlag');
+      console.log(documentSaveFlag);
       if (!documentSaveFlag) return false;
 
       reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && documentSaveFlag;
@@ -1724,52 +1696,92 @@ useEffect(() => {
     }
 
     if (itemSaveFlag) {
+      console.log('categoryChangeFlag');
+      console.log(categoryChangeFlag);
+      console.log('state.item_id');
+      console.log(state.item_id);
       // ① newX かつ categoryId == null のものを削除
       const cleanedList = state.categoryList.filter(
         (item) => !(item.categoryId == null && /^new\d+$/.test(item.status))
       );
 
       for (const item of cleanedList) {
-      console.log('state.categoryList');
-      console.log(state.categoryList);
-          const matchObj = state.categoryListAll.find(obj => {
-            const key = Object.keys(obj)[0];
-            return Number(key) === state.item_id;
-          });
-          const matchRows = matchObj ? matchObj[Number(state.item_id)] : [];
-          const targetRow = matchRows.find((row:any) => row.categoryId === item.initialcategoryId);
+        console.log('state.categoryList');
+        console.log(state.categoryList);
+        const matchObj = state.categoryListAll.find(obj => {
+          const key = Object.keys(obj)[0];
+          return Number(key) === state.item_id;
+        });
+        const matchRows = matchObj ? matchObj[Number(state.item_id)] : [];
+        const targetRow = matchRows.find((row:any) => row.categoryId === item.initialcategoryId);
 
-          console.log('matchRows');
-          console.log(matchRows);
+        matchRows.find((row:any) => console.log(row.categoryId));
 
-          if (item.status?.includes("new")) {
-            state.category_id = item.categoryId;
-            state.category_name = item.name;
-            categoryCombSaveFlag = (await categorySave("item/category_store", "store")).success;
-            if (!categoryCombSaveFlag) return false;
-          } else if (item.status === 'update') {
-            console.log('編集');
-            setState(prev => ({
-              ...prev,
-              combination_id: targetRow.combId,
-              item_id: state.item_id,
-              category_id: item.categoryId,
-              category_name: item.name,
-            }));
-            state.combination_id = targetRow.combId;
-            state.category_id = item.categoryId;
-            state.category_name = item.name;
-            categoryCombSaveFlag = await edit(`item/category_edit/${targetRow.combId}`);
-            if (!categoryCombSaveFlag) return false;
-          } else if (item.status === 'del') {
-            console.log('削除');
-            categoryCombSaveFlag = await destroy(`/api/item/category_delete/${targetRow.combId}`);
-            if (!categoryCombSaveFlag) return false;
-          } else if (item.status === 'del') {
-            return true;
+        console.log('matchRows');
+        console.log(matchRows);
+
+        console.log('targetRow');
+        console.log(targetRow);
+
+        if(categoryChangeFlag){
+          if(matchRows){
+            if (item.status?.includes("new")) {
+              console.log('新規追加');
+              state.category_id = item.categoryId;
+              state.category_name = item.name;
+              categoryCombSaveFlag = (await categorySave("item/category_store", "store")).success;
+              if (!categoryCombSaveFlag) return false;
+            }else if (item.status === 'del'){
+              console.log('削除');
+              categoryCombSaveFlag = await destroy(`/api/item/category_delete/${item.combId}`);
+              if (!categoryCombSaveFlag) return false;
+            }else{
+              console.log('バリエーションが追加された時');
+              // バリエーションが追加された時
+              //categoryCombSaveFlag = true;
+              state.category_id = item.categoryId;
+              state.category_name = item.name;
+              categoryCombSaveFlag = (await categorySave("item/category_store", "store")).success;
+            }
+          }else{
+            if (item.status === 'update') {
+              console.log('編集');
+              setState(prev => ({
+                ...prev,
+                combination_id: targetRow.combId,
+                item_id: state.item_id,
+                category_id: item.categoryId,
+                category_name: item.name,
+              }));
+              state.combination_id = targetRow.combId;
+              state.category_id = item.categoryId;
+              state.category_name = item.name;
+              categoryCombSaveFlag = await edit(`item/category_edit/${targetRow.combId}`);
+              if (!categoryCombSaveFlag) return false;
+            } else if (item.status === 'del') {
+              console.log('削除');
+              categoryCombSaveFlag = await destroy(`/api/item/category_delete/${item.combId}`);
+              if (!categoryCombSaveFlag) return false;
+            } else if (item.status === 'del') {
+              return true;
+            }
           }
+        }else{
+          categoryCombSaveFlag = true;
+        }
       }
     }
+
+    console.log('itemSaveFlag');
+    console.log(itemSaveFlag);
+    console.log('imgSaveFlag');
+    console.log(imgSaveFlag);
+    console.log('specialSaleSaveFlag');
+    console.log(specialSaleSaveFlag);
+    console.log('documentSaveFlag');
+    console.log(documentSaveFlag);
+    console.log('categoryCombSaveFlag');
+    console.log(categoryCombSaveFlag);
 
     return reFlag && categoryCombSaveFlag;
   }
@@ -1777,6 +1789,7 @@ useEffect(() => {
   const delFanc: () => Promise<boolean> = async () => {
     let delFlag = false;
     if (Array.isArray(variDelItem) && variDelItem.length > 0) {
+      state.is_sell = false;
       for (let i = variDelItem.length - 1; i >= 0; i--) {
         const id = Number(variDelItem[i][0]);
         delFlag = await destroy(`/api/item/delete/${id}`);
@@ -1788,74 +1801,41 @@ useEffect(() => {
     return delFlag;
   }
 
-  const storeRollBack: () => void = async () => {
-    console.log('rollBackId');
-    console.log(rollBackId);
-    console.log('rollBackDelId');
-    console.log(rollBackDelId);
+  /**
+   * 商品マスタへの新規登録処理を行う。
+   * 
+   * @param state - 商品情報を保持するオブジェクト (Item型)
+   * @returns boolean - true：登録成功、false：登録失敗
+   */
+  const storeNewItem = async (payload: ItemPayload): Promise<boolean> => {
+    try {
+      dispatch(AppActions.request());
 
-    for (const row of rollBackDelIdRef.current) {
-      if (row.itemId !== undefined) await destroy(`/api/item/delete/${row.itemId}`);
-      if (row.categoryId !== undefined) await destroy(`/api/item/category_delete/${row.categoryId}`);
-      if (row.specialSaleId !== undefined) await destroy(`/api/item/special_sale_delete/${row.specialSaleId}`);
+      const res = await axios.post('/api/item/store_transaction', payload);
+
+      if (res.status === 200) {
+        dispatch(AppActions.success());
+        if (res.data.success) {
+          return true;
+        } else {
+          setErrors(res.data.errors);
+          return false;
+        }
+      } else {
+        dispatch(AppActions.failed('データの保存に失敗しました。'));
+        return false;
+      }
+    } catch (error) {
+      dispatch(AppActions.failed('通信エラーが発生しました。'));
+      return false;
     }
-
-
-    ////let reFlag = false;
-    //let categorySaveRes: { success: boolean; id?: number } = { success: false };;
-    //let specilSaleSaveRes: { success: boolean; id?: number } = { success: false };;
-    //let imageSaveRes: boolean = false;
-    //
-    //// 商品マスタ保存
-    //const itemSaveRes = await itemSave("item/store", 'store');
-    //// 関連テーブルの保存
-    //if(itemSaveRes.success){
-    //  state.item_id = itemSaveRes.id;
-    //  setRollBackDelId(prev => [...prev, [itemSaveRes.id]]);
-    //
-    //  // カテゴリーの保存
-    //  categorySaveRes = await categorySave("item/category_store", 'store');
-    //
-    //  // カテゴリーの保存に成功
-    //  if(categorySaveRes.success) {
-    //    // 特売設定の保存
-    //    specilSaleSaveRes = await specialSaleSave("item/special_sale_store", 'store');
-    //  }else{
-    //    // 商品マスタのロールバック処理
-    //    await destroy(`/api/item/delete/${state.item_id}`);
-    //    return false;
-    //  }
-    //
-    //  // 特売設定の保存に成功
-    //  if(specilSaleSaveRes.success){
-    //    // 画像の保存
-    //    imageSaveRes = await imageSave(variIndex);
-    //  }else{
-    //    // 商品マスタのロールバック処理
-    //    await destroy(`/api/item/delete/${state.item_id}`);
-    //    await destroy(`/api/item/category_delete/${categorySaveRes.id}`);
-    //    return false;
-    //  }
-    //
-    //  // 画像の保存に失敗した時
-    //  if(!imageSaveRes){
-    //    await destroy(`/api/item/delete/${state.item_id}`);
-    //    await destroy(`/api/item/category_delete/${categorySaveRes.id}`);
-    //    // specilSaleSaveRes.id === undefinedは特売設定の登録がない時
-    //    if(specilSaleSaveRes.id !== undefined) await destroy(`/api/item/special_sale_delete/${specilSaleSaveRes.id}`);
-    //    return false;
-    //  }
-    //
-    //  return categorySaveRes.success && specilSaleSaveRes.success && imageSaveRes;
-    //}else{
-    //  return false;
-    //}
-  }
+  };
 
   const saveClick: () => void = async () => {
 
     // 必須入力項目の未入力チェック
     const validationErrors = validateItemState(state);
+    console.log(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       dispatch(AppActions.failed('必須項目を入力してください'));
@@ -1863,73 +1843,101 @@ useEffect(() => {
     }
 
     // 新規登録
+    //if (state.id === undefined) {
+    //  let saveFlag = false;
+    //  let crud = 'store';
+    //  // バリエーションが複数ある場合
+    //  if (variChangeItem.length > 1) {
+    //    for (const value of variChangeItem) {
+    //      state.variations1 = value[1];
+    //      state.variations2 = value[2];
+    //      state.variations3 = value[3];
+    //      state.variations4 = value[4];
+    //      state.item_number = value[5];
+    //      state.sales_price = Number(value[6]);
+    //      saveFlag = await storeSavaItem(value[0], crud);
+    //      if (!saveFlag) break;
+    //    }
+    //    if (saveFlag) {
+    //      await appAlert('新規保存しました。');
+    //      backPage();
+    //    } else {
+    //      dispatch(AppActions.failed('1データの保存に失敗しました。'));
+    //    }
+    //    // バリエーションが1つある場合
+    //  } else if (variChangeItem.length > 0) {
+    //    const hasAnyValue = variChangeItem.slice(1).some(row => row.some(cell => typeof cell === 'string' && cell.trim() !== ''));
+    //    // バリエーションが1つある場合
+    //    if (hasAnyValue) {
+    //      let saveFlag = false;
+    //      for (const value of variChangeItem) {
+    //        state.variations1 = value[1];
+    //        state.variations2 = value[2];
+    //        state.variations3 = value[3];
+    //        state.variations4 = value[4];
+    //        state.item_number = value[5];
+    //        state.sales_price = Number(value[6]);
+    //      }
+    //      if (saveFlag) {
+    //        await appAlert('新規保存しました。');
+    //        backPage();
+    //      } else {
+    //        dispatch(AppActions.failed('2データの保存に失敗しました。'));
+    //      }
+    //      // バリエーションがない場合
+    //    } else {
+    //      if (await storeSavaItem(null, crud)) {
+    //        await appAlert('新規保存しました。');
+    //        backPage();
+    //      } else {
+    //        dispatch(AppActions.failed('3データの保存に失敗しました。'));
+    //      }
+    //    }
+    //  } else {
+    //    if (await storeSavaItem(null, crud)) {
+    //      await appAlert('新規保存しました。');
+    //      backPage();
+    //    } else {
+    //      dispatch(AppActions.failed('4データの保存に失敗しました。'));
+    //    }
+    //  }
+    //  // 編集登録
+    //} 
+    
+    // 新規登録
     if (state.id === undefined) {
-      let saveFlag = false;
-      let crud = 'store';
-      // バリエーションが複数ある場合
-      if (variChangeItem.length > 1) {
-        for (const value of variChangeItem) {
-          state.variations1 = value[1];
-          state.variations2 = value[2];
-          state.variations3 = value[3];
-          state.variations4 = value[4];
-          state.item_number = value[5];
-          state.sales_price = Number(value[6]);
-          saveFlag = await storeSavaItem(value[0], crud);
-          if (!saveFlag) break;
-        }
-        if (saveFlag) {
-          await appAlert('新規保存しました。');
-          backPage();
-        } else {
-          await storeRollBack();
-          dispatch(AppActions.failed('データの保存に失敗しました。'));
-        }
-        // バリエーションが1つある場合
-      } else if (variChangeItem.length > 0) {
-        const hasAnyValue = variChangeItem.slice(1).some(row => row.some(cell => typeof cell === 'string' && cell.trim() !== ''));
-        // バリエーションが1つある場合
-        if (hasAnyValue) {
-          let saveFlag = false;
-          for (const value of variChangeItem) {
-            state.variations1 = value[1];
-            state.variations2 = value[2];
-            state.variations3 = value[3];
-            state.variations4 = value[4];
-            state.item_number = value[5];
-            state.sales_price = Number(value[6]);
-          }
-          if (saveFlag) {
-            await appAlert('新規保存しました。');
-            backPage();
-          } else {
-            dispatch(AppActions.failed('データの保存に失敗しました。'));
-          }
-          // バリエーションがない場合
-        } else {
-          if (await storeSavaItem(null, crud)) {
-            await appAlert('新規保存しました。');
-            backPage();
-          } else {
-            dispatch(AppActions.failed('データの保存に失敗しました。'));
-          }
-        }
+  
+      // variations 配列を整形
+      const variations = variChangeItem.map((value: string[]) => ({
+        variations1: value[1],
+        variations2: value[2],
+        variations3: value[3],
+        variations4: value[4],
+        item_number: value[5],
+        sales_price: Number(value[6]),
+      }));
+  
+      // 新規登録のリクエスト
+      const payload: ItemPayload = { ...state, variations };
+      const success = await storeNewItem(payload);
+  
+      // 成否処理を統一
+      if (success) {
+        await appAlert('新規保存しました。');
+        backPage();
       } else {
-        if (await storeSavaItem(null, crud)) {
-          await appAlert('新規保存しました。');
-          backPage();
-        } else {
-          dispatch(AppActions.failed('データの保存に失敗しました。'));
-        }
+        dispatch(AppActions.failed('データの保存に失敗しました。'));
       }
-      // 編集登録
+    // 編集登録
     } else {
       let updateSaveFlag = false;
       let storeSaveFlag = false;
       // カテゴリーと仕入先に変更がない場合
       if (((categoryChangeFlag === false) && (supplierChangeFlag === false))) {
+        console.log('1962行目');
         // バリデーションの変更が複数ある場合
         if (variChangeItem.length > 0) {
+          console.log('1965行目');
           for (const value of variChangeItem) {
             // すでに登録されているかの確認
             if (state.codeList.find(e => e.id == value[0])) {
@@ -1945,9 +1953,7 @@ useEffect(() => {
               //if(variChangeItem.length === 1)
               storeSaveFlag = true;
               updateSaveFlag = await upDateSaveItem(Number(value[0]), '2');
-              if (updateSaveFlag) {
-                setRollBackId(prev => [...prev, [state.id]]);
-              } else {
+              if (!updateSaveFlag) {
                 break;
               }
               // バリデーションの新規登録
@@ -1967,12 +1973,15 @@ useEffect(() => {
             }
           }
           if (updateSaveFlag && storeSaveFlag) {
+            console.log('2001行目');
+            console.log(updateSaveFlag);
+            console.log(storeSaveFlag);
             if (await delFanc()) {
               await appAlert('編集保存しました。');
               backPage();
             }
           } else {
-            dispatch(AppActions.failed('データの保存に失敗しました。'));
+            dispatch(AppActions.failed('5データの保存に失敗しました。'));
           }
           // バリデーションに変更がない場合
         } else {
@@ -1982,15 +1991,6 @@ useEffect(() => {
               // すでに登録されているかの確認
               if (state.codeList.find(e => e.id === value[0])) {
                 const matchedRow = state.codeList.find(item => item.id === value[0]);
-                //const combId = Array.isArray(state.combIdList)
-                //               ? state.combIdList.find(item => item?.item_id === value[0])
-                //               : undefined;
-                //if(combId !== undefined){
-                //  state.combination_id = combId.id;
-                //}else{
-                //  state.combination_id = undefined;
-                //}
-
                 state.id = Number(value[0]);
                 state.item_id = Number(value[0]);
 
@@ -1998,7 +1998,7 @@ useEffect(() => {
                 state.variations2 = matchedRow.variations2;
                 state.variations3 = matchedRow.variations3;
                 state.variations4 = matchedRow.variations4;
-                //state.item_number = matchedRow.item_number;
+                state.item_number = matchedRow.item_number;
                 //state.sales_price = matchedRow.sales_price;
                 //state.special_sale_id = matchedRow.special_sale_id;
               }
@@ -2011,7 +2011,7 @@ useEffect(() => {
                 backPage();
               }
             } else {
-              dispatch(AppActions.failed('データの保存に失敗しました。'));
+              dispatch(AppActions.failed('6データの保存に失敗しました。'));
             }
           } else if (state.variItems.length > 0) {
             let flag = false;
@@ -2019,14 +2019,14 @@ useEffect(() => {
               // すでに登録されているかの確認
               if (state.codeList.find(e => e.id === value[0])) {
                 const matchedRow = state.codeList.find(item => item.id === value[0]);
-                const combId = Array.isArray(state.combIdList)
-                  ? state.combIdList.find(item => item?.item_id === value[0])
-                  : undefined;
-                if (combId !== undefined) {
-                  state.combination_id = combId.id;
-                } else {
-                  state.combination_id = undefined;
-                }
+                //const combId = Array.isArray(state.combIdList)
+                //  ? state.combIdList.find(item => item?.item_id === value[0])
+                //  : undefined;
+                //if (combId !== undefined) {
+                //  state.combination_id = combId.id;
+                //} else {
+                //  state.combination_id = undefined;
+                //}
 
                 state.id = Number(value[0]);
                 state.item_id = Number(value[0]);
@@ -2039,7 +2039,7 @@ useEffect(() => {
                 state.sales_price = matchedRow.sales_price;
                 state.special_sale_id = matchedRow.special_sale_id;
               }
-              flag = await upDateSaveItem(Number(state.id), '3')
+              flag = await upDateSaveItem(Number(value[0]), '3')
             }
 
             if (flag) {
@@ -2048,7 +2048,7 @@ useEffect(() => {
                 backPage();
               }
             } else {
-              dispatch(AppActions.failed('データの保存に失敗しました。'));
+              dispatch(AppActions.failed('7データの保存に失敗しました。'));
             }
           } else {
             if (await upDateSaveItem(Number(state.id), '3')) {
@@ -2057,12 +2057,13 @@ useEffect(() => {
                 backPage();
               }
             } else {
-              dispatch(AppActions.failed('データの保存に失敗しました。'));
+              dispatch(AppActions.failed('8データの保存に失敗しました。'));
             }
           }
         }
         // カテゴリーか仕入先に変更があった場合
       } else {
+        console.log('2098行目');
         // バリエーションが複数変更されている場合
         if (variChangeItem.length > 0) {
           // 現在編集中の商品ID
@@ -2082,28 +2083,33 @@ useEffect(() => {
               state.item_number = changeItem[5];
               state.sales_price = Number(changeItem[6]);
             }
-            updateSaveFlag = await upDateSaveItem(Number(state.id), '4');
+            updateSaveFlag = await upDateSaveItem(Number(state.item_id), '4');
           } else {
             // 処理なし
           }
+
+          const processedItemNumbers = new Set<string | number>();
 
           for (const value of state.variItems) {
             if (state.codeList.find(e => e.id === value[0])) {
               if (editId !== Number(value[0])) {
                 const changeItem = variChangeItem.find(item => item[0] === value[0]);
                 const matchedRow = state.codeList.find(item => item.id === value[0]);
-                // カテゴリに変更がなければ既存のカテゴリで保存
-                //const combId = Array.isArray(state.combIdList)
-                //                 ? state.combIdList.find(item => item?.item_id === value[0])
-                //                 : state.combination_id;
-                //if (combId) {
-                //  state.combination_id = combId.id;
-                //}
-
+              
+                // item_number を決定
+                const itemNumber = changeItem ? changeItem[5] : matchedRow.item_number;
+              
+                // ★ すでに処理済みならスキップ
+                if (processedItemNumbers.has(itemNumber)) {
+                  console.log("重複 item_number をスキップ:", itemNumber);
+                  continue;
+                }
+                processedItemNumbers.add(itemNumber);
+              
                 if (changeItem) {
                   state.id = Number(changeItem[0]);
                   state.item_id = Number(changeItem[0]);
-
+                
                   state.variations1 = changeItem[1];
                   state.variations2 = changeItem[2];
                   state.variations3 = changeItem[3];
@@ -2118,16 +2124,23 @@ useEffect(() => {
                   state.item_number = matchedRow.item_number;
                   state.sales_price = matchedRow.sales_price;
                 }
-
+              
                 if (supplierChangeFlag === false) state.supplier_id = matchedRow.supplier_id;
-                //state.category_id = category_id;
-                updateSaveFlag = await upDateSaveItem(Number(value[0]), '4');
+                updateSaveFlag = await upDateSaveItem(Number(value[0]), "4");
               }
             } else {
               const changeItem = variChangeItem.find(item => item[0] === value[0]);
-
+            
               if (changeItem) {
-                //state.category_id = category_id;
+                const itemNumber = changeItem[5];
+              
+                // ★ すでに処理済みならスキップ
+                if (processedItemNumbers.has(itemNumber)) {
+                  console.log("重複 item_number をスキップ:", itemNumber);
+                  continue;
+                }
+                processedItemNumbers.add(itemNumber);
+              
                 state.id = undefined;
                 state.variations1 = changeItem[1];
                 state.variations2 = changeItem[2];
@@ -2135,18 +2148,139 @@ useEffect(() => {
                 state.variations4 = changeItem[4];
                 state.item_number = changeItem[5];
                 state.sales_price = Number(changeItem[6]);
-
-                storeSaveFlag = await storeSavaItem(value[0], 'store');
+              
+                storeSaveFlag = await storeSavaItem(value[0], "store");
               }
             }
           }
+
+          // 既に処理した item_number を記録するセット
+          const proItemNumbers = new Set<string | number>();
+                  
+          for (const value of state.variItems) {
+            if (state.codeList.find(e => e.id === value[0])) {
+              if (editId !== Number(value[0])) {
+                const changeItem = variChangeItem.find(item => item[0] === value[0]);
+                const matchedRow = state.codeList.find(item => item.id === value[0]);
+              
+                // item_number を決定
+                const itemNumber = changeItem ? changeItem[5] : matchedRow.item_number;
+              
+                // ★ すでに処理済みならスキップ
+                if (proItemNumbers.has(itemNumber)) {
+                  console.log("重複 item_number をスキップ:", itemNumber);
+                  continue;
+                }
+                proItemNumbers.add(itemNumber);
+              
+                if (changeItem) {
+                  state.id = Number(changeItem[0]);
+                  state.item_id = Number(changeItem[0]);
+                
+                  state.variations1 = changeItem[1];
+                  state.variations2 = changeItem[2];
+                  state.variations3 = changeItem[3];
+                  state.variations4 = changeItem[4];
+                  state.item_number = changeItem[5];
+                  state.sales_price = Number(changeItem[6]);
+                } else {
+                  state.variations1 = matchedRow.variations1;
+                  state.variations2 = matchedRow.variations2;
+                  state.variations3 = matchedRow.variations3;
+                  state.variations4 = matchedRow.variations4;
+                  state.item_number = matchedRow.item_number;
+                  state.sales_price = matchedRow.sales_price;
+                }
+              
+                if (supplierChangeFlag === false) state.supplier_id = matchedRow.supplier_id;
+                updateSaveFlag = await upDateSaveItem(Number(value[0]), "4");
+              }
+            } else {
+              const changeItem = variChangeItem.find(item => item[0] === value[0]);
+            
+              if (changeItem) {
+                const itemNumber = changeItem[5];
+              
+                // ★ すでに処理済みならスキップ
+                if (proItemNumbers.has(itemNumber)) {
+                  console.log("重複 item_number をスキップ:", itemNumber);
+                  continue;
+                }
+                proItemNumbers.add(itemNumber);
+              
+                state.id = undefined;
+                state.variations1 = changeItem[1];
+                state.variations2 = changeItem[2];
+                state.variations3 = changeItem[3];
+                state.variations4 = changeItem[4];
+                state.item_number = changeItem[5];
+                state.sales_price = Number(changeItem[6]);
+              
+                storeSaveFlag = await storeSavaItem(value[0], "store");
+              }
+            }
+          }
+
+          //for (const value of state.variItems) {
+          //  if (state.codeList.find(e => e.id === value[0])) {
+          //    if (editId !== Number(value[0])) {
+          //      const changeItem = variChangeItem.find(item => item[0] === value[0]);
+          //      const matchedRow = state.codeList.find(item => item.id === value[0]);
+          //      // カテゴリに変更がなければ既存のカテゴリで保存
+          //      //const combId = Array.isArray(state.combIdList)
+          //      //                 ? state.combIdList.find(item => item?.item_id === value[0])
+          //      //                 : state.combination_id;
+          //      //if (combId) {
+          //      //  state.combination_id = combId.id;
+          //      //}
+//
+          //      if (changeItem) {
+          //        state.id = Number(changeItem[0]);
+          //        state.item_id = Number(changeItem[0]);
+//
+          //        state.variations1 = changeItem[1];
+          //        state.variations2 = changeItem[2];
+          //        state.variations3 = changeItem[3];
+          //        state.variations4 = changeItem[4];
+          //        state.item_number = changeItem[5];
+          //        state.sales_price = Number(changeItem[6]);
+          //      } else {
+          //        state.variations1 = matchedRow.variations1;
+          //        state.variations2 = matchedRow.variations2;
+          //        state.variations3 = matchedRow.variations3;
+          //        state.variations4 = matchedRow.variations4;
+          //        state.item_number = matchedRow.item_number;
+          //        state.sales_price = matchedRow.sales_price;
+          //      }
+//
+          //      if (supplierChangeFlag === false) state.supplier_id = matchedRow.supplier_id;
+          //      //state.category_id = category_id;
+          //      updateSaveFlag = await upDateSaveItem(Number(value[0]), '4');
+          //    }
+          //  } else {
+          //    const changeItem = variChangeItem.find(item => item[0] === value[0]);
+//
+          //    if (changeItem) {
+          //      state.id = undefined;
+          //      state.variations1 = changeItem[1];
+          //      state.variations2 = changeItem[2];
+          //      state.variations3 = changeItem[3];
+          //      state.variations4 = changeItem[4];
+          //      state.item_number = changeItem[5];
+          //      state.sales_price = Number(changeItem[6]);
+//
+          //      storeSaveFlag = await storeSavaItem(value[0], 'store');
+          //    }
+          //  }
+          //}
+          console.log();
           if (updateSaveFlag && storeSaveFlag) {
             if (await delFanc()) {
               await appAlert('編集保存しました。');
               backPage();
             }
           } else {
-            dispatch(AppActions.failed('データの保存に失敗しました。'));
+            dispatch(AppActions.failed('9データの保存に失敗しました。'));
           }
           // バリデーションに変更がない場合(バリエーションが複数の場合、カテゴリーと仕入先は共通の為、一括変更)
         } else {
@@ -2186,7 +2320,7 @@ useEffect(() => {
                 // 処理なし
               }
             } else {
-              dispatch(AppActions.failed('データの保存に失敗しました。'));
+              dispatch(AppActions.failed('10データの保存に失敗しました。'));
             }
           } else {
             // 処理なし

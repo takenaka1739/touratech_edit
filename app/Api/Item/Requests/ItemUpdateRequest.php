@@ -19,8 +19,11 @@ class ItemUpdateRequest extends BaseRequest
         'required',
         'string',
         'max:50',
+        //Rule::unique('m_items', 'item_number')
+        //  ->ignore($this->id, 'id'),
         Rule::unique('m_items', 'item_number')
-          ->ignore($this->id, 'id'),
+            ->where(fn($q) => $q->whereNull('deleted_at'))
+            ->ignore($this->id, 'id')
       ],
     ] + $this->commonRules();
   }
