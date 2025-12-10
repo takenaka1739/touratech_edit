@@ -1,9 +1,11 @@
+// resources/ts/app/Supplier/pages/SupplierDetailPage.tsx
 import React, { useMemo } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { Supplier } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useCurrencies } from '@/app/App/uses/useApp';
+import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
 
 export type SupplierDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -59,6 +61,27 @@ export const SupplierDetailPage: React.VFC<SupplierDetailPageProps> = () => {
     ];
   }, [configCurrencies]);
 
+  // 郵便番号 → 住所検索用フック
+  const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
+
+  /**
+   * 任意の項目に値をセットするヘルパー
+   * useCommonDetailPage の onChange(name, value) をそのままラップする。
+   */
+  const setFieldValue = (name: string, value: any) => {
+    onChange(name, value);
+  };
+
+  /**
+   * 郵便番号から住所１を検索してセット
+   */
+  const handleSearchAddressByZip = async () => {
+    const address = await searchAddressByZip(state.zip_code);
+    if (address) {
+      setFieldValue('address1', address);
+    }
+  };
+
   return (
     <PageWrapper
       prefix={`${slug}-detail`}
@@ -79,14 +102,33 @@ export const SupplierDetailPage: React.VFC<SupplierDetailPageProps> = () => {
           autoFocus
           maxLength={30}
         />
-        <Forms.FormGroupInputZipCode
-          labelText="郵便番号"
-          name="zip_code"
-          value={state.zip_code}
-          error={errors?.zip_code}
-          onChange={onChange}
-          required
-        />
+
+        {/* 郵便番号 + 住所検索ボタン */}
+        <div className="flex items-end max-w-2xl">
+          <div className="w-2/5">
+            <Forms.FormGroupInputZipCode
+              labelText="郵便番号"
+              name="zip_code"
+              value={state.zip_code}
+              error={errors?.zip_code}
+              onChange={onChange}
+              required
+            />
+          </div>
+
+          {/* ボタンを微調整：ほんの少しだけ上に移動（1px） */}
+          <div className="ml-2" style={{ position: 'relative', top: '1px' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleSearchAddressByZip}
+              disabled={isDisabled || isSearchingZip}
+            >
+              {isSearchingZip ? '検索中...' : '住所検索'}
+            </button>
+          </div>
+        </div>
+
         <Forms.FormGroupInputText
           labelText="住所1"
           name="address1"
@@ -172,11 +214,21 @@ export const SupplierDetailPage: React.VFC<SupplierDetailPageProps> = () => {
         />
       </div>
       <div className="flex justify-between">
-        <button className="btn" onClick={onClickSave} disabled={isDisabled}>
+        <button
+          type="button"
+          className="btn"
+          onClick={onClickSave}
+          disabled={isDisabled}
+        >
           保存
         </button>
         {id && (
-          <button className="btn-delete" onClick={onClickDelete} disabled={isDisabled}>
+          <button
+            type="button"
+            className="btn-delete"
+            onClick={onClickDelete}
+            disabled={isDisabled}
+          >
             削除
           </button>
         )}

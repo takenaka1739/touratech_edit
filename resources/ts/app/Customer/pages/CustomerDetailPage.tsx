@@ -1,8 +1,10 @@
+// resources/ts/app/Customer/pages/CustomerDetailPage.tsx
 import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { Customer } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
+import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
 
 export type CustomerDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -40,6 +42,22 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     distinguish: 0,
   });
 
+  // 郵便番号 → 住所検索用フック
+  const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
+
+  /** 任意のフィールドに値をセットするヘルパー */
+  const setFieldValue = (name: string, value: any) => {
+    onChange(name, value);
+  };
+
+  /** 郵便番号から住所1を検索してセット */
+  const handleSearchAddressByZip = async () => {
+    const address = await searchAddressByZip(state.zip_code);
+    if (address) {
+      setFieldValue('address1', address);
+    }
+  };
+
   return (
     <PageWrapper
       prefix={`${slug}-detail`}
@@ -47,7 +65,6 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
       breadcrumb={[{ name: title, url: `/${slug}` }, { name: `${title}詳細` }]}
       isLoading={isLoading}
     >
-
       <div className="form-group-wrapper">
         <Forms.FormGroupInputRadio
           labelText="区分"
@@ -92,14 +109,32 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
           required
           maxLength={30}
         />
-        <Forms.FormGroupInputZipCode
-          labelText="郵便番号"
-          name="zip_code"
-          value={state.zip_code}
-          error={errors?.zip_code}
-          onChange={onChange}
-          required
-        />
+
+        {/* 郵便番号 + 住所検索ボタン */}
+        <div className="flex items-end max-w-2xl">
+          <div className="w-2/5">
+            <Forms.FormGroupInputZipCode
+              labelText="郵便番号"
+              name="zip_code"
+              value={state.zip_code}
+              error={errors?.zip_code}
+              onChange={onChange}
+              required
+            />
+          </div>
+          {/* Supplier と同じ見た目になるように微調整 */}
+          <div className="ml-2" style={{ position: 'relative', top: '1px' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleSearchAddressByZip}
+              disabled={isDisabled || isSearchingZip}
+            >
+              {isSearchingZip ? '検索中...' : '住所検索'}
+            </button>
+          </div>
+        </div>
+
         <Forms.FormGroupInputText
           labelText="住所1"
           name="address1"

@@ -1,3 +1,4 @@
+// resources/ts/app/Sales/pages/SalesDetailPage.tsx
 // [UPDATE] resources/ts/app/Sales/pages/SalesDetailPage.tsx
 import React, { useMemo } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
@@ -10,6 +11,7 @@ import { ReceiveOrderSearchDialog } from '@/app/ReceiveOrder/components/ReceiveO
 import { numberFormat, getItemKindName } from '@/utils';
 import { useComposing } from '@/uses';
 import classNames from 'classnames';
+import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
 
 export type DetailPageProps = {
   from_receive: boolean;
@@ -51,9 +53,29 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     onClickCreateCustomer,
   } = useSalesDetailPage(slug, from_receive);
 
+  // 郵便番号 → 住所検索用フック
+  const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
+
+  // フィールドに値をセットするヘルパー
+  const setFieldValue = (name: string, value: any) => {
+    onChange(name, value);
+  };
+
+  // 郵便番号から住所1を検索してセット
+  const handleSearchAddressByZip = async () => {
+    const address = await searchAddressByZip(state.zip_code ?? '');
+    if (address) {
+      setFieldValue('address1', address);
+    }
+  };
+
   // ---------- 安全なデフォルト（壊れないための保険） ----------
-  const details = useMemo(() => (Array.isArray(state?.details) ? state.details : []), [state?.details]);
-  const safeNumber = (v: number | string | undefined, p: number = 0) => numberFormat((v as number) ?? 0, p);
+  const details = useMemo(
+    () => (Array.isArray(state?.details) ? state.details : []),
+    [state?.details],
+  );
+  const safeNumber = (v: number | string | undefined, p: number = 0) =>
+    numberFormat((v as number) ?? 0, p);
 
   return (
     <PageWrapper
@@ -172,14 +194,30 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           </div>
         </div>
 
-        <Forms.FormGroupInputZipCode
-          labelText="郵便番号"
-          name="zip_code"
-          value={state.zip_code ?? ''}
-          error={errors?.zip_code}
-          onChange={onChange}
-          required={state.send_flg}
-        />
+        {/* 郵便番号 + 住所検索ボタン */}
+        <div className="flex items-end max-w-2xl">
+          <div className="w-2/5">
+            <Forms.FormGroupInputZipCode
+              labelText="郵便番号"
+              name="zip_code"
+              value={state.zip_code ?? ''}
+              error={errors?.zip_code}
+              onChange={onChange}
+              required={state.send_flg}
+            />
+          </div>
+          <div className="ml-2" style={{ position: 'relative', top: '1px' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleSearchAddressByZip}
+              disabled={isSearchingZip}
+            >
+              {isSearchingZip ? '検索中...' : '住所検索'}
+            </button>
+          </div>
+        </div>
+
         <Forms.FormGroupInputText
           labelText="住所1"
           name="address1"
@@ -351,7 +389,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                         errors &&
                           (`quantity_${r?.id ?? r?.no}` in errors)
                           ? 'bg-red-200'
-                          : ''
+                          : '',
                       )}
                     >
                       {r?.quantity}

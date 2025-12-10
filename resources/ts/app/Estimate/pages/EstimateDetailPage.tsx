@@ -1,3 +1,4 @@
+// resources/ts/app/Estimate/pages/EstimateDetailPage.tsx
 import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
@@ -7,6 +8,7 @@ import { CustomerSearchDialog } from '@/app/Customer/components/CustomerSearchDi
 import { UserSearchDialog } from '@/app/User/components/UserSearchDialog';
 import { numberFormat } from '@/utils';
 import { useComposing } from '@/uses';
+import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
 
 export type EstimateDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -43,6 +45,22 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
     onClickBarcode,
     onClickCreateCustomer,
   } = useEstimateDetailPage(slug);
+
+  // 郵便番号 → 住所検索用フック
+  const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
+
+  /** 任意のフィールドに値をセットするヘルパー */
+  const setFieldValue = (name: string, value: any) => {
+    onChange(name, value);
+  };
+
+  /** 郵便番号から住所1を検索してセット */
+  const handleSearchAddressByZip = async () => {
+    const address = await searchAddressByZip(state.zip_code ?? '');
+    if (address) {
+      setFieldValue('address1', address);
+    }
+  };
 
   return (
     <PageWrapper
@@ -129,14 +147,32 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
             </button>
           </div>
         </div>
-        <Forms.FormGroupInputZipCode
-          labelText="郵便番号"
-          name="zip_code"
-          value={state.zip_code ?? ''}
-          error={errors?.zip_code}
-          onChange={onChange}
-          required={state.send_flg}
-        />
+
+        {/* 郵便番号 + 住所検索ボタン */}
+        <div className="flex items-end max-w-2xl">
+          <div className="w-2/5">
+            <Forms.FormGroupInputZipCode
+              labelText="郵便番号"
+              name="zip_code"
+              value={state.zip_code ?? ''}
+              error={errors?.zip_code}
+              onChange={onChange}
+              required={state.send_flg}
+            />
+          </div>
+          {/* Supplier / Customer と同じ感じでボタン位置を微調整 */}
+          <div className="ml-2" style={{ position: 'relative', top: '1px' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleSearchAddressByZip}
+              disabled={isSearchingZip}
+            >
+              {isSearchingZip ? '検索中...' : '住所検索'}
+            </button>
+          </div>
+        </div>
+
         <Forms.FormGroupInputText
           labelText="住所1"
           name="address1"

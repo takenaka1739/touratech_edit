@@ -24,7 +24,9 @@ Route::group([
   Route::get('edit_by_receive_id/{id}', [SalesController::class, 'edit_by_receive_id']);
 
   // 作成/更新/削除・バリデーション
+  // ★ ここを元のコントローラ指定に戻す（FormRequest を効かせる）
   Route::post('store', [SalesController::class, 'store']);
+
   Route::post('validate_edit/{id}', [SalesController::class, 'validate_edit']);
   Route::put('edit/{id}', [SalesController::class, 'update']);
   Route::delete('delete/{id}', [SalesController::class, 'delete']);

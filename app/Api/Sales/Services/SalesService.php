@@ -329,9 +329,23 @@ class SalesService
     {
         try {
             $id = $this->storeInternal($norm);
-            return ['success' => true, 'id' => $id];
-        } catch (Throwable $e) {
-            report($e);
+
+            return [
+                'success' => true,
+                'id'      => $id,
+            ];
+        } catch (\Throwable $e) { // ★ グローバル名前空間の Throwable を指定
+
+            // 失敗内容をログに出す（ローカル調査用）
+            \Log::error('[SalesService][store] failed', [
+                'message' => $e->getMessage(),
+                'code'    => $e->getCode(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+
+            report($e); // いつもの Laravel の例外レポート
+
             return [
                 'success' => false,
                 'errors'  => ['system' => '登録に失敗しました。'],
