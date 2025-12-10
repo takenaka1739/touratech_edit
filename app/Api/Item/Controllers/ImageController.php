@@ -35,6 +35,7 @@ class ImageController extends BaseController
     return $this->success();
   }
 
+  /*
   public function serverStore(Request $request)
   {
     $request->validate([
@@ -57,6 +58,27 @@ class ImageController extends BaseController
       return response()->json(['path' => $path], 200);
     }
   }
+  */
+
+  public function serverStore(Request $request)
+  {
+    // 最大30MBまで
+    $request->validate([
+        'image' => 'required|image|max:30000',
+        'filename' => 'nullable|string',
+    ]);
+
+    $filename = $request->input('filename');
+    $path = public_path('images/' . $filename);
+
+    $file = $request->file('image');
+    $filename = $request->input('filename') ?? uniqid() . '.' . $file->getClientOriginalExtension();
+
+    // storeAs(string $path, string $name, ?string $disk = null): string
+    // 第1引数：保存先ディレクトリ（相対パス）、第2引数：ファイル名、第3引数：使用するストレージ（省略可）
+    $path = $file->storeAs('images', $filename, 'public');
+    return response()->json(['path' => $path], 201);
+  }
 
   public function videoServerStore(Request $request)
   {
@@ -75,8 +97,7 @@ class ImageController extends BaseController
         $filename = uniqid() . '.' . $file->getClientOriginalExtension();
     }
 
-    //$path = 'images/' . $filename;
-    $path = public_path('images/' . $filename);
+    $path = 'images/' . $filename;
     $storedPath = $path;
 
     //if (!Storage::disk('public')->exists($path)) {
