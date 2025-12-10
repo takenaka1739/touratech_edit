@@ -60,6 +60,7 @@ class ImageController extends BaseController
   }
   */
 
+  /*
   public function serverStore(Request $request)
   {
     // 最大30MBまで
@@ -78,6 +79,34 @@ class ImageController extends BaseController
     // 第1引数：保存先ディレクトリ（相対パス）、第2引数：ファイル名、第3引数：使用するストレージ（省略可）
     $path = $file->storeAs('images', $filename, 'public');
     return response()->json(['path' => $path], 201);
+  }
+  */
+
+  public function serverStore(Request $request)
+  {
+    // 最大30MBまで
+    $request->validate([
+        'image' => 'required|image|max:30000',
+        'filename' => 'nullable|string',
+    ]);
+
+    // アップロードされたファイルを取得
+    $file = $request->file('image');
+
+    // ファイル名を指定 or 自動生成（拡張子付き）
+    $filename = $request->input('filename') 
+        ?? uniqid() . '.' . $file->getClientOriginalExtension();
+
+    // 保存先ディレクトリを確認し、なければ作成
+    $directory = public_path('images');
+    if (!File::exists($directory)) {
+        File::makeDirectory($directory, 0777, true);
+    }
+
+    // ファイルを public/images に移動
+    $file->move($directory, $filename);
+
+    return response()->json(['path' => 'images/' . $filename], 201);
   }
 
   public function videoServerStore(Request $request)
