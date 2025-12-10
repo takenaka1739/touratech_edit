@@ -681,6 +681,15 @@ class ItemService
         }
       }
 
+      // Document 登録（必ず1件）
+      Document::create([
+        'item_id'     => $data['item_id'],
+        'type_status' => $data['type_status'],
+        'type_name'   => $data['type_name'],
+        'file_name'   => $data['file_name'],
+        'order_by'    => $data['order_by'],
+      ]);
+
       return $ids;
     });
   }

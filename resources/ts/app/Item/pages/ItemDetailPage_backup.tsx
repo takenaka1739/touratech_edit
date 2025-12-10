@@ -1137,7 +1137,7 @@ useEffect(() => {
         });
       }
     }
-  }, [location, state.explanation_details, state.name, state.variItems]);
+  }, [location, state.variItems]);
 
   useEffect(() => {
     if (location.state !== undefined && Array.isArray(location.state.imageItem)) {
@@ -1502,7 +1502,7 @@ useEffect(() => {
             } else if (isImage) {
               formData.append('image', state.pdf);
               formData.append('filename', state.file_name ?? ""); // 任意のファイル名
-              axios.post('/api/item/image_server_store', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+              axios.post('/api/item/document_images_server_store', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             }
           }
         }
