@@ -361,14 +361,14 @@ useEffect(() => {
     
       if (!isVideo) {
         return (
-          <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+          <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <img key={src} src={src} onClick={() => handleClick(src, -1, file.name)} alt={file.name} />
           </div>
         );
       } else {
         return (
           <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-            <video onClick={() => handleClick(src, 3, file.name)} controls muted>
+            <video onClick={() => handleClick(src, 3, file.name)} muted>
               <source src={src} type="video/mp4" />
             </video>
           </div>
@@ -381,7 +381,7 @@ useEffect(() => {
       if(src !== ''){
         if (isImage) {
           return (
-            <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+            <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <img key={src} src={src} onClick={() => handleClick(src, -1, '')} />
             </div>
           );

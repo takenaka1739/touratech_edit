@@ -1137,7 +1137,7 @@ useEffect(() => {
         });
       }
     }
-  }, [location, state.explanation_details, state.name, state.variItems]);
+  }, [location, state.variItems]);
 
   useEffect(() => {
     if (location.state !== undefined && Array.isArray(location.state.imageItem)) {
