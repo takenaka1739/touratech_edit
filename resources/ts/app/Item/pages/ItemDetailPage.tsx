@@ -769,7 +769,6 @@ useEffect(() => {
               // 4. 最終結果
               return { ...prev, categoryList: filteredList };
             }
-          
             // del 行がなければ通常処理
             return {
               ...prev,
@@ -1725,130 +1724,55 @@ useEffect(() => {
     }
 
     if (itemSaveFlag) {
-
       // ① newX かつ categoryId == null のものを削除
       const cleanedList = state.categoryList.filter(
         (item) => !(item.categoryId == null && /^new\d+$/.test(item.status))
       );
 
       for (const item of cleanedList) {
-        const matchObj = state.categoryListAll.find(obj => {
-          const key = Object.keys(obj)[0];
-          return Number(key) === state.item_id;
-        });
-        const matchRows = matchObj ? matchObj[Number(state.item_id)] : [];
-        const targetRow = matchRows.find((row:any) => row.categoryId === item.initialcategoryId);
+      console.log('state.categoryList');
+      console.log(state.categoryList);
+          const matchObj = state.categoryListAll.find(obj => {
+            const key = Object.keys(obj)[0];
+            return Number(key) === state.item_id;
+          });
+          const matchRows = matchObj ? matchObj[Number(state.item_id)] : [];
+          const targetRow = matchRows.find((row:any) => row.categoryId === item.initialcategoryId);
 
-        console.log('matchRows');
-        console.log(matchRows);
-        console.log('targetRow');
-        console.log(targetRow);
-        
-        if (item.status?.includes("new")) {
-          console.log('item');
-          console.log(item);
-          setState(prev => ({
-            ...prev,
-            category_id: item.categoryId,
-            category_name: item.name,
-          }));
-          categoryCombSaveFlag = (await categorySave("item/category_store", "store")).success;
-          if (!categoryCombSaveFlag) return false;
-        } else if (item.status === 'update') {
-          setState(prev => ({
-            ...prev,
-            combination_id: targetRow.combId,
-            item_id: state.item_id,
-            category_id: item.categoryId,
-            category_name: item.name,
-          }));
-          categoryCombSaveFlag = await edit(`item/category_edit/${targetRow.combId}`);
-          console.log('categoryCombSaveFlag');
-          console.log(categoryCombSaveFlag);
-          if (!categoryCombSaveFlag) return false;
+          console.log('matchRows');
+          console.log(matchRows);
 
-        } else if (item.status === 'del') {
-          console.log('item');
-          console.log(item);
-          categoryCombSaveFlag = await destroy(`/api/item/category_delete/${targetRow.combId}`);
-          if (!categoryCombSaveFlag) return false;
-        }
+          if (item.status?.includes("new")) {
+            state.category_id = item.categoryId;
+            state.category_name = item.name;
+            categoryCombSaveFlag = (await categorySave("item/category_store", "store")).success;
+            if (!categoryCombSaveFlag) return false;
+          } else if (item.status === 'update') {
+            console.log('編集');
+            setState(prev => ({
+              ...prev,
+              combination_id: targetRow.combId,
+              item_id: state.item_id,
+              category_id: item.categoryId,
+              category_name: item.name,
+            }));
+            state.combination_id = targetRow.combId;
+            state.category_id = item.categoryId;
+            state.category_name = item.name;
+            categoryCombSaveFlag = await edit(`item/category_edit/${targetRow.combId}`);
+            if (!categoryCombSaveFlag) return false;
+          } else if (item.status === 'del') {
+            console.log('削除');
+            categoryCombSaveFlag = await destroy(`/api/item/category_delete/${targetRow.combId}`);
+            if (!categoryCombSaveFlag) return false;
+          } else if (item.status === 'del') {
+            return true;
+          }
       }
-      //if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-      //  categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-      //  if(!categoryCombSaveFlag) return false;
-      //}else{
-      //  categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-      //  if(!categoryCombSaveFlag) return false;
-      //}
     }
-
-    console.log('itemSaveFlag');
-    console.log(itemSaveFlag);
-    console.log('imgSaveFlag');
-    console.log(imgSaveFlag);
-    console.log('specialSaleSaveFlag');
-    console.log(specialSaleSaveFlag);
-    console.log('documentSaveFlag');
-    console.log(documentSaveFlag);
-    console.log(`reFlag：${reFlag}`);
-    console.log(`categoryCombSaveFlag：${categoryCombSaveFlag}`);
 
     return reFlag && categoryCombSaveFlag;
   }
-
-  //const upDateSaveItem: (variIndex:string | number | null, pattern:string) => Promise<boolean> = async (variIndex, pattern) => {
-  //  let reFlag = false;
-  //  let itemSaveFlag = false;
-  //  let imgSaveFlag = false;
-  //  let specialSaleSaveFlag = false;
-  //  let categoryCombSaveFlag = false;
-  //
-  //  if(pattern === '2'){
-  //    itemSaveFlag = await edit(`item/update/${variIndex}`);
-  //    imgSaveFlag = await imageSave(variIndex);
-  //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
-  //
-  //  }else if(pattern === '3'){
-  //    itemSaveFlag = await edit(`item/update/${state.id}`);
-  //    imgSaveFlag = await imageSave(Number(state.id));
-  //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //
-  //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag;
-  //  }else if(pattern === '4'){
-  //    state.item_id = Number(variIndex);
-  //    itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-  //    if(itemSaveFlag){
-  //      if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-  //        categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-  //      }else{
-  //        categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-  //      }
-  //    }
-  //
-  //    imgSaveFlag = await imageSave(Number(state.id));
-  //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //
-  //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
-  //  }else if(pattern === '5'){
-  //    state.item_id = Number(variIndex);
-  //    itemSaveFlag = await edit(`item/update/${Number(variIndex)}`);
-  //    if(itemSaveFlag){
-  //      if(((state.combination_id !== null) && (state.combination_id !== undefined))){
-  //        categoryCombSaveFlag = await categoryEdit(`item/category_edit/${state.combination_id}`);
-  //      }else{
-  //        categoryCombSaveFlag = (await categorySave("item/category_store", 'store')).success;
-  //      }
-  //    }
-  //
-  //    imgSaveFlag = await imageSave(Number(state.id));
-  //    specialSaleSaveFlag = (await specialSaleSave('', 'upDate')).success;
-  //    reFlag = itemSaveFlag && imgSaveFlag && specialSaleSaveFlag && categoryCombSaveFlag;
-  //  }
-  //
-  //  return reFlag;
-  //}
 
   const delFanc: () => Promise<boolean> = async () => {
     let delFlag = false;
