@@ -657,6 +657,18 @@ class ItemService
         ]);
         $ids[] = $item->id;
 
+        // Image 登録（imageList[0] の各オブジェクトを登録）
+        if (!empty($data['imageList'][0])) {
+          foreach ($data['imageList'][0] as $image) {
+            Image::create([
+              'item_id'     => $item->id,
+              'category_id' => $image['category_id'] ?? null,
+              'name'        => $image['name'] ?? null,
+              'order_by'    => $image['order_by'] ?? 0,
+            ]);
+          }
+        }
+
         // Document 登録（Itemごとに必ず1件）
         Document::create([
           'item_id'     => $item->id,
@@ -668,7 +680,7 @@ class ItemService
 
       // バリエーションあり
       } else {
-        foreach ($data['variations'] as $variation) {
+        foreach ($data['variations'] as $index => $variation) {
           $item = Item::create($base + [
             'item_number' => $variation['item_number'] ?? null,
             'variations1' => $variation['variations1'] ?? null,
@@ -678,6 +690,18 @@ class ItemService
             'sales_price' => $variation['sales_price'] ?? 0,
           ]);
           $ids[] = $item->id;
+
+          // Image 登録（imageList[index] の各オブジェクトを登録）
+          if (!empty($data['imageList'][$index])) {
+            foreach ($data['imageList'][$index] as $image) {
+              Image::create([
+                'item_id'     => $item->id,
+                'category_id' => $image['category_id'] ?? null,
+                'name'        => $image['name'] ?? null,
+                'order_by'    => $image['order_by'] ?? 0,
+              ]);
+            }
+          }
 
           // Document 登録（Itemごとに必ず1件）
           Document::create([
