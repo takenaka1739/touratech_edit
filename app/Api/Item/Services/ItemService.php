@@ -202,7 +202,9 @@ class ItemService
     array_push($specialSalesList, $c);
 
     $d = [];
+    $category = [];
     $category_list = [];
+    $category_list_all = [];
     $category_list = ItemCategoryCombination::where('item_id', $selectItems['id'])
         ->whereNull('t_category_item_combinations.deleted_at') // ★ ここで削除済みを除外
         ->join('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
@@ -236,31 +238,52 @@ class ItemService
         ]];
     }
 
-    //foreach (ItemCategoryCombination::where('item_id', $selectItems['id'])->get() as $item) {
-    //  $category_ids = ItemCategoryCombination::where('item_id', $selectItems['id'])
-    //      ->pluck('category_id')
-    //      ->unique(); // 重複排除
-//
-    //  $category_list = Category::select('id', 'name')
-    //      ->whereIn('id', $category_ids)
-    //      ->get()
-    //      ->map(function ($category) {
-    //          return [
-    //              //'combId' => $category_ids->id,
-    //              'categoryId' => $category->id,
-    //              'name' => $category->name,
-    //              'status' => 'no update',
-    //              'initialcategoryId' => $category->id
-    //          ];
-    //      })
-    //      ->toArray();
-    //}
-    // 重複の削除
-    //$category_list = array_unique($category_list, SORT_REGULAR);
-
     $documentFileList = [];
 
     foreach(Item::where('code', '=', $selectItems['code'])->get() as $item){
+      $category_list_key = [];
+      $category = [];
+      $category = ItemCategoryCombination::where('item_id', $item->id)
+          ->whereNull('t_category_item_combinations.deleted_at')
+          ->join('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
+          ->select(
+              't_category_item_combinations.id as combId',
+              't_category_item_combinations.item_id as itemId',
+              'm_categories.id as categoryId',
+              'm_categories.name'
+          )
+          ->get()
+          ->unique('categoryId')
+          ->map(function ($row) {
+              return [
+                  'combId' => $row->combId,
+                  'itemId' => $row->itemId,
+                  'categoryId' => $row->categoryId,
+                  'name' => $row->name,
+                  'status' => 'no update',
+                  'initialcategoryId' => $row->categoryId,
+              ];
+          })
+          ->values()
+          ->toArray();
+        
+      // ★ 空だった場合はダミー行を追加
+      if (empty($category)) {
+          $category = [[
+              'combId' => null,
+              'itemId' => $selectItems['id'], // ← ダミーでも itemId を入れておくとキーにできる
+              'categoryId' => null,
+              'name' => '',
+              'status' => 'new1',
+              'initialcategoryId' => null,
+          ]];
+      }
+
+      // ★ itemId をキーにして格納
+      $itemId = $category[0]['itemId']; // 先頭の itemId をキーにする
+      $category_list_key[$item->id] = $category;
+      array_push($category_list_all, $category_list_key);
+
       array_push($d, ItemCategoryCombination::where('item_id', '=', $item->id)->first());
 
       array_push($documentFileList, Document::where('item_id', $item->id)
@@ -384,6 +407,7 @@ class ItemService
     $selectItems['type_status'] = $selectItems['type_status'] === null || $selectItems['type_status'] === '' ? 0 : $selectItems['type_status'];
     $selectItems['codeList'] = $codeList;
     $selectItems['categoryList'] = $category_list;
+    $selectItems['categoryListAll'] = $category_list_all;
     $selectItems['specialSalesList'] = $specialSalesList;
     $selectItems['itemNumberItem'] = $itemNumberItem;
     $selectItems['salesPriceItem'] = $salesPriceItem;

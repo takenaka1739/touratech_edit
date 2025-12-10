@@ -1,5 +1,3 @@
-import { ItemCategory } from '@/types/ItemCategory';
-
 /**
  * 商品
  *
@@ -125,7 +123,8 @@ export interface Item {
   special_sale_price?: number | undefined;
   refund_rate?: number | undefined;
 
-  categoryList: ItemCategory[];
+  categoryList: any[];
+  categoryListAll: any[];
   codeList: any[];
   specialSalesList: any[];
   specialSalesDelFlag: boolean | undefined;
