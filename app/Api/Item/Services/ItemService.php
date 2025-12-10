@@ -657,6 +657,15 @@ class ItemService
         ]);
         $ids[] = $item->id;
 
+        // Document 登録（Itemごとに必ず1件）
+        Document::create([
+          'item_id'     => $item->id,
+          'type_status' => $data['type_status'],
+          'type_name'   => $data['type_name'],
+          'file_name'   => $data['file_name'],
+          'order_by'    => $data['order_by'],
+        ]);
+
       // バリエーションあり
       } else {
         foreach ($data['variations'] as $variation) {
@@ -670,25 +679,16 @@ class ItemService
           ]);
           $ids[] = $item->id;
 
-          if (!empty($data['images'])) {
-            foreach ($data['images'] as $imagePath) {
-              Image::create([
-                'item_id' => $item->id,
-                'name'    => $imagePath,
-              ]);
-            }
-          }
+          // Document 登録（Itemごとに必ず1件）
+          Document::create([
+            'item_id'     => $item->id,
+            'type_status' => $data['type_status'],
+            'type_name'   => $data['type_name'],
+            'file_name'   => $data['file_name'],
+            'order_by'    => $data['order_by'],
+          ]);
         }
       }
-
-      // Document 登録（必ず1件）
-      Document::create([
-        'item_id'     => $data['item_id'],
-        'type_status' => $data['type_status'],
-        'type_name'   => $data['type_name'],
-        'file_name'   => $data['file_name'],
-        'order_by'    => $data['order_by'],
-      ]);
 
       return $ids;
     });
