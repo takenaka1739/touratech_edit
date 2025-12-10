@@ -197,7 +197,7 @@ class ItemController extends BaseController
    */
   public function store_transaction(Request $request)
   {
-    $data = $request->all();
+    $input = $request->all();
 
     try {
       $newIds = $this->service->storeTransaction($input);

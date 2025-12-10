@@ -1920,6 +1920,8 @@ useEffect(() => {
       // 新規登録のリクエスト
       const payload: ItemPayload = { ...state, variations };
       const success = await storeNewItem(payload);
+      console.log('success');
+      console.log(success);
   
       // 成否処理を統一
       if (success) {

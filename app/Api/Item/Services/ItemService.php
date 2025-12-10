@@ -617,7 +617,6 @@ class ItemService
       // 共通部
       $base = [
         'supplier_id'            => $data['supplier_id'] ?? null,
-        'consumption_tax_id'     => $data['consumption_tax_id'] ?? null,
         'code'                   => $data['code'] ?? null,
         'name'                   => $data['name'],
         'explanation'            => $data['explanation'] ?? null,
