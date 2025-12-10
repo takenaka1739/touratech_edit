@@ -43,7 +43,7 @@ Route::group([
 
     Route::post('/document_store', [DocumentController::class, 'store']);
     Route::post('/document_server_store', [DocumentController::class, 'serverStore']);
-    Route::post('/image_server_store', [DocumentController::class, 'imageServerStore']);
+    Route::post('/document_images_server_store', [DocumentController::class, 'imageServerStore']);
     Route::put('document_update/{id}', [DocumentController::class, 'update']);
     Route::delete('document_delete/{id}', [DocumentController::class, 'delete']);
 

@@ -22,7 +22,7 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
   const [variKindItem, setVariKindItem] = useState(location.state.variItems);
   const [variChangeItem, setVariChangeItem] = useState(location.state.variChangeItem);
   const [pointText, setpoint] = useState("  ");
-  const [dropErea, setDropErea] = useState("ファイルドロップまたはURLを入力して下さい");
+  const [dropErea, setDropErea] = useState("");
   const [selectImageSrc, setImageSrc] = useState('');
   const [selectImageType, setImageType] = useState(-1);
   const [files, setFiles] = useState<any[]>(Array.isArray(location.state?.imageItems) ? location.state.imageItems[0] : ['']);
@@ -367,7 +367,7 @@ useEffect(() => {
         );
       } else {
         return (
-          <div style={{ height: '80px', width: '80px', margin: '10px' }}>
+          <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
             <video onClick={() => handleClick(src, 3, file.name)} controls muted>
               <source src={src} type="video/mp4" />
             </video>
@@ -387,8 +387,8 @@ useEffect(() => {
           );
         } else if (isVideo) {
           return (
-            <div style={{ height: '100px', width: '80px', margin: '10px' }}>
-              <video onClick={() => handleClick(src, 3, '')}>
+            <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <video style={{marginTop: '10px'}} onClick={() => handleClick(src, 3, '')}>
                 <source src={src} type="video/mp4" />
               </video>
             </div>

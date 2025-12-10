@@ -99,9 +99,9 @@ class ImageController extends BaseController
 
     // 保存先ディレクトリを確認し、なければ作成
     $directory = public_path('images');
-    if (!File::exists($directory)) {
-        File::makeDirectory($directory, 0777, true);
-    }
+    //if (!File::exists($directory)) {
+    //    File::makeDirectory($directory, 0777, true);
+    //}
 
     // ファイルを public/images に移動
     $file->move($directory, $filename);
