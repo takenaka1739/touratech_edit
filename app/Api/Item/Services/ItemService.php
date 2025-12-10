@@ -673,8 +673,8 @@ class ItemService
         Document::create([
           'item_id'     => $item->id,
           'type_status' => $data['type_status'] ?? 0,
-          'type_name'   => $data['type_name'] ?? null,
-          'file_name'   => $data['file_name'] ?? null,
+          'type_name'   => $data['type_name'] ?? '',
+          'file_name'   => $data['file_name'] ?? '',
         ]);
 
       // バリエーションあり
@@ -706,8 +706,8 @@ class ItemService
           Document::create([
             'item_id'     => $item->id,
             'type_status' => $data['type_status'] ?? 0,
-            'type_name'   => $data['type_name'] ?? null,
-            'file_name'   => $data['file_name'] ?? null,
+            'type_name'   => $data['type_name'] ?? '',
+            'file_name'   => $data['file_name'] ?? '',
           ]);
         }
       }
