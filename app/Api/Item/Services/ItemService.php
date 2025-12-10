@@ -608,4 +608,81 @@ class ItemService
 
     return $query;
   }
+
+  public function storeTransaction(array $data): array
+  {
+    return DB::transaction(function () use ($data) {
+      $ids = [];
+
+      // 共通部
+      $base = [
+        'supplier_id'            => $data['supplier_id'] ?? null,
+        'consumption_tax_id'     => $data['consumption_tax_id'] ?? null,
+        'code'                   => $data['code'] ?? null,
+        'name'                   => $data['name'],
+        'explanation'            => $data['explanation'] ?? null,
+        'explanation_details'    => $data['explanation_details'] ?? null,
+        'name_note'              => $data['name_note'] ?? null,
+        'name_label'             => $data['name_label'] ?? null,
+        'is_sell'                => $data['is_sell'] ?? false,
+        'purchase_price'         => $data['purchase_price'] ?? 0,
+        'sales_unit_price'       => $data['sales_unit_price'] ?? 0,
+        'purchase_unit_price'    => $data['purchase_unit_price'] ?? 0,
+        'sample_price'           => $data['sample_price'] ?? 0,
+        'is_discontinued'        => $data['is_discontinued'] ?? false,
+        'discontinued_at'        => $data['discontinued_at'] ?? null,
+        'is_display'             => $data['is_display'] ?? true,
+        'domestic_stocks'        => $data['domestic_stocks'] ?? 0,
+        'overseas_stocks'        => $data['overseas_stocks'] ?? 0,
+        'display_status'         => $data['display_status'] ?? null,
+        'remarks'                => $data['remarks'] ?? null,
+        'is_point_rebates'       => $data['is_point_rebates'] ?? false,
+        'number_reservations'    => $data['number_reservations'] ?? 0,
+        'is_shipping_fee'        => $data['is_shipping_fee'] ?? false,
+        'is_cash_delivery_fee'   => $data['is_cash_delivery_fee'] ?? false,
+        'additional_shipping_fee'=> $data['additional_shipping_fee'] ?? 0,
+        'shipping_pay'           => $data['shipping_pay'] ?? 0,
+        'is_payment_id1'         => $data['is_payment_id1'] ?? false,
+        'is_payment_id2'         => $data['is_payment_id2'] ?? false,
+        'is_payment_id3'         => $data['is_payment_id3'] ?? false,
+        'is_payment_id4'         => $data['is_payment_id4'] ?? false,
+        'is_payment_id5'         => $data['is_payment_id5'] ?? false,
+        'is_set_item'            => $data['is_set_item'] ?? false,
+      ];
+
+      // バリエーションなし
+      if (empty($data['variations'])) {
+        $item = Item::create($base + [
+          'item_number' => $data['item_number'] ?? null,
+          'sales_price' => $data['sales_price'] ?? 0,
+        ]);
+        $ids[] = $item->id;
+
+      // バリエーションあり
+      } else {
+        foreach ($data['variations'] as $variation) {
+          $item = Item::create($base + [
+            'item_number' => $variation['item_number'] ?? null,
+            'variations1' => $variation['variations1'] ?? null,
+            'variations2' => $variation['variations2'] ?? null,
+            'variations3' => $variation['variations3'] ?? null,
+            'variations4' => $variation['variations4'] ?? null,
+            'sales_price' => $variation['sales_price'] ?? 0,
+          ]);
+          $ids[] = $item->id;
+
+          if (!empty($data['images'])) {
+            foreach ($data['images'] as $imagePath) {
+              Image::create([
+                'item_id' => $item->id,
+                'name'    => $imagePath,
+              ]);
+            }
+          }
+        }
+      }
+
+      return $ids;
+    });
+  }
 }

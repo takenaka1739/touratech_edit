@@ -197,78 +197,19 @@ class ItemController extends BaseController
   {
     $data = $request->all();
 
-    DB::beginTransaction();
     try {
-      // バリエーション (variations) が空なら単一の Item を作成
-      if (empty($data['variations'])) {
-        Item::create([
-          'name'        => $data['name'],
-          'description' => $data['description'] ?? null,
-          'category_id' => $data['category_id'] ?? null,
-          // variations がない場合は共通情報のみ
-        ]);
-      } else {
-        // バリエーション (variations) がある場合はループで Item を複数作成
-        foreach ($data['variations'] as $variation) {
-          Item::create([
-            'name'        => $data['name'],
-            'description' => $data['description'] ?? null,
-            'category_id' => $data['category_id'] ?? null,
-            'variations1' => $variation['variations1'] ?? null,
-            'variations2' => $variation['variations2'] ?? null,
-            'variations3' => $variation['variations3'] ?? null,
-            'variations4' => $variation['variations4'] ?? null,
-            'item_number' => $variation['item_number'] ?? null,
-            'sales_price' => $variation['sales_price'] ?? 0,
-          ]);
-        }
-      }
+      $newIds = $this->service->storeTransaction($input);
 
-        /*
-        // 1. Item テーブルに共通情報を保存
-        $item = Item::create([
-            'name'        => $data['name'],
-            'description' => $data['description'] ?? null,
-            'category_id' => $data['category_id'] ?? null,
-            // 他の共通フィールドも必要に応じて追加
-        ]);
-
-        // 2. variations を ItemVariation テーブルに保存
-        if (!empty($data['variations'])) {
-            foreach ($data['variations'] as $variation) {
-                ItemVariation::create([
-                    'item_id'     => $item->id,
-                    'variations1' => $variation['variations1'] ?? null,
-                    'variations2' => $variation['variations2'] ?? null,
-                    'variations3' => $variation['variations3'] ?? null,
-                    'variations4' => $variation['variations4'] ?? null,
-                    'item_number' => $variation['item_number'] ?? null,
-                    'sales_price' => $variation['sales_price'] ?? 0,
-                ]);
-            }
-        }
-        */
-
-        // 3. images があれば ItemImage テーブルに保存
-        if (!empty($data['images'])) {
-            foreach ($data['images'] as $imagePath) {
-                ItemImage::create([
-                    'item_id' => $item->id,
-                    'path'    => $imagePath,
-                ]);
-            }
-        }
-
-        // 4. 他も同様に
-
-        DB::commit();
-        return response()->json(['success' => true]);
-      } catch (Exception $e) {
-          DB::rollBack();
-          return response()->json([
-              'success' => false,
-              'error'   => $e->getMessage()
-          ], 500);
-      }
+      return response()->json([
+        'success' => true,
+        'ids'     => $newIds,
+      ]);
+    } catch (\Exception $e) {
+      \Log::error('store_transaction failed: '.$e->getMessage());
+      return response()->json([
+        'success' => false,
+        'error'   => $e->getMessage(),
+      ], 500);
+    }
   }
 }
