@@ -189,4 +189,59 @@ class ItemController extends BaseController
       'file_id' => $file_id,
     ]);
   }
+
+  /**
+   * 商品マスタ関連のデータをトランザクション処理にて一括登録する。
+   */
+  public function store_transaction(Request $request)
+  {
+      $data = $request->all();
+
+      DB::beginTransaction();
+      try {
+          // 1. Item テーブルに共通情報を保存
+          $item = Item::create([
+              'name'        => $data['name'],
+              'description' => $data['description'] ?? null,
+              'category_id' => $data['category_id'] ?? null,
+              // 他の共通フィールドも必要に応じて追加
+          ]);
+
+          // 2. variations を ItemVariation テーブルに保存
+          if (!empty($data['variations'])) {
+              foreach ($data['variations'] as $variation) {
+                  ItemVariation::create([
+                      'item_id'     => $item->id,
+                      'variations1' => $variation['variations1'] ?? null,
+                      'variations2' => $variation['variations2'] ?? null,
+                      'variations3' => $variation['variations3'] ?? null,
+                      'variations4' => $variation['variations4'] ?? null,
+                      'item_number' => $variation['item_number'] ?? null,
+                      'sales_price' => $variation['sales_price'] ?? 0,
+                  ]);
+              }
+          }
+
+          // 3. images があれば ItemImage テーブルに保存
+          if (!empty($data['images'])) {
+              foreach ($data['images'] as $imagePath) {
+                  ItemImage::create([
+                      'item_id' => $item->id,
+                      'path'    => $imagePath,
+                  ]);
+              }
+          }
+
+          // 4. 他も同様に
+
+          DB::commit();
+          return response()->json(['success' => true]);
+      } catch (Exception $e) {
+          DB::rollBack();
+          return response()->json([
+              'success' => false,
+              'error'   => $e->getMessage()
+          ], 500);
+      }
+  }
 }

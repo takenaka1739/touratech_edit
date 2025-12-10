@@ -18,6 +18,7 @@ Route::group([
   ], function() {
     Route::post('fetch', [ItemController::class, 'fetch']);
     Route::post('store', [ItemController::class, 'store']);
+    Route::post('store_transaction', [ItemController::class, 'store_transaction']);
     Route::get('edit/{id}', [ItemController::class, 'edit']);
     Route::put('edit/{id}', [ItemController::class, 'update']);
     Route::put('/update/{id}', [ItemController::class, 'update']);
