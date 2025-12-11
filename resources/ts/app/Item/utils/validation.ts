@@ -51,8 +51,22 @@ export const validateItemState = (state: Item): Record<string, string> => {
   // バリエーション品番
   if (state.variItems && state.variItems.length > 1) {
     state.variItems.forEach((v, index) => {
-      if (v[5] === null || v[5] === undefined || v[5] === '' || v[6] === null || v[6] === undefined || v[6] === '') {
-        errors[`variItems_${index}_item_number`] = 'バリエーション情報を入力してください';
+      if (index === 0) {
+        // 1つ目のバリエーションは v[0] が必須
+        if (v[0] === null || v[0] === undefined || v[0] === '') {
+          errors[`variItems_${index}_item_number`] = 'バリエーション品番を入力してください';
+        }
+      } else {
+        // 2つ目以降は v[1]〜v[4] のいずれか必須
+        const hasValue =
+          (v[1] !== null && v[1] !== undefined && v[1] !== '') ||
+          (v[2] !== null && v[2] !== undefined && v[2] !== '') ||
+          (v[3] !== null && v[3] !== undefined && v[3] !== '') ||
+          (v[4] !== null && v[4] !== undefined && v[4] !== '');
+
+        if (!hasValue) {
+          errors[`variItems_${index}_item_number`] = 'バリエーション情報を入力してください';
+        }
       }
     });
   }
