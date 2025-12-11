@@ -35,62 +35,43 @@ const isEmpty = (v: unknown): boolean => v === null || v === undefined || v === 
  * @param variItems - バリエーション配列
  * @returns エラーあり：エラーメッセージ、エラーなし：null
  */
-const validateVariations = (variItems: unknown[][]): string | null => {
-  if (!variItems || variItems.length <= 1) return null;
+const validateVariations = (variItems: unknown[][]): { row: number; message: string }[] => {
+  const errors: { row: number; message: string }[] = [];
+  if (!variItems || variItems.length <= 1) return errors;
 
   for (let index = 0; index < variItems.length; index++) {
     const v = variItems[index];
+    const variationValues = [v[1], v[2], v[3], v[4]];
+    const hasInput = variationValues.some(val => val !== null && val !== '');
 
-    // 1〜4を対象キーとして扱う
-    const nonEmptyFlags = [1, 2, 3, 4].map(i => !isEmpty(v[i]));
-    const anyFilled = nonEmptyFlags.some(Boolean);
-
-    // 先頭行: カテゴリー1は必須
-    if (index === 0 && isEmpty(v[1])) {
-      return 'カテゴリー1を入力してください';
+    if (!hasInput) {
+      errors.push({ row: index, message: 'いずれかのカテゴリーを入力してください' });
+      continue;
     }
 
-    // 最低1つは入力（先頭以外の行）
-    if (index !== 0 && !anyFilled) {
-      return 'いずれかのカテゴリーを入力してください';
+    if (isEmpty(v[5])) {
+      errors.push({ row: index, message: '品番を入力してください' });
+      continue;
     }
 
-    // 左詰めチェック
-    let foundEmpty = false;
-    for (let i = 1; i <= 4; i++) {
-      const empty = isEmpty(v[i]);
-      if (!foundEmpty && empty) {
-        foundEmpty = true;
-      } else if (foundEmpty && !empty) {
-        return '左詰めで入力してください（途中に空欄があります）';
-      }
-    }
-
-    // 階層整合性チェック
-    if (!isEmpty(v[2]) && isEmpty(v[1])) {
-      return 'カテゴリー2を入力する場合、カテゴリー1が必要です';
-    } else if (!isEmpty(v[3]) && (isEmpty(v[1]) || isEmpty(v[2]))) {
-      return 'カテゴリー3を入力する場合、カテゴリー1・2が必要です';
-    } else if (!isEmpty(v[4]) && (isEmpty(v[1]) || isEmpty(v[2]) || isEmpty(v[3]))) {
-      return 'カテゴリー4を入力する場合、カテゴリー1〜3が必要です';
-    }
-
-    // バリエーション品番（v[6]）必須チェック
     if (isEmpty(v[6])) {
-      return 'バリエーション品番を入力してください';
+      errors.push({ row: index, message: '販売価格を入力してください' });
+      continue;
     }
 
-    // 差分チェック（直前の行と比較）
     if (index > 0) {
       const prev = variItems[index - 1];
-      const isSame = [1, 2, 3, 4].every(i => v[i] === prev[i]);
+      const currentFiltered = variationValues.map(val => (val === null ? null : val));
+      const prevFiltered = [prev[1], prev[2], prev[3], prev[4]].map(val => (val === null ? null : val));
+
+      const isSame = currentFiltered.every((val, i) => val === prevFiltered[i]);
       if (isSame) {
-        return '直前の行と全て同じです。必ず1箇所は差分を入力してください';
+        errors.push({ row: index, message: '直前の行と全て同じです。必ず1箇所は差分を入力してください' });
       }
     }
   }
 
-  return null; // エラーなし
+  return errors;
 };
 
 /**
@@ -137,10 +118,10 @@ export const validateItemState = (state: Item): Record<string, string> => {
   }
 
   // バリエーション
-  const variationError = validateVariations(state.variItems);
-  if (variationError) {
-    errors.variation = variationError;
-  }
+  const variationErrors = validateVariations(state.variItems);
+  variationErrors.forEach(err => {
+    errors[`variation_${err.row}`] = err.message;
+  });
 
   return errors;
 };
