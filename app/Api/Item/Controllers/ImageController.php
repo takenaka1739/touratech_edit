@@ -111,18 +111,23 @@ class ImageController extends BaseController
 
   public function store_transaction(Request $request)
   {
+    // 複数ファイルを検証
     $request->validate([
-      'images.*' => 'required|image|max:30000',   // 複数ファイルを検証
+      'images.*' => 'nullable|image|max:30000',
     ]);
 
     $paths = [];
 
-    foreach ($request->file('images') as $file) {
-      $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-      $directory = public_path('images');
-      $file->move($directory, $filename);
-
-      $paths[] = 'images/' . $filename;
+    if ($request->hasFile('images')) {
+      foreach ($request->file('images') as $file) {
+        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+        $directory = public_path('images');
+        if (!file_exists($directory)) {
+            mkdir($directory, 0777, true);
+        }
+        $file->move($directory, $filename);
+        $paths[] = 'images/' . $filename;
+      }
     }
 
     return response()->json(['paths' => $paths], 201);
