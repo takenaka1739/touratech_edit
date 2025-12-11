@@ -1854,18 +1854,22 @@ useEffect(() => {
    * @param files 
    * @returns 
    */
-  const uploadImages = async (files: File[]): Promise<string[]> => {
+  const uploadImages = async (imageList: any[][]): Promise<string[]> => {
     const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('images[]', file);
+
+    imageList.forEach((variation) => {
+      variation.forEach((image) => {
+        if (image instanceof File) {
+          formData.append('images[]', image);
+        }
+      });
     });
 
-    const res = await axios.post('/api/item/store_transaction', formData, {
+    const res = await axios.post('/api/item/image_server_store', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
-    // サーバーから返ってきた保存先パスの配列を受け取る
-    return res.data.paths; // ["images/abc.jpg", "images/def.png", ...]
+    return res.data.paths;
   };
 
   /**
