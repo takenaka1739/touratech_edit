@@ -49,13 +49,13 @@ export const validateItemState = (state: Item): Record<string, string> => {
   }
 
   // バリエーション品番
-  if (state.variItems && state.variItems.length > 0) {
+  if (state.variItems && state.variItems.length > 1) {
     state.variItems.forEach((v, index) => {
-      if (v[6] === null || v[6] === undefined || v[6] === '') {
-        errors[`variItems_${index}_item_number`] = 'バリエーション品番を入力してください';
+      if (v[6] === null || v[6] === undefined || v[6] === '' || v[7] === null || v[7] === undefined || v[7] === '') {
+        errors[`variItems_${index}_item_number`] = 'バリエーション情報を入力してください';
       }
     });
   }
-  
+
   return errors;
 };
