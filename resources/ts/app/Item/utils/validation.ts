@@ -48,5 +48,13 @@ export const validateItemState = (state: Item): Record<string, string> => {
     errors.is_payment_id1 = '支払い方法を選択してください';
   }
 
+  // バリエーション品番
+  if (state.variItems && state.variItems.length > 0) {
+    state.variItems.forEach((v, index) => {
+      if (v[6] === null || v[6] === undefined || v[6] === '') {
+        errors[`variItems_${index}_item_number`] = 'バリエーション品番を入力してください';
+      }
+    });
+  }
   return errors;
 };

@@ -614,7 +614,7 @@ class ItemService
     return DB::transaction(function () use ($data) {
       $ids = [];
 
-      // 共通部
+      // 共通部 (Resource/ts/types/ItemPayload)
       $base = [
         'supplier_id'            => $data['supplier_id'] ?? null,
         'code'                   => $data['code'] ?? null,

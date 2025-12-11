@@ -1867,7 +1867,7 @@ useEffect(() => {
       });
     });
 
-    const res = await axios.post('/api/item/image_server_store', formData, {
+    const res = await axios.post('/api/item/store_image_transaction', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
@@ -1881,12 +1881,6 @@ useEffect(() => {
     const variations = buildVariations(variChangeItem);
     const payload: ItemPayload = { ...state, variations };
     const success = await storeNewItem(payload);
-
-    console.log('1883行目');
-    console.log(state);
-    console.log(state.imageList);
-    console.log(state.image_name);
-    console.log(imageItems);
 
     if (success) {
       // 画像アップロード
