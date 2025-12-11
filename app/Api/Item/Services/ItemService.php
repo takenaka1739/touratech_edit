@@ -679,16 +679,31 @@ class ItemService
 
       // バリエーションあり
       } else {
+
+        // 前回の variations 値を保持する変数
+        $prevVariations = [
+            'variations1' => null,
+            'variations2' => null,
+            'variations3' => null,
+            'variations4' => null,
+        ];
+
         foreach ($data['variations'] as $index => $variation) {
           $item = Item::create($base + [
             'item_number' => $variation['item_number'] ?? null,
-            'variations1' => $variation['variations1'] ?? null,
-            'variations2' => $variation['variations2'] ?? null,
-            'variations3' => $variation['variations3'] ?? null,
-            'variations4' => $variation['variations4'] ?? null,
+            'variations1' => $variation['variations1'] ?? $prevVariations['variations1'],
+            'variations2' => $variation['variations2'] ?? $prevVariations['variations2'],
+            'variations3' => $variation['variations3'] ?? $prevVariations['variations3'],
+            'variations4' => $variation['variations4'] ?? $prevVariations['variations4'],
             'sales_price' => $variation['sales_price'] ?? 0,
           ]);
           $ids[] = $item->id;
+
+          // 前回値を更新
+          $prevVariations['variations1'] = $item->variations1;
+          $prevVariations['variations2'] = $item->variations2;
+          $prevVariations['variations3'] = $item->variations3;
+          $prevVariations['variations4'] = $item->variations4;
 
           // Image 登録（imageList[index] の各オブジェクトを登録）
           if (!empty($data['imageList'][$index])) {
