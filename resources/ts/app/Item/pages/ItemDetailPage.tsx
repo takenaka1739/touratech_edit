@@ -139,7 +139,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   //const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
-  const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.itemNumberItem[0]);
+  ///const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.itemNumberItem[0]);
+  const domestic_url = createUrl('https://touratech.matrix.jp/ec/category-products/', `${state.category_name}/${state.id}/`);
   //const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
   const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.itemNumberItem[0]);
 
@@ -1855,6 +1856,12 @@ useEffect(() => {
    * @returns 
    */
   const uploadImages = async (imageList: any[][]): Promise<string[]> => {
+
+    console.log('1859行目');
+    console.log(state);
+    console.log(imageList);
+
+
     const formData = new FormData();
 
     imageList.forEach((variation) => {
@@ -1879,6 +1886,12 @@ useEffect(() => {
     const variations = buildVariations(variChangeItem);
     const payload: ItemPayload = { ...state, variations };
     const success = await storeNewItem(payload);
+
+    console.log('1883行目');
+    console.log(state);
+    console.log(state.imageList);
+    console.log(state.image_name);
+    console.log(imageItems);
 
     if (success) {
       // 画像アップロード
