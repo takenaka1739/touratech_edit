@@ -2636,7 +2636,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
               <label className="label-optional">任意</label>
               <input style={{ marginTop: '5px' }} type="checkbox" onChange={handleCheck} />
             </div>
-
+            
             <div style={{ marginLeft: "10px" }}>
               <div style={{ marginLeft: '10px' }}>
                 <label style={{ marginLeft: "145px" }}>バリエーション1</label>
@@ -2646,55 +2646,39 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
                 <label style={{ marginLeft: "60px" }}>品番</label>
                 <label style={{ marginLeft: "100px" }}>販売価格（税込）</label>
               </div>
-
-              <div style={{ marginLeft: "150px" }}>
-                {state.variItems.map((item, itemIndex) => (
-                  <div key={itemIndex} style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {[1, 2, 3, 4].map((colIndex) => (
-                        <Forms.FormGroupInputText
-                          key={colIndex}
-                          labelText={`バリエーション${colIndex}`}
-                          name={`variation_${itemIndex}_${colIndex}`}
-                          value={item[colIndex] ?? ''}
-                          error={errors?.[`variation_${itemIndex}_${colIndex}`]}
-                          onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChangeValue(event, itemIndex, colIndex)}
-                          className="vari-row-input"
-                        />
-                      ))}
-
-                      <Forms.FormGroupInputText
-                        labelText="品番"
-                        name={`variation_item_number_${itemIndex}`}
-                        value={item[5] ?? ''}
-                        error={errors?.[`variation_${itemIndex}_item_number`]}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChangeValue(event, itemIndex, 5)}
-                        className="vari-row-input"
-                        required
-                      />
-
-                      <Forms.FormGroupInputText
-                        labelText="販売価格（税込）"
-                        name={`variation_price_${itemIndex}`}
-                        value={item[6] ?? ''}
-                        error={errors?.[`variation_${itemIndex}_price`]}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChangeValue(event, itemIndex, 6)}
-                        className="vari-row-input"
-                        required
-                      />
-
-                      <button
-                        className="btn-delete"
-                        style={{ marginLeft: '1px', height: '26px', paddingTop: '0px', paddingBottom: '0px' }}
-                        onClick={() => delButton(itemIndex)}
-                        disabled={isDisabled}
-                      >
+              <div style={{ display: 'flex', marginLeft: "150px" }}>
+                <div>{state.variItems.map((item, itemIndex) => {
+                  return (
+                    <div key={itemIndex} style={{ display: 'flex' }}>{
+                      item.map((value, index) =>
+                        index > 0 ? (
+                          <div key={index} style={{ display: 'flex', marginBottom: '5px', visibility: value == null ? 'hidden' : 'visible' }}>
+                            <input className="vari-row-input" /*type={value == null ? 'hidden' : 'text'}*/
+                              style={{ borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color }}
+                              disabled={!checkBock.flag} value={item[index]} onChange={(event) => onChangeValue(event, itemIndex, index)}
+                              onFocus={() => handleFocus(item)}
+                              onBlur={() => outForcus(item)} />
+                            {index < 5 &&
+                              <button disabled={!checkBock.flag} style={{ backgroundColor: checkBock.color }}
+                                className="plus-button" onClick={() => addNewVari(itemIndex, index)}>＋</button>
+                            }
+                          </div>
+                        ) : null
+                      )
+                    }
+                      <button className="btn-delete" style={{ marginLeft: '1px', height: '26px', paddingTop: '0px', paddingBottom: '0px' }}
+                        onClick={() => delButton(itemIndex)} disabled={isDisabled}>
                         削除
                       </button>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}</div>
               </div>
+              {errors?.variation && (
+                <div style={{ color: 'red', marginTop: '5px' }}>
+                  {errors.variation}
+                </div>
+              )}
             </div>
           </div>
 
