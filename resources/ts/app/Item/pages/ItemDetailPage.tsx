@@ -1856,16 +1856,11 @@ useEffect(() => {
    * @returns 
    */
   const uploadImages = async (imageList: any[][]): Promise<string[]> => {
-
-    console.log('1859行目');
-    console.log(state);
-    console.log(imageList);
-
-
     const formData = new FormData();
 
     imageList.forEach((variation) => {
-      variation.forEach((image) => {
+      // 実際に画像データがあるのは2番目以降の要素
+      variation.slice(2).forEach((image) => {
         if (image instanceof File) {
           formData.append('images[]', image);
         }
