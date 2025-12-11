@@ -7,6 +7,7 @@ use App\Base\Models\Image;
 use App\Base\Models\ItemCategoryCombination;
 use App\Base\Models\Category;
 use App\Base\Models\Document;
+use App\Base\Models\SpecialSale;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -283,7 +284,6 @@ class ItemService
       array_push($documentFileList, Document::where('item_id', $item->id)
                   ->whereNull('deleted_at')
                   ->first());
-
 
       array_push($codeList, $item);
 
@@ -669,6 +669,9 @@ class ItemService
         'is_set_item'            => $data['is_set_item'] ?? false,
       ];
 
+      \Log::debug('$data');
+      \Log::debug($data);
+
       // バリエーションなし
       if (empty($data['variations'])) {
         $item = Item::create($base + [
@@ -697,12 +700,33 @@ class ItemService
           'file_name'   => $data['file_name'] ?? '',
         ]);
 
+        // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+        if($data['start_at'] !== null) {
+          SpecialSale::create([
+            'item_id'               => $item->id,
+            'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+            'start_at'              => $data['start_at'] ?? null,
+            'end_at'                => $data['end_at'] ?? null,
+            'special_sale_price'    => $data['special_sale_price'] ?? 0,
+            'refund_rate'           => $data['refund_rate'] ?? 0,
+          ]);
+        }
+
+        // ItemCategoryCombination 登録 (Itemごとに複数件)
+        foreach ($data['categoryList'] as $category) {
+          \Log::debug($category);
+          ItemCategoryCombination::create([
+            'item_id'     => $item->id,
+            'category_id' => $category['categoryId'],
+          ]);
+        }
+
       // バリエーションあり
       } else {
 
         // 前回の variations 値を保持する変数
         $prevVariations = [
-            'variations1' => null,
+            'variations1' => ' ',
             'variations2' => null,
             'variations3' => null,
             'variations4' => null,
@@ -744,6 +768,26 @@ class ItemService
             'type_name'   => $data['type_name'] ?? '',
             'file_name'   => $data['file_name'] ?? '',
           ]);
+
+          // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+          if($data['start_at'] !== null) {
+            SpecialSale::create([
+              'item_id'               => $item->id,
+              'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+              'start_at'              => $data['start_at'] ?? null,
+              'end_at'                => $data['end_at'] ?? null,
+              'special_sale_price'    => $data['special_sale_price'] ?? 0,
+              'refund_rate'           => $data['refund_rate'] ?? 0,
+            ]);
+          }
+
+          // ItemCategoryCombination 登録 (Itemごとに複数件)
+          foreach ($data['categoryList'] as $category) {
+            ItemCategoryCombination::create([
+              'item_id'     => $item->id,
+              'category_id' => $category['categoryId'],
+            ]);
+          }
         }
       }
 
