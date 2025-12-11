@@ -310,11 +310,28 @@ class ItemService
     }
 
     // バリデーションの配列のソート処理（1～4で優先順位（昇順））
-    $sorted = collect($test)
-      ->sortBy(fn($row) => $row[3])
-      ->sortBy(fn($row) => $row[2])
-      ->sortBy(fn($row) => $row[1]) // 最優先キー
-        ->values();
+    $sorted = collect($test)->sort(function ($row1, $row2) {
+      // 優先順位: row[1] > row[2] > row[3] > row[4]
+      foreach ([1, 2, 3, 4] as $idx) {
+        $row1col = $row1[$idx];
+        $row2col = $row2[$idx];
+
+        // null / 空文字は並び順の最後にもってくる
+        $empty1 = ($row1col === null || $row1col === '');
+        $empty2 = ($row2col === null || $row2col === '');
+
+        if ($empty1 && !$empty2) return 1;
+        if (!$empty1 && $empty2) return -1;
+
+        // 両方空なら次のキーへ
+        if ($empty1 && $empty2) continue;
+
+        // 通常の文字列比較
+        if ($row1col < $row2col) return -1;
+        if ($row1col > $row2col) return 1;
+      }
+      return 0;
+    })->values();
 
     if(count($sorted) > 1){
       $previous = ['', '', '', ''];
