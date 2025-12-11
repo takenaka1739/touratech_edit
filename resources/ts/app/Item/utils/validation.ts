@@ -2,7 +2,102 @@ import { Item } from '@/types/Item';
 import { ItemCategory } from '@/types/ItemCategory';
 
 /**
- * 商品マスタの未入力項目を検出し、エラーメッセージを返す。
+ * 支払方法の未選択を検出し、未選択時はエラーメッセージを返す。
+ * 
+ * @param state - 商品情報を保持する Item 型のオブジェクト
+ * @returns エラーあり：エラーメッセージ、エラーなし：null
+ */
+const validatePaymentMethods = (state: Item): string | null => {
+  const noPaymentSelected =
+    (state.is_payment_id1 === null || state.is_payment_id1 === undefined || state.is_payment_id1 === false) &&
+    (state.is_payment_id2 === null || state.is_payment_id2 === undefined || state.is_payment_id2 === false) &&
+    (state.is_payment_id3 === null || state.is_payment_id3 === undefined || state.is_payment_id3 === false) &&
+    (state.is_payment_id4 === null || state.is_payment_id4 === undefined || state.is_payment_id4 === false) &&
+    (state.is_payment_id5 === null || state.is_payment_id5 === undefined || state.is_payment_id5 === false);
+
+  if (noPaymentSelected) {
+    return '支払い方法を選択してください';
+  }
+  return null;
+};
+
+/**
+ * バリエーションの空データを判定するユーティリティ。
+ * 
+ * @param v - 判定対象の値（null, undefined, 空文字を想定）
+ * @returns 値なし：true、値あり：false
+ */
+const isEmpty = (v: unknown): boolean => v === null || v === undefined || v === '';
+
+/**
+ * バリエーションの未入力を検出し、入力不足時はエラーメッセージを返す。
+ * 
+ * @param variItems - バリエーション配列
+ * @returns エラーあり：エラーメッセージ、エラーなし：null
+ */
+const validateVariations = (variItems: unknown[][]): string | null => {
+  if (!variItems || variItems.length <= 1) return null;
+
+  for (let index = 0; index < variItems.length; index++) {
+    const v = variItems[index];
+
+    // 1〜4を対象キーとして扱う
+    const nonEmptyFlags = [1, 2, 3, 4].map(i => !isEmpty(v[i]));
+    const anyFilled = nonEmptyFlags.some(Boolean);
+
+    // 先頭行: カテゴリー1は必須
+    if (index === 0 && isEmpty(v[1])) {
+      return 'カテゴリー1を入力してください';
+    }
+
+    // 最低1つは入力（先頭以外の行）
+    if (index !== 0 && !anyFilled) {
+      return 'いずれかのカテゴリーを入力してください';
+    }
+
+    // 左詰めチェック
+    let foundEmpty = false;
+    for (let i = 1; i <= 4; i++) {
+      const empty = isEmpty(v[i]);
+      if (!foundEmpty && empty) {
+        foundEmpty = true;
+      } else if (foundEmpty && !empty) {
+        return '左詰めで入力してください（途中に空欄があります）';
+      }
+    }
+
+    // 階層整合性チェック
+    if (!isEmpty(v[2]) && isEmpty(v[1])) {
+      return 'カテゴリー2を入力する場合、カテゴリー1が必要です';
+    } else if (!isEmpty(v[3]) && (isEmpty(v[1]) || isEmpty(v[2]))) {
+      return 'カテゴリー3を入力する場合、カテゴリー1・2が必要です';
+    } else if (!isEmpty(v[4]) && (isEmpty(v[1]) || isEmpty(v[2]) || isEmpty(v[3]))) {
+      return 'カテゴリー4を入力する場合、カテゴリー1〜3が必要です';
+    }
+
+    // バリエーション品番（v[6]）必須チェック
+    if (isEmpty(v[6])) {
+      return 'バリエーション品番を入力してください';
+    }
+
+    // 差分チェック（直前の行と比較）
+    if (index > 0) {
+      const prev = variItems[index - 1];
+      const isSame = [1, 2, 3, 4].every(i => v[i] === prev[i]);
+      if (isSame) {
+        return '直前の行と全て同じです。必ず1箇所は差分を入力してください';
+      }
+    }
+  }
+
+  return null; // エラーなし
+};
+
+/**
+ * 商品マスタの必須項目の未入力を検出し、入力不足時はエラーメッセージを返す。
+ * 
+ * @param state - 商品情報を保持する Item 型のオブジェクト
+ * @returns エラーあり：エラーメッセージ、エラーなし：null
  */
 export const validateItemState = (state: Item): Record<string, string> => {
   const errors: Record<string, string> = {};
@@ -35,40 +130,16 @@ export const validateItemState = (state: Item): Record<string, string> => {
   if (state.code === null || state.code === undefined || state.code === '')
     errors.code = '商品コードを入力してください';
 
-  // 販売価格
-
   // 支払い方法適用（現金・掛売・宅配代引・クレジットカード・銀行振込）
-  if (
-    (state.is_payment_id1 === null || state.is_payment_id1 === undefined || state.is_payment_id1 === false) &&
-    (state.is_payment_id2 === null || state.is_payment_id2 === undefined || state.is_payment_id2 === false) &&
-    (state.is_payment_id3 === null || state.is_payment_id3 === undefined || state.is_payment_id3 === false) &&
-    (state.is_payment_id4 === null || state.is_payment_id4 === undefined || state.is_payment_id4 === false) &&
-    (state.is_payment_id5 === null || state.is_payment_id5 === undefined || state.is_payment_id5 === false)
-  ) {
-    errors.is_payment_id1 = '支払い方法を選択してください';
+  const paymentError = validatePaymentMethods(state);
+  if (paymentError) {
+    errors.is_payment_id1 = paymentError;
   }
 
-  // バリエーション品番
-  if (state.variItems && state.variItems.length > 1) {
-    state.variItems.forEach((v, index) => {
-      if (index === 0) {
-        // 1つ目のバリエーションは v[1] が必須
-        if (v[1] === null || v[1] === undefined || v[1] === '') {
-          errors[`variItems_${index}_item_number`] = 'バリエーション品番を入力してください';
-        }
-      } else {
-        // 2つ目以降は v[1]〜v[4] のいずれか必須
-        const hasValue =
-          (v[1] !== null && v[1] !== undefined && v[1] !== '') ||
-          (v[2] !== null && v[2] !== undefined && v[2] !== '') ||
-          (v[3] !== null && v[3] !== undefined && v[3] !== '') ||
-          (v[4] !== null && v[4] !== undefined && v[4] !== '');
-
-        if (!hasValue) {
-          errors[`variItems_${index}_item_number`] = 'バリエーション情報を入力してください';
-        }
-      }
-    });
+  // バリエーション
+  const variationError = validateVariations(state.variItems);
+  if (variationError) {
+    errors.variation = variationError;
   }
 
   return errors;

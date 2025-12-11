@@ -2673,6 +2673,11 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
                   )
                 })}</div>
               </div>
+              {errors?.variation && (
+                <div style={{ color: 'red', marginTop: '5px' }}>
+                  {errors.variation}
+                </div>
+              )}
             </div>
           </div>
 

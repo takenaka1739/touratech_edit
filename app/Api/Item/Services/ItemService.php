@@ -626,6 +626,9 @@ class ItemService
     return $query;
   }
 
+  /**
+   * 商品マスタに関連するテーブルに一括登録する。
+   */
   public function storeTransaction(array $data): array
   {
     return DB::transaction(function () use ($data) {
