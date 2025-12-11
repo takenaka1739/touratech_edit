@@ -30,6 +30,7 @@ Route::group([
     Route::post('image_store', [ImageController::class, 'store']);
     Route::put('/image_update/{id}', [ImageController::class, 'update']);
     Route::post('/image_server_store', [ImageController::class, 'serverStore']);
+    Route::post('/store_image_transaction', [ImageController::class, 'store_transaction']);
     Route::post('/video_server_store', [ImageController::class, 'videoServerStore']);
     Route::delete('image_delete/{id}', [ImageController::class, 'delete']);
 

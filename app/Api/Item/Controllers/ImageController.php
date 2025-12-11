@@ -109,6 +109,25 @@ class ImageController extends BaseController
     return response()->json(['path' => 'images/' . $filename], 201);
   }
 
+  public function store_transaction(Request $request)
+  {
+    $request->validate([
+      'images.*' => 'required|image|max:30000',   // 複数ファイルを検証
+    ]);
+
+    $paths = [];
+
+    foreach ($request->file('images') as $file) {
+      $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+      $directory = public_path('images');
+      $file->move($directory, $filename);
+
+      $paths[] = 'images/' . $filename;
+    }
+
+    return response()->json(['paths' => $paths], 201);
+  }
+
   public function videoServerStore(Request $request)
   {
     $request->validate([
