@@ -56,5 +56,6 @@ export const validateItemState = (state: Item): Record<string, string> => {
       }
     });
   }
+  
   return errors;
 };

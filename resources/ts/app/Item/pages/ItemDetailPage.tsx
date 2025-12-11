@@ -1855,24 +1855,41 @@ useEffect(() => {
    * @param files 
    * @returns 
    */
-  const uploadImages = async (imageList: any[][]): Promise<string[]> => {
-    const formData = new FormData();
+const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
+  // null や undefined の場合は即座に空配列を返す
+  if (!imageList || imageList.length === 0) {
+    return [];
+  }
 
-    imageList.forEach((variation) => {
-      // 実際に画像データがあるのは2番目以降の要素
-      variation.slice(2).forEach((image) => {
-        if (image instanceof File) {
-          formData.append('images[]', image);
-        }
-      });
+  const formData = new FormData();
+  let hasImage = false;
+
+  imageList.forEach((variation) => {
+    // variation が null/undefined の可能性を考慮
+    if (!variation) return;
+
+    variation.slice(2).forEach((image) => {
+      if (image instanceof File) {
+        formData.append("images[]", image);
+        hasImage = true;
+      }
     });
+  });
 
-    const res = await axios.post('/api/item/store_image_transaction', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+  // 画像が一つもなければ空配列を返す
+  if (!hasImage) {
+    return [];
+  }
+
+  try {
+    const res = await axios.post("/api/item/store_image_transaction", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
-
     return res.data.paths;
-  };
+  } catch (error: any) {
+    throw new Error("画像アップロードに失敗");
+  }
+};
 
   /**
    * 商品マスタへの新規登録をリクエストする。
