@@ -2658,7 +2658,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
                           name={`variation_${itemIndex}_${colIndex}`}
                           value={item[colIndex] ?? ''}
                           error={errors?.[`variation_${itemIndex}_${colIndex}`]}
-                          onChange={(event) => onChangeValue(event, itemIndex, colIndex)}
+                          onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChangeValue(event, itemIndex, colIndex)}
                           className="vari-row-input"
                         />
                       ))}
@@ -2668,7 +2668,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
                         name={`variation_item_number_${itemIndex}`}
                         value={item[5] ?? ''}
                         error={errors?.[`variation_${itemIndex}_item_number`]}
-                        onChange={(event) => onChangeValue(event, itemIndex, 5)}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChangeValue(event, itemIndex, 5)}
                         className="vari-row-input"
                         required
                       />
@@ -2678,7 +2678,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
                         name={`variation_price_${itemIndex}`}
                         value={item[6] ?? ''}
                         error={errors?.[`variation_${itemIndex}_price`]}
-                        onChange={(event) => onChangeValue(event, itemIndex, 6)}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChangeValue(event, itemIndex, 6)}
                         className="vari-row-input"
                         required
                       />
