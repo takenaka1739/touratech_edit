@@ -30,6 +30,19 @@ const validatePaymentMethods = (state: Item): string | null => {
 const isEmpty = (v: unknown): boolean => v === null || v === undefined || v === '';
 
 /**
+ * 同一インデックス同士の直前データとの一致判定。
+ * 
+ * @param value1 - 値1
+ * @param value2 - 値2
+ * @returns 一致：true、不一致：false
+ */
+const isWildcardEqual = (value1: unknown, value2: unknown): boolean => {
+  if (value1 === null || value2 === null) return true;                        // null は何とでも一致扱い（ワイルドカード）
+  if (value1 === '' || value2 === '') return value1 === '' && value2 === '';  // 空は空同士のみ一致
+  return value1 === value2;                                                   // 文字列は完全一致
+};
+
+/**
  * バリエーションの未入力を検出し、入力不足時はエラーメッセージを返す。
  * 
  * @param variItems - バリエーション配列
@@ -44,29 +57,48 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
     const variationValues = [v[1], v[2], v[3], v[4]];
     const hasInput = variationValues.some(val => val !== null && val !== '');
 
+    // バリエーション必須
     if (!hasInput) {
-      errors.push({ row: index, message: 'いずれかのカテゴリーを入力してください' });
-      continue;
+      errors.push({ row: index, message: 'バリエーションを入力してください' });
     }
 
+    // 品番必須
     if (isEmpty(v[5])) {
       errors.push({ row: index, message: '品番を入力してください' });
-      continue;
     }
 
+    // 販売価格必須
     if (isEmpty(v[6])) {
       errors.push({ row: index, message: '販売価格を入力してください' });
-      continue;
     }
 
+    // 直前行との比較
     if (index > 0) {
       const prev = variItems[index - 1];
-      const currentFiltered = variationValues.map(val => (val === null ? null : val));
-      const prevFiltered = [prev[1], prev[2], prev[3], prev[4]].map(val => (val === null ? null : val));
+      const prevValues = [prev[1], prev[2], prev[3], prev[4]];
 
-      const isSame = currentFiltered.every((val, i) => val === prevFiltered[i]);
+      // 一致判定（nullはワイルドカード）
+      const isSame = variationValues.every((val, i) =>
+        isWildcardEqual(val, prevValues[i])
+      );
       if (isSame) {
-        errors.push({ row: index, message: '直前の行と全て同じです。必ず1箇所は差分を入力してください' });
+        errors.push({
+          row: index,
+          message: '直前の行と同一です。異なるバリエーションを入力してください',
+        });
+      }
+
+      // 初めて null 以外となった要素のインデックスを特定
+      const firstNonNullIndex = variationValues.findIndex(val => val !== null);
+      if (firstNonNullIndex !== -1) {
+        const prevVal = prevValues[firstNonNullIndex];
+        // 直前行の同じインデックスが文字列でなければエラー
+        if (prevVal === null || prevVal === '') {
+          errors.push({
+            row: index - 1,   // 未入力である直前行にエラーを付与
+            message: '分岐点にはバリエーションを入力してください',
+          });
+        }
       }
     }
   }
