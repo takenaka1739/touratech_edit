@@ -1882,7 +1882,7 @@ useEffect(() => {
 
     if (success) {
       // 画像アップロード
-      await uploadImages(state.imageList);
+      await uploadImages(imageItems);
 
       await appAlert('新規保存しました。');
       backPage();
