@@ -698,7 +698,7 @@ class ItemService
           // 要素0は item_id、要素1～はファイル名
           foreach (array_values(array_slice($imageRow, 1)) as $order => $fileName) {
             Image::create([
-              'item_id'     => $imageRow[0],
+              'item_id'     => $item->id,
               'category_id' => null,
               'name'        => $fileName,
               'order_by'    => $order,
@@ -772,7 +772,7 @@ class ItemService
             // 要素0は item_id、要素1～はファイル名
             foreach (array_slice($imageRow, 1) as $order => $fileName) {
               Image::create([
-                'item_id'     => $imageRow[0],
+                'item_id'     => $item->id,
                 'category_id' => null,
                 'name'        => $fileName,
                 'order_by'    => $order,

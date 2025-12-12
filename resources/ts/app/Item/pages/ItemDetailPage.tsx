@@ -1912,7 +1912,7 @@ useEffect(() => {
    * @param imageList 
    * @returns 
    */
-  const buildImageInfo = (imageList: any[][]): (number | string)[][] => {
+  const buildImageInfo = (imageList: any[][]): string[][] => {
     return imageList.map(value => {
       const itemId = value[0];
       const files = value.slice(1);
