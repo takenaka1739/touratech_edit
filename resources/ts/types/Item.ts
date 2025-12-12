@@ -138,7 +138,7 @@ export interface Item {
   display_status: number |undefined;
   remarks?: string | undefined;
   is_set_item: boolean | undefined;
-  imageList: any;
+  imageList: any[][];
 
   item_id: number | undefined;
   is_sales_members_only: boolean | undefined;

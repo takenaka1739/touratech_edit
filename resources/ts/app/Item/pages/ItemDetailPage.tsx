@@ -79,10 +79,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     is_payment_id4: false,
     is_payment_id5: false,
     display_status: 0,
-    variItems: [[]],
+    variItems: [[]],  // variItemsとimageListの要素数・要素内容は対（要素0の管理IDまたはnewで判定）
     backVariItems: [[]],
     //image_name: undefined,
-    imageList: undefined,
+    imageList: [[]], // variItemsとimageListの要素数・要素内容は対（要素0の管理IDまたはnewで判定）
     shipping_pay: undefined,
 
     category_id: undefined,
@@ -117,14 +117,14 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     categoryListAll: []
   });
 
-  type imageItem = {
-    id: number | null;
-    category_id: number | null;
-    item_id: number | undefined;
-    name: string;
-    order_by: number;
-    url: any;
-  };
+  //type imageItem = {
+  //  id: number | null;
+  //  category_id: number | null;
+  //  item_id: number | undefined;
+  //  name: string;
+  //  order_by: number;
+  //  url: any;
+  //};
 
   type Category = {
     combId: number | undefined;
@@ -148,7 +148,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const dispatch = useDispatch();
   const [onFocusItem, setonFocusItem] = useState<string[]>();
   //const [specialItem, setSpecialItem] = useState(state.specialSalesList);
-  const [imageItems, setImageItems] = useState(state.imageList);
+  //const [imageItems, setImageItems] = useState(state.imageList);
   const location = useLocation<any>();
   const [categoryChangeFlag, setCategoryChangeFlag] = useState(false);
   const [supplierChangeFlag, setSupplierChangeFlag] = useState(false);
@@ -170,12 +170,22 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       state.variItems.length > 0 &&
       state.variItems[0].length > 0;
     setVariItems(isValid ? state.variItems : [['new1', '', '', '', '', '', '']]);
+    console.log('state.imageList');
+    console.log(state.imageList);
     //setSpecialItem(state.specialSalesList);
-    if ((!imageItems || !Array.isArray(imageItems)) && (Array.isArray(state.imageList))) {
-      setImageItems(state.imageList);
+    //const isImgValid = Array.isArray(state.imageList) &&
+    //  state.imageList.length > 0 &&
+    //  state.imageList[0].length > 0;
+    //  console.log(`state.imageList：${state.imageList}`);
+    if(!(state.imageList[0].length > 0)){
+      setState(prev => ({
+        ...prev,
+        imageList: [['new1']],
+      }));
     }
 
     if (!state.variItems || state.variItems.length === 0 || state.variItems.every(row => row.length === 0)) {
+      console.log('こっち？');
       setState(prev => ({
         ...prev,
         variItems: [['new1', '', '', '', '', '', '']],
@@ -198,6 +208,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }, [state, state.variItems, state.purchase_price, state.number_reservations,
     state.specialSalesList, state.imageList]);
+
+    console.log('212行目state.variItems');
+    console.log(state.variItems);
 
   // state.categoryListの初期値（新規作成時の1行目の作成）
   useEffect(() => {
@@ -413,7 +426,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
     setVariChangeItem([]);
     //setSpecialItem(value['specialSalesList']);
-    setImageItems(value['imageList']);
+    //setImageItems(value['imageList']);
     setCategoryChangeFlag(false);
     setSupplierChangeFlag(false);
     setvariClickFlag(false);
@@ -474,12 +487,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   // select:選択された行、index:選択された列
   const addNewVari = (selectRow: number, selctIndex: number) => {
     setvariClickFlag(true);
-    let arr: any = [null, null, null, null, null, null, null]
+    let variArr: any = [null, null, null, null, null, null, null];
+    let imgArr: any = [null];
 
     // 選択されたバリエーション以下に空白設定
-    for (let i = 0; i < arr.length; i++) {
+    for (let i = 0; i < variArr.length; i++) {
       if (selctIndex <= i) {
-        arr[i] = ''
+        variArr[i] = ''
       }
     }
 
@@ -487,7 +501,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       (value) => typeof value[0] === 'string' && value[0].includes('new')
     ).length + 1;
 
-    arr[0] = 'new' + newCount;
+    variArr[0] = 'new' + newCount;
+    imgArr[0] = 'new' + newCount;
     let insertIndex = selectRow + 1;
 
     while (
@@ -502,7 +517,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       ...prev,
       variItems: [
         ...prev.variItems.slice(0, insertIndex),
-        arr,
+        variArr,
         ...prev.variItems.slice(insertIndex),
       ],
     }));
@@ -511,11 +526,23 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       ...prev,
       backVariItems: [
         ...prev.backVariItems.slice(0, insertIndex),
-        arr,
+        variArr,
         ...prev.backVariItems.slice(insertIndex),
       ],
     }));
+
+    // 挿入処理
+    setState(prev => ({
+      ...prev,
+      imageList: [
+        ...prev.imageList.slice(0, insertIndex),
+        imgArr,
+        ...prev.imageList.slice(insertIndex),
+      ],
+    }));
   }
+
+  console.log(state.imageList);
 
   // 商品分類の行追加
   // select:選択された行、index:選択された列
@@ -855,6 +882,11 @@ useEffect(() => {
         variItems: prevState.variItems.filter((_, index) => index !== selectIndex),
       }));
 
+      setState((prevState) => ({
+        ...prevState,
+        imageList: prevState.imageList.filter((_, index) => index !== selectIndex),
+      }));
+
       const target = String(state.variItems[selectIndex]);
       if (typeof target === "string" && !target.includes("new")) {
         setVariDelItem([...variDelItem, state.variItems[selectIndex]]);
@@ -1063,7 +1095,7 @@ useEffect(() => {
         variItems: filledItems,
         variChangeItem: variChangeItem,
         backVariItems: state.backVariItems,
-        imageItems: imageItems,
+        imageItems: state.imageList,
         categoryChangeFlag: categoryChangeFlag,
         supplierChangeFlag: supplierChangeFlag,
         items: state
@@ -1076,39 +1108,50 @@ useEffect(() => {
     if (location.state !== undefined) {
       setvariClickFlag(false);
       if (Array.isArray(location.state.imageItem)) {
-        const matrix: imageItem[] = [];
-        const formItem: any[] = [];
-        const form = new FormData();
+        //const matrix: imageItem[] = [];
+        //const formItem: any[] = [];
+        //const form = new FormData();
         setCategoryChangeFlag(location.state.categoryChangeFlag);
         setSupplierChangeFlag(location.state.supplierChangeFlag);
-        location.state.imageItem.forEach((item: any) => {
-          const matchedRows = Array.isArray(location.state.preImageItem)
-            ? location.state.preImageItem.filter((row: any) => row[0] === item[0])
-            : [];
+        setState(prev => ({
+          ...prev,
+          imageList: location.state.imageItem
+        }));
+        //location.state.imageItem.forEach((item: any) => {
+        //  const matchedRows = Array.isArray(location.state.preImageItem)
+        //    ? location.state.preImageItem.filter((row: any) => row[0] === item[0])
+        //    : [];
+//
+        //  if (matchedRows.length > 0 && item.length > matchedRows[0].length) {
+        //    item.forEach((value: any, index: number) => {
+        //      if (index > 0) {
+        //        if (value instanceof File) {
+        //          const imageItem: imageItem = {
+        //            id: null,
+        //            category_id: null,
+        //            item_id: item[0],
+        //            name: value.name,
+        //            order_by: index + 1,
+        //            url: value,
+        //          };
+        //          form.append('file', value);
+        //          formItem.push(value);
+        //          matrix.push(imageItem);
+        //          console.log(matrix);
+//
+        //          //state.imageList = imageItem;
+        //        }
+        //      }
+        //    });
+        //  } else {
+        //    
+        //    setImageItems(location.state.imageItem);
+        //  }
+        //});
+        //setImageItems(location.state.imageItem);
 
-          if (matchedRows.length > 0 && item.length > matchedRows[0].length) {
-            item.forEach((value: any, index: number) => {
-              if (index > 0) {
-                if (value instanceof File) {
-                  const imageItem: imageItem = {
-                    id: null,
-                    category_id: null,
-                    item_id: item[0],
-                    name: value.name,
-                    order_by: index + 1,
-                    url: value,
-                  };
-                  form.append('file', value);
-                  formItem.push(value);
-                  matrix.push(imageItem);
-                }
-              }
-            });
-          } else {
-            setImageItems(location.state.imageItem);
-          }
-        });
-        setImageItems(location.state.imageItem);
+        console.log('location.state.imageItem');
+        console.log(location.state.imageItem);
       }
 
       if (variClickFlag !== true) {
@@ -1133,7 +1176,13 @@ useEffect(() => {
         });
       }
     }
+
   }, [location, state.variItems]);
+
+  console.log('state.imageList');
+  console.log(state.imageList);
+  console.log('state.variItems');
+  console.log(state.variItems);
 
   useEffect(() => {
     if (location.state !== undefined && Array.isArray(location.state.imageItem)) {
@@ -1927,7 +1976,8 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
 
     if (success) {
       // 画像アップロード
-      await uploadImages(imageItems);
+      //await uploadImages(imageItems);
+      await uploadImages(state.imageList);
 
       await appAlert('新規保存しました。');
       backPage();
@@ -1946,7 +1996,8 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
 
     if (success) {
       // 画像アップロード
-      await uploadImages(imageItems);
+      //await uploadImages(imageItems);
+      await uploadImages(state.imageList);
 
       await appAlert('編集保存しました。');
       backPage();

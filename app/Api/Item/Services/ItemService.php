@@ -156,6 +156,7 @@ class ItemService
 
       'm_configs.send_trader AS send_trader',
       'm_configs.send_personal AS send_personal',
+
       'm_documents.id AS document_id',
       'm_documents.type_status AS type_status',
       'm_documents.type_name AS type_name',
@@ -424,7 +425,10 @@ class ItemService
     $selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
     $selectItems['document_url'] = $selectItems['file_name'] !== '' ? '/files/' . $selectItems['file_name'] : '';
     $selectItems['documentFileList'] = $documentFileList;
-
+    if($selectItems['shipping_pay'] === null){
+      if($selectItems['display_status'] === 1) $selectItems['shipping_pay'] = $selectItems['send_personal'];
+      elseif($selectItems['display_status'] === 2) $selectItems['shipping_pay'] = $selectItems['send_trader'];
+    }
     return $selectItems;
   }
 
@@ -674,7 +678,7 @@ class ItemService
       $ids = [];
 
       // 共通部を取得
-      $base = $this->buildItemBase($base);
+      $base = $this->buildItemBase($data);
 
       \Log::debug('$data');
       \Log::debug($data);
@@ -688,11 +692,22 @@ class ItemService
         $ids[] = $item->id;
 
         // Image 登録（imageList[0] の各オブジェクトを登録）
+        //if (!empty($data['imageList'][0])) {
+        //  foreach ($data['imageList'][0] as $image) {
+        //    Image::create([
+        //      'item_id'     => $item->id,
+        //      'category_id' => $image['category_id'] ?? null,
+        //      'name'        => $image['name'] ?? null,
+        //      'order_by'    => $image['order_by'] ?? 0,
+        //    ]);
+        //  }
+        //}
+        // Image 登録（imageList[index] の各オブジェクトを登録）
         if (!empty($data['imageList'][0])) {
           foreach ($data['imageList'][0] as $image) {
             Image::create([
               'item_id'     => $item->id,
-              'category_id' => $image['category_id'] ?? null,
+              'category_id' => null,
               'name'        => $image['name'] ?? null,
               'order_by'    => $image['order_by'] ?? 0,
             ]);
@@ -763,7 +778,7 @@ class ItemService
             foreach ($data['imageList'][$index] as $image) {
               Image::create([
                 'item_id'     => $item->id,
-                'category_id' => $image['category_id'] ?? null,
+                'category_id' => null,
                 'name'        => $image['name'] ?? null,
                 'order_by'    => $image['order_by'] ?? 0,
               ]);
@@ -809,6 +824,9 @@ class ItemService
    */
   public function updateTransaction(array $data): array
   {
+    \Log::debug('$data1');
+    \Log::debug($data);
+
     return DB::transaction(function () use ($data) {
       $ids = [];
 
@@ -828,7 +846,7 @@ class ItemService
           $deleteItem->update(['deleted_at' => now()]);
       }
 
-      \Log::debug('$data');
+      \Log::debug('$data2');
       \Log::debug($data);
 
       // バリエーションなし

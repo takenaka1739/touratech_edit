@@ -60,7 +60,7 @@ const Template: Story = args => {
         variItems: [],
         backVariItems: [],
         //image_name: undefined,
-        imageList: undefined,
+        imageList: [[]],
         item_id: undefined,
         is_sales_members_only: false,
         start_at: '',
