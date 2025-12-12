@@ -7,6 +7,7 @@ use App\Base\Models\Image;
 use App\Base\Models\ItemCategoryCombination;
 use App\Base\Models\Category;
 use App\Base\Models\Document;
+use App\Base\Models\SpecialSale;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -284,7 +285,6 @@ class ItemService
                   ->whereNull('deleted_at')
                   ->first());
 
-
       array_push($codeList, $item);
 
       array_push($idList, $item->id);
@@ -310,11 +310,28 @@ class ItemService
     }
 
     // バリデーションの配列のソート処理（1～4で優先順位（昇順））
-    $sorted = collect($test)
-      ->sortBy(fn($row) => $row[3])
-      ->sortBy(fn($row) => $row[2])
-      ->sortBy(fn($row) => $row[1]) // 最優先キー
-        ->values();
+    $sorted = collect($test)->sort(function ($row1, $row2) {
+      // 優先順位: row[1] > row[2] > row[3] > row[4]
+      foreach ([1, 2, 3, 4] as $idx) {
+        $row1col = $row1[$idx];
+        $row2col = $row2[$idx];
+
+        // null / 空文字は並び順の最後にもってくる
+        $empty1 = ($row1col === null || $row1col === '');
+        $empty2 = ($row2col === null || $row2col === '');
+
+        if ($empty1 && !$empty2) return 1;
+        if (!$empty1 && $empty2) return -1;
+
+        // 両方空なら次のキーへ
+        if ($empty1 && $empty2) continue;
+
+        // 通常の文字列比較
+        if ($row1col < $row2col) return -1;
+        if ($row1col > $row2col) return 1;
+      }
+      return 0;
+    })->values();
 
     if(count($sorted) > 1){
       $previous = ['', '', '', ''];
@@ -609,45 +626,55 @@ class ItemService
     return $query;
   }
 
+  /**
+   * 商品マスタに関連するテーブルに一括登録する。
+   */
   public function storeTransaction(array $data): array
   {
     return DB::transaction(function () use ($data) {
       $ids = [];
 
       // 共通部 (Resource/ts/types/ItemPayload)
+      // バリエーションごと（item_number、variations1～5）
       $base = [
         'supplier_id'            => $data['supplier_id'] ?? null,
         'code'                   => $data['code'] ?? null,
+        // item_number はバリエーションの有無により取得先が異なる
         'name'                   => $data['name'],
+        // variations1～5はバリエーションがある時のみ必要
         'explanation'            => $data['explanation'] ?? null,
         'explanation_details'    => $data['explanation_details'] ?? null,
         'name_note'              => $data['name_note'] ?? null,
         'name_label'             => $data['name_label'] ?? null,
         'is_sell'                => $data['is_sell'] ?? false,
         'purchase_price'         => $data['purchase_price'] ?? 0,
+        // sales_price はバリエーションの有無により取得先が異なる
         'sales_unit_price'       => $data['sales_unit_price'] ?? 0,
         'purchase_unit_price'    => $data['purchase_unit_price'] ?? 0,
         'sample_price'           => $data['sample_price'] ?? 0,
-        'is_discontinued'        => $data['is_discontinued'] ?? false,
         'discontinued_at'        => $data['discontinued_at'] ?? null,
+        'is_discontinued'        => $data['is_discontinued'] ?? false,
         'is_display'             => $data['is_display'] ?? true,
         'domestic_stocks'        => $data['domestic_stocks'] ?? 0,
         'overseas_stocks'        => $data['overseas_stocks'] ?? 0,
         'display_status'         => $data['display_status'] ?? null,
-        'remarks'                => $data['remarks'] ?? null,
         'is_point_rebates'       => $data['is_point_rebates'] ?? false,
         'number_reservations'    => $data['number_reservations'] ?? 0,
         'is_shipping_fee'        => $data['is_shipping_fee'] ?? false,
+        'shipping_pay'           => $data['shipping_pay'] ?? 0,
         'is_cash_delivery_fee'   => $data['is_cash_delivery_fee'] ?? false,
         'additional_shipping_fee'=> $data['additional_shipping_fee'] ?? 0,
-        'shipping_pay'           => $data['shipping_pay'] ?? 0,
         'is_payment_id1'         => $data['is_payment_id1'] ?? false,
         'is_payment_id2'         => $data['is_payment_id2'] ?? false,
         'is_payment_id3'         => $data['is_payment_id3'] ?? false,
         'is_payment_id4'         => $data['is_payment_id4'] ?? false,
         'is_payment_id5'         => $data['is_payment_id5'] ?? false,
+        'remarks'                => $data['remarks'] ?? null,
         'is_set_item'            => $data['is_set_item'] ?? false,
       ];
+
+      \Log::debug('$data');
+      \Log::debug($data);
 
       // バリエーションなし
       if (empty($data['variations'])) {
@@ -677,12 +704,33 @@ class ItemService
           'file_name'   => $data['file_name'] ?? '',
         ]);
 
+        // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+        if($data['start_at'] !== null) {
+          SpecialSale::create([
+            'item_id'               => $item->id,
+            'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+            'start_at'              => $data['start_at'] ?? null,
+            'end_at'                => $data['end_at'] ?? null,
+            'special_sale_price'    => $data['special_sale_price'] ?? 0,
+            'refund_rate'           => $data['refund_rate'] ?? 0,
+          ]);
+        }
+
+        // ItemCategoryCombination 登録 (Itemごとに複数件)
+        foreach ($data['categoryList'] as $category) {
+          \Log::debug($category);
+          ItemCategoryCombination::create([
+            'item_id'     => $item->id,
+            'category_id' => $category['categoryId'],
+          ]);
+        }
+
       // バリエーションあり
       } else {
 
         // 前回の variations 値を保持する変数
         $prevVariations = [
-            'variations1' => null,
+            'variations1' => ' ',
             'variations2' => null,
             'variations3' => null,
             'variations4' => null,
@@ -724,6 +772,198 @@ class ItemService
             'type_name'   => $data['type_name'] ?? '',
             'file_name'   => $data['file_name'] ?? '',
           ]);
+
+          // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+          if($data['start_at'] !== null) {
+            SpecialSale::create([
+              'item_id'               => $item->id,
+              'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+              'start_at'              => $data['start_at'] ?? null,
+              'end_at'                => $data['end_at'] ?? null,
+              'special_sale_price'    => $data['special_sale_price'] ?? 0,
+              'refund_rate'           => $data['refund_rate'] ?? 0,
+            ]);
+          }
+
+          // ItemCategoryCombination 登録 (Itemごとに複数件)
+          foreach ($data['categoryList'] as $category) {
+            ItemCategoryCombination::create([
+              'item_id'     => $item->id,
+              'category_id' => $category['categoryId'],
+            ]);
+          }
+        }
+      }
+
+      return $ids;
+    });
+  }
+
+  /**
+   * 商品マスタに関連するテーブルに一括更新する。
+   */
+  public function updateTransaction(array $data): array
+  {
+    return DB::transaction(function () use ($data) {
+      $ids = [];
+
+      $item = Item::findOrFail($data['id']);
+
+      // 共通部 (Resource/ts/types/ItemPayload)
+      // バリエーションごと（item_number、variations1～5）
+      $base = [
+        'supplier_id'            => $data['supplier_id'] ?? null,
+        'code'                   => $data['code'] ?? null,
+        // item_number はバリエーションの有無により取得先が異なる
+        'name'                   => $data['name'],
+        // variations1～5はバリエーションがある時のみ必要
+        'explanation'            => $data['explanation'] ?? null,
+        'explanation_details'    => $data['explanation_details'] ?? null,
+        'name_note'              => $data['name_note'] ?? null,
+        'name_label'             => $data['name_label'] ?? null,
+        'is_sell'                => $data['is_sell'] ?? false,
+        'purchase_price'         => $data['purchase_price'] ?? 0,
+        // sales_price はバリエーションの有無により取得先が異なる
+        'sales_unit_price'       => $data['sales_unit_price'] ?? 0,
+        'purchase_unit_price'    => $data['purchase_unit_price'] ?? 0,
+        'sample_price'           => $data['sample_price'] ?? 0,
+        'discontinued_at'        => $data['discontinued_at'] ?? null,
+        'is_discontinued'        => $data['is_discontinued'] ?? false,
+        'is_display'             => $data['is_display'] ?? true,
+        'domestic_stocks'        => $data['domestic_stocks'] ?? 0,
+        'overseas_stocks'        => $data['overseas_stocks'] ?? 0,
+        'display_status'         => $data['display_status'] ?? null,
+        'is_point_rebates'       => $data['is_point_rebates'] ?? false,
+        'number_reservations'    => $data['number_reservations'] ?? 0,
+        'is_shipping_fee'        => $data['is_shipping_fee'] ?? false,
+        'shipping_pay'           => $data['shipping_pay'] ?? 0,
+        'is_cash_delivery_fee'   => $data['is_cash_delivery_fee'] ?? false,
+        'additional_shipping_fee'=> $data['additional_shipping_fee'] ?? 0,
+        'is_payment_id1'         => $data['is_payment_id1'] ?? false,
+        'is_payment_id2'         => $data['is_payment_id2'] ?? false,
+        'is_payment_id3'         => $data['is_payment_id3'] ?? false,
+        'is_payment_id4'         => $data['is_payment_id4'] ?? false,
+        'is_payment_id5'         => $data['is_payment_id5'] ?? false,
+        'remarks'                => $data['remarks'] ?? null,
+        'is_set_item'            => $data['is_set_item'] ?? false,
+      ];
+
+      // バリエーションなし
+      if (empty($data['variations'])) {
+        $item = Item::create($base + [
+          'item_number' => $data['item_number'] ?? null,
+          'sales_price' => $data['sales_price'] ?? 0,
+        ]);
+        $ids[] = $item->id;
+
+        // Image 登録（imageList[0] の各オブジェクトを登録）
+        if (!empty($data['imageList'][0])) {
+          foreach ($data['imageList'][0] as $image) {
+            Image::create([
+              'item_id'     => $item->id,
+              'category_id' => $image['category_id'] ?? null,
+              'name'        => $image['name'] ?? null,
+              'order_by'    => $image['order_by'] ?? 0,
+            ]);
+          }
+        }
+
+        // Document 登録（Itemごとに必ず1件）
+        Document::create([
+          'item_id'     => $item->id,
+          'type_status' => $data['type_status'] ?? 0,
+          'type_name'   => $data['type_name'] ?? '',
+          'file_name'   => $data['file_name'] ?? '',
+        ]);
+
+        // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+        if($data['start_at'] !== null) {
+          SpecialSale::create([
+            'item_id'               => $item->id,
+            'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+            'start_at'              => $data['start_at'] ?? null,
+            'end_at'                => $data['end_at'] ?? null,
+            'special_sale_price'    => $data['special_sale_price'] ?? 0,
+            'refund_rate'           => $data['refund_rate'] ?? 0,
+          ]);
+        }
+
+        // ItemCategoryCombination 登録 (Itemごとに複数件)
+        foreach ($data['categoryList'] as $category) {
+          \Log::debug($category);
+          ItemCategoryCombination::create([
+            'item_id'     => $item->id,
+            'category_id' => $category['categoryId'],
+          ]);
+        }
+
+      // バリエーションあり
+      } else {
+
+        // 前回の variations 値を保持する変数
+        $prevVariations = [
+            'variations1' => ' ',
+            'variations2' => null,
+            'variations3' => null,
+            'variations4' => null,
+        ];
+
+        foreach ($data['variations'] as $index => $variation) {
+          $item = Item::create($base + [
+            'item_number' => $variation['item_number'] ?? null,
+            'variations1' => $variation['variations1'] ?? $prevVariations['variations1'],
+            'variations2' => $variation['variations2'] ?? $prevVariations['variations2'],
+            'variations3' => $variation['variations3'] ?? $prevVariations['variations3'],
+            'variations4' => $variation['variations4'] ?? $prevVariations['variations4'],
+            'sales_price' => $variation['sales_price'] ?? 0,
+          ]);
+          $ids[] = $item->id;
+
+          // 前回値を更新
+          $prevVariations['variations1'] = $item->variations1;
+          $prevVariations['variations2'] = $item->variations2;
+          $prevVariations['variations3'] = $item->variations3;
+          $prevVariations['variations4'] = $item->variations4;
+
+          // Image 登録（imageList[index] の各オブジェクトを登録）
+          if (!empty($data['imageList'][$index])) {
+            foreach ($data['imageList'][$index] as $image) {
+              Image::create([
+                'item_id'     => $item->id,
+                'category_id' => $image['category_id'] ?? null,
+                'name'        => $image['name'] ?? null,
+                'order_by'    => $image['order_by'] ?? 0,
+              ]);
+            }
+          }
+
+          // Document 登録（Itemごとに必ず1件）
+          Document::create([
+            'item_id'     => $item->id,
+            'type_status' => $data['type_status'] ?? 0,
+            'type_name'   => $data['type_name'] ?? '',
+            'file_name'   => $data['file_name'] ?? '',
+          ]);
+
+          // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+          if($data['start_at'] !== null) {
+            SpecialSale::create([
+              'item_id'               => $item->id,
+              'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+              'start_at'              => $data['start_at'] ?? null,
+              'end_at'                => $data['end_at'] ?? null,
+              'special_sale_price'    => $data['special_sale_price'] ?? 0,
+              'refund_rate'           => $data['refund_rate'] ?? 0,
+            ]);
+          }
+
+          // ItemCategoryCombination 登録 (Itemごとに複数件)
+          foreach ($data['categoryList'] as $category) {
+            ItemCategoryCombination::create([
+              'item_id'     => $item->id,
+              'category_id' => $category['categoryId'],
+            ]);
+          }
         }
       }
 

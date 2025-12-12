@@ -214,4 +214,27 @@ class ItemController extends BaseController
       ], 500);
     }
   }
+
+  /**
+   * 商品マスタ関連のデータをトランザクション処理にて一括登録する。
+   */
+  public function update_transaction(Request $request)
+  {
+    $input = $request->all();
+
+    try {
+      $newIds = $this->service->updateTransaction($input);
+
+      return response()->json([
+        'success' => true,
+        'ids'     => $newIds,
+      ]);
+    } catch (\Exception $e) {
+      \Log::error('update_transaction failed: '.$e->getMessage());
+      return response()->json([
+        'success' => false,
+        'error'   => $e->getMessage(),
+      ], 500);
+    }
+  }
 }
