@@ -1940,13 +1940,13 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
   const formData = new FormData();
   let hasImage = false;
 
-  imageList.forEach((variation) => {
-    // variation が null/undefined の可能性を考慮
-    if (!variation) return;
+  imageList.forEach((images) => {
+    // images が null/undefined の可能性を考慮
+    if (!images) return;
 
-    variation.slice(1).forEach((image) => {
+    images.slice(1).forEach((image) => {
       if (image instanceof File) {
-        formData.append("images[]", image);
+        formData.append("images", image);
         hasImage = true;
       }
     });
