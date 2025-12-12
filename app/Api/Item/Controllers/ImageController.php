@@ -112,8 +112,9 @@ class ImageController extends BaseController
   public function store_transaction(Request $request)
   {
     $request->validate([
-        'images.*'  => 'nullable|image|max:30000',                                          // 商品画像（複数枚可）
-        'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png,bmp,gif,svg,webp|max:50000',    // 取扱説明書
+        'images.*' => 'nullable|image|max:30000',                                                             // 商品画像（複数可）（30MB）
+        'videos.*' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime||max:200000',   // 動画（複数可）（200MB）
+        'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png,bmp,gif,svg,webp|max:100000',                     // 取扱説明書（100MB）
     ]);
 
     $paths = [];
@@ -124,13 +125,25 @@ class ImageController extends BaseController
         $filename = $file->getClientOriginalName();
         $directory = public_path('images');
 
-        if (!file_exists($directory)) {
-          mkdir($directory, 0777, true);
-        }
+        if (!file_exists($directory)) mkdir($directory, 0777, true);
 
         // 同名ファイルは上書き保存
         $file->move($directory, $filename);
         $paths[] = 'images/' . $filename;
+      }
+    }
+
+    // 動画
+    if ($request->hasFile('videos')) {
+      foreach ($request->file('videos') as $file) {
+        $filename = $file->getClientOriginalName();
+        $directory = public_path('videos');
+
+        if (!file_exists($directory)) mkdir($directory, 0777, true);
+
+        // 同名ファイルは上書き保存
+        $file->move($directory, $filename);
+        $paths[] = 'videos/' . $filename;
       }
     }
 
@@ -140,9 +153,7 @@ class ImageController extends BaseController
       $filename = $document->getClientOriginalName();
       $directory = public_path('files');
 
-      if (!file_exists($directory)) {
-        mkdir($directory, 0777, true);
-      }
+      if (!file_exists($directory)) mkdir($directory, 0777, true);
 
       // 同名ファイルは上書き保存
       $document->move($directory, $filename);

@@ -1933,27 +1933,34 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   /**
-   * 複数ファイルを一括送信して画像アップロード
+   * 商品画像・動画・取扱説明書などの複数ファイルを一括アップロードする。
    * 
    * @param files 
    * @returns 
    */
 const uploadImages = async (imageList: any[][] | null, document?: File): Promise<string[]> => {
-  // null や undefined の場合は即座に空配列を返す
+  // 画像・動画・説明書のいずれも無い場合は即座に空配列を返す
   if ((!imageList || imageList.length === 0) && !document) return [];
 
   const formData = new FormData();
-  let hasImage = false;
+  let hasFile = false;
 
-  // 商品画像
-  imageList?.forEach((images) => {
-    // images が null/undefined の可能性を考慮
-    if (!images) return;
+  // 商品画像・動画のみアップロード対象（YouTubeリンクは除外）
+  imageList?.forEach((items) => {
+    if (!items) return;
 
-    images.slice(1).forEach((image) => {
-      if (image instanceof File) {
-        formData.append("images[]", image);
-        hasImage = true;
+    items.slice(1).forEach((item) => {
+      if (item instanceof File) {
+        // 商品画像
+        if (item.type.startsWith("image/")) {
+          formData.append("images[]", item);
+          hasFile = true;
+
+        // 動画
+        } else if (item.type.startsWith("video/")) {
+          formData.append("videos[]", item);
+          hasFile = true;
+        }
       }
     });
   });
@@ -1961,18 +1968,17 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
   // 取扱説明書があれば追加
   if (document instanceof File) {
     formData.append("document", document);
+    hasFile = true;
   }
 
-  // 商品画像も取扱説明書もなければ空配列を返す
-  if (!hasImage && !document) {
-    return [];
-  }
+  // 商品画像・動画・取扱説明書がなければ空配列を返す
+  if (!hasFile) return [];
 
   try {
     const res = await axios.post("/api/item/store_image_transaction", formData);
     return res.data.paths;
   } catch (error: any) {
-    throw new Error("画像アップロードに失敗");
+    throw new Error("ファイルアップロードに失敗");
   }
 };
 
