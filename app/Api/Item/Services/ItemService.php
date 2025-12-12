@@ -842,29 +842,43 @@ class ItemService
 
       // バリエーションあり
       } else {
+        // 前回の variations 値を保持する変数
+        $prevVariations = [
+          'variations1' => null,
+          'variations2' => null,
+          'variations3' => null,
+          'variations4' => null,
+        ];
+
         foreach ($data['variItems'] as $variation) {
           if (!empty($variation[0])) {
             // id がある → 更新
             $item = Item::findOrFail($variation[0]);
             $item->update($base + [
-              'variations1' => $variation[1] ?? null,
-              'variations2' => $variation[2] ?? null,
-              'variations3' => $variation[3] ?? null,
-              'variations4' => $variation[4] ?? null,
+              'variations1' => $variation[1] ?? $prevVariations['variations1'],
+              'variations2' => $variation[2] ?? $prevVariations['variations2'],
+              'variations3' => $variation[3] ?? $prevVariations['variations3'],
+              'variations4' => $variation[4] ?? $prevVariations['variations4'],
               'item_number' => $variation[5] ?? null,
               'sales_price' => $variation[6] ?? 0,
             ]);
           } else {
             // id が null → 新規登録
             $item = Item::create($base + [
-              'variations1' => $variation[1] ?? null,
-              'variations2' => $variation[2] ?? null,
-              'variations3' => $variation[3] ?? null,
-              'variations4' => $variation[4] ?? null,
+              'variations1' => $variation[1] ?? $prevVariations['variations1'],
+              'variations2' => $variation[2] ?? $prevVariations['variations2'],
+              'variations3' => $variation[3] ?? $prevVariations['variations3'],
+              'variations4' => $variation[4] ?? $prevVariations['variations4'],
               'item_number' => $variation[5] ?? null,
               'sales_price' => $variation[6] ?? 0,
             ]);
           }
+
+          // 前回値を更新
+          $prevVariations['variations1'] = $variation[1];
+          $prevVariations['variations2'] = $variation[2];
+          $prevVariations['variations3'] = $variation[3];
+          $prevVariations['variations4'] = $variation[4];
 
           $ids[] = $item->id;
         }
