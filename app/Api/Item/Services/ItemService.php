@@ -691,25 +691,17 @@ class ItemService
         ]);
         $ids[] = $item->id;
 
-        // Image 登録（imageList[0] の各オブジェクトを登録）
-        //if (!empty($data['imageList'][0])) {
-        //  foreach ($data['imageList'][0] as $image) {
-        //    Image::create([
-        //      'item_id'     => $item->id,
-        //      'category_id' => $image['category_id'] ?? null,
-        //      'name'        => $image['name'] ?? null,
-        //      'order_by'    => $image['order_by'] ?? 0,
-        //    ]);
-        //  }
-        //}
-        // Image 登録（imageList[index] の各オブジェクトを登録）
-        if (!empty($data['imageList'][0])) {
-          foreach ($data['imageList'][0] as $image) {
+        // Image 登録（Itemごとに複数件）
+        if (!empty($data['images'][0])) {
+          $imageRow = $data['images'][0];
+
+          // 要素0は item_id、要素1～はファイル名
+          foreach (array_values(array_slice($imageRow, 1)) as $order => $fileName) {
             Image::create([
-              'item_id'     => $item->id,
+              'item_id'     => $imageRow[0],
               'category_id' => null,
-              'name'        => $image['name'] ?? null,
-              'order_by'    => $image['order_by'] ?? 0,
+              'name'        => $fileName,
+              'order_by'    => $order,
             ]);
           }
         }
@@ -773,14 +765,17 @@ class ItemService
 
           \Log::debug($data);
 
-          // Image 登録（imageList[index] の各オブジェクトを登録）
-          if (!empty($data['imageList'][$index])) {
-            foreach ($data['imageList'][$index] as $image) {
+          // Image 登録（Itemごとに複数件）
+          if (!empty($data['images'][$index])) {
+            $imageRow = $data['images'][$index];
+
+            // 要素0は item_id、要素1～はファイル名
+            foreach (array_slice($imageRow, 1) as $order => $fileName) {
               Image::create([
-                'item_id'     => $item->id,
+                'item_id'     => $imageRow[0],
                 'category_id' => null,
-                'name'        => $image['name'] ?? null,
-                'order_by'    => $image['order_by'] ?? 0,
+                'name'        => $fileName,
+                'order_by'    => $order,
               ]);
             }
           }

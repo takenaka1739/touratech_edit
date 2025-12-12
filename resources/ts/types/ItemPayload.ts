@@ -1,13 +1,6 @@
 import { Item } from '@/types/Item';
 
 export interface ItemPayload extends Item {
-  variations: {
-    id: number | null;
-    variations1: string;
-    variations2: string;
-    variations3: string;
-    variations4: string;
-    item_number: string;
-    sales_price: number;
-  }[];
+  // 画像情報: 各要素は [item_id, fileName1, fileName2, ...] の配列
+  images: (number | string)[][];
 }

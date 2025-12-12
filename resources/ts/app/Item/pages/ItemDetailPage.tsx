@@ -1907,21 +1907,22 @@ useEffect(() => {
   };
 
   /**
-   * バリエーションの配列を整形するユーティリティ関数。
+   * 画像情報の配列を生成するユーティリティ関数。
    * 
-   * @param variChangeItem 
+   * @param imageList 
    * @returns 
    */
-  const buildVariations = (variChangeItem: string[][]) => {
-    return variChangeItem.map(value => ({
-      id: value[0] ? Number(value[0]) : null,
-      variations1: value[1],
-      variations2: value[2],
-      variations3: value[3],
-      variations4: value[4],
-      item_number: value[5],
-      sales_price: Number(value[6]),
-    }));
+  const buildImageInfo = (imageList: any[][]): (number | string)[][] => {
+    return imageList.map(value => {
+      const itemId = value[0];
+      const files = value.slice(1);
+
+      // Fileオブジェクトからファイル名を取り出す
+      const fileNames = files.map((file: File) => file.name);
+
+      // [id, fileName1, fileName2, ...] の形で返す
+      return [itemId, ...fileNames];
+    });
   };
 
   /**
@@ -1970,13 +1971,12 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
    * 商品マスタ関連の新規登録をリクエストする。
    */
   const handleNewItem = async () => {
-    const variations = buildVariations(variChangeItem);
-    const payload: ItemPayload = { ...state, variations };
+    const images = buildImageInfo(state.imageList);
+    const payload: ItemPayload = { ...state, images };
     const success = await storeItem(payload);
 
     if (success) {
       // 画像アップロード
-      //await uploadImages(imageItems);
       await uploadImages(state.imageList);
 
       await appAlert('新規保存しました。');
@@ -1990,13 +1990,12 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
    * 商品マスタ関連の編集登録をリクエストする。
    */
   const handleEditItem = async () => {
-    const variations = buildVariations(variChangeItem);
-    const payload: ItemPayload = { ...state, variations };
+    const images = buildImageInfo(state.imageList);
+    const payload: ItemPayload = { ...state, images };
     const success = await updateItem(payload);
 
     if (success) {
       // 画像アップロード
-      //await uploadImages(imageItems);
       await uploadImages(state.imageList);
 
       await appAlert('編集保存しました。');
