@@ -90,7 +90,7 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
       }
 
       // 初めて null 以外となった要素のインデックスを特定
-      const firstNonNullIndex = variationValues.findIndex(val => val !== null);
+      const firstNonNullIndex = variationValues.findIndex(val => val !== null && val !== '');
       if (firstNonNullIndex !== -1) {
         const prevVal = prevValues[firstNonNullIndex];
         // 直前行の同じインデックスが文字列でなければエラー
