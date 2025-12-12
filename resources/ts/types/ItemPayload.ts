@@ -2,7 +2,7 @@ import { Item } from '@/types/Item';
 
 export interface ItemPayload extends Item {
   variations: {
-    id: number | undefined;
+    id: number | null;
     variations1: string;
     variations2: string;
     variations3: string;

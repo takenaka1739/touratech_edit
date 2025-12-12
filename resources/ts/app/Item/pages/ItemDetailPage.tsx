@@ -1865,7 +1865,7 @@ useEffect(() => {
    */
   const buildVariations = (variChangeItem: string[][]) => {
     return variChangeItem.map(value => ({
-      id: value[0],
+      id: value[0] ? Number(value[0]) : null,
       variations1: value[1],
       variations2: value[2],
       variations3: value[3],
