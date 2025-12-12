@@ -1808,11 +1808,41 @@ useEffect(() => {
    * @param state - 商品情報を保持するオブジェクト (Item型)
    * @returns boolean - true：登録成功、false：登録失敗
    */
-  const storeNewItem = async (payload: ItemPayload): Promise<boolean> => {
+  const storeItem = async (payload: ItemPayload): Promise<boolean> => {
     try {
       dispatch(AppActions.request());
 
       const res = await axios.post('/api/item/store_transaction', payload);
+
+      if (res.status === 200) {
+        dispatch(AppActions.success());
+        if (res.data.success) {
+          return true;
+        } else {
+          setErrors(res.data.errors);
+          return false;
+        }
+      } else {
+        dispatch(AppActions.failed('データの保存に失敗しました。'));
+        return false;
+      }
+    } catch (error) {
+      dispatch(AppActions.failed('通信エラーが発生しました。'));
+      return false;
+    }
+  };
+
+  /**
+   * 商品マスタへの編集登録処理を行う。
+   * 
+   * @param state - 商品情報を保持するオブジェクト (Item型)
+   * @returns boolean - true：登録成功、false：登録失敗
+   */
+  const updateItem = async (payload: ItemPayload): Promise<boolean> => {
+    try {
+      dispatch(AppActions.request());
+
+      const res = await axios.post(`/api/item/${payload.id}/update_transaction`, payload);
 
       if (res.status === 200) {
         dispatch(AppActions.success());
@@ -1892,12 +1922,12 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
 };
 
   /**
-   * 商品マスタへの新規登録をリクエストする。
+   * 商品マスタ関連の新規登録をリクエストする。
    */
   const handleNewItem = async () => {
     const variations = buildVariations(variChangeItem);
     const payload: ItemPayload = { ...state, variations };
-    const success = await storeNewItem(payload);
+    const success = await storeItem(payload);
 
     if (success) {
       // 画像アップロード
@@ -1910,6 +1940,33 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
     }
   };
 
+  /**
+   * 商品マスタ関連の編集登録をリクエストする。
+   */
+  const handleEditItem = async () => {
+    const variations = buildVariations(variChangeItem);
+    const payload: ItemPayload = { ...state, variations };
+    const success = await updateItem(payload);
+
+    if (success) {
+      // 画像アップロード
+      await uploadImages(imageItems);
+
+      await appAlert('編集保存しました。');
+      backPage();
+    } else {
+      dispatch(AppActions.failed('データの保存に失敗しました。'));
+    }
+  };
+
+  /**
+   * 保存ボタンクリック時の処理。
+   * - 必須入力項目の検証
+   * - 新規登録か編集登録かの判断
+   * - 永続化のリクエスト
+   * 
+   * @returns 
+   */
   const saveClick: () => void = async () => {
 
     // 必須入力項目の未入力チェック
@@ -1926,6 +1983,9 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
       await handleNewItem();
     // 編集登録
     } else {
+      await handleEditItem();
+      return;
+
       let updateSaveFlag = false;
       let storeSaveFlag = false;
       // カテゴリーと仕入先に変更がない場合
