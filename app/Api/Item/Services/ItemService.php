@@ -840,6 +840,40 @@ class ItemService
         ]);
         $ids[] = $item->id;
 
+        // Image を更新／新規作成
+        $beforeImages = Image::where('item_id', $item->id)->get();
+        $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
+        $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
+        foreach ($deletedImages as $deleteImage) {
+          $deleteImage->update(['deleted_at' => now()]);
+        }
+        foreach ($data['images'] ?? [] as $imgData) {
+          if (!empty($imgData['id'])) {
+            $image = Image::findOrFail($imgData['id']);
+            $image->update([
+              'item_id'   => $item->id,
+              'file_path' => $imgData['file_path'] ?? '',
+              'caption'   => $imgData['caption'] ?? '',
+            ]);
+          } else {
+            Image::create([
+              'item_id'   => $item->id,
+              'file_path' => $imgData['file_path'] ?? '',
+              'caption'   => $imgData['caption'] ?? '',
+            ]);
+          }
+        }
+
+        // Document を更新／新規作成
+        Document::updateOrCreate(
+          ['item_id' => $item->id],
+          [
+            'type_status' => $data['type_status'] ?? 0,
+            'type_name'   => $data['type_name'] ?? '',
+            'file_name'   => $data['file_name'] ?? '',
+          ]
+        );
+
       // バリエーションあり
       } else {
         // 前回の variations 値を保持する変数
@@ -879,6 +913,40 @@ class ItemService
           $prevVariations['variations2'] = $variation[2];
           $prevVariations['variations3'] = $variation[3];
           $prevVariations['variations4'] = $variation[4];
+
+          // Image の更新／削除
+          $beforeImages = Image::where('item_id', $item->id)->get();
+          $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
+          $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
+          foreach ($deletedImages as $deleteImage) {
+            $deleteImage->update(['deleted_at' => now()]);
+          }
+          foreach ($data['images'] ?? [] as $imgData) {
+            if (!empty($imgData['id'])) {
+              $image = Image::findOrFail($imgData['id']);
+              $image->update([
+                'item_id'   => $item->id,
+                'file_path' => $imgData['file_path'] ?? '',
+                'caption'   => $imgData['caption'] ?? '',
+              ]);
+            } else {
+              Image::create([
+                'item_id'   => $item->id,
+                'file_path' => $imgData['file_path'] ?? '',
+                'caption'   => $imgData['caption'] ?? '',
+              ]);
+            }
+          }
+
+          // Document を更新／新規作成
+          Document::updateOrCreate(
+            ['item_id' => $item->id],
+            [
+              'type_status' => $data['type_status'] ?? 0,
+              'type_name'   => $data['type_name'] ?? '',
+              'file_name'   => $data['file_name'] ?? '',
+            ]
+          );
 
           $ids[] = $item->id;
         }
