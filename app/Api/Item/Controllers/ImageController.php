@@ -113,7 +113,8 @@ class ImageController extends BaseController
   {
     // 複数ファイルを検証
     $request->validate([
-      'images.*' => 'nullable|image|max:30000',
+      'images' => 'nullable|array',
+      'images.*' => 'image|max:30000',
     ]);
 
     $paths = [];
