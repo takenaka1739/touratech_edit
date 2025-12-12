@@ -120,12 +120,17 @@ class ImageController extends BaseController
 
     if ($request->hasFile('images')) {
       foreach ($request->file('images') as $file) {
-        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+        // 元のファイル名をそのまま利用
+        $filename = $file->getClientOriginalName();
         $directory = public_path('images');
+
         if (!file_exists($directory)) {
-            mkdir($directory, 0777, true);
+          mkdir($directory, 0777, true);
         }
+
+        // 同名ファイルが存在すれば上書きする
         $file->move($directory, $filename);
+
         $paths[] = 'images/' . $filename;
       }
     }
