@@ -192,6 +192,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       }));
     }
 
+    if(state.type_status === undefined){
+      setState(prev => ({
+        ...prev,
+        type_status: 0
+      }));
+    }
+
     if (state.categoryList.length === 0) {
       const arr: Category = {
         combId: undefined,
@@ -585,123 +592,123 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   console.log('state.categoryList');
   console.log(state.categoryList);
 
-useEffect(() => {
-  if (changeCategoryIndex !== null) {
-    if (state.category_id !== undefined && state.category_name !== undefined) {
-      // 同じカテゴリが選択されているかのチェック
-      const flag = state.categoryList.some((item) => {
-        if (item.categoryId == null) {
-          return item.status !== "del" && !item.status?.includes("new");
-        } else {
-          if (item.status !== "del" && item.categoryId === state.category_id) {
-            return true;
-          }
-          if (
-            item.status === "del" &&
-            item.combId != null &&
-            item.categoryId === state.category_id
-          ) {
+  useEffect(() => {
+    if (changeCategoryIndex !== null) {
+      if (state.category_id !== undefined && state.category_name !== undefined) {
+        // 同じカテゴリが選択されているかのチェック
+        const flag = state.categoryList.some((item) => {
+          if (item.categoryId == null) {
+            return item.status !== "del" && !item.status?.includes("new");
+          } else {
+            if (item.status !== "del" && item.categoryId === state.category_id) {
+              return true;
+            }
+            if (
+              item.status === "del" &&
+              item.combId != null &&
+              item.categoryId === state.category_id
+            ) {
+              return false;
+            }
             return false;
           }
-          return false;
-        }
-      });
+        });
 
-      setChangeCategoryFlag(flag);
+        setChangeCategoryFlag(flag);
 
-      if (!flag) {
-        setState((prev) => {
-          const delIndex = prev.categoryList.findIndex(
-            (item) =>
-              item.status === "del" &&
-              item.categoryId === state.category_id
-          );
-
-          if (delIndex !== -1) {
-            const delItem = prev.categoryList[delIndex];
-
-            // 1. 復活処理
-            const revivedList = prev.categoryList.map((item, idx) => {
-              if (idx === changeCategoryIndex) {
-                return {
-                  ...item,
-                  combId: delItem.combId,
-                  categoryId: delItem.categoryId,
-                  name: delItem.name,
-                  initialcategoryId: delItem.initialcategoryId,
-                  status:
-                    delItem.categoryId === delItem.initialcategoryId
-                      ? "no update"
-                      : "update",
-                };
-              }
-              return item;
-            });
-
-            // 2. 最大 newX 行を探索
-            const maxNewIndex = revivedList.reduce(
-              (acc, item, idx) => {
-                if (item.categoryId == null && /^new\d+$/.test(item.status)) {
-                  const num = parseInt(item.status.replace("new", ""), 10);
-                  if (num > acc.value) {
-                    return { value: num, index: idx };
-                  }
-                }
-                return acc;
-              },
-              { value: -1, index: -1 }
+        if (!flag) {
+          setState((prev) => {
+            const delIndex = prev.categoryList.findIndex(
+              (item) =>
+                item.status === "del" &&
+                item.categoryId === state.category_id
             );
 
-            // 3. 見つかった newX 行を削除（復活させた行が changeCategoryIndex の場合のみ）
-            let filteredList = revivedList;
-            if (maxNewIndex.index !== -1 && delIndex === changeCategoryIndex) {
-              filteredList = revivedList.filter(
-                (_, idx) => idx !== maxNewIndex.index
+            if (delIndex !== -1) {
+              const delItem = prev.categoryList[delIndex];
+
+              // 1. 復活処理
+              const revivedList = prev.categoryList.map((item, idx) => {
+                if (idx === changeCategoryIndex) {
+                  return {
+                    ...item,
+                    combId: delItem.combId,
+                    categoryId: delItem.categoryId,
+                    name: delItem.name,
+                    initialcategoryId: delItem.initialcategoryId,
+                    status:
+                      delItem.categoryId === delItem.initialcategoryId
+                        ? "no update"
+                        : "update",
+                  };
+                }
+                return item;
+              });
+
+              // 2. 最大 newX 行を探索
+              const maxNewIndex = revivedList.reduce(
+                (acc, item, idx) => {
+                  if (item.categoryId == null && /^new\d+$/.test(item.status)) {
+                    const num = parseInt(item.status.replace("new", ""), 10);
+                    if (num > acc.value) {
+                      return { value: num, index: idx };
+                    }
+                  }
+                  return acc;
+                },
+                { value: -1, index: -1 }
               );
+
+              // 3. 見つかった newX 行を削除（復活させた行が changeCategoryIndex の場合のみ）
+              let filteredList = revivedList;
+              if (maxNewIndex.index !== -1 && delIndex === changeCategoryIndex) {
+                filteredList = revivedList.filter(
+                  (_, idx) => idx !== maxNewIndex.index
+                );
+              }
+
+              // 4. 最終結果
+              return { ...prev, categoryList: filteredList };
             }
 
-            // 4. 最終結果
-            return { ...prev, categoryList: filteredList };
-          }
+            // del 行がなければ通常処理
+            return {
+              ...prev,
+              categoryList: prev.categoryList.map((item, index) => {
+                if (index !== changeCategoryIndex) return item;
 
-          // del 行がなければ通常処理
-          return {
-            ...prev,
-            categoryList: prev.categoryList.map((item, index) => {
-              if (index !== changeCategoryIndex) return item;
-
-              if (item.status.includes("new")) {
-                return {
-                  ...item,
-                  categoryId: state.category_id,
-                  name: state.category_name,
-                  status: item.status,
-                };
-              } else if (state.category_id === item.initialcategoryId) {
-                return {
-                  ...item,
-                  categoryId: state.category_id,
-                  name: state.category_name,
-                  status: "no update",
-                };
-              } else {
-                return {
-                  ...item,
-                  categoryId: state.category_id,
-                  name: state.category_name,
-                  status: "update",
-                };
-              }
-            }),
-          };
-        });
-      } else {
-        setChangeCategoryFlag(true);
+                if (item.status.includes("new")) {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: item.status,
+                  };
+                } else if (state.category_id === item.initialcategoryId) {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: "no update",
+                  };
+                } else {
+                  return {
+                    ...item,
+                    categoryId: state.category_id,
+                    name: state.category_name,
+                    status: "update",
+                  };
+                }
+              }),
+            };
+          });
+        } else {
+          setChangeCategoryFlag(true);
+        }
       }
+      setPreCategoryId(state.category_id);
     }
-    setPreCategoryId(state.category_id);
-  }
-}, [state.category_id, state.category_name]);
+  }, [state.category_id, state.category_name]);
 
 
   const changeCategory = () => {
@@ -1957,6 +1964,8 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
     return [];
   }
 
+  console.log(formData);
+
   try {
     const res = await axios.post("/api/item/store_image_transaction", formData);
     return res.data.paths;
@@ -2890,57 +2899,54 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
                 onChange={onChange}
               />
             </Forms.FormGroup>
-            <div className="payment-how" style={{ marginLeft: '23px' }}>
-              <div>
-                <label>支払い方法適用</label>
-                <label className="label-required">必須</label>
-              </div>
+            <Forms.FormGroup
+              labelText="支払い方法"
+              groupClassName="items-center mt-4"
+              required={true}
+            >
               <div className="payment-kind" style={{ display: 'flex' }}>
                 <Forms.FormInputCheck
                   id="is_payment_id1"
                   name="is_payment_id1"
+                  labelText='現金'
                   checked={state.is_payment_id1}
                   onChange={onChange}
                 />
-                <label style={{ marginLeft: '-16px', paddingTop: '7px' }}>現金</label>
-              </div>
-              <div className="payment-kind" style={{ display: 'flex' }}>
                 <Forms.FormInputCheck
                   id="is_payment_id2"
                   name="is_payment_id2"
+                  labelText='売掛'
                   checked={state.is_payment_id2}
                   onChange={onChange}
                 />
-                <label style={{ marginLeft: '-16px', paddingTop: '7px' }}>掛売</label>
-              </div>
-              <div className="payment-kind" style={{ display: 'flex' }}>
                 <Forms.FormInputCheck
                   id="is_payment_id3"
                   name="is_payment_id3"
+                  labelText='宅配代引'
                   checked={state.is_payment_id3}
                   onChange={onChange}
                 />
-                <label style={{ marginLeft: '-16px', paddingTop: '7px' }}>宅配代引</label>
-              </div>
-              <div className="payment-kind" style={{ display: 'flex' }}>
                 <Forms.FormInputCheck
                   id="is_payment_id4"
                   name="is_payment_id4"
+                  labelText='銀行振込'
                   checked={state.is_payment_id4}
                   onChange={onChange}
                 />
-                <label style={{ marginLeft: '-16px', paddingTop: '7px' }}>クレジットカード</label>
-              </div>
-              <div className="payment-kind" style={{ display: 'flex' }}>
                 <Forms.FormInputCheck
                   id="is_payment_id5"
                   name="is_payment_id5"
+                  labelText='クレジットカード'
                   checked={state.is_payment_id5}
                   onChange={onChange}
                 />
-                <label style={{ marginLeft: '-16px', paddingTop: '7px' }}>銀行振込</label>
               </div>
-            </div>
+            </Forms.FormGroup>
+            {errors?.is_payment_id1 && (
+              <div style={{ color: 'red', marginTop: '5px' }}>
+                {errors.is_payment_id1}
+              </div>
+            )}
           </div>
         </div>
         {id && (

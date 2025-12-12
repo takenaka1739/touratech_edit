@@ -86,7 +86,7 @@
  * @param type_status             - 題目のステータス（0:なし, 1:取扱説明書, 2:サイズ表, 3:その他）
  * @param type_name               - 題目名（0:なし, 1:取扱説明書, 2:サイズ表, 3:任意の名前）
  * @param file_name               - フォイル名
- * @param pdf                     - 備考
+ * @param pdf                     - 取得したファイル情報
  * @param documentFileList        - 商品ID毎のファイルリスト
  */
 
