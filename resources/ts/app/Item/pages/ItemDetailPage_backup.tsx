@@ -50,12 +50,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     code: '',
     name: '',
     item_number: undefined,
-    itemNumberItem: [],
     variations1: '',
     variations2: '',
     variations3: '',
     variations4: '',
-    variations5: '',
     explanation: '',
     explanation_details: '',
     name_note: '',
@@ -63,7 +61,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     is_sell: false,
     purchase_price: undefined,
     sales_price: 0,
-    salesPriceItem: [],
     special_sale_id: undefined,
     sales_unit_price: undefined,
     purchase_unit_price: undefined,
@@ -138,10 +135,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     initialcategoryId: number | undefined;
   };
 
-  //const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
-  const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.itemNumberItem[0]);
-  //const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
-  const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.itemNumberItem[0]);
+  const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
+  //const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.itemNumberItem[0]);
+  const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
+  //const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.itemNumberItem[0]);
 
   const [variItems, setVariItems] = useState([['', '', '', '', '', '', '']]);
   const [checkBock, setCheckBock] = useState({ color: '#EDF2F7', flag: false });
@@ -198,7 +195,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         categoryList: [arr]
       }));
     }
-  }, [state, state.variItems, state.itemNumberItem, state.salesPriceItem, state.purchase_price, state.number_reservations,
+  }, [state, state.variItems, state.purchase_price, state.number_reservations,
     state.specialSalesList, state.image_name]);
 
   // state.categoryListの初期値（新規作成時の1行目の作成）

@@ -15,7 +15,7 @@ export const ShopImagePage: React.VFC<ItemDetailPageProps> = () => {
 
   //const [nameText, setNameText] = useState(location.state.itemName ?? "商品名を入力して下さい");
   const [nameText, setNameText] = useState(location.state.items.name ?? "商品名を入力して下さい");
-  const [priceText, setpriceText] = useState(location.state.salesPriceItem ?? "金額を入力して下さい");
+  const [priceText, setpriceText] = useState(location.state.items.sales_price ?? "金額を入力して下さい");
   const [detailText, setDetailText] = useState(location.state.exDetail ?? "説明文を入力して下さい");
   const [movieUrl, setMovieUrl] = useState('');
   //const variKindItem = location.state.variItems;
