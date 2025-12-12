@@ -1921,19 +1921,19 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
    */
   const buildImageInfo = (imageList: (File | string)[][]): string[][] => {
     return imageList.map(value => {
-      const itemId = value[0] as string;
+      const itemId = String(value[0]);
       const files = value.slice(1);
 
       // File（商品画像・動画）ならファイル名、文字列（YouTubeリンク）ならそのまま取り出し
       const fileNames = files.map(file => {
         if (file instanceof File) {
           return file.name;
-        } else if (typeof file === "string") {
+        } else if (typeof file === "string" && file.trim() !== "") {
           return file;
         }
         // 例外は空文字
         return "";
-      }).filter(name => name !== "");   // 空文字を除外
+      }).filter((name): name is string => !!name);    // 空文字を除外
 
       // [id, fileName1/link1, fileName2/link2, ...] の形で返す
       return [itemId, ...fileNames];
