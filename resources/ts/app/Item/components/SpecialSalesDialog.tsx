@@ -5,9 +5,11 @@ import { Forms } from '@/components';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { PageErrors } from '@/types';
+import { useDispatch } from 'react-redux';
+import { AppActions } from '@/app/App/modules/appModule';
 
 /**
- * 商品マスタ（検索）画面 Component
+ * 特売設定画面 Component
  *
  * @param props
  */
@@ -29,6 +31,7 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
   state,
 }) => {
 
+  const dispatch = useDispatch();
   const [initialState, setState] = useState(state);
   const [errors, setErrors] = useState<PageErrors>(undefined);
 
@@ -40,8 +43,12 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
   };
 
   const onSettClick = () => {
-    onValueChange(initialState);
-    onClickCancel();
+    if(initialState.start_at == null || initialState.end_at == null){
+      dispatch(AppActions.failed('必須項目を入力してください'));
+    }else{
+      onValueChange(initialState);
+      onClickCancel();
+    }
   };
 
   const clickCancel = () => {
@@ -68,7 +75,7 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
     isShown={isShown}
     onClickCancel={() => clickCancel()}
     >
-      <div className="w-40 mt-2">
+      <div className="w-40">
         <div className="form-group">
           <Forms.FormGroup
             labelText="会員専用販売"
@@ -134,7 +141,7 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
           ポイント
         </span>
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between" style={{marginTop: '50px'}}>
         <div>
           <button className="btn" onClick={() => onSettClick()}> {/*disabled={isDisabled}>*/}
             設定
