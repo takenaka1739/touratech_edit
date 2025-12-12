@@ -691,7 +691,7 @@ class ItemService
         ]);
         $ids[] = $item->id;
 
-        // Image 登録（Itemごとに複数件）
+        // Image （商品画像・動画・YouTubeリンク）登録（Itemごとに複数件）
         if (!empty($data['images'][0])) {
           $imageRow = $data['images'][0];
 
@@ -765,7 +765,7 @@ class ItemService
 
           \Log::debug($data);
 
-          // Image 登録（Itemごとに複数件）
+          // Image （商品画像・動画・YouTubeリンク）登録（Itemごとに複数件）
           if (!empty($data['images'][$index])) {
             $imageRow = $data['images'][$index];
 

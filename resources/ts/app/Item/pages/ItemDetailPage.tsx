@@ -1914,20 +1914,28 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   /**
-   * 画像情報の配列を生成するユーティリティ関数。
+   * 商品画像・動画・YouTubeリンクの配列を生成するユーティリティ関数。
    * 
    * @param imageList 
    * @returns 
    */
-  const buildImageInfo = (imageList: any[][]): string[][] => {
+  const buildImageInfo = (imageList: (File | string)[][]): string[][] => {
     return imageList.map(value => {
-      const itemId = value[0];
+      const itemId = value[0] as string;
       const files = value.slice(1);
 
-      // Fileオブジェクトからファイル名を取り出す
-      const fileNames = files.map((file: File) => file.name);
+      // File（商品画像・動画）ならファイル名、文字列（YouTubeリンク）ならそのまま取り出し
+      const fileNames = files.map(file => {
+        if (file instanceof File) {
+          return file.name;
+        } else if (typeof file === "string") {
+          return file;
+        }
+        // 例外は空文字
+        return "";
+      }).filter(name => name !== "");   // 空文字を除外
 
-      // [id, fileName1, fileName2, ...] の形で返す
+      // [id, fileName1/link1, fileName2/link2, ...] の形で返す
       return [itemId, ...fileNames];
     });
   };
@@ -1986,18 +1994,24 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
    * 商品マスタ関連の新規登録をリクエストする。
    */
   const handleNewItem = async () => {
-    const images = buildImageInfo(state.imageList);
-    const payload: ItemPayload = { ...state, images };
-    const success = await storeItem(payload);
-
-    if (success) {
-      // 画像アップロード
+    try {
+      // 商品画像・動画のアップロード
       await uploadImages(state.imageList, state.pdf);
 
-      await appAlert('新規保存しました。');
-      backPage();
-    } else {
-      dispatch(AppActions.failed('データの保存に失敗しました。'));
+      // アップロードに成功したらDB更新
+      const images = buildImageInfo(state.imageList);
+      const payload: ItemPayload = { ...state, images };
+      const success = await storeItem(payload);
+
+      if (success) {
+        await appAlert('新規保存しました。');
+        backPage();
+      } else {
+        dispatch(AppActions.failed('データの保存に失敗しました。'));
+      }
+    } catch (error) {
+      // アップロード失敗時はDB更新を行わずエラー扱い
+      dispatch(AppActions.failed('ファイルのアップロードに失敗しました。'));
     }
   };
 
