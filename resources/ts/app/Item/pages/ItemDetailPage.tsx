@@ -1944,7 +1944,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
     // variation が null/undefined の可能性を考慮
     if (!variation) return;
 
-    variation.slice(2).forEach((image) => {
+    variation.slice(1).forEach((image) => {
       if (image instanceof File) {
         formData.append("images[]", image);
         hasImage = true;
