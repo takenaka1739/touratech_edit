@@ -176,7 +176,6 @@ class ItemService
     ->first()
     ->toArray();
 
-    $itemNumberItem = [];
     $salesPriceItem = [];
     $test = [];
 
@@ -378,10 +377,6 @@ class ItemService
       })->all();
     }
 
-    foreach(Item::select('item_number')->where('code', '=', $selectItems['code'])->get() as $item){
-      array_push($itemNumberItem, $item['item_number']);
-    }
-
     foreach(Item::select('sales_price')->where('code', '=', $selectItems['code'])->get() as $item){
       array_push($salesPriceItem, $item['sales_price']);
     }
@@ -420,12 +415,11 @@ class ItemService
     $selectItems['categoryList'] = $category_list;
     $selectItems['categoryListAll'] = $category_list_all;
     $selectItems['specialSalesList'] = $specialSalesList;
-    $selectItems['itemNumberItem'] = $itemNumberItem;
     $selectItems['salesPriceItem'] = $salesPriceItem;
     $selectItems['variItems'] = $variItems;
     $selectItems['backVariItems'] = $backVariItems;
-    $selectItems['image_name'] = $sss;
-    $selectItems['imageList'] = $ssss;
+    $selectItems['imageList'] = $sss;
+    $selectItems['preImageList'] = $ssss;
     $selectItems['combIdList'] = $d;
     $selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
     $selectItems['document_url'] = $selectItems['file_name'] !== '' ? '/files/' . $selectItems['file_name'] : '';
@@ -762,6 +756,8 @@ class ItemService
           $prevVariations['variations3'] = $item->variations3;
           $prevVariations['variations4'] = $item->variations4;
 
+          \Log::debug($data);
+
           // Image 登録（imageList[index] の各オブジェクトを登録）
           if (!empty($data['imageList'][$index])) {
             foreach ($data['imageList'][$index] as $image) {
@@ -830,6 +826,9 @@ class ItemService
       foreach ($deletedItems as $deleteItem) {
           $deleteItem->update(['deleted_at' => now()]);
       }
+
+      \Log::debug('$data');
+      \Log::debug($data);
 
       // バリエーションなし
       if (empty($data['variations'])) {
