@@ -1837,7 +1837,7 @@ useEffect(() => {
     try {
       dispatch(AppActions.request());
 
-      const res = await axios.post(`/api/item/${payload.id}/update_transaction`, payload);
+      const res = await axios.put(`/api/item/${payload.id}/update_transaction`, payload);
 
       if (res.status === 200) {
         dispatch(AppActions.success());
