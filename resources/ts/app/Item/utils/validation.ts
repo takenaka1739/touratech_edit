@@ -50,6 +50,7 @@ const isWildcardEqual = (value1: unknown, value2: unknown): boolean => {
  */
 const validateVariations = (variItems: unknown[][]): { row: number; message: string }[] => {
   const errors: { row: number; message: string }[] = [];
+  // バリエーションが複数無い場合は判定不要
   if (!variItems || variItems.length <= 1) return errors;
 
   for (let index = 0; index < variItems.length; index++) {
@@ -93,7 +94,7 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
       if (firstNonNullIndex !== -1) {
         const prevVal = prevValues[firstNonNullIndex];
         // 直前行の同じインデックスが文字列でなければエラー
-        if (prevVal === null || prevVal === '') {
+        if (prevVal === '') {
           errors.push({
             row: index - 1,   // 未入力である直前行にエラーを付与
             message: '分岐点にはバリエーションを入力してください',

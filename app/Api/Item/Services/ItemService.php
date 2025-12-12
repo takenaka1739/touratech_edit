@@ -819,7 +819,8 @@ class ItemService
       $beforeVariations = Item::where('code', $data['code'])->get();
 
       // 更新後のID一覧を作成
-      $afterIds = empty($data['variations']) ? [$data['id']] : collect($data['variations'])->pluck('id')->filter()->all();
+      // 0：id、1：バリエーション1、2：バリエーション2、3：バリエーション3、4：バリエーション4、5：品番、6：販売価格
+      $afterIds = empty($data['variItems']) ? [$data['id']] : collect($data['variItems'])->map(fn($v) => $v[0])->filter()->all();
       
       // 削除対象（更新前に存在 → 更新後に存在しない）
       $deletedItems = $beforeVariations->whereNotIn('id', $afterIds);
@@ -831,7 +832,7 @@ class ItemService
       \Log::debug($data);
 
       // バリエーションなし
-      if (empty($data['variations'])) {
+      if (empty($data['variItems'])) {
         $item = Item::findOrFail($data['id']);
         $item->update($base + [
           'item_number' => $data['item_number'] ?? null,
@@ -841,35 +842,27 @@ class ItemService
 
       // バリエーションあり
       } else {
-        // 前回の variations 値を保持する変数
-        $prevVariations = [
-          'variations1' => null,
-          'variations2' => null,
-          'variations3' => null,
-          'variations4' => null,
-        ];
-
-        foreach ($data['variations'] as $variation) {
-          if (!empty($variation['id'])) {
+        foreach ($data['variItems'] as $variation) {
+          if (!empty($variation[0])) {
             // id がある → 更新
-            $item = Item::findOrFail($variation['id']);
+            $item = Item::findOrFail($variation[0]);
             $item->update($base + [
-              'item_number' => $variation['item_number'] ?? null,
-              'variations1' => $variation['variations1'] ?? null,
-              'variations2' => $variation['variations2'] ?? null,
-              'variations3' => $variation['variations3'] ?? null,
-              'variations4' => $variation['variations4'] ?? null,
-              'sales_price' => $variation['sales_price'] ?? 0,
+              'variations1' => $variation[1] ?? null,
+              'variations2' => $variation[2] ?? null,
+              'variations3' => $variation[3] ?? null,
+              'variations4' => $variation[4] ?? null,
+              'item_number' => $variation[5] ?? null,
+              'sales_price' => $variation[6] ?? 0,
             ]);
           } else {
             // id が null → 新規登録
             $item = Item::create($base + [
-              'item_number' => $variation['item_number'] ?? null,
-              'variations1' => $variation['variations1'] ?? null,
-              'variations2' => $variation['variations2'] ?? null,
-              'variations3' => $variation['variations3'] ?? null,
-              'variations4' => $variation['variations4'] ?? null,
-              'sales_price' => $variation['sales_price'] ?? 0,
+              'variations1' => $variation[1] ?? null,
+              'variations2' => $variation[2] ?? null,
+              'variations3' => $variation[3] ?? null,
+              'variations4' => $variation[4] ?? null,
+              'item_number' => $variation[5] ?? null,
+              'sales_price' => $variation[6] ?? 0,
             ]);
           }
 
