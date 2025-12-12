@@ -12,6 +12,7 @@ use App\Api\ReceiveOrder\Services\ReceiveOrderService;
 use App\Api\ReceiveOrder\Services\ReceiveOrderPdfService;
 use App\Api\Sales\Services\SalesService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; //  追加
 
 /**
  * 受注データコントローラー
@@ -179,7 +180,25 @@ class ReceiveOrderController extends BaseController
    */
   public function output(ReceiveOrderOutputRequest $request)
   {
-    $data = $this->service->getPdfData($request->validated());
+    $cond = $request->validated();
+    $data = $this->service->getPdfData($cond);
+
+    //  ここで t_receive_orders から割引・備考を補完する
+    // getPdfData から戻る配列には id が入っている想定
+    $orderId = $data['id'] ?? ($cond['id'] ?? null);
+
+    if ($orderId) {
+      $extra = DB::table('t_receive_orders')
+        ->where('id', $orderId)
+        ->select('discount', 'remarks')
+        ->first();
+
+      if ($extra) {
+        // すでにキーがあれば上書き、なければ追加
+        $data['discount'] = $extra->discount;
+        $data['remarks']  = $extra->remarks;
+      }
+    }
 
     $pdf = new ReceiveOrderPdfService();
     $file_id = $pdf->createPdf($data);

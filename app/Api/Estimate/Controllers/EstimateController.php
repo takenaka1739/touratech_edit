@@ -9,6 +9,7 @@ use App\Api\Estimate\Requests\EstimateDetailRequest;
 use App\Api\Estimate\Services\EstimateService;
 use App\Api\Estimate\Services\EstimatePdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // ★ 追加
 
 /**
  * 見積データコントローラー
@@ -137,7 +138,24 @@ class EstimateController extends BaseController
    */
   public function output(EstimateUpdateRequest $request)
   {
-    $data = $this->service->getPdfData($request->validated());
+    $cond = $request->validated();
+    $data = $this->service->getPdfData($cond);
+
+    // ★ t_estimates から割引・備考を補完する
+    //   テーブル名が違う場合はここを適宜変更してください。
+    $estimateId = $data['id'] ?? ($cond['id'] ?? null);
+
+    if ($estimateId) {
+      $extra = DB::table('t_estimates')
+        ->where('id', $estimateId)
+        ->select('discount', 'remarks')
+        ->first();
+
+      if ($extra) {
+        $data['discount'] = $extra->discount;
+        $data['remarks']  = $extra->remarks;
+      }
+    }
 
     $pdf = new EstimatePdfService();
     $file_id = $pdf->createPdf($data);
