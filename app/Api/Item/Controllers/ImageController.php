@@ -113,15 +113,13 @@ class ImageController extends BaseController
   {
     // 複数ファイルを検証
     $request->validate([
-      'images' => 'nullable|array',
-      'images.*' => 'image|max:30000',
+      'images.*' => 'nullable|image|max:30000',
     ]);
 
     $paths = [];
 
     if ($request->hasFile('images')) {
       foreach ($request->file('images') as $file) {
-        // 元のファイル名をそのまま利用
         $filename = $file->getClientOriginalName();
         $directory = public_path('images');
 

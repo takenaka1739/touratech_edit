@@ -1946,7 +1946,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
 
     images.slice(1).forEach((image) => {
       if (image instanceof File) {
-        formData.append("images", image);
+        formData.append("images[]", image);
         hasImage = true;
       }
     });
@@ -1958,9 +1958,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
   }
 
   try {
-    const res = await axios.post("/api/item/store_image_transaction", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axios.post("/api/item/store_image_transaction", formData);
     return res.data.paths;
   } catch (error: any) {
     throw new Error("画像アップロードに失敗");
