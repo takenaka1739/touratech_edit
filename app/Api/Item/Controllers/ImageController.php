@@ -111,13 +111,14 @@ class ImageController extends BaseController
 
   public function store_transaction(Request $request)
   {
-    // 複数ファイルを検証
     $request->validate([
-      'images.*' => 'nullable|image|max:30000',
+        'images.*'  => 'nullable|image|max:30000',                                          // 商品画像（複数枚可）
+        'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png,bmp,gif,svg,webp|max:50000',    // 取扱説明書
     ]);
 
     $paths = [];
 
+    // 商品画像（複数枚可）
     if ($request->hasFile('images')) {
       foreach ($request->file('images') as $file) {
         $filename = $file->getClientOriginalName();
@@ -127,11 +128,25 @@ class ImageController extends BaseController
           mkdir($directory, 0777, true);
         }
 
-        // 同名ファイルが存在すれば上書きする
+        // 同名ファイルは上書き保存
         $file->move($directory, $filename);
-
         $paths[] = 'images/' . $filename;
       }
+    }
+
+    // 取扱説明書
+    if ($request->hasFile('document')) {
+      $document = $request->file('document');
+      $filename = $document->getClientOriginalName();
+      $directory = public_path('files');
+
+      if (!file_exists($directory)) {
+        mkdir($directory, 0777, true);
+      }
+
+      // 同名ファイルは上書き保存
+      $document->move($directory, $filename);
+      $paths[] = 'files/' . $filename;
     }
 
     return response()->json(['paths' => $paths], 201);

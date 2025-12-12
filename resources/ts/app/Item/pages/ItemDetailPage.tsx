@@ -1938,16 +1938,15 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
    * @param files 
    * @returns 
    */
-const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
+const uploadImages = async (imageList: any[][] | null, document?: File): Promise<string[]> => {
   // null や undefined の場合は即座に空配列を返す
-  if (!imageList || imageList.length === 0) {
-    return [];
-  }
+  if ((!imageList || imageList.length === 0) && !document) return [];
 
   const formData = new FormData();
   let hasImage = false;
 
-  imageList.forEach((images) => {
+  // 商品画像
+  imageList?.forEach((images) => {
     // images が null/undefined の可能性を考慮
     if (!images) return;
 
@@ -1959,12 +1958,15 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
     });
   });
 
-  // 画像が一つもなければ空配列を返す
-  if (!hasImage) {
-    return [];
+  // 取扱説明書があれば追加
+  if (document instanceof File) {
+    formData.append("document", document);
   }
 
-  console.log(formData);
+  // 商品画像も取扱説明書もなければ空配列を返す
+  if (!hasImage && !document) {
+    return [];
+  }
 
   try {
     const res = await axios.post("/api/item/store_image_transaction", formData);
@@ -1984,7 +1986,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
 
     if (success) {
       // 画像アップロード
-      await uploadImages(state.imageList);
+      await uploadImages(state.imageList, state.pdf);
 
       await appAlert('新規保存しました。');
       backPage();
@@ -2003,7 +2005,7 @@ const uploadImages = async (imageList: any[][] | null): Promise<string[]> => {
 
     if (success) {
       // 画像アップロード
-      await uploadImages(state.imageList);
+      await uploadImages(state.imageList, state.pdf);
 
       await appAlert('編集保存しました。');
       backPage();
