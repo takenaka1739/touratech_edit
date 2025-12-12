@@ -113,7 +113,7 @@ class ImageController extends BaseController
   {
     $request->validate([
         'images.*' => 'nullable|image|max:30000',                                                             // 商品画像（複数可）（30MB）
-        'videos.*' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime||max:200000',   // 動画（複数可）（200MB）
+        'videos.*' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime|max:200000',    // 動画（複数可）（200MB）
         'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png,bmp,gif,svg,webp|max:100000',                     // 取扱説明書（100MB）
     ]);
 
@@ -137,13 +137,13 @@ class ImageController extends BaseController
     if ($request->hasFile('videos')) {
       foreach ($request->file('videos') as $file) {
         $filename = $file->getClientOriginalName();
-        $directory = public_path('videos');
+        $directory = public_path('images');
 
         if (!file_exists($directory)) mkdir($directory, 0777, true);
 
         // 同名ファイルは上書き保存
         $file->move($directory, $filename);
-        $paths[] = 'videos/' . $filename;
+        $paths[] = 'images/' . $filename;
       }
     }
 
