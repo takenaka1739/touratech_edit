@@ -772,13 +772,28 @@ class ItemService
       \Log::debug('$data');
       \Log::debug($data);
 
-      // バリエーションなし
-      if (empty($data['variItems'])) {
+      // バリエーションなし or 1
+      if (empty($data['variItems']) || count($data['variItems']) <= 1) {
         \Log::debug('store チェックポイント1-1');
-        $item = Item::create($base + [
-          'item_number' => $data['item_number'] ?? null,
-          'sales_price' => $data['sales_price'] ?? 0,
-        ]);
+        if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
+        {
+          $item = Item::create($base + [
+            'variations1' => $data['variItems'][0][1] ?? null,
+            'variations2' => $data['variItems'][0][2] ?? null,
+            'variations3' => $data['variItems'][0][3] ?? null,
+            'variations4' => $data['variItems'][0][4] ?? null,
+            'item_number' => $data['variItems'][0][5] ?? null,
+            'sales_price' => $data['variItems'][0][6] ?? 0,
+          ]);
+        }
+        else
+        {
+          $item = Item::create($base + [
+            'item_number' => $data['item_number'] ?? null,
+            'sales_price' => $data['sales_price'] ?? 0,
+          ]);
+        }
+
         $ids[] = $item->id;
         \Log::debug('store チェックポイント1-2');
 
