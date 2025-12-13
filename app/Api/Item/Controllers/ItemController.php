@@ -237,4 +237,26 @@ class ItemController extends BaseController
       ], 500);
     }
   }
+
+  /**
+   * 全レコードの display_status を一括変更する。
+   */
+  public function updateAllDisplayStatus(Request $request)
+  {
+    $status = (int) $request->getContent();
+    
+    try {
+      $success = $this->service->updateAllDisplayStatus($status);
+
+      return response()->json([
+          'success' => $success,
+      ]);
+    } catch (\Exception $e) {
+      \Log::error('updateAllDisplayStatus failed: '.$e->getMessage());
+      return response()->json([
+        'success' => false,
+        'error'   => $e->getMessage(),
+      ], 500);
+    }
+  }
 }
