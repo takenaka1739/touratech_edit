@@ -768,9 +768,11 @@ class ItemService
     $beforeImages = Image::where('item_id', $item->id)->get();
     $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
     $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
+    \Log::debug('$data3-1');
     foreach ($deletedImages as $deleteImage) {
       $deleteImage->update(['deleted_at' => now()]);
     }
+    \Log::debug('$data3-2');
     foreach ($data['images'] ?? [] as $imgData) {
       if (!empty($imgData['id'])) {
         $image = Image::findOrFail($imgData['id']);
@@ -787,6 +789,7 @@ class ItemService
         ]);
       }
     }
+    \Log::debug('$data3-3');
 
     // 商品分類の更新／新規作成
     foreach ($data['categoryList'] ?? [] as $category) {
@@ -796,6 +799,7 @@ class ItemService
         ],[]
       );
     }
+    \Log::debug('$data3-4');
 
     // 取扱説明書の更新／新規作成（Itemごとに1件）
     if (!empty($data['type_status']) && $data['type_status'] !== 0) {
@@ -806,6 +810,7 @@ class ItemService
     } else {
       Document::where('item_id', $item->id)->delete();
     }
+    \Log::debug('$data3-5');
 
     // 特売設定の更新／新規作成 (1つの Item に1件)
     if (!empty($data['start_at'])) {
@@ -816,6 +821,7 @@ class ItemService
     } else {
       SpecialSale::where('item_id', $item->id)->delete();
     }
+    \Log::debug('$data3-6');
   }
 
   /**
