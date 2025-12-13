@@ -764,31 +764,31 @@ class ItemService
    */
   private function updateItemRelations(Item $item, array $data, int $imageIndex = 0): void
   {
-    // Image （商品画像・動画・YouTubeリンク） を更新／新規作成 or 論理削除
     $beforeImages = Image::where('item_id', $item->id)->get();
-    $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
-    $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
+
     \Log::debug('$data3-1');
+    // 更新後のファイル名一覧（images[0]は item_id、images[1]以降がファイル名）
+    $imageRow = $data['images'][$imageIndex] ?? [];
+    $afterFileNames = array_slice($imageRow, 1);
+
+    // 削除対象（DBに存在 → 更新後に存在しない）
+    $deletedImages = $beforeImages->reject(fn($img) => in_array($img->name, $afterFileNames));
     foreach ($deletedImages as $deleteImage) {
-      $deleteImage->update(['deleted_at' => now()]);
+        $deleteImage->update(['deleted_at' => now()]);
     }
     \Log::debug('$data3-2');
-    foreach ($data['images'] ?? [] as $imgData) {
-      if (!empty($imgData['id'])) {
-        $image = Image::findOrFail($imgData['id']);
-        $image->update([
-          'item_id'   => $item->id,
-          'file_path' => $imgData['file_path'] ?? '',
-          'caption'   => $imgData['caption'] ?? '',
-        ]);
-      } else {
-        Image::create([
-          'item_id'   => $item->id,
-          'file_path' => $imgData['file_path'] ?? '',
-          'caption'   => $imgData['caption'] ?? '',
-        ]);
-      }
+
+    // 更新／新規作成（order_by は 1 始まり）
+    foreach ($afterFileNames as $order => $fileName) {
+        Image::updateOrCreate(
+            ['item_id' => $item->id, 'name' => $fileName],
+            [
+                'category_id' => null,
+                'order_by'    => $order + 1,
+            ]
+        );
     }
+
     \Log::debug('$data3-3');
 
     // 商品分類の更新／新規作成
