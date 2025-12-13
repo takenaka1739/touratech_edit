@@ -178,13 +178,13 @@ export const ItemListPage: React.VFC = () => {
 
         {isAdmin && (<div style={{ display: 'flex', alignItems: 'center' }}>
           <label style={{ marginRight: '4px' }}>在庫表示一括切替：</label>
-          <button className="btn" onClick={changeStockDisplay} disabled={isDisabled}>
+          <button className="btn" onClick={() => changeStockDisplay(1)} disabled={isDisabled}>
             非表示
           </button>
-          <button className="btn ml-6" onClick={changeStockDisplay} disabled={isDisabled}>
+          <button className="btn ml-6" onClick={() => changeStockDisplay(2)} disabled={isDisabled}>
             表示（業者のみ）
           </button>
-          <button className="btn ml-6" onClick={changeStockDisplay} disabled={isDisabled}>
+          <button className="btn ml-6" onClick={() => changeStockDisplay(3)} disabled={isDisabled}>
             表示（一般含む）
           </button>
         </div>

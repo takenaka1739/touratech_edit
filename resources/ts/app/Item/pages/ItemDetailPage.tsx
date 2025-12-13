@@ -2019,18 +2019,24 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
    * 商品マスタ関連の編集登録をリクエストする。
    */
   const handleEditItem = async () => {
-    const images = buildImageInfo(state.imageList);
-    const payload: ItemPayload = { ...state, images };
-    const success = await updateItem(payload);
-
-    if (success) {
-      // 画像アップロード
+    try {
+      // 商品画像・動画のアップロード
       await uploadImages(state.imageList, state.pdf);
 
-      await appAlert('編集保存しました。');
-      backPage();
-    } else {
-      dispatch(AppActions.failed('データの保存に失敗しました。'));
+      // アップロードに成功したらDB更新
+      const images = buildImageInfo(state.imageList);
+      const payload: ItemPayload = { ...state, images };
+      const success = await updateItem(payload);
+
+      if (success) {
+        await appAlert('編集保存しました。');
+        backPage();
+      } else {
+        dispatch(AppActions.failed('データの保存に失敗しました。'));
+      }
+    } catch (error) {
+      // アップロード失敗時はDB更新を行わずエラー扱い
+      dispatch(AppActions.failed('ファイルのアップロードに失敗しました。'));
     }
   };
 

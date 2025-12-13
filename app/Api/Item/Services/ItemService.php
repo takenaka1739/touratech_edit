@@ -31,7 +31,6 @@ class ItemService
       'm_items.name',
       'm_items.sales_unit_price',
       'm_items.purchase_unit_price',
-      'is_display'
     );
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -51,7 +50,6 @@ class ItemService
       'name',
       'sales_unit_price',
       'purchase_unit_price',
-      'is_display'
     );
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -65,19 +63,18 @@ class ItemService
    */
   public function fetch(array $cond)
   {
+    \Log::debug('fetch');
     $query = Item::select(
       'id',
       'code',
       'item_number',
       'name',
-      'name_note',
       'sales_unit_price',
       'variations1',
       'variations2',
       'variations3',
       'variations4',
       'purchase_unit_price',
-      'is_display'
     );
     $query = $this->setCondition($query, $cond);
     // 削除されていないレコードだけ取得
@@ -556,8 +553,7 @@ class ItemService
    */
   public function getIdFromItemNumber(string $code)
   {
-    //$item = Item::where('code', $code)->first();
-    $item = Item::where('item_number', $code)->first();
+    $item = Item::where('code', $code)->first();
     return $item ? $item->id : null;
   }
 
@@ -571,18 +567,14 @@ class ItemService
   {
     $query = Item::select(
       'id',
-      //'code',
-      'item_number',
+      'code',
       'name',
-      'name_note',
+      'name',
       'sales_unit_price',
       'purchase_unit_price',
-      'domestic_stocks',
-      'overseas_stocks'
     );
     $query = $this->setCondition($query, $cond);
-    $query->orderBy('item_number', 'asc');
-    //$query->orderBy('code', 'asc');
+    $query->orderBy('code', 'asc');
     return $query->get();
   }
 
@@ -607,6 +599,7 @@ class ItemService
         });
       }
     }
+
 
     $c_is_display = $cond->get('c_is_display');
     if ($c_is_display !== "none") {
@@ -677,6 +670,45 @@ class ItemService
   }
 
   /**
+   * m_items のバリエーション情報を生成する。
+   */
+  private function buildVariationAttributes(array $variation, array $prevVariations, array $base): array
+  {
+    return $base + [
+      'variations1' => $variation[1] ?? $prevVariations['variations1'],
+      'variations2' => $variation[2] ?? $prevVariations['variations2'],
+      'variations3' => $variation[3] ?? $prevVariations['variations3'],
+      'variations4' => $variation[4] ?? $prevVariations['variations4'],
+      'item_number' => $variation[5] ?? null,
+      'sales_price' => $variation[6] ?? 0,
+    ];
+  }
+
+  /**
+   * バリエーションの前回値保持用の配列を初期化する。
+   */
+  private function initPrevVariations(): array
+  {
+    return [
+      'variations1' => null,
+      'variations2' => null,
+      'variations3' => null,
+      'variations4' => null,
+    ];
+  }
+
+  /**
+   * バリエーションの前回値を更新する。
+   */
+  private function updatePrevVariations(array &$prevVariations, array $variation): void
+  {
+    $prevVariations['variations1'] = $variation[1] ?? null;
+    $prevVariations['variations2'] = $variation[2] ?? null;
+    $prevVariations['variations3'] = $variation[3] ?? null;
+    $prevVariations['variations4'] = $variation[4] ?? null;
+  }
+
+  /**
    * 商品マスタに関連するテーブルに一括登録する。
    */
   public function storeTransaction(array $data): array
@@ -691,7 +723,7 @@ class ItemService
       \Log::debug($data);
 
       // バリエーションなし
-      if (empty($data['variations'])) {
+      if (empty($data['variItems'])) {
         $item = Item::create($base + [
           'item_number' => $data['item_number'] ?? null,
           'sales_price' => $data['sales_price'] ?? 0,
@@ -745,7 +777,7 @@ class ItemService
       // バリエーションあり
       } else {
 
-        // 前回の variations 値を保持する変数
+        // 前回の variItems 値を保持する変数
         $prevVariations = [
             'variations1' => null,
             'variations2' => null,
@@ -753,22 +785,12 @@ class ItemService
             'variations4' => null,
         ];
 
-        foreach ($data['variations'] as $index => $variation) {
-          $item = Item::create($base + [
-            'item_number' => $variation['item_number'] ?? null,
-            'variations1' => $variation['variations1'] ?? $prevVariations['variations1'],
-            'variations2' => $variation['variations2'] ?? $prevVariations['variations2'],
-            'variations3' => $variation['variations3'] ?? $prevVariations['variations3'],
-            'variations4' => $variation['variations4'] ?? $prevVariations['variations4'],
-            'sales_price' => $variation['sales_price'] ?? 0,
-          ]);
-          $ids[] = $item->id;
-
-          // 前回値を更新
-          $prevVariations['variations1'] = $item->variations1;
-          $prevVariations['variations2'] = $item->variations2;
-          $prevVariations['variations3'] = $item->variations3;
-          $prevVariations['variations4'] = $item->variations4;
+        foreach ($data['variItems'] as $index => $variation) {
+          // バリエーション関連
+          $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
+          $item = Item::create($variationAttributes);                 // 新規バリエーションのため m_items 新規登録
+          $this->updatePrevVariations($prevVariations, $variation);   // バリエーションの前回値の更新
+          $ids[] = $item->id;                                         // m_items の新規登録ID
 
           \Log::debug($data);
 
@@ -905,34 +927,21 @@ class ItemService
         ];
 
         foreach ($data['variItems'] as $variation) {
+          // バリエーション情報の設定
+          $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
+
+          // 既存のバリエーションのため m_items 更新
           if (!empty($variation[0])) {
-            // id がある → 更新
             $item = Item::findOrFail($variation[0]);
-            $item->update($base + [
-              'variations1' => $variation[1] ?? $prevVariations['variations1'],
-              'variations2' => $variation[2] ?? $prevVariations['variations2'],
-              'variations3' => $variation[3] ?? $prevVariations['variations3'],
-              'variations4' => $variation[4] ?? $prevVariations['variations4'],
-              'item_number' => $variation[5] ?? null,
-              'sales_price' => $variation[6] ?? 0,
-            ]);
+            $item->update($variationAttributes);
+          
+          // 新規バリエーションのため m_items 新規登録
           } else {
-            // id が null → 新規登録
-            $item = Item::create($base + [
-              'variations1' => $variation[1] ?? $prevVariations['variations1'],
-              'variations2' => $variation[2] ?? $prevVariations['variations2'],
-              'variations3' => $variation[3] ?? $prevVariations['variations3'],
-              'variations4' => $variation[4] ?? $prevVariations['variations4'],
-              'item_number' => $variation[5] ?? null,
-              'sales_price' => $variation[6] ?? 0,
-            ]);
+            $item = Item::create($variationAttributes);
           }
 
-          // 前回値を更新
-          $prevVariations['variations1'] = $variation[1];
-          $prevVariations['variations2'] = $variation[2];
-          $prevVariations['variations3'] = $variation[3];
-          $prevVariations['variations4'] = $variation[4];
+          // バリエーションの前回値の更新
+          $this->updatePrevVariations($prevVariations, $variation);
 
           // Image の更新／削除
           $beforeImages = Image::where('item_id', $item->id)->get();

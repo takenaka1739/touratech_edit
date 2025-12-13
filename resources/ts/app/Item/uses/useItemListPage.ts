@@ -107,8 +107,8 @@ export const useItemListPage = (slug: string) => {
     setDisabled(false);
   };
 
-  const changeStockDisplay: () => void = async () => {
-    console.log('クリックされたよ');
+  const changeStockDisplay = async (value: number): Promise<void> => {
+    console.log('クリックされたよ：', value);
     const result = await checkAlert();
     console.log(result);
 
