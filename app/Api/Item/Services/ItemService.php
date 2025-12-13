@@ -856,19 +856,14 @@ class ItemService
    */
   private function deleteRemovedCategory(array $data): void
   {
-    // 編集前のカテゴリーをDBから取得（item_idで判定）
-    $beforeCategories = ItemCategoryCombination::where('item_id', $data['id'])->get();
-
-    // 更新後に保持しているカテゴリーID一覧を作成
-    $afterIds = empty($data['categoryList'])
-        ? []
-        : collect($data['categoryList'])->map(fn($c) => $c['categoryId'])->filter()->all();
-
-    // 削除対象（更新前に存在 → 更新後に存在しない）
-    $deletedCategories = $beforeCategories->whereNotIn('category_id', $afterIds);
-
-    foreach ($deletedCategories as $deleteCategory) {
-        $deleteCategory->delete(); // 物理削除
+    // categoryList が存在する場合のみ処理
+    foreach ($data['categoryList'] ?? [] as $category) {
+      // status が 'del' の場合に削除
+      if (($category['status'] ?? null) === 'del' && isset($category['categoryId'])) {
+          ItemCategoryCombination::where('item_id', $data['id'])
+            ->where('category_id', $category['categoryId'])
+            ->delete();
+      }
     }
   }
 
