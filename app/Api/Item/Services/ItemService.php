@@ -948,7 +948,7 @@ class ItemService
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
           \Log::debug('$data1-1a');
-          $item = Item::update($base + [
+          $item->update($base + [
             'variations1' => $data['variItems'][0][1] ?? null,
             'variations2' => $data['variItems'][0][2] ?? null,
             'variations3' => $data['variItems'][0][3] ?? null,
@@ -960,7 +960,7 @@ class ItemService
         else
         {
           \Log::debug('$data1-1b');
-          $item = Item::update($base + [
+          $item->update($base + [
             'variations1' => null,
             'variations2' => null,
             'variations3' => null,
