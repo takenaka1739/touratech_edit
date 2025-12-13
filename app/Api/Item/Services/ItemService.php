@@ -766,6 +766,7 @@ class ItemService
 
       // 共通部を取得
       $base = $this->buildItemBase($data);
+      \Log::debug('store チェックポイント1');
 
       // バリエーションなし
       if (empty($data['variItems'])) {
@@ -774,9 +775,11 @@ class ItemService
           'sales_price' => $data['sales_price'] ?? 0,
         ]);
         $ids[] = $item->id;
+        \Log::debug('store チェックポイント2');
 
         // 商品画像・商品分類・取扱説明書・特売設定
         $this->storeItemRelations($item, $data, 0);
+        \Log::debug('store チェックポイント3');
 
       // バリエーションあり
       } else {

@@ -1205,7 +1205,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           return false;
         }
       } else {
-        dispatch(AppActions.failed('データの保存に失敗しました。'));
+        dispatch(AppActions.failed('リクエストに失敗しました。'));
         return false;
       }
     } catch (error) {
@@ -1235,7 +1235,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           return false;
         }
       } else {
-        dispatch(AppActions.failed('データの保存に失敗しました。'));
+        dispatch(AppActions.failed('リクエストに失敗しました。'));
         return false;
       }
     } catch (error) {
