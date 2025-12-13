@@ -759,6 +759,109 @@ class ItemService
   }
 
   /**
+   * t_items 関連のサブテーブル（商品画像・商品分類・取扱説明書・特売設定）への更新
+   */
+  private function updateItemRelations(Item $item, array $data, int $imageIndex = 0): void
+  {
+    // Image （商品画像・動画・YouTubeリンク） を更新／新規作成 or 論理削除
+    $beforeImages = Image::where('item_id', $item->id)->get();
+    $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
+    $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
+    foreach ($deletedImages as $deleteImage) {
+      $deleteImage->update(['deleted_at' => now()]);
+    }
+    foreach ($data['images'] ?? [] as $imgData) {
+      if (!empty($imgData['id'])) {
+        $image = Image::findOrFail($imgData['id']);
+        $image->update([
+          'item_id'   => $item->id,
+          'file_path' => $imgData['file_path'] ?? '',
+          'caption'   => $imgData['caption'] ?? '',
+        ]);
+      } else {
+        Image::create([
+          'item_id'   => $item->id,
+          'file_path' => $imgData['file_path'] ?? '',
+          'caption'   => $imgData['caption'] ?? '',
+        ]);
+      }
+    }
+
+    // 商品分類の更新／新規作成
+    foreach ($data['categoryList'] ?? [] as $category) {
+      ItemCategoryCombination::updateOrCreate([
+        'item_id'     => $item->id,
+        'category_id' => $category['categoryId'],
+        ],[]
+      );
+    }
+
+    // 取扱説明書の更新／新規作成（Itemごとに1件）
+    if (!empty($data['type_status']) && $data['type_status'] !== 0) {
+      Document::updateOrCreate(
+        ['item_id' => $item->id],
+        $this->buildDocumentAttributes($item->id, $data)
+      );
+    } else {
+      Document::where('item_id', $item->id)->delete();
+    }
+
+    // 特売設定の更新／新規作成 (1つの Item に1件)
+    if (!empty($data['start_at'])) {
+      SpecialSale::updateOrCreate(
+        ['item_id' => $item->id],
+        $this->buildSpecialSaleAttributes($item->id, $data)
+      );
+    } else {
+      SpecialSale::where('item_id', $item->id)->delete();
+    }
+  }
+
+  /**
+   * 更新前に存在していたバリエーションのうち、
+   * 更新後に存在しなくなったものを削除対象としてデータベースから物理削除する。
+   */
+  private function deleteRemovedVariations(array $data): void
+  {
+    // 編集前のバリエーションをDBから取得（codeカラムで判定）
+    $beforeVariations = Item::where('code', $data['code'])->get();
+
+    // バリエーション情報が保持するIDから、更新後のID一覧を作成
+    $afterIds = empty($data['variItems'])
+      ? [$data['id']]
+      : collect($data['variItems'])->map(fn($v) => $v[0])->filter()->all();
+
+    // 削除対象（更新前に存在 → 更新後に存在しない）
+    $deletedItems = $beforeVariations->whereNotIn('id', $afterIds);
+
+    foreach ($deletedItems as $deleteItem) {
+      $deleteItem->update(['deleted_at' => now()]);
+    }
+  }
+
+  /**
+   * 更新前に存在していた商品分類のうち、
+   * 更新後に存在しなくなったものを削除対象としてデータベースから物理削除する。
+   */
+  private function deleteRemovedCategory(array $data): void
+  {
+    // 編集前のカテゴリーをDBから取得（item_idで判定）
+    $beforeCategories = ItemCategoryCombination::where('item_id', $data['id'])->get();
+
+    // 更新後に保持しているカテゴリーID一覧を作成
+    $afterIds = empty($data['categoryList'])
+        ? []
+        : collect($data['categoryList'])->map(fn($c) => $c['categoryId'])->filter()->all();
+
+    // 削除対象（更新前に存在 → 更新後に存在しない）
+    $deletedCategories = $beforeCategories->whereNotIn('category_id', $afterIds);
+
+    foreach ($deletedCategories as $deleteCategory) {
+        $deleteCategory->delete(); // 物理削除
+    }
+  }
+
+  /**
    * 商品マスタに関連するテーブルに一括登録する。
    * 更新対象：m_items -> m_images -> t_category_item_combinations -> m_documents -> t_special_sales
    */
@@ -769,12 +872,9 @@ class ItemService
 
       // 共通部を取得
       $base = $this->buildItemBase($data);
-      \Log::debug('$data');
-      \Log::debug($data);
 
       // バリエーションなし or 1
       if (empty($data['variItems']) || count($data['variItems']) <= 1) {
-        \Log::debug('store チェックポイント1-1');
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
           $item = Item::create($base + [
@@ -795,15 +895,12 @@ class ItemService
         }
 
         $ids[] = $item->id;
-        \Log::debug('store チェックポイント1-2');
 
         // 商品画像・商品分類・取扱説明書・特売設定
         $this->storeItemRelations($item, $data, 0);
-        \Log::debug('store チェックポイント1-3');
 
       // バリエーションあり
       } else {
-        \Log::debug('store チェックポイント2-1');
         // variItems 前回値を保持する配列の初期化
         $prevVariations = $this->initPrevVariations();
 
@@ -838,76 +935,46 @@ class ItemService
       // 共通部を取得
       $base = $this->buildItemBase($data);
 
-      // 編集前の状態をDBから取得（codeカラムで判定）
-      $beforeVariations = Item::where('code', $data['code'])->get();
+      // 削除されたバリエーション処理
+      $this->deleteRemovedVariations($data);
 
-      // 更新後のID一覧を作成
-      // 0：id、1：バリエーション1、2：バリエーション2、3：バリエーション3、4：バリエーション4、5：品番、6：販売価格
-      $afterIds = empty($data['variItems']) ? [$data['id']] : collect($data['variItems'])->map(fn($v) => $v[0])->filter()->all();
-      
-      // 削除対象（更新前に存在 → 更新後に存在しない）
-      $deletedItems = $beforeVariations->whereNotIn('id', $afterIds);
-      foreach ($deletedItems as $deleteItem) {
-          $deleteItem->update(['deleted_at' => now()]);
-      }
+      // 削除された商品分類処理
+      $this->deleteRemovedCategory($data);
 
       \Log::debug('$data2');
       \Log::debug($data);
 
-      // バリエーションなし
-      if (empty($data['variItems'])) {
+      // バリエーションなし or 1
+      if (empty($data['variItems']) || count($data['variItems']) <= 1) {
         $item = Item::findOrFail($data['id']);
-        $item->update($base + [
-          'item_number' => $data['item_number'] ?? null,
-          'sales_price' => $data['sales_price'] ?? 0,
-        ]);
+
+        if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
+        {
+          $item = Item::update($base + [
+            'variations1' => $data['variItems'][0][1] ?? null,
+            'variations2' => $data['variItems'][0][2] ?? null,
+            'variations3' => $data['variItems'][0][3] ?? null,
+            'variations4' => $data['variItems'][0][4] ?? null,
+            'item_number' => $data['variItems'][0][5] ?? null,
+            'sales_price' => $data['variItems'][0][6] ?? 0,
+          ]);
+        }
+        else
+        {
+          $item = Item::update($base + [
+            'variations1' => null,
+            'variations2' => null,
+            'variations3' => null,
+            'variations4' => null,
+            'item_number' => $data['item_number'] ?? null,
+            'sales_price' => $data['sales_price'] ?? 0,
+          ]);
+        }
+
         $ids[] = $item->id;
 
-        // Image を更新／新規作成
-        $beforeImages = Image::where('item_id', $item->id)->get();
-        $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
-        $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
-        foreach ($deletedImages as $deleteImage) {
-          $deleteImage->update(['deleted_at' => now()]);
-        }
-        foreach ($data['images'] ?? [] as $imgData) {
-          if (!empty($imgData['id'])) {
-            $image = Image::findOrFail($imgData['id']);
-            $image->update([
-              'item_id'   => $item->id,
-              'file_path' => $imgData['file_path'] ?? '',
-              'caption'   => $imgData['caption'] ?? '',
-            ]);
-          } else {
-            Image::create([
-              'item_id'   => $item->id,
-              'file_path' => $imgData['file_path'] ?? '',
-              'caption'   => $imgData['caption'] ?? '',
-            ]);
-          }
-        }
-
-        // 取扱説明書の更新／新規作成 or 物理削除（Itemごとに1件）
-        Document::updateOrCreate($this->buildDocumentAttributes($item->id, $data));
-        if (!empty($data['type_status']) && $data['type_status'] !== 0) {
-          Document::updateOrCreate(
-            ['item_id' => $item->id],
-            $this->buildDocumentAttributes($item->id, $data)
-          );
-        } else {
-          Document::where('item_id', $item->id)->delete();
-        }
-
-        // 特売設定の更新／新規作成 or 物理削除 (1つの Item に1件)
-        if (!empty($data['start_at'])) {
-          // start_at が存在する場合 → 登録または更新
-          SpecialSale::updateOrCreate(
-            ['item_id' => $item->id],
-            $this->buildSpecialSaleAttributes($item->id, $data)
-          );
-        } else {
-          SpecialSale::where('item_id', $item->id)->delete();
-        }
+        // 商品画像・商品分類・取扱説明書・特売設定
+        $this->updateItemRelations($item, $data, 0);
 
       // バリエーションあり
       } else {
@@ -931,51 +998,8 @@ class ItemService
           // バリエーションの前回値の更新
           $this->updatePrevVariations($prevVariations, $variation);
 
-          // Image の更新／削除
-          $beforeImages = Image::where('item_id', $item->id)->get();
-          $afterImageIds = collect($data['images'] ?? [])->map(fn($img) => $img['id'])->filter()->all();
-          $deletedImages = $beforeImages->whereNotIn('id', $afterImageIds);
-          foreach ($deletedImages as $deleteImage) {
-            $deleteImage->update(['deleted_at' => now()]);
-          }
-          foreach ($data['images'] ?? [] as $imgData) {
-            if (!empty($imgData['id'])) {
-              $image = Image::findOrFail($imgData['id']);
-              $image->update([
-                'item_id'   => $item->id,
-                'file_path' => $imgData['file_path'] ?? '',
-                'caption'   => $imgData['caption'] ?? '',
-              ]);
-            } else {
-              Image::create([
-                'item_id'   => $item->id,
-                'file_path' => $imgData['file_path'] ?? '',
-                'caption'   => $imgData['caption'] ?? '',
-              ]);
-            }
-          }
-
-          // 取扱説明書の更新／新規作成 or 物理削除（Itemごとに1件）
-          Document::updateOrCreate($this->buildDocumentAttributes($item->id, $data));
-          if (!empty($data['type_status']) && $data['type_status'] !== 0) {
-            Document::updateOrCreate(
-              ['item_id' => $item->id],
-              $this->buildDocumentAttributes($item->id, $data)
-            );
-          } else {
-            Document::where('item_id', $item->id)->delete();
-          }
-
-          // 特売設定の更新／新規作成 or 物理削除 (1つの Item に1件)
-          if (!empty($data['start_at'])) {
-            // start_at が存在する場合 → 登録または更新
-            SpecialSale::updateOrCreate(
-              ['item_id' => $item->id],
-              $this->buildSpecialSaleAttributes($item->id, $data)
-            );
-          } else {
-            SpecialSale::where('item_id', $item->id)->delete();
-          }
+          // 商品画像・商品分類・取扱説明書・特売設定
+          $this->updateItemRelations($item, $data, 0);
 
           $ids[] = $item->id;
         }
