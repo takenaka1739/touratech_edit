@@ -776,14 +776,8 @@ class ItemService
 
       // バリエーションあり
       } else {
-
-        // 前回の variItems 値を保持する変数
-        $prevVariations = [
-            'variations1' => null,
-            'variations2' => null,
-            'variations3' => null,
-            'variations4' => null,
-        ];
+        // variItems 前回値を保持する配列の初期化
+        $prevVariations = $this->initPrevVariations();
 
         foreach ($data['variItems'] as $index => $variation) {
           // バリエーション関連
@@ -918,13 +912,8 @@ class ItemService
 
       // バリエーションあり
       } else {
-        // 前回の variations 値を保持する変数
-        $prevVariations = [
-          'variations1' => null,
-          'variations2' => null,
-          'variations3' => null,
-          'variations4' => null,
-        ];
+        // variItems 前回値を保持する配列の初期化
+        $prevVariations = $this->initPrevVariations();
 
         foreach ($data['variItems'] as $variation) {
           // バリエーション情報の設定
@@ -983,5 +972,21 @@ class ItemService
       
       return $ids;
     });
+  }
+
+  /**
+   * m_items テーブルの全レコードの display_status （在庫表示）を一括で更新する。
+   * 
+   * @param int $status 更新するステータス値（0：非表示、1：表示（一般含む）、2：表示（業者のみ））
+   * @return bool 成功：true、失敗：false
+   */
+  public function updateAllDisplayStatus(int $status): bool
+  {
+    try {
+      $affected = DB::table('m_items')->update(['display_status' => $status]);
+      return true;
+    } catch (\Exception $e) {
+      return false;
+    }
   }
 }
