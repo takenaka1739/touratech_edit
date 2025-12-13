@@ -858,11 +858,9 @@ class ItemService
   {
     // categoryList が存在する場合のみ処理
     foreach ($data['categoryList'] ?? [] as $category) {
-      // status が 'del' の場合に削除
-      if (($category['status'] ?? null) === 'del' && isset($category['categoryId'])) {
-          ItemCategoryCombination::where('item_id', $data['id'])
-            ->where('category_id', $category['categoryId'])
-            ->delete();
+      // status が 'del' の場合に combId を削除対象とする
+      if (($category['status'] ?? null) === 'del' && isset($category['combId'])) {
+        ItemCategoryCombination::where('id', $category['combId'])->delete();
       }
     }
   }
