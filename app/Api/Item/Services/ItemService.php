@@ -864,16 +864,17 @@ class ItemService
   {
     // categoryList から 'del' の categoryId を収集
     $delCategoryIds = collect($data['categoryList'] ?? [])
-      ->filter(fn($c) => ($c['status'] ?? null) === 'del')->pluck('categoryId')->unique()->all();
+        ->filter(fn($c) => ($c['status'] ?? null) === 'del')->pluck('categoryId')->unique()->all();
 
     if (empty($delCategoryIds)) return;
 
-    // categoryListAll を走査して、同じ categoryId を持つ要素を抽出
-    foreach ($data['categoryListAll'] ?? [] as $itemCategories) {
-      foreach ($itemCategories as $category) {
-        if (isset($category['categoryId'], $category['combId']) && in_array($category['categoryId'], $delCategoryIds)) {
-          ItemCategoryCombination::where('id', $category['combId'])->delete();
-        }
+    // categoryListAll をフラット化して走査
+    $allCategories = collect($data['categoryListAll'] ?? [])->flatten(1);
+
+    foreach ($allCategories as $category) {
+      if (isset($category['categoryId'], $category['combId']) 
+        && in_array($category['categoryId'], $delCategoryIds)) {
+        ItemCategoryCombination::where('id', $category['combId'])->delete();
       }
     }
   }
