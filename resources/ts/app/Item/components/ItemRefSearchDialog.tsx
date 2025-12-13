@@ -78,7 +78,7 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
       <tr key={r.id}>
         <td>
           <span data-id={r.id} onClick={onClickSelect} className="link">
-            <div className="text-xs">{r.itemNumberItem}</div>
+            <div className="text-xs">{r.item_number}</div>
             <div>{r.name}</div>
             <div>{r.name_note}</div>
           </span>
