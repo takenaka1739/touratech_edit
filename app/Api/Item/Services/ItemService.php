@@ -31,6 +31,7 @@ class ItemService
       'm_items.name',
       'm_items.sales_unit_price',
       'm_items.purchase_unit_price',
+      'm_items.is_display',
     );
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -50,6 +51,7 @@ class ItemService
       'name',
       'sales_unit_price',
       'purchase_unit_price',
+      'm_items.is_display',
     );
     $query->orderBy('code', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
@@ -75,6 +77,7 @@ class ItemService
       'variations3',
       'variations4',
       'purchase_unit_price',
+      'is_display',
     );
     $query = $this->setCondition($query, $cond);
     // 削除されていないレコードだけ取得
