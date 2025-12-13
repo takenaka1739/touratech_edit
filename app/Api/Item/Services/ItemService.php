@@ -425,13 +425,17 @@ class ItemService
     $selectItems['imageList'] = $sss;
     $selectItems['preImageList'] = $ssss;
     $selectItems['combIdList'] = $d;
-    $selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
+    //$selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
     $selectItems['document_url'] = $selectItems['file_name'] !== '' ? '/files/' . $selectItems['file_name'] : '';
     $selectItems['documentFileList'] = $documentFileList;
     if($selectItems['shipping_pay'] === null){
       if($selectItems['display_status'] === 1) $selectItems['shipping_pay'] = $selectItems['send_personal'];
       elseif($selectItems['display_status'] === 2) $selectItems['shipping_pay'] = $selectItems['send_trader'];
     }
+
+    \Log::debug('$selectItems');
+    \Log::debug($selectItems);
+
     return $selectItems;
   }
 

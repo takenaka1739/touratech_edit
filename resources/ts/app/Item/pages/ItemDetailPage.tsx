@@ -1829,7 +1829,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
             <div className="price-erea" style={{ marginLeft: '1px', marginTop: '10px' }}>
               <label style={{ marginTop: '5px', marginLeft: '11px', display: "block", textAlign: "right" }}>販売価格（税込）</label>
               <label style={{ marginTop: '5px' }} className="label-required">必須</label>
-              <input className="input-text"
+              <input type="number" className="input-text"
                 value={state.sales_price}
                 disabled={checkBock.flag} style={{ backgroundColor: backColor }}
                 onChange={(event) => salesPriceChange(event.target.value)} />
