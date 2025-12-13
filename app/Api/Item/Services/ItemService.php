@@ -851,8 +851,13 @@ class ItemService
     // 削除対象（更新前に存在 → 更新後に存在しない）
     $deletedItems = $beforeVariations->whereNotIn('id', $afterIds);
 
+    \Log::debug('*** 削除の手前まで来たよ ***');
     foreach ($deletedItems as $deleteItem) {
-      $deleteItem->update(['deleted_at' => now()]);
+      \Log::debug('*** 削除が始まるよ ***');
+      \Log::debug($deleteItem);
+      $deleteItem->delete();
+      \Log::debug('*** 削除が終わったよ ***');
+      \Log::debug($deleteItem);
     }
   }
 
@@ -866,16 +871,10 @@ class ItemService
     $delCategoryIds = collect($data['categoryList'] ?? [])
       ->filter(fn($c) => ($c['status'] ?? null) === 'del')->pluck('categoryId')->map(fn($id) => (int)$id)->unique()->all();
 
-    \Log::debug('$delCategoryIds');
-    \Log::debug($delCategoryIds);
-
     if (empty($delCategoryIds)) return;
 
     // categoryListAll をフラット化（2階層分）
     $allCategories = collect($data['categoryListAll'] ?? [])->flatten(2);
-
-    \Log::debug('$allCategories');
-    \Log::debug($allCategories);
 
     // 削除処理
     foreach ($allCategories as $category) {
