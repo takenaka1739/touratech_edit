@@ -797,11 +797,17 @@ class ItemService
 
     // 商品分類の更新／新規作成
     foreach ($data['categoryList'] ?? [] as $category) {
-      ItemCategoryCombination::updateOrCreate([
-        'item_id'     => $item->id,
-        'category_id' => $category['categoryId'],
-        ],[]
-      );
+      // status が 'del' のものはスキップ（削除対象なので再生成しない）
+      if (($category['status'] ?? null) === 'del') continue;
+
+      if (isset($category['categoryId'])) {
+        ItemCategoryCombination::updateOrCreate(
+          [
+            'item_id'     => $item->id,
+            'category_id' => $category['categoryId'],
+          ],[]
+        );
+      }
     }
     \Log::debug('$data3-4');
 
