@@ -1787,13 +1787,6 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                               <button disabled={!checkBock.flag} style={{ backgroundColor: checkBock.color }}
                                 className="plus-button" onClick={() => addNewVari(itemIndex, index)}>＋</button>
                             }
-                            {index === 6 &&
-                              <input type="number" className="input w-full text-right max-w-8" /*type={value == null ? 'hidden' : 'text'}*/
-                                style={{ borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color }}
-                                disabled={!checkBock.flag} value={item[index]} onChange={(event) => onChangeValue(event, itemIndex, index)}
-                                onFocus={() => handleFocus(item)}
-                                onBlur={() => outForcus(item)} />
-                              }
                           </div>
                         ) : null
                       )
