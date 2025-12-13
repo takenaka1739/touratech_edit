@@ -709,7 +709,36 @@ class ItemService
   }
 
   /**
+   * m_items の取扱説明書情報を生成する。
+   */
+  private function buildDocumentAttributes(int $itemId, array $data): array
+  {
+    return [
+      'item_id'     => $itemId,
+      'type_status' => $data['type_status'] ?? 0,
+      'type_name'   => $data['type_name'] ?? '',
+      'file_name'   => $data['file_name'] ?? '',
+    ];
+  }
+
+  /**
+   * t_special_sales の特売設定情報を生成する。
+   */
+  private function buildSpecialSaleAttributes(int $itemId, array $data): array
+  {
+    return [
+      'item_id'               => $itemId,
+      'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
+      'start_at'              => $data['start_at'] ?? null,
+      'end_at'                => $data['end_at'] ?? null,
+      'special_sale_price'    => $data['special_sale_price'] ?? 0,
+      'refund_rate'           => $data['refund_rate'] ?? 0,
+    ];
+  }
+  
+  /**
    * 商品マスタに関連するテーブルに一括登録する。
+   * 更新対象：m_items -> m_images -> t_category_item_combinations -> m_documents -> t_special_sales
    */
   public function storeTransaction(array $data): array
   {
@@ -745,24 +774,15 @@ class ItemService
           }
         }
 
-        // Document 登録（Itemごとに必ず1件）
-        Document::create([
-          'item_id'     => $item->id,
-          'type_status' => $data['type_status'] ?? 0,
-          'type_name'   => $data['type_name'] ?? '',
-          'file_name'   => $data['file_name'] ?? '',
-        ]);
+        // 取扱説明書の登録（Itemごとに必ず1件）
+        if (!empty($data['type_status']) && $data['type_status'] !== 0)
+        {
+          Document::create($this->buildDocumentAttributes($item->id, $data));
+        }
 
-        // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
-        if($data['start_at'] !== null) {
-          SpecialSale::create([
-            'item_id'               => $item->id,
-            'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
-            'start_at'              => $data['start_at'] ?? null,
-            'end_at'                => $data['end_at'] ?? null,
-            'special_sale_price'    => $data['special_sale_price'] ?? 0,
-            'refund_rate'           => $data['refund_rate'] ?? 0,
-          ]);
+        // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+        if ($data['start_at'] !== null) {
+          SpecialSale::create($this->buildSpecialSaleAttributes($item->id, $data));
         }
 
         // ItemCategoryCombination 登録 (Itemごとに複数件)
@@ -803,24 +823,15 @@ class ItemService
             }
           }
 
-          // Document 登録（Itemごとに必ず1件）
-          Document::create([
-            'item_id'     => $item->id,
-            'type_status' => $data['type_status'] ?? 0,
-            'type_name'   => $data['type_name'] ?? '',
-            'file_name'   => $data['file_name'] ?? '',
-          ]);
+          // 取扱説明書の登録（Itemごとに必ず1件）
+          if (!empty($data['type_status']) && $data['type_status'] !== 0)
+          {
+            Document::create($this->buildDocumentAttributes($item->id, $data));
+          }
 
-          // SpecialSale 登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+          // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
           if($data['start_at'] !== null) {
-            SpecialSale::create([
-              'item_id'               => $item->id,
-              'is_sales_members_only' => $data['is_sales_members_only'] ?? false,
-              'start_at'              => $data['start_at'] ?? null,
-              'end_at'                => $data['end_at'] ?? null,
-              'special_sale_price'    => $data['special_sale_price'] ?? 0,
-              'refund_rate'           => $data['refund_rate'] ?? 0,
-            ]);
+            SpecialSale::create($this->buildSpecialSaleAttributes($item->id, $data));
           }
 
           // ItemCategoryCombination 登録 (Itemごとに複数件)
@@ -839,6 +850,7 @@ class ItemService
 
   /**
    * 商品マスタに関連するテーブルに一括更新する。
+   * 更新対象：m_items -> m_images -> t_category_item_combinations -> m_documents -> t_special_sales
    */
   public function updateTransaction(array $data): array
   {
@@ -900,15 +912,27 @@ class ItemService
           }
         }
 
-        // Document を更新／新規作成
-        Document::updateOrCreate(
-          ['item_id' => $item->id],
-          [
-            'type_status' => $data['type_status'] ?? 0,
-            'type_name'   => $data['type_name'] ?? '',
-            'file_name'   => $data['file_name'] ?? '',
-          ]
-        );
+        // 取扱説明書の更新／新規作成 or 物理削除（Itemごとに1件）
+        Document::updateOrCreate($this->buildDocumentAttributes($item->id, $data));
+        if (!empty($data['type_status']) && $data['type_status'] !== 0) {
+          Document::updateOrCreate(
+            ['item_id' => $item->id],
+            $this->buildDocumentAttributes($item->id, $data)
+          );
+        } else {
+          Document::where('item_id', $item->id)->delete();
+        }
+
+        // 特売設定の更新／新規作成 or 物理削除 (1つの Item に1件)
+        if (!empty($data['start_at'])) {
+          // start_at が存在する場合 → 登録または更新
+          SpecialSale::updateOrCreate(
+            ['item_id' => $item->id],
+            $this->buildSpecialSaleAttributes($item->id, $data)
+          );
+        } else {
+          SpecialSale::where('item_id', $item->id)->delete();
+        }
 
       // バリエーションあり
       } else {
@@ -956,15 +980,27 @@ class ItemService
             }
           }
 
-          // Document を更新／新規作成
-          Document::updateOrCreate(
-            ['item_id' => $item->id],
-            [
-              'type_status' => $data['type_status'] ?? 0,
-              'type_name'   => $data['type_name'] ?? '',
-              'file_name'   => $data['file_name'] ?? '',
-            ]
-          );
+          // 取扱説明書の更新／新規作成 or 物理削除（Itemごとに1件）
+          Document::updateOrCreate($this->buildDocumentAttributes($item->id, $data));
+          if (!empty($data['type_status']) && $data['type_status'] !== 0) {
+            Document::updateOrCreate(
+              ['item_id' => $item->id],
+              $this->buildDocumentAttributes($item->id, $data)
+            );
+          } else {
+            Document::where('item_id', $item->id)->delete();
+          }
+
+          // 特売設定の更新／新規作成 or 物理削除 (1つの Item に1件)
+          if (!empty($data['start_at'])) {
+            // start_at が存在する場合 → 登録または更新
+            SpecialSale::updateOrCreate(
+              ['item_id' => $item->id],
+              $this->buildSpecialSaleAttributes($item->id, $data)
+            );
+          } else {
+            SpecialSale::where('item_id', $item->id)->delete();
+          }
 
           $ids[] = $item->id;
         }
