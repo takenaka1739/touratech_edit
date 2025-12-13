@@ -862,26 +862,25 @@ class ItemService
    */
   private function deleteRemovedCategory(array $data): void
   {
-    \Log::debug('カテゴリー削除');
     // categoryList から 'del' の categoryId を収集
     $delCategoryIds = collect($data['categoryList'] ?? [])
-      ->filter(fn($c) => ($c['status'] ?? null) === 'del')->pluck('categoryId')->unique()->all();
+      ->filter(fn($c) => ($c['status'] ?? null) === 'del')->pluck('categoryId')->map(fn($id) => (int)$id)->unique()->all();
 
     \Log::debug('$delCategoryIds');
     \Log::debug($delCategoryIds);
+
     if (empty($delCategoryIds)) return;
 
-    // categoryListAll をフラット化して走査
-    $allCategories = collect($data['categoryListAll'] ?? [])->flatten(1);
+    // categoryListAll をフラット化（2階層分）
+    $allCategories = collect($data['categoryListAll'] ?? [])->flatten(2);
 
     \Log::debug('$allCategories');
     \Log::debug($allCategories);
+
+    // 削除処理
     foreach ($allCategories as $category) {
-      \Log::debug(isset($category['categoryId'], $category['combId']));
-      \Log::debug(in_array($category['categoryId'], $delCategoryIds));
-      if (isset($category['categoryId'], $category['combId']) 
-        && in_array($category['categoryId'], $delCategoryIds)) {
-        ItemCategoryCombination::where('id', $category['combId'])->delete();
+      if (isset($category['categoryId'], $category['combId']) && in_array((int)$category['categoryId'], $delCategoryIds)) {
+        ItemCategoryCombination::where('id', (int)$category['combId'])->delete();
       }
     }
   }
