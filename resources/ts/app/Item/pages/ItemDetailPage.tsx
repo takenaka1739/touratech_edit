@@ -1787,6 +1787,13 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                               <button disabled={!checkBock.flag} style={{ backgroundColor: checkBock.color }}
                                 className="plus-button" onClick={() => addNewVari(itemIndex, index)}>＋</button>
                             }
+                            {index === 6 &&
+                              <input type="number" className="input w-full text-right max-w-8" /*type={value == null ? 'hidden' : 'text'}*/
+                                style={{ borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color }}
+                                disabled={!checkBock.flag} value={item[index]} onChange={(event) => onChangeValue(event, itemIndex, index)}
+                                onFocus={() => handleFocus(item)}
+                                onBlur={() => outForcus(item)} />
+                              }
                           </div>
                         ) : null
                       )
@@ -1829,10 +1836,11 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
             <div className="price-erea" style={{ marginLeft: '1px', marginTop: '10px' }}>
               <label style={{ marginTop: '5px', marginLeft: '11px', display: "block", textAlign: "right" }}>販売価格（税込）</label>
               <label style={{ marginTop: '5px' }} className="label-required">必須</label>
-              <input type="number" className="input-text"
+              <input type="number" className="input w-full text-right max-w-8"
                 value={state.sales_price}
                 disabled={checkBock.flag} style={{ backgroundColor: backColor }}
-                onChange={(event) => salesPriceChange(event.target.value)} />
+                onChange={(event) => salesPriceChange(event.target.value)}
+              />
             </div>
             <Forms.FormGroupInputNumber
               labelText="仕入価格"
