@@ -926,9 +926,6 @@ class ItemService
    */
   public function updateTransaction(array $data): array
   {
-    \Log::debug('$data1');
-    \Log::debug($data);
-
     return DB::transaction(function () use ($data) {
       $ids = [];
 
@@ -950,6 +947,7 @@ class ItemService
 
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
+          \Log::debug('$data1-1a');
           $item = Item::update($base + [
             'variations1' => $data['variItems'][0][1] ?? null,
             'variations2' => $data['variItems'][0][2] ?? null,
@@ -961,6 +959,7 @@ class ItemService
         }
         else
         {
+          \Log::debug('$data1-1b');
           $item = Item::update($base + [
             'variations1' => null,
             'variations2' => null,
@@ -973,33 +972,41 @@ class ItemService
 
         $ids[] = $item->id;
 
+        \Log::debug('$data1-2');
         // 商品画像・商品分類・取扱説明書・特売設定
         $this->updateItemRelations($item, $data, 0);
-
+        \Log::debug('$data1-3');
       // バリエーションあり
       } else {
+        \Log::debug('$data2-1');
         // variItems 前回値を保持する配列の初期化
         $prevVariations = $this->initPrevVariations();
 
+        \Log::debug('$data2-2');
         foreach ($data['variItems'] as $variation) {
           // バリエーション情報の設定
           $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
 
+          \Log::debug('$data2-3');
           // 既存のバリエーションのため m_items 更新
           if (!empty($variation[0])) {
             $item = Item::findOrFail($variation[0]);
             $item->update($variationAttributes);
           
+            \Log::debug('$data2-4');
           // 新規バリエーションのため m_items 新規登録
           } else {
             $item = Item::create($variationAttributes);
+            \Log::debug('$data2-5');
           }
 
           // バリエーションの前回値の更新
           $this->updatePrevVariations($prevVariations, $variation);
+          \Log::debug('$data2-6');
 
           // 商品画像・商品分類・取扱説明書・特売設定
           $this->updateItemRelations($item, $data, 0);
+          \Log::debug('$data2-7');
 
           $ids[] = $item->id;
         }
