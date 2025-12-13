@@ -185,7 +185,6 @@ class ItemController extends BaseController
   public function store(Request $request)
   {
     $input = $request->all();
-    \Log::debug('store コントローラー1');
     
     try {
       $newIds = $this->service->store($input);

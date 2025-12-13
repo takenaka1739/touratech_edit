@@ -769,23 +769,26 @@ class ItemService
 
       // 共通部を取得
       $base = $this->buildItemBase($data);
-      \Log::debug('store チェックポイント1');
+      \Log::debug('$data');
+      \Log::debug($data);
 
       // バリエーションなし
       if (empty($data['variItems'])) {
+        \Log::debug('store チェックポイント1-1');
         $item = Item::create($base + [
           'item_number' => $data['item_number'] ?? null,
           'sales_price' => $data['sales_price'] ?? 0,
         ]);
         $ids[] = $item->id;
-        \Log::debug('store チェックポイント2');
+        \Log::debug('store チェックポイント1-2');
 
         // 商品画像・商品分類・取扱説明書・特売設定
         $this->storeItemRelations($item, $data, 0);
-        \Log::debug('store チェックポイント3');
+        \Log::debug('store チェックポイント1-3');
 
       // バリエーションあり
       } else {
+        \Log::debug('store チェックポイント2-1');
         // variItems 前回値を保持する配列の初期化
         $prevVariations = $this->initPrevVariations();
 
