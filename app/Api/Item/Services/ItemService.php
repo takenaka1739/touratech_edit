@@ -585,7 +585,8 @@ class ItemService
 
     $c_is_display = $cond->get('c_is_display');
     if ($c_is_display !== "none") {
-      $query->where('is_display', $c_is_display === "1");
+      //$query->where('is_display', $c_is_display === "1");
+      $query->where('is_display', $c_is_display === "2");
     }
 
     $has_discontinued = $cond->get('c_has_discontinued');
