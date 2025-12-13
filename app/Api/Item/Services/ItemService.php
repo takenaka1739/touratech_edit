@@ -456,27 +456,6 @@ class ItemService
   }
 
   /**
-   * 登録
-   *
-   * @param array $data 登録データ
-   */
-  public function store(array $data)
-  {
-    $data['domestic_stocks'] = $data['domestic_stocks'] ?? 0;
-    $data['overseas_stocks'] = $data['overseas_stocks'] ?? 0;
-    $data['is_set_item'] = false;
-    $data['sales_unit_price'] = $data['sales_unit_price'] ?? 0;
-    $data['purchase_unit_price'] = $data['purchase_unit_price'] ?? 0;
-    $newId = DB::transaction(function () use ($data) {
-        $item = Item::create($data);
-
-        return $item->id; // ← これがそのまま $newId に入る
-    });
-
-    return $newId;
-  }
-
-  /**
    * 更新
    *
    * @param int $id 商品ID
@@ -737,19 +716,56 @@ class ItemService
   }
   
   /**
+   * t_items 関連のサブテーブル（商品画像・商品分類・取扱説明書・特売設定）への新規登録
+   */
+  private function storeItemRelations(Item $item, array $data, int $imageIndex = 0): void
+  {
+    // Image （商品画像・動画・YouTubeリンク）登録（Itemごとに複数件）
+    if (!empty($data['images'][$imageIndex])) {
+      $imageRow = $data['images'][$imageIndex];
+
+      // 要素0は item_id、要素1～はファイル名
+      foreach (array_values(array_slice($imageRow, 1)) as $order => $fileName) {
+        Image::create([
+          'item_id'     => $item->id,
+          'category_id' => null,
+          'name'        => $fileName,
+          'order_by'    => $order,
+        ]);
+      }
+    }
+
+    // 商品分類の登録 (Itemごとに複数件)
+    foreach ($data['categoryList'] as $category) {
+      ItemCategoryCombination::create([
+        'item_id'     => $item->id,
+        'category_id' => $category['categoryId'],
+      ]);
+    }
+
+    // 取扱説明書の登録（Itemごとに必ず1件）
+    if (!empty($data['type_status']) && $data['type_status'] !== 0)
+    {
+      Document::create($this->buildDocumentAttributes($item->id, $data));
+    }
+
+    // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
+    if($data['start_at'] !== null) {
+      SpecialSale::create($this->buildSpecialSaleAttributes($item->id, $data));
+    }
+  }
+
+  /**
    * 商品マスタに関連するテーブルに一括登録する。
    * 更新対象：m_items -> m_images -> t_category_item_combinations -> m_documents -> t_special_sales
    */
-  public function storeTransaction(array $data): array
+  public function store(array $data): array
   {
     return DB::transaction(function () use ($data) {
       $ids = [];
 
       // 共通部を取得
       $base = $this->buildItemBase($data);
-
-      \Log::debug('$data');
-      \Log::debug($data);
 
       // バリエーションなし
       if (empty($data['variItems'])) {
@@ -759,40 +775,8 @@ class ItemService
         ]);
         $ids[] = $item->id;
 
-        // Image （商品画像・動画・YouTubeリンク）登録（Itemごとに複数件）
-        if (!empty($data['images'][0])) {
-          $imageRow = $data['images'][0];
-
-          // 要素0は item_id、要素1～はファイル名
-          foreach (array_values(array_slice($imageRow, 1)) as $order => $fileName) {
-            Image::create([
-              'item_id'     => $item->id,
-              'category_id' => null,
-              'name'        => $fileName,
-              'order_by'    => $order,
-            ]);
-          }
-        }
-
-        // 取扱説明書の登録（Itemごとに必ず1件）
-        if (!empty($data['type_status']) && $data['type_status'] !== 0)
-        {
-          Document::create($this->buildDocumentAttributes($item->id, $data));
-        }
-
-        // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
-        if ($data['start_at'] !== null) {
-          SpecialSale::create($this->buildSpecialSaleAttributes($item->id, $data));
-        }
-
-        // ItemCategoryCombination 登録 (Itemごとに複数件)
-        foreach ($data['categoryList'] as $category) {
-          \Log::debug($category);
-          ItemCategoryCombination::create([
-            'item_id'     => $item->id,
-            'category_id' => $category['categoryId'],
-          ]);
-        }
+        // 商品画像・商品分類・取扱説明書・特売設定
+        $this->storeItemRelations($item, $data, 0);
 
       // バリエーションあり
       } else {
@@ -806,41 +790,8 @@ class ItemService
           $this->updatePrevVariations($prevVariations, $variation);   // バリエーションの前回値の更新
           $ids[] = $item->id;                                         // m_items の新規登録ID
 
-          \Log::debug($data);
-
-          // Image （商品画像・動画・YouTubeリンク）登録（Itemごとに複数件）
-          if (!empty($data['images'][$index])) {
-            $imageRow = $data['images'][$index];
-
-            // 要素0は item_id、要素1～はファイル名
-            foreach (array_slice($imageRow, 1) as $order => $fileName) {
-              Image::create([
-                'item_id'     => $item->id,
-                'category_id' => null,
-                'name'        => $fileName,
-                'order_by'    => $order,
-              ]);
-            }
-          }
-
-          // 取扱説明書の登録（Itemごとに必ず1件）
-          if (!empty($data['type_status']) && $data['type_status'] !== 0)
-          {
-            Document::create($this->buildDocumentAttributes($item->id, $data));
-          }
-
-          // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
-          if($data['start_at'] !== null) {
-            SpecialSale::create($this->buildSpecialSaleAttributes($item->id, $data));
-          }
-
-          // ItemCategoryCombination 登録 (Itemごとに複数件)
-          foreach ($data['categoryList'] as $category) {
-            ItemCategoryCombination::create([
-              'item_id'     => $item->id,
-              'category_id' => $category['categoryId'],
-            ]);
-          }
+          // 商品画像・商品分類・取扱説明書・特売設定
+          $this->storeItemRelations($item, $data, $index);
         }
       }
 

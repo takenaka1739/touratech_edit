@@ -91,19 +91,6 @@ class ItemController extends BaseController
   }
 
   /**
-   * 登録
-   */
-  public function store(ItemStoreRequest $request)
-  {
-    $newId = $this->service->store($request->validated());
-
-    return response()->json([
-        'success' => true,
-        'id' => $newId,
-    ]);
-  }
-
-  /**
    * 更新
    *
    * @param int $id 商品ID
@@ -195,19 +182,19 @@ class ItemController extends BaseController
   /**
    * 商品マスタ関連のデータをトランザクション処理にて一括登録する。
    */
-  public function store_transaction(Request $request)
+  public function store(Request $request)
   {
     $input = $request->all();
 
     try {
-      $newIds = $this->service->storeTransaction($input);
+      $newIds = $this->service->store($input);
 
       return response()->json([
         'success' => true,
         'ids'     => $newIds,
       ]);
     } catch (\Exception $e) {
-      \Log::error('store_transaction failed: '.$e->getMessage());
+      \Log::error('store failed: '.$e->getMessage());
       return response()->json([
         'success' => false,
         'error'   => $e->getMessage(),
@@ -244,7 +231,7 @@ class ItemController extends BaseController
   public function updateAllDisplayStatus(Request $request)
   {
     $status = (int) $request->getContent();
-    
+
     try {
       $success = $this->service->updateAllDisplayStatus($status);
 

@@ -16,12 +16,11 @@ Route::group([
   Route::group([
     'middleware' => ['check.admin']
   ], function() {
-    Route::post('store_transaction', [ItemController::class, 'store_transaction']);
+    Route::post('store', [ItemController::class, 'store']);
     Route::put('{id}/update_transaction', [ItemController::class, 'update_transaction']);
     Route::put('display_status/update_all', [ItemController::class, 'updateAllDisplayStatus']);
 
     Route::post('fetch', [ItemController::class, 'fetch']);
-    Route::post('store', [ItemController::class, 'store']);
     Route::get('edit/{id}', [ItemController::class, 'edit']);
     Route::put('edit/{id}', [ItemController::class, 'update']);
     Route::put('/update/{id}', [ItemController::class, 'update']);
