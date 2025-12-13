@@ -526,10 +526,7 @@ useEffect(() => {
           <label className="point-label">ポイント：{pointText}pt</label>
           {location.state.items.type_status !== 0 && location.state.items.type_status !== undefined && (
             <div style={{display: 'flex', alignItems: 'baseline', padding: '0', marginTop: '5px' }}>
-              <label style={{fontSize: '15px', marginTop: '0'}}>
-                {location.state.items.type_name}：
-              </label>
-              <a className="document_url" href={location.state.items.document_url}>リンク</a>
+              <a className="document_url" href={location.state.items.document_url}>{location.state.items.type_name}</a>
             </div>
           )}
           <hr/>

@@ -12,6 +12,7 @@ import {
 import { useCommonListPage } from '@/app/App/uses/useCommonListPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 import { AppActions } from '@/app/App/modules/appModule';
+import { appAlert } from '@/components';
 
 export type ItemPageState = {
   rows: Item[];
@@ -88,6 +89,18 @@ export const useItemListPage = (slug: string) => {
     return false;
   };
 
+  const checkAlert = async (): Promise<boolean> => {
+    const result = await appAlert({
+      type: 'confirm',
+      title: '一括変更',
+      message: '在庫表示を一括変更してよろしいですか？',
+      okText: 'はい',
+      cancelText: 'いいえ'
+    });
+
+    return result;
+  }
+
   const onClickOutput: () => void = async () => {
     setDisabled(true);
     await output();
@@ -95,6 +108,17 @@ export const useItemListPage = (slug: string) => {
   };
 
   const changeStockDisplay: () => void = async () => {
+    console.log('クリックされたよ');
+    const result = await checkAlert();
+    console.log(result);
+
+    //if (result) {
+    //  console.log('変更します');
+    //  // OK が押されたときの処理
+    //} else {
+    //  console.log('キャンセルしました');
+    //  // キャンセルされたときの処理
+    //}
 
   };
 

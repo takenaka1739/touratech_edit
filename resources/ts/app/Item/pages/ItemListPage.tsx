@@ -5,6 +5,7 @@ import { SupplierSearchDialog } from '@/app/Supplier/components/SupplierSearchDi
 import { useItemListPage } from '../uses/useItemListPage';
 import { numberFormat } from '@/utils/numberFormat';
 import { useComposing } from '@/uses';
+import { useIsAdmin } from '@/app/App/uses/useApp';
 
 /**
  * 商品マスタ（一覧）画面 Component
@@ -28,6 +29,7 @@ export const ItemListPage: React.VFC = () => {
     isDisabled,
   } = useItemListPage(slug);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
+  const isAdmin = useIsAdmin();
 
   const tables = useMemo(() => {
     const tbody = state.rows.map(r => (
@@ -37,8 +39,8 @@ export const ItemListPage: React.VFC = () => {
           {/*<div className="text-xs">{r.itemNumberItem}</div>*/}
           <div>{r.name + '　' +
                 (r.variations1 ? `${r.variations1}` : '') + (r.variations2 ? ` / ${r.variations2}` : '') + 
-                (r.variations3 ? ` / ${r.variations3}` : '') + (r.variations4 ? ` / ${r.variations4}` : '') +
-                (r.variations5 ? ` / ${r.variations5}` : '')}</div>
+                (r.variations3 ? ` / ${r.variations3}` : '') + (r.variations4 ? ` / ${r.variations4}` : '')
+                }</div>
           {/*<div>{r.name_jp}</div>*/}
           <div>{r.name_note}</div>
         </td>
@@ -164,16 +166,29 @@ export const ItemListPage: React.VFC = () => {
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
       </TableWrapper>
-      <div className="mt-2">
-        <button className="btn" onClick={addDetail} disabled={isDisabled}>
-          新規追加
-        </button>
-        <button className="btn ml-6" onClick={onClickOutput} disabled={isDisabled}>
-          エクセル出力
-        </button>
-        <button className="btn ml-6" onClick={changeStockDisplay} disabled={isDisabled}>
-          在庫表示一括切替
-        </button>
+      <div className="mt-2" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <button className="btn" onClick={addDetail} disabled={isDisabled}>
+            新規追加
+          </button>
+          <button className="btn ml-6" onClick={onClickOutput} disabled={isDisabled}>
+            エクセル出力
+          </button>
+        </div>
+
+        {isAdmin && (<div style={{ display: 'flex', alignItems: 'center' }}>
+          <label style={{ marginRight: '4px' }}>在庫表示一括切替：</label>
+          <button className="btn" onClick={changeStockDisplay} disabled={isDisabled}>
+            非表示
+          </button>
+          <button className="btn ml-6" onClick={changeStockDisplay} disabled={isDisabled}>
+            表示（業者のみ）
+          </button>
+          <button className="btn ml-6" onClick={changeStockDisplay} disabled={isDisabled}>
+            表示（一般含む）
+          </button>
+        </div>
+        )}
       </div>
     </PageWrapper>
   );
