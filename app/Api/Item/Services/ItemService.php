@@ -862,12 +862,21 @@ class ItemService
    */
   private function deleteRemovedCategory(array $data): void
   {
-    // categoryList が存在する場合のみ処理
-    foreach ($data['categoryList'] ?? [] as $category) {
-      // status が 'del' の場合に combId を削除対象とする
-      if (($category['status'] ?? null) === 'del' && isset($category['combId'])) {
-        ItemCategoryCombination::where('id', $category['combId'])->delete();
-      }
+    // categoryList から status === 'del' の categoryId を収集
+    $delCategoryIds = collect($data['categoryList'] ?? [])
+        ->filter(fn($c) => ($c['status'] ?? null) === 'del')
+        ->pluck('categoryId')->unique()->all();
+
+    if (empty($delCategoryIds)) return;
+
+    // categoryListAll を走査して、同じ categoryId を持つ要素を抽出
+    foreach ($data['categoryListAll'] ?? [] as $variationCategories) {
+        foreach ($variationCategories as $category) {
+            if (in_array($category['categoryId'], $delCategoryIds) && isset($category['combId'])) {
+                // combId をキーに削除
+                ItemCategoryCombination::where('id', $category['combId'])->delete();
+            }
+        }
     }
   }
 
