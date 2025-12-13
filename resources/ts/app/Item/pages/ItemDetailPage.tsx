@@ -136,10 +136,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   //const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
-  ///const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.itemNumberItem[0]);
-  const domestic_url = createUrl('https://touratech.matrix.jp/ec/category-products/', `${state.category_name}/${state.id}/`);
   const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
-  //const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.itemNumberItem[0]);
 
   const [variItems, setVariItems] = useState([['', '', '', '', '', '', '']]);
   const [checkBock, setCheckBock] = useState({ color: '#EDF2F7', flag: false });
@@ -147,19 +144,17 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [variChangeItem, setVariChangeItem] = useState<string[][]>([]);
   const dispatch = useDispatch();
   const [onFocusItem, setonFocusItem] = useState<string[]>();
-  //const [specialItem, setSpecialItem] = useState(state.specialSalesList);
-  //const [imageItems, setImageItems] = useState(state.imageList);
   const location = useLocation<any>();
   const [categoryChangeFlag, setCategoryChangeFlag] = useState(false);
   const [supplierChangeFlag, setSupplierChangeFlag] = useState(false);
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
-  const [backUpState, setBackUpState] = useState<any>();
   const [typeName, setTypeName] = useState('');
   const [typeNameBackColor, setTypeNameBackColor] = useState('#EDF2F7');
   const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
   const [changeCategoryFlag, setChangeCategoryFlag] = useState(false);
   const [preCategoryId, setPreCategoryId] = useState<number | undefined>(undefined);
+  const [domestic_url, setDomestic_url] = useState<string>('');
 
   console.log('state.categoryListAll');
   console.log(state.categoryListAll);
@@ -170,13 +165,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       state.variItems.length > 0 &&
       state.variItems[0].length > 0;
     setVariItems(isValid ? state.variItems : [['new1', '', '', '', '', '', '']]);
-    console.log('state.imageList');
-    console.log(state.imageList);
-    //setSpecialItem(state.specialSalesList);
-    //const isImgValid = Array.isArray(state.imageList) &&
-    //  state.imageList.length > 0 &&
-    //  state.imageList[0].length > 0;
-    //  console.log(`state.imageList：${state.imageList}`);
     if(!(state.imageList[0].length > 0)){
       setState(prev => ({
         ...prev,
@@ -185,7 +173,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
 
     if (!state.variItems || state.variItems.length === 0 || state.variItems.every(row => row.length === 0)) {
-      console.log('こっち？');
       setState(prev => ({
         ...prev,
         variItems: [['new1', '', '', '', '', '', '']],
@@ -234,7 +221,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         setState({ ...state, shipping_pay: state.send_personal })
       }
     }
-    setBackUpState(state);
   }, []);
 
   // 取扱説明書の題目名設定
@@ -264,6 +250,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }, [state.type_status, typeName]);
 
+  // 国内リンクの初期値設定
+  useEffect(() => {
+    if(state.category_name == undefined){
+      setDomestic_url(`https://touratech.matrix.jp/ec/category-products/カテゴリーの一覧/${state.categoryList[0].name}/${state.id}`);
+    }
+  }, [state.category_name]);
+
   const onChangeTypeName = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTypeName(event.target.value);
   }
@@ -278,10 +271,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const prevIdRef = useRef(state.id);
   useEffect(() => {
     // 前回の id を保持する ref
-
-    if (prevIdRef.current === undefined && state.id !== undefined) {
-      setBackUpState(state);
-    }
 
     // 次回のために更新
     prevIdRef.current = state.id;
@@ -710,7 +699,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }, [state.category_id, state.category_name]);
 
-
   const changeCategory = () => {
     if (changeCategoryIndex !== null) {
       if (state.category_id !== undefined && state.category_name !== undefined) {
@@ -1121,6 +1109,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           ...prev,
           imageList: location.state.imageItem
         }));
+
+        console.log('location.state.imageItem');
+        console.log(location.state.imageItem);
       }
 
       if (variClickFlag !== true) {
@@ -1638,7 +1629,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               value: 0,
             },
             {
-              labelText: '表示',
+              labelText: '表示（一般含む）',
               id: 'display_status_1',
               value: 1,
             },

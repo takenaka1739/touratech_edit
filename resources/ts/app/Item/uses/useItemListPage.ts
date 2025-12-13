@@ -13,6 +13,7 @@ import { useCommonListPage } from '@/app/App/uses/useCommonListPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 import { AppActions } from '@/app/App/modules/appModule';
 import { appAlert } from '@/components';
+import { appConfirm } from '@/components';
 
 export type ItemPageState = {
   rows: Item[];
@@ -89,18 +90,6 @@ export const useItemListPage = (slug: string) => {
     return false;
   };
 
-  const checkAlert = async (): Promise<boolean> => {
-    const result = await appAlert({
-      type: 'confirm',
-      title: '一括変更',
-      message: '在庫表示を一括変更してよろしいですか？',
-      okText: 'はい',
-      cancelText: 'いいえ'
-    });
-
-    return result;
-  }
-
   const onClickOutput: () => void = async () => {
     setDisabled(true);
     await output();
@@ -108,18 +97,21 @@ export const useItemListPage = (slug: string) => {
   };
 
   const changeStockDisplay = async (value: number): Promise<void> => {
-    console.log('クリックされたよ：', value);
-    const result = await checkAlert();
-    console.log(result);
+    const result = await appConfirm('在庫表示を一括変更しますか？');
 
-    //if (result) {
-    //  console.log('変更します');
-    //  // OK が押されたときの処理
-    //} else {
-    //  console.log('キャンセルしました');
-    //  // キャンセルされたときの処理
-    //}
-
+    if (!result) {
+      await appAlert('キャンセルしました');
+    } else {
+      const res = await axios.put('/api/item/display_status/update_all', value);
+      if(res.status === 200) {
+        dispatch(AppActions.success());
+        if (res.data.success) {
+          await appAlert('変更を保存しました');
+        }
+      }else{
+        dispatch(AppActions.failed('変更に失敗しました'));
+      }
+    }
   };
 
   return {
