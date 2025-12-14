@@ -129,7 +129,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   type Category = {
     combId: number | undefined;
     categoryId: number | null;
-    itemId: number | null; 
     name: string;
     status: string;
     initialcategoryId: number | undefined;
@@ -189,7 +188,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if (state.categoryList.length === 0) {
       const arr: Category = {
         combId: undefined,
-        itemId: null,
         categoryId: null,
         name: "",
         status: 'new1',
@@ -564,7 +562,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       const nextStatus = `new${maxNumber + 1}`;
       const arr: Category = {
         combId: undefined,
-        itemId: null,
         categoryId: null,
         name: "",
         status: nextStatus,
