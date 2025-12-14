@@ -851,13 +851,9 @@ class ItemService
     // 削除対象（更新前に存在 → 更新後に存在しない）
     $deletedItems = $beforeVariations->whereNotIn('id', $afterIds);
 
-    \Log::debug('*** 削除の手前まで来たよ ***');
+    // 論理削除
     foreach ($deletedItems as $deleteItem) {
-      \Log::debug('*** 削除が始まるよ ***');
-      \Log::debug($deleteItem);
       $deleteItem->delete();
-      \Log::debug('*** 削除が終わったよ ***');
-      \Log::debug($deleteItem);
     }
   }
 
@@ -999,6 +995,7 @@ class ItemService
         // 商品画像・商品分類・取扱説明書・特売設定
         $this->updateItemRelations($item, $data, 0);
         \Log::debug('$data1-3');
+
       // バリエーションあり
       } else {
         \Log::debug('$data2-1');
@@ -1013,14 +1010,16 @@ class ItemService
           \Log::debug('$data2-3');
           // 既存のバリエーションのため m_items 更新
           if (!empty($variation[0])) {
+            \Log::debug('$data2-4-1');
             $item = Item::findOrFail($variation[0]);
             $item->update($variationAttributes);
           
-            \Log::debug('$data2-4');
+            \Log::debug('$data2-4-2');
           // 新規バリエーションのため m_items 新規登録
           } else {
+            \Log::debug('$data2-5-1');
             $item = Item::create($variationAttributes);
-            \Log::debug('$data2-5');
+            \Log::debug('$data2-5-2');
           }
 
           // バリエーションの前回値の更新
