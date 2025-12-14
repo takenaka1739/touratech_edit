@@ -775,6 +775,11 @@ class ItemService
     $imageRow = $data['images'][$imageIndex] ?? [];
     $afterFileNames = array_slice($imageRow, 1);
 
+    // ファイル名を正規化（/images を削除して拡張子付きファイル名だけ残す）
+    $afterFileNames = array_map(function ($name) {
+      return basename($name);
+    }, $afterFileNamesRaw);
+
     // 削除対象（DBに存在 → 更新後に存在しない）
     $deletedImages = $beforeImages->reject(fn($img) => in_array($img->name, $afterFileNames));
     foreach ($deletedImages as $deleteImage) {
