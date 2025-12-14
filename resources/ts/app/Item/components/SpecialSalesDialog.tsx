@@ -63,11 +63,18 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
 
   const onDeleteClick = () => {
     initialState.specialSalesDelFlag = true;
-    onChange('is_sales_members_only', false);
-    onChange('start_at', undefined);
-    onChange('end_at', undefined);
-    onChange('special_sale_price', 0);
-    onChange('refund_rate', 0);
+    //onChange('is_sales_members_only', false);
+    //onChange('start_at', undefined);
+    //onChange('end_at', undefined);
+    //onChange('special_sale_price', 0);
+    //onChange('refund_rate', 0);
+
+    initialState.is_sales_members_only = false;
+    initialState.start_at = undefined;
+    initialState.end_at = undefined;
+    initialState.special_sale_price = undefined;
+    initialState.refund_rate = undefined;
+
     onClickCancel();
   }
 
