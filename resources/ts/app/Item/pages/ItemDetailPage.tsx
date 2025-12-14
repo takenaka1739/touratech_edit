@@ -583,7 +583,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       if (state.category_id !== undefined && state.category_name !== undefined) {
         // 同じカテゴリが選択されているかのチェック
         const flag = state.categoryList.some(
-          item => item.status !== "del" && item.categoryId === state.category_id
+          item =>
+            item.categoryId !== null && // ← nullは無視
+            item.status !== "del" &&
+            item.categoryId === state.category_id
         );
 
         setChangeCategoryFlag(flag);
@@ -687,7 +690,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       if (state.category_id !== undefined && state.category_name !== undefined) {
         // 同じカテゴリが選択されているかのチェック
         const flag = state.categoryList.some(
-          item => item.status !== "del" && item.categoryId === state.category_id
+          item =>
+            item.categoryId !== null && // ← nullは無視
+            item.status !== "del" &&
+            item.categoryId === state.category_id
         );
       
         setChangeCategoryFlag(flag);
