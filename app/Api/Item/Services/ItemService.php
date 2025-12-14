@@ -1006,7 +1006,7 @@ class ItemService
         $prevVariations = $this->initPrevVariations();
 
         \Log::debug('$data2-2');
-        foreach ($data['variItems'] as $variation) {
+        foreach ($data['variItems'] as $index => $variation) {
           // バリエーション情報の設定
           $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
 
@@ -1030,7 +1030,7 @@ class ItemService
           \Log::debug('$data2-6');
 
           // 商品画像・商品分類・取扱説明書・特売設定
-          $this->updateItemRelations($item, $data, 0);
+          $this->updateItemRelations($item, $data, $index);
           \Log::debug('$data2-7');
 
           $ids[] = $item->id;
