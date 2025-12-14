@@ -68,6 +68,7 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
     onChange('end_at', undefined);
     onChange('special_sale_price', 0);
     onChange('refund_rate', 0);
+    onClickCancel();
   }
 
   return (
