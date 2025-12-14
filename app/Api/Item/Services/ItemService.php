@@ -838,14 +838,16 @@ class ItemService
 
     // 特売設定の更新／新規作成 (1つの Item に1件)
     if (!empty($data['start_at'])) {
+      \Log::debug('$data3-6-1');
       SpecialSale::updateOrCreate(
         ['item_id' => $item->id],
         $this->buildSpecialSaleAttributes($item->id, $data)
       );
     } else {
+      \Log::debug('$data3-6-2');
       SpecialSale::where('item_id', $item->id)->delete();
     }
-    \Log::debug('$data3-6');
+    \Log::debug('$data3-7');
   }
 
   /**
