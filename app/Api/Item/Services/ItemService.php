@@ -773,12 +773,10 @@ class ItemService
     \Log::debug('$data3-1');
     // 更新後のファイル名一覧（images[0]は item_id、images[1]以降がファイル名）
     $imageRow = $data['images'][$imageIndex] ?? [];
-    $afterFileNames = array_slice($imageRow, 1);
+    $afterFileNamesRaw = array_slice($imageRow, 1);
 
     // ファイル名を正規化（/images を削除して拡張子付きファイル名だけ残す）
-    $afterFileNames = array_map(function ($name) {
-      return basename($name);
-    }, $afterFileNamesRaw);
+    $afterFileNames = array_map(fn($name) => basename($name), $afterFileNamesRaw);
 
     // 削除対象（DBに存在 → 更新後に存在しない）
     $deletedImages = $beforeImages->reject(fn($img) => in_array($img->name, $afterFileNames));
