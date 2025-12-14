@@ -781,7 +781,7 @@ class ItemService
     // 削除対象（DBに存在 → 更新後に存在しない）
     $deletedImages = $beforeImages->reject(fn($img) => in_array($img->name, $afterFileNames));
     foreach ($deletedImages as $deleteImage) {
-        $deleteImage->update(['deleted_at' => now()]);
+        $deleteImage->delete();
     }
     \Log::debug('$data3-2');
 
