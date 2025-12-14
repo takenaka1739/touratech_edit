@@ -816,41 +816,24 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }
 
-  const onChangeCategory = (combId: any, status: string) => {
-    //let preCategoryId = null;
-    const filteredList = state.categoryList.filter(item => item.status !== "del");
-    const matchIndex = filteredList.findIndex(item => {
-      if (item.combId == null) {
-        return item.status === status;
-      }
-      return item.combId === combId;
-    });
-
+  const onChangeCategory = (originalIndex: number) => {
     setChangeCategoryFlag(false);
-    setChangeCategoryIndex(matchIndex);
+    setChangeCategoryIndex(originalIndex);
     openItemClassDialog();
   };
 
-  const categoryDelButton = (combId: any, status: string) => {
+  const categoryDelButton = (originalIndex: number) => {
     setCategoryChangeFlag(true);
     setChangeCategoryFlag(false);
-    const matchIndex = state.categoryList.findIndex(item => {
-      // combId が null/undefined なら status で判定
-      if (item.combId == null) {
-        return item.status === status;
-      }
-      // それ以外は combId で判定
-      return item.combId === combId;
-    });
 
     setState(prev => {
-      const target = prev.categoryList[matchIndex];
+      const target = prev.categoryList[originalIndex];
 
       // status が new の場合は削除
       if (target.status.includes("new")) {
         return {
           ...prev,
-          categoryList: prev.categoryList.filter((_, index) => index !== matchIndex),
+          categoryList: prev.categoryList.filter((_, index) => index !== originalIndex),
         };
       }
 
@@ -858,13 +841,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       return {
         ...prev,
         categoryList: prev.categoryList.map((item, index) =>
-          index === matchIndex
+          index === originalIndex
             ? { ...item, status: "del" }
             : item
         ),
       };
     });
-    setChangeCategoryIndex(matchIndex);
+    setChangeCategoryIndex(originalIndex);
   };
 
   const delButton = (selectIndex: number) => {
@@ -1446,15 +1429,16 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
             </div>
             <div>
               {state.categoryList
+                .map((item, originalIndex) => ({ ...item, originalIndex }))
                 .filter(item => item.status !== "del")
                 .map((item, index) => {
                   // 条件付きでボーダーカラーを決定
                   const borderColor =
-                    changeCategoryFlag && index === changeCategoryIndex
+                    changeCategoryFlag && item.originalIndex === changeCategoryIndex
                       ? "red"   // 重複している行は赤枠
                       : "#BCC7D4"; // 通常はグレー枠
                   return (
-                    <div key={index}>
+                    <div key={item.originalIndex}>
                       <div style={{ display: "flex" }}>
                         <input
                           className="vari-row-input"
@@ -1469,7 +1453,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                         <button
                           className="btn py-0 px-2"
                           style={{ marginTop: "5px" }}
-                          onClick={() => onChangeCategory(item.combId, item.status)}
+                          onClick={() => onChangeCategory(item.originalIndex)}
                         >
                           ...
                         </button>
@@ -1477,7 +1461,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                           <button
                             className="btn-delete"
                             style={{ marginTop: "5px", marginLeft: "5px" }}
-                            onClick={() => categoryDelButton(item.combId, item.status)}
+                            onClick={() => categoryDelButton(item.originalIndex)}
                           >
                             削除
                           </button>
@@ -1485,7 +1469,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                       </div>
 
                       {/* 重複チェック */}
-                      {changeCategoryFlag && index === changeCategoryIndex && (
+                      {changeCategoryFlag && item.originalIndex === changeCategoryIndex && (
                         <div className="form-error">重複した商品分類です</div>
                       )}
                     </div>
