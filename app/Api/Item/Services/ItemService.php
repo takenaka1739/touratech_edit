@@ -775,8 +775,19 @@ class ItemService
     $imageRow = $data['images'][$imageIndex] ?? [];
     $afterFileNamesRaw = array_slice($imageRow, 1);
 
-    // ファイル名を正規化（/images を削除して拡張子付きファイル名だけ残す）
-    $afterFileNames = array_map(fn($name) => basename($name), $afterFileNamesRaw);
+    // ファイル名を正規化（/images であれば削除して拡張子付きファイル名だけ残す）
+    $afterFileNames = array_map(function ($name) {
+      // null や空文字はスキップ
+      if (empty($name)) return $name;
+
+      // /images を含む場合は basename に変換
+      if (str_contains($name, '/images/')) {
+        return basename($name);
+      }
+
+      // YouTubeリンクやその他のURLはそのまま
+      return $name;
+    }, $afterFileNamesRaw);
 
     // 削除対象（DBに存在 → 更新後に存在しない）
     $deletedImages = $beforeImages->reject(fn($img) => in_array($img->name, $afterFileNames));
