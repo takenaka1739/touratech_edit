@@ -1007,22 +1007,32 @@ class ItemService
 
         \Log::debug('$data2-2');
         foreach ($data['variItems'] as $index => $variation) {
+          // 新規判定: 'new'で始まる文字列、または null/空文字
+          $key = $variation[0] ?? null;
+          $isNew = (is_string($key) && str_starts_with($key, 'new')) || $key === null || (is_string($key) && trim($key) === '');
+
           // バリエーション情報の設定
           $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
 
           \Log::debug('$data2-3');
-          // 既存のバリエーションのため m_items 更新
-          if (!empty($variation[0])) {
-            \Log::debug('$data2-4-1');
-            $item = Item::findOrFail($variation[0]);
-            $item->update($variationAttributes);
-          
-            \Log::debug('$data2-4-2');
-          // 新規バリエーションのため m_items 新規登録
-          } else {
+
+          if ($isNew) {
             \Log::debug('$data2-5-1');
             $item = Item::create($variationAttributes);
             \Log::debug('$data2-5-2');
+          } else {
+            // 既存判定: 数値ID（int または 数字文字列）
+            if (is_int($key) || (is_string($key) && ctype_digit($key))) {
+              \Log::debug('$data2-4-1');
+              $itemId = (int) $key;
+              $item = Item::findOrFail($itemId);
+              $item->update($variationAttributes);
+              \Log::debug('$data2-4-2');
+            } else {
+              // 想定外キーは安全側で新規扱いに
+              \Log::warning("Unexpected variation key; treating as new. key=" . var_export($key, true));
+              $item = Item::create($variationAttributes);
+            }
           }
 
           // バリエーションの前回値の更新
