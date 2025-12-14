@@ -585,23 +585,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if (changeCategoryIndex !== null) {
       if (state.category_id !== undefined && state.category_name !== undefined) {
         // 同じカテゴリが選択されているかのチェック
-        const flag = state.categoryList.some((item) => {
-          if (item.categoryId == null) {
-            return item.status !== "del" && !item.status?.includes("new");
-          } else {
-            if (item.status !== "del" && item.categoryId === state.category_id) {
-              return true;
-            }
-            if (
-              item.status === "del" &&
-              item.combId != null &&
-              item.categoryId === state.category_id
-            ) {
-              return false;
-            }
-            return false;
-          }
-        });
+        const flag = state.categoryList.some(
+          item => item.status !== "del" && item.categoryId === state.category_id
+        );
 
         setChangeCategoryFlag(flag);
 
@@ -703,23 +689,9 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if (changeCategoryIndex !== null) {
       if (state.category_id !== undefined && state.category_name !== undefined) {
         // 同じカテゴリが選択されているかのチェック
-        const flag = state.categoryList.some((item) => {
-          if (item.categoryId == null) {
-            return item.status !== "del" && !item.status?.includes("new");
-          } else {
-            if (item.status !== "del" && item.categoryId === state.category_id) {
-              return true;
-            }
-            if (
-              item.status === "del" &&
-              item.combId != null &&
-              item.categoryId === state.category_id
-            ) {
-              return false;
-            }
-            return false;
-          }
-        });
+        const flag = state.categoryList.some(
+          item => item.status !== "del" && item.categoryId === state.category_id
+        );
       
         setChangeCategoryFlag(flag);
       
