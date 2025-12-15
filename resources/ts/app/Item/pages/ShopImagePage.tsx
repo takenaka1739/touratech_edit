@@ -114,7 +114,6 @@ useEffect(() => {
           if (row[0] === selectId) {
             const newRow = [...row];
             newRow[6] = priceText;
-            console.dir(location.state.preVariItem);
             return newRow;
           }
           return row;
@@ -236,22 +235,16 @@ useEffect(() => {
   };
 
   const handleClick = (src:string, type:number, fileName:string) => {
-    console.log(src);
-  if (src.includes("blob:")) {
-    setSelectImage(fileName);
-  }
+    if(type !== 2){
+      if (src.includes("blob:")) {
+        setSelectImage(fileName);
+      }
+    }
 
     setImageSrc(src);
     setImageType(type);
     setClicked(true);
-    //setselectImage({pTag:'hidden', imgvisible:imgvisible, vdovisible:vdovisible});
   };
-
-  const youtubeClick = (src:string, type:number) => {
-    setImageSrc(src);
-    setImageType(type);
-    setClicked(true);
-  }
 
   const addMovie = () => {
     if (movieUrl.trim() === '') return;
@@ -281,17 +274,12 @@ useEffect(() => {
     edtImageItems.map((item:any, index:number) => {
       let fileItem: string[] = [];
       if(item[0] === files[0]){
-        console.log('item[0]');
-        console.log(item[0]);
         let delFile = [];
         // 該当ファイルの削除処理
         if(targetName.includes("blob:")){
           delFile = edtImageItems[index].filter((file:File) => file.name !== SelectImage);
-          console.log('targetName.includes(blob:)');
         }else{
           delFile = edtImageItems[index].filter((file:string) => file !== targetName);
-          console.log('targetName.includes(blob:)のelse文');
-          console.dir(delFile);
         }
         // 編集行の削除
         const updatedMatrix = edtImageItems.filter((_:any, idx:number) => idx !== index);
@@ -305,15 +293,11 @@ useEffect(() => {
         setFiles(delFile); // ユーザーに表示される部分の配列更新
         //setDelImageItem(addFileItem);
         setDelImageItem(prev => [...prev, fileItem]);
-        console.dir(addItem);
 
         setImageSrc('');
       }
     });
   };
-
-  console.dir(`delimageItem：`);
-  console.dir(delimageItem);
 
   const clickVariItem = (index:number) => {
     setSelectIndex(index);
@@ -331,9 +315,6 @@ useEffect(() => {
 
   const handleBack = () => {
     const url = location.state.item_id !== undefined ? `/item/detail/${location.state.item_id}` : `/item/detail`;
-    console.dir(variItems);
-    console.dir(variChangeItem);
-    console.dir(location.state.preVariItem);
     history.push({ pathname: url,
                       state: {itemName: nameText,
                               preVariItem:location.state.preVariItem,
@@ -407,9 +388,10 @@ useEffect(() => {
                 allowFullScreen
               />
               {/* クリック検知用オーバーレイ */}
-              {!clicked && (
+              {(
                 <div
-                  onClick={() => youtubeClick(src, 2)}
+                  //onClick={() => youtubeClick(src, 2)}
+                  onClick={() => handleClick(src, 2, '')}
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -440,20 +422,32 @@ useEffect(() => {
                   onClick={() => removeFileByName(selectImageSrc)}>
             削除
           </button>
-          {/*<button style={{marginLeft: '400px'}} onClick={() => removeFileByName(selectImageSrc)}>
-            削除
-          </button>*/}
-          <div>{ selectImageType === -1 ? (<img key={selectImageType} className="image-size" src={selectImageSrc}/>) : 
-                 selectImageType === 2 && clicked ? (<iframe key={selectImageType} className="image-size" src={selectImageSrc}
-                                                  title="YouTube video player"
-                                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;
-                                                         web-share"
-                                                  referrerPolicy="strict-origin-when-cross-origin"
-                                                  allowFullScreen/>) : 
-                                         (<video className="image-size" controls muted>
-                                           <source src={selectImageSrc} type="video/mp4"/>
-                                         </video>)
-          }</div>
+          <div>
+            {selectImageType === -1 ? (
+              <img
+                key={selectImageType}
+                className="image-size"
+                src={selectImageSrc}
+              />
+            ) : selectImageType === 2 && clicked ? (
+              <iframe
+                key={selectImageType}
+                className="image-size"
+                src={selectImageSrc}
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            ) : selectImageSrc ? (
+              <video className="image-size" controls muted>
+                <source src={selectImageSrc} type="video/mp4" />
+              </video>
+            ) : (
+              <img className="image-size"/>
+            )}
+          </div>
+
           <div className="image-input-erea">
             <input type="file" style={{ display: 'none' }} ref={attachRef} multiple onChange={handleInpuFileChange}/>
             <div 
