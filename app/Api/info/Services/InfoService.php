@@ -11,12 +11,6 @@ class InfoService
     /** @var string テーブル名 */
     private string $table = 't_info_posts';
 
-    /**
-     * 投稿一覧を取得
-     *
-     * @param string|null $type 'shop' | 'product' | null
-     * @return \Illuminate\Support\Collection
-     */
     public function getPosts(?string $type)
     {
         $query = DB::table($this->table)
@@ -55,7 +49,6 @@ class InfoService
                 'updated_at',
             ]);
 
-        // meta(JSON) を array に変換して返す
         return $rows->map(function ($row) {
             if (isset($row->meta) && $row->meta !== null && $row->meta !== '') {
                 $decoded = json_decode($row->meta, true);
@@ -67,18 +60,11 @@ class InfoService
         });
     }
 
-    /**
-     * 投稿を1件作成
-     *
-     * @param array $data validated data from InfoRequest
-     * @return object|null
-     */
     public function createPost(array $data)
     {
         $now    = Carbon::now();
         $userId = optional(auth()->user())->id;
 
-        // A案: status=published かつ published_at 未指定なら即時公開扱いで now をセット
         if (($data['status'] ?? null) === 'published' && empty($data['published_at'])) {
             $data['published_at'] = $now->toDateTimeString();
         }
@@ -98,13 +84,6 @@ class InfoService
         return $this->findPost($id);
     }
 
-    /**
-     * 投稿を1件更新
-     *
-     * @param int   $id
-     * @param array $data
-     * @return object|null
-     */
     public function updatePost(int $id, array $data)
     {
         $now    = Carbon::now();
@@ -130,12 +109,6 @@ class InfoService
         return $this->findPost($id);
     }
 
-    /**
-     * 投稿をソフトデリート
-     *
-     * @param int $id
-     * @return void
-     */
     public function deletePost(int $id): void
     {
         $now    = Carbon::now();
@@ -155,49 +128,57 @@ class InfoService
         ]);
     }
 
-    /**
-     * 商品検索（Items 用モーダル）
-     *
-     * @param string|null $keyword
-     * @param int         $page
-     * @return array { rows: […], pager: { page, lastPage, total } }
-     */
-    public function searchItems(?string $keyword, int $page = 1): array
+    public function searchItems(?string $keyword, int $page = 1, ?int $categoryId = null, ?int $perPage = null): array
     {
-        $perPage = 20;
+        $perPage = (int)($perPage ?? 20);
+        $perPage = max(1, min(100, $perPage));
 
-        $query = DB::table('m_items')
-            ->whereNull('deleted_at');
+        $pivot = 't_category_item_combinations';
+
+        $query = DB::table('m_items as i')
+            ->whereNull('i.deleted_at');
+
+        if (!is_null($categoryId)) {
+            $query->whereExists(function ($sub) use ($pivot, $categoryId) {
+                $sub->select(DB::raw(1))
+                    ->from($pivot . ' as ci')
+                    ->whereColumn('ci.item_id', 'i.id')
+                    ->where('ci.category_id', $categoryId);
+            });
+        }
 
         if ($keyword) {
             $like = '%' . $keyword . '%';
             $query->where(function ($q) use ($like) {
-                $q->where('name', 'like', $like)
-                    ->orWhere('item_number', 'like', $like)
-                    ->orWhere('code', 'like', $like);
+                $q->where('i.name', 'like', $like)
+                    ->orWhere('i.item_number', 'like', $like)
+                    ->orWhere('i.code', 'like', $like);
             });
         }
 
-        $total = $query->count();
+        $total = (clone $query)->count();
         $page  = max(1, $page);
         $lastPage = max(1, (int)ceil($total / $perPage));
 
         $rows = $query
-            ->orderBy('id', 'desc')
+            ->leftJoin($pivot . ' as ci', 'ci.item_id', '=', 'i.id')
+            ->leftJoin('m_categories as c', 'c.id', '=', 'ci.category_id')
+            ->groupBy('i.id', 'i.name', 'i.code', 'i.item_number')
+            ->orderBy('i.id', 'desc')
             ->forPage($page, $perPage)
             ->get([
-                'id',
-                'name',
-                'code',
-                'item_number',
+                'i.id',
+                'i.name',
+                'i.code',
+                'i.item_number',
+                \DB::raw('MAX(c.name) as category_name'),
             ])
             ->map(function ($row) {
-                // フロントで扱いやすいように整形
                 return [
-                    'id'   => $row->id,
-                    'name' => $row->name,
-                    // 品番かコードか、どちらかあれば補足情報として返す
-                    'code' => $row->item_number ?: $row->code,
+                    'id'            => $row->id,
+                    'name'          => $row->name,
+                    'code'          => $row->item_number ?: $row->code,
+                    'category_name' => $row->category_name ?: null,
                 ];
             })
             ->values()
@@ -218,7 +199,7 @@ class InfoService
      *
      * @param string|null $keyword
      * @param string|null $parentCode
-     * @return array [ { code, name }, … ]
+     * @return array [ { id, code, parent_code, name }, … ]
      */
     public function searchCategories(?string $keyword, ?string $parentCode): array
     {
@@ -238,28 +219,39 @@ class InfoService
             });
         }
 
+        Log::info('[InfoService][searchCategories] query', [
+            'keyword'     => $keyword,
+            'parent_code' => $parentCode,
+            'sql'         => $query->toSql(),
+            'bindings'    => $query->getBindings(),
+        ]);
+
         $rows = $query
             ->orderBy('parent_code')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->limit(100)
+            ->limit(200)
             ->get([
+                'id',
                 'code',
                 'parent_code',
                 'name',
-                'url',
             ])
             ->map(function ($row) {
                 return [
+                    'id'          => (int)$row->id,
                     'code'        => $row->code,
                     'parent_code' => $row->parent_code,
                     'name'        => $row->name,
-                    // 将来的にリンク生成に使えるように url も返しておく
-                    'url'         => $row->url,
                 ];
             })
             ->values()
             ->all();
+
+        Log::info('[InfoService][searchCategories] result', [
+            'count' => count($rows),
+            'head'  => array_slice($rows, 0, 5),
+        ]);
 
         return $rows;
     }
@@ -268,15 +260,8 @@ class InfoService
     // 内部ユーティリティ
     // ==========================
 
-    /**
-     * 保存用カラムを組み立てる（未知のキーは無視）
-     *
-     * @param array $data
-     * @return array
-     */
     private function buildSaveColumns(array $data): array
     {
-        // テーブルに存在する主なカラムだけを明示的に許可
         $allowed = [
             'type',
             'status',
@@ -306,7 +291,6 @@ class InfoService
             $value = $data[$key];
 
             if ($key === 'meta') {
-                // meta は array|null を JSON 文字列に変換して保存
                 if (is_array($value) && !empty($value)) {
                     $save['meta'] = json_encode($value, JSON_UNESCAPED_UNICODE);
                 } else {
@@ -318,7 +302,6 @@ class InfoService
             $save[$key] = $value;
         }
 
-        // body_html は現時点では未使用なので null 固定（将来 Markdown パースで生成）
         if (!array_key_exists('body_html', $save)) {
             $save['body_html'] = null;
         }
@@ -326,12 +309,6 @@ class InfoService
         return $save;
     }
 
-    /**
-     * 1件取得して meta を array にデコードして返す
-     *
-     * @param int $id
-     * @return object|null
-     */
     private function findPost(int $id)
     {
         $row = DB::table($this->table)

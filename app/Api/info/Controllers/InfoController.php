@@ -80,35 +80,48 @@ class InfoController extends Controller
 
     /**
      * 商品検索（Items 用モーダル）
-     * GET /api/info/items?keyword=&page=
+     * GET /api/info/items?keyword=&page=&category_id=&per_page=
      */
     public function searchItems(Request $request, InfoService $service): JsonResponse
     {
         $keyword = $request->query('keyword');
-        $page    = (int)$request->query('page', 1);
+        $page    = (int) $request->query('page', 1);
+
+        // ★ 追加：カテゴリID（m_categories.id）
+        $categoryIdRaw = $request->query('category_id');
+        $categoryId = null;
+        if ($categoryIdRaw !== null && $categoryIdRaw !== '') {
+            $categoryId = (int) $categoryIdRaw;
+        }
+
+        // ★ 追加：1ページ件数（フロントから渡る想定）
+        $perPageRaw = $request->query('per_page');
+        $perPage = null;
+        if ($perPageRaw !== null && $perPageRaw !== '') {
+            $perPage = (int) $perPageRaw;
+        }
 
         Log::info('[InfoController][searchItems] enter', [
-            'keyword' => $keyword,
-            'page'    => $page,
+            'keyword'      => $keyword,
+            'page'         => $page,
+            'category_id'  => $categoryId,
+            'per_page'     => $perPage,
         ]);
 
-        $result = $service->searchItems($keyword, $page);
+        // ★ 変更：categoryId / perPage を service に渡す
+        $result = $service->searchItems($keyword, $page, $categoryId, $perPage);
 
-        // フロント側が rows / pager 形式を期待しているのでそれに合わせる
         return response()->json($result);
     }
 
     /**
      * カテゴリ検索（カテゴリそのものを選択するモーダル用）
      * GET /api/info/categories?keyword=&parent_code=
-     *
-     * ここでは「カテゴリ自身」を1件選ぶための一覧データを返す。
-     * 最終的に EC 側で /category-detail/... へのリンクに使える情報を持たせる。
      */
     public function searchCategories(Request $request, InfoService $service): JsonResponse
     {
         $keyword    = $request->query('keyword');
-        $parentCode = $request->query('parent_code'); // 必要なら親コードで絞り込み
+        $parentCode = $request->query('parent_code');
 
         Log::info('[InfoController][searchCategories] enter', [
             'keyword'     => $keyword,

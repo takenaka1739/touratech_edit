@@ -28,8 +28,7 @@ export const InfoPostForm: React.FC<Props> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const typeLabel = (type: InfoPostType) =>
-    type === 'shop' ? 'Topics' : 'Items';
+  const typeLabel = (type: InfoPostType) => (type === 'shop' ? 'Topics' : 'Items');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,23 +46,23 @@ export const InfoPostForm: React.FC<Props> = ({
   const bodyLength = form.body_md ? form.body_md.length : 0;
   const BODY_MAX = 2000; // お好みで調整
 
+  // ★ InfoPostList の「新規作成」寄せの見た目
+  const btnLikeNewCreate =
+    'px-3 py-1 text-xs rounded-md border bg-white hover:bg-gray-100 active:bg-gray-200';
+
   return (
     <div className="border rounded-md bg-white p-4 space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* ヘッダ */}
         <div className="flex justify-between items-center">
           <div className="font-semibold text-sm">
-            {form.id
-              ? `編集：${typeLabel(form.type)}（ID: ${form.id}）`
-              : `新規作成：${typeLabel(activeType)}`}
+            {form.id ? `編集：${typeLabel(form.type)}（ID: ${form.id}）` : `新規作成：${typeLabel(activeType)}`}
           </div>
         </div>
 
         {/* ステータス */}
         <div>
-          <label className="text-xs font-semibold mb-1 block">
-            ステータス
-          </label>
+          <label className="text-xs font-semibold mb-1 block">ステータス</label>
           <select
             name="status"
             className="border rounded-md px-2 py-1 text-sm w-full"
@@ -91,7 +90,7 @@ export const InfoPostForm: React.FC<Props> = ({
           />
         </div>
 
-        {/* 本文（要約は廃止し、本文だけを使う） */}
+        {/* 本文 */}
         <div>
           <label className="text-xs font-semibold mb-1 block">
             本文
@@ -119,19 +118,20 @@ export const InfoPostForm: React.FC<Props> = ({
               <div className="flex-1 text-xs border rounded px-2 py-1 bg-gray-50 min-h-[32px]">
                 {form.related_product_id
                   ? `ID: ${form.related_product_id}${
-                      form.related_product_name
-                        ? ` / ${form.related_product_name}`
-                        : ''
+                      form.related_product_name ? ` / ${form.related_product_name}` : ''
                     }`
                   : '未選択'}
               </div>
+
+              {/* ★ ボタンっぽく */}
               <button
                 type="button"
-                className="btn-sub"
+                className={btnLikeNewCreate}
                 onClick={onOpenItemModal}
               >
-                商品を選択
+                選択
               </button>
+
               {form.related_product_id && (
                 <button
                   type="button"
@@ -201,9 +201,7 @@ export const InfoPostForm: React.FC<Props> = ({
             <div className="mt-3 space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold mb-1 block">
-                    表示開始日時（visible_from）
-                  </label>
+                  <label className="font-semibold mb-1 block">表示開始日時（visible_from）</label>
                   <input
                     type="datetime-local"
                     name="visible_from"
@@ -213,9 +211,7 @@ export const InfoPostForm: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-semibold mb-1 block">
-                    表示終了日時（visible_until）
-                  </label>
+                  <label className="font-semibold mb-1 block">表示終了日時（visible_until）</label>
                   <input
                     type="datetime-local"
                     name="visible_until"
@@ -228,9 +224,7 @@ export const InfoPostForm: React.FC<Props> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold mb-1 block">
-                    ピン留め期限（pin_until）
-                  </label>
+                  <label className="font-semibold mb-1 block">ピン留め期限（pin_until）</label>
                   <input
                     type="datetime-local"
                     name="pin_until"
@@ -240,9 +234,7 @@ export const InfoPostForm: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-semibold mb-1 block">
-                    リンクURL（任意）
-                  </label>
+                  <label className="font-semibold mb-1 block">リンクURL（任意）</label>
                   <input
                     type="text"
                     name="external_url"
@@ -259,18 +251,10 @@ export const InfoPostForm: React.FC<Props> = ({
 
         {/* ボタン（クリア + 保存） */}
         <div className="flex justify-end gap-2 pt-2 border-t">
-          <button
-            type="button"
-            className="btn-sub"
-            onClick={onReset}
-          >
+          <button type="button" className="btn-sub" onClick={onReset}>
             クリア
           </button>
-          <button
-            type="submit"
-            className="btn"
-            disabled={saving}
-          >
+          <button type="submit" className="btn" disabled={saving}>
             {saving ? '保存中…' : '保存'}
           </button>
         </div>

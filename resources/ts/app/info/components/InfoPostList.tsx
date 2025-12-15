@@ -92,7 +92,7 @@ export const InfoPostList: React.FC<Props> = ({
               <th className={thBase}>ステータス</th>
               <th className={thBase}>タイトル</th>
               <th className={thBase}>公開日時</th>
-              <th className={`${thBase} text-center`}>ピン止め</th>
+              <th className={`${thBase} text-center`}>ピン留め</th>
               <th className={`${thBase} text-center`}>操作</th>
             </tr>
           </thead>
