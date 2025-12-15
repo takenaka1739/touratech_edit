@@ -80,6 +80,9 @@ const defaultFormState: EditFormState = {
 };
 
 const InfoManagementPage: React.FC = () => {
+  const title = '情報管理';
+  const slug = 'info';
+
   const [posts, setPosts] = useState<InfoPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,9 +155,16 @@ const InfoManagementPage: React.FC = () => {
     setSelectedId(null);
   };
 
+  /**
+   * 編集開始
+   * 「編集ボタンを押した場合のみ」ここが呼ばれる前提（InfoPostList側で制御）
+   *
+   * 注意:
+   * 以前は `setActiveType(p.type)` でタブを強制的に切替えていたが、
+   * クリックだけで編集開始してしまう挙動の原因になりやすいため削除。
+   * タブ切替はユーザー操作（上部タブ）に限定する。
+   */
   const startEdit = (p: InfoPost) => {
-    setActiveType(p.type); // タブも対象タイプに切り替え
-
     setForm({
       id: p.id,
       type: p.type,
@@ -249,7 +259,7 @@ const InfoManagementPage: React.FC = () => {
   }, [posts]);
 
   return (
-    <PageWrapper prefix="Info" title="サイトお知らせ管理">
+    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
       <div className="space-y-4">
         {/* タブ */}
         <div className="border-b flex gap-2">
@@ -311,9 +321,7 @@ const InfoManagementPage: React.FC = () => {
       {/* 商品選択モーダル（Items のときだけ開く） */}
       <InfoItemSelectModal
         isOpen={itemModalOpen && activeType === 'product'}
-        initialSelectedId={
-          form.related_product_id ? Number(form.related_product_id) : null
-        }
+        initialSelectedId={form.related_product_id ? Number(form.related_product_id) : null}
         onClose={() => setItemModalOpen(false)}
         onConfirm={(item: InfoItem | null) => {
           if (item) {
@@ -354,11 +362,9 @@ function toInputDateTime(value?: string | null): string {
 
 // フォーム → API ペイロード変換
 export function formToPayload(form: EditFormState) {
-  const numOrNull = (v: string): number | null =>
-    v.trim() === '' ? null : Number(v);
+  const numOrNull = (v: string): number | null => (v.trim() === '' ? null : Number(v));
 
-  const dtOrNull = (v: string): string | null =>
-    v.trim() === '' ? null : v;
+  const dtOrNull = (v: string): string | null => (v.trim() === '' ? null : v);
 
   const meta: any = {};
   if (form.external_url.trim() !== '') {
