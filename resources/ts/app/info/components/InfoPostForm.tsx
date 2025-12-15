@@ -62,7 +62,7 @@ export const InfoPostForm: React.FC<Props> = ({
         {/* ステータス */}
         <div>
           <label className="text-xs font-semibold mb-1 block">
-            公開状態
+            ステータス
           </label>
           <select
             name="status"
@@ -94,7 +94,7 @@ export const InfoPostForm: React.FC<Props> = ({
         {/* 本文（要約は廃止し、本文だけを使う） */}
         <div>
           <label className="text-xs font-semibold mb-1 block">
-            本文（Markdown）
+            本文
             <span className="ml-2 text-[10px] text-gray-500">
               最大 {BODY_MAX} 文字目安（現在 {bodyLength} 文字）
             </span>
@@ -249,7 +249,7 @@ export const InfoPostForm: React.FC<Props> = ({
                     className="border rounded-md px-2 py-1 text-sm w-full"
                     value={form.external_url}
                     onChange={onChange}
-                    placeholder="外部URL または /help/campaign などの相対パス"
+                    placeholder="URLを入力"
                   />
                 </div>
               </div>

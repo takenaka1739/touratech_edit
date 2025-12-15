@@ -55,6 +55,11 @@ export const InfoPostList: React.FC<Props> = ({
 
   const rows = Array.isArray(posts) ? posts : [];
 
+  // ★ ヘッダ/本文で「同じpadding・同じ開始位置」を保証するための共通クラス
+  const thBase = 'px-3 py-2 text-left align-middle whitespace-nowrap';
+  const tdBase = 'px-3 py-2 align-middle';
+  const cellWrapLeft = 'flex items-center min-w-0'; // 左揃え用のラッパー
+
   return (
     <div className="border rounded-md bg-white overflow-hidden relative">
       {/* ヘッダ */}
@@ -72,21 +77,30 @@ export const InfoPostList: React.FC<Props> = ({
 
       {/* 一覧テーブル */}
       <div className="overflow-auto max-h-[620px]">
-        <table className="min-w-full text-xs">
+        <table className="w-full table-fixed text-xs">
+          {/* ★ 列幅を明示して、ヘッダ/本文のズレ要因を排除 */}
+          <colgroup>
+            <col style={{ width: '110px' }} />
+            <col />
+            <col style={{ width: '175px' }} />
+            <col style={{ width: '80px' }} />
+            <col style={{ width: '140px' }} />
+          </colgroup>
+
           <thead className="bg-gray-50">
             <tr className="border-b">
-              <th className="px-2 py-1 text-left w-24">ステータス</th>
-              <th className="px-2 py-1 text-left">タイトル</th>
-              <th className="px-2 py-1 text-left w-40">公開日時</th>
-              <th className="px-2 py-1 text-center w-12">Pin</th>
-              <th className="px-2 py-1 text-center w-28">操作</th>
+              <th className={thBase}>ステータス</th>
+              <th className={thBase}>タイトル</th>
+              <th className={thBase}>公開日時</th>
+              <th className={`${thBase} text-center`}>ピン止め</th>
+              <th className={`${thBase} text-center`}>操作</th>
             </tr>
           </thead>
 
           <tbody>
             {rows.length === 0 && !loading && (
               <tr>
-                <td className="px-2 py-3 text-center text-gray-500" colSpan={5}>
+                <td className="px-3 py-3 text-center text-gray-500" colSpan={5}>
                   データがありません
                 </td>
               </tr>
@@ -95,51 +109,68 @@ export const InfoPostList: React.FC<Props> = ({
             {rows.map((p) => (
               <tr
                 key={p.id}
-                // ★ 行クリック編集を無効化（hoverは残すが cursor-pointer は外す）
                 className={`border-b hover:bg-sky-50 ${
                   selectedId === p.id ? 'bg-sky-100' : ''
                 }`}
               >
-                <td className="px-2 py-1">
-                  <span className="inline-block rounded px-1.5 py-0.5 text-[11px] bg-gray-100">
-                    {statusLabel(p.status as InfoPostStatus)}
-                  </span>
+                {/* ステータス */}
+                <td className={tdBase}>
+                  <div className={cellWrapLeft}>
+                    {/* バッジの見た目は維持しつつ、開始位置をヘッダと揃える */}
+                    <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] bg-gray-100 whitespace-nowrap">
+                      {statusLabel(p.status as InfoPostStatus)}
+                    </span>
+                  </div>
                 </td>
 
-                <td className="px-2 py-1 truncate" title={p.title}>
-                  {p.title}
+                {/* タイトル */}
+                <td className={tdBase}>
+                  <div className={cellWrapLeft}>
+                    <span className="truncate" title={p.title}>
+                      {p.title}
+                    </span>
+                  </div>
                 </td>
 
-                <td className="px-2 py-1 text-[10px] leading-tight">
-                  {p.published_at ? formatDateTime(p.published_at) : '-'}
+                {/* 公開日時 */}
+                <td className={tdBase}>
+                  <div className={`${cellWrapLeft} whitespace-nowrap text-[11px]`}>
+                    {p.published_at ? formatDateTime(p.published_at) : '-'}
+                  </div>
                 </td>
 
-                <td className="px-2 py-1 text-center">{p.is_pinned ? '●' : ''}</td>
+                {/* ピン止め */}
+                <td className={`${tdBase} text-center`}>
+                  <div className="whitespace-nowrap">{p.is_pinned ? '●' : ''}</div>
+                </td>
 
-                <td className="px-2 py-1 text-center">
-                  <button
-                    type="button"
-                    className="px-2 py-0.5 text-[11px] rounded border bg-white hover:bg-gray-50 mr-1"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onRowClick(p); // ★ 編集ボタン押下時のみ編集開始
-                    }}
-                  >
-                    編集
-                  </button>
+                {/* 操作 */}
+                <td className={`${tdBase} text-center`}>
+                  <div className="whitespace-nowrap">
+                    <button
+                      type="button"
+                      className="px-2 py-0.5 text-[11px] rounded border bg-white hover:bg-gray-50 mr-1"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onRowClick(p);
+                      }}
+                    >
+                      編集
+                    </button>
 
-                  <button
-                    type="button"
-                    className="px-2 py-0.5 text-[11px] rounded border border-red-400 text-red-600 bg-white hover:bg-red-50"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onDelete(p);
-                    }}
-                  >
-                    削除
-                  </button>
+                    <button
+                      type="button"
+                      className="px-2 py-0.5 text-[11px] rounded border border-red-400 text-red-600 bg-white hover:bg-red-50"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDelete(p);
+                      }}
+                    >
+                      削除
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
