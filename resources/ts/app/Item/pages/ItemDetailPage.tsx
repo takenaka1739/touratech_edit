@@ -156,8 +156,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [preCategoryId, setPreCategoryId] = useState<number | undefined>(undefined);
   const [domestic_url, setDomestic_url] = useState<string>('');
 
-  console.log('state');
-  console.log(state);
+  console.log('errors');
+  console.log(errors);
 
   console.log('typeof state.is_payment_id1');
   console.log(typeof state.is_payment_id1);

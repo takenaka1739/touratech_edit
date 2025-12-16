@@ -15,9 +15,6 @@ const validatePaymentMethods = (state: Item): string | null => {
     (state.is_payment_id4 == null || state.is_payment_id4 === false) &&
     (state.is_payment_id5 == null || state.is_payment_id5 === false);
 
-  console.log('noPaymentSelected');
-  console.log(noPaymentSelected);
-
   if (noPaymentSelected) {
     return '支払い方法を選択してください';
   }
