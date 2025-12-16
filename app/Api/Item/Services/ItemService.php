@@ -390,22 +390,49 @@ class ItemService
     $ssss = [];
     $preId = -1;
 
-    foreach($idList as $id){
-      $ss = [];
-      array_push($ss, $id);
-      foreach(Image::where('item_id', '=', $id)->whereNull('deleted_at')->get() as $item){
-        if($item->name != null && $item->name != ''){
-          array_push($ssss, [$item->id, $id, $item->name, $item->order_by]);   // m_imagesの管理ID, item_id, ファイル名の順番
-          if(preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)){
-            array_push($ss, $item->name);
-          }else{
-            //array_push($ss, 'http://localhost:8081/storage/images/' . $item->name);
-            array_push($ss, '/images/' . $item->name);
-          }
+foreach ($idList as $id) {
+    $ss = [];
+    // idを特別枠として保持（order_byは仮に -1 など）
+    $ss[] = ['src' => $id, 'order_by' => -1];
+
+    foreach (Image::where('item_id', $id)->whereNull('deleted_at')->get() as $item) {
+        if (!empty($item->name)) {
+            $ssss[] = [$item->id, $id, $item->name, $item->order_by]; // 管理ID, item_id, ファイル名, 順番
+
+            if (preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)) {
+                $ss[] = ['src' => $item->name, 'order_by' => $item->order_by];
+            } else {
+                $ss[] = ['src' => '/images/' . $item->name, 'order_by' => $item->order_by];
+            }
         }
-      }
-      array_push($sss, $ss);
     }
+
+    // order_byで並び替え
+    usort($ss, function ($a, $b) {
+        return $a['order_by'] <=> $b['order_by'];
+    });
+
+    // 並び替え後に src だけ取り出して格納
+    $sss[] = array_column($ss, 'src');
+}
+
+
+    //foreach($idList as $id){
+    //  $ss = [];
+    //  array_push($ss, $id);
+    //  foreach(Image::where('item_id', '=', $id)->whereNull('deleted_at')->get() as $item){
+    //    if($item->name != null && $item->name != ''){
+    //      array_push($ssss, [$item->id, $id, $item->name, $item->order_by]);   // m_imagesの管理ID, item_id, ファイル名の順番
+    //      if(preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)){
+    //        array_push($ss, $item->name);
+    //      }else{
+    //        //array_push($ss, 'http://localhost:8081/storage/images/' . $item->name);
+    //        array_push($ss, '/images/' . $item->name);
+    //      }
+    //    }
+    //  }
+    //  array_push($sss, $ss);
+    //}
 
     if (count($variItems) < 1) {
       $variItems = [

@@ -15,7 +15,7 @@ export type CalendarDetailPageProps = {} & RouteComponentProps<{ id: string }>;
  * 環境設定画面 Component
  */
 export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
-  const title = 'カレンダー設定';
+  const title = 'カレンダーマスタ';
   const slug = 'calendar';
   const {
     //isLoading,
@@ -109,8 +109,15 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
     }
   }
 
+  console.log('state');
+  console.log(state);
+
   return (
-    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
+    <PageWrapper
+      prefix={`${slug}-detail`}
+      title={title}
+      breadcrumb={[{ name: 'カレンダーマスタ', url: `/${slug}` }, { name: `${title}詳細` }]}
+    >
       <div className="form-group-wrapper">
         <Forms.FormGroupInputText
           labelText="イベント名"
@@ -211,7 +218,7 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
           </span>
           <input
             type="color"
-            value={state.font_color}
+            value={state.font_color == '' ? state.font_color = '#000000' : state.font_color}
             onChange={(e) => changeColor(1, e.target.value)}
             style={{ marginLeft: '10px' }}
           />
@@ -224,7 +231,7 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
           </span>
           <input
             type="color"
-            value={state.back_color}
+            value={state.back_color == '' ? state.back_color = '#FFFFFF' : state.back_color}
             onChange={(e) => changeColor(2, e.target.value)}
             style={{ marginLeft: '10px', marginRight: '10px'}}
             disabled={backColorFlag === true}
