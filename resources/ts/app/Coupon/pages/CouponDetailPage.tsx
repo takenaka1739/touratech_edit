@@ -3,7 +3,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
 import { useCouponDetailPage } from '@/app/Coupon/uses/useCouponDetailPage';
 import { CouponRuleForm } from '@/app/Coupon/components/CouponRuleForm';
-import { ItemSelectModal } from '@/app/Coupon/components/ItemSelectModal';
+import { CouponItemSelectModal } from '@/app/Coupon/components/CouponItemSelectModal';
 import { ItemClassificationSelectModal } from '@/app/Coupon/components/ItemClassificationSelectModal';
 
 export type CouponDetailPageProps = {} & RouteComponentProps<{ id: string }>;
@@ -136,11 +136,11 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
         )}
       </div>
 
-      <ItemSelectModal
-        isOpen={itemModal.isOpen}
-        selectedItemIds={itemModal.selectedItemIds}
-        onClose={itemModal.close}
-        onConfirm={itemModal.confirm}
+      <CouponItemSelectModal
+          isOpen={itemModal.isOpen}
+          selectedItemIds={itemModal.selectedItemIds}
+          onClose={itemModal.close}
+          onConfirm={itemModal.confirm}
       />
 
       <ItemClassificationSelectModal
