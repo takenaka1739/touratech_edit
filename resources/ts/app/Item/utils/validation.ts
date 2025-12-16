@@ -9,11 +9,14 @@ import { ItemCategory } from '@/types/ItemCategory';
  */
 const validatePaymentMethods = (state: Item): string | null => {
   const noPaymentSelected =
-    (state.is_payment_id1 === null || state.is_payment_id1 === undefined || state.is_payment_id1 === false) &&
-    (state.is_payment_id2 === null || state.is_payment_id2 === undefined || state.is_payment_id2 === false) &&
-    (state.is_payment_id3 === null || state.is_payment_id3 === undefined || state.is_payment_id3 === false) &&
-    (state.is_payment_id4 === null || state.is_payment_id4 === undefined || state.is_payment_id4 === false) &&
-    (state.is_payment_id5 === null || state.is_payment_id5 === undefined || state.is_payment_id5 === false);
+    (state.is_payment_id1 == null || state.is_payment_id1 === false) &&
+    (state.is_payment_id2 == null || state.is_payment_id2 === false) &&
+    (state.is_payment_id3 == null || state.is_payment_id3 === false) &&
+    (state.is_payment_id4 == null || state.is_payment_id4 === false) &&
+    (state.is_payment_id5 == null || state.is_payment_id5 === false);
+
+  console.log('noPaymentSelected');
+  console.log(noPaymentSelected);
 
   if (noPaymentSelected) {
     return '支払い方法を選択してください';
@@ -147,7 +150,8 @@ export const validateItemState = (state: Item): Record<string, string> => {
   // 支払い方法適用（現金・掛売・宅配代引・クレジットカード・銀行振込）
   const paymentError = validatePaymentMethods(state);
   if (paymentError) {
-    errors.is_payment_id1 = paymentError;
+    //errors.is_payment_id1 = paymentError;
+    errors.payErrorMessage = paymentError;
   }
 
   // バリエーション

@@ -440,6 +440,11 @@ foreach ($idList as $id) {
       ];
     }
   
+    $selectItems['is_payment_id1'] = $selectItems['is_payment_id1'] === 0 ? false : true;
+    $selectItems['is_payment_id2'] = $selectItems['is_payment_id2'] === 0 ? false : true;
+    $selectItems['is_payment_id3'] = $selectItems['is_payment_id3'] === 0 ? false : true;
+    $selectItems['is_payment_id4'] = $selectItems['is_payment_id4'] === 0 ? false : true;
+    $selectItems['is_payment_id5'] = $selectItems['is_payment_id5'] === 0 ? false : true;
     $selectItems['sales_price'] = count($variItems) > 1 ? 0 : $selectItems['sales_price'];
     $selectItems['type_status'] = $selectItems['type_status'] === null || $selectItems['type_status'] === '' ? 0 : $selectItems['type_status'];
     $selectItems['codeList'] = $codeList;
