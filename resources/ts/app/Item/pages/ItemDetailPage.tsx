@@ -78,6 +78,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     is_payment_id3: false,
     is_payment_id4: false,
     is_payment_id5: false,
+    payErrorMessage: '',
     display_status: 0,
     variItems: [[]],  // variItemsとimageListの要素数・要素内容は対（要素0の管理IDまたはnewで判定）
     backVariItems: [[]],
@@ -155,8 +156,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [preCategoryId, setPreCategoryId] = useState<number | undefined>(undefined);
   const [domestic_url, setDomestic_url] = useState<string>('');
 
-  console.log('state.categoryListAll');
-  console.log(state.categoryListAll);
+  console.log('state');
+  console.log(state);
+
+  console.log('typeof state.is_payment_id1');
+  console.log(typeof state.is_payment_id1);
 
   // 初期値設定
   useEffect(() => {
@@ -201,9 +205,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   }, [state, state.variItems, state.purchase_price, state.number_reservations,
     state.specialSalesList, state.imageList]);
 
-    console.log('212行目state.variItems');
-    console.log(state.variItems);
-
   // state.categoryListの初期値（新規作成時の1行目の作成）
   useEffect(() => {
     if (Array.isArray(state.categoryList) && state.categoryList.length === 0) {
@@ -220,6 +221,17 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (state.is_payment_id1 === true || state.is_payment_id2 === true || state.is_payment_id3 === true ||
+        state.is_payment_id4 === true || state.is_payment_id5 === true) {
+      setErrors(prev => ({
+        ...prev,
+        payErrorMessage: '',
+      }));
+
+    }
+  }, [state.is_payment_id1, state.is_payment_id2, state.is_payment_id3, state.is_payment_id4, state.is_payment_id5]);
 
   // 取扱説明書の題目名設定
   useEffect(() => {
@@ -536,8 +548,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }));
   }
 
-  console.log(state.imageList);
-
   // 商品分類の行追加
   // select:選択された行、index:選択された列
   const addNewCategory = () => {
@@ -572,11 +582,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       return { ...prev, categoryList: nextList };
     });
   };
-
-  console.log('changeCategoryIndex');
-  console.log(changeCategoryIndex);
-  console.log('state.categoryList');
-  console.log(state.categoryList);
 
   useEffect(() => {
     if (changeCategoryIndex !== null) {
@@ -1067,9 +1072,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
           ...prev,
           imageList: location.state.imageItem
         }));
-
-        console.log('location.state.imageItem');
-        console.log(location.state.imageItem);
       }
 
       if (variClickFlag !== true) {
@@ -1096,11 +1098,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
 
   }, [location, state.variItems]);
-
-  console.log('state.imageList');
-  console.log(state.imageList);
-  console.log('state.variItems');
-  console.log(state.variItems);
 
   useEffect(() => {
     if (location.state !== undefined && Array.isArray(location.state.imageItem)) {
@@ -1332,7 +1329,6 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
 
     // 必須入力項目の未入力チェック
     const validationErrors = validateItemState(state);
-    console.log(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       dispatch(AppActions.failed('必須項目を入力してください'));
@@ -1913,9 +1909,9 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                 />
               </div>
             </Forms.FormGroup>
-            {errors?.is_payment_id1 && (
-              <div style={{ color: 'red', marginTop: '5px' }}>
-                {errors.is_payment_id1}
+            {errors?.payErrorMessage && (
+              <div className="form-error ml-32">
+                {errors?.payErrorMessage}
               </div>
             )}
           </div>

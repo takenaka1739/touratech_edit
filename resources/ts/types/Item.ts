@@ -37,6 +37,7 @@
  * @param is_payment_id3          - 支払い方法3フラグ
  * @param is_payment_id4          - 支払い方法4フラグ
  * @param is_payment_id5          - 支払い方法5フラグ
+ * @param payErrorMessage         - 支払い方法項目入力エラー時のメッセージ格納変数
  * @param domestic_stocks         - 国内在庫数
  * @param overseas_stocks         - 国外在庫数
  * @param domestic_url            - 国内リンク
@@ -165,4 +166,6 @@ export interface Item {
   file_name?: string | undefined;
   pdf?: File;
   documentFileList?: any[];
+
+  payErrorMessage?: string | undefined;
 }
