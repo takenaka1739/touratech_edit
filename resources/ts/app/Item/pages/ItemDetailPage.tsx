@@ -1431,7 +1431,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                         {index >= 1 && (
                           <button
                             className="btn-delete"
-                            style={{ marginTop: "5px", marginLeft: "5px" }}
+                            style={{ marginTop: "5px", marginLeft: "5px", whiteSpace: "nowrap" }}
                             onClick={() => categoryDelButton(item.originalIndex)}
                           >
                             削除
@@ -1709,59 +1709,70 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
             required
             maxLength={400}
           />
-          <div>
-            <div style={{ marginTop: '5px' }}>
-              <label>バリエーション追加</label>
-              <label className="label-optional">任意</label>
-              <input style={{ marginTop: '5px' }} type="checkbox" onChange={handleCheck} />
-            </div>
-            
-            <div style={{ marginLeft: "10px" }}>
-              <div style={{ marginLeft: '10px' }}>
-                <label style={{ marginLeft: "145px" }}>バリエーション1</label>
-                <label style={{ marginLeft: "56px" }}>バリエーション2</label>
-                <label style={{ marginLeft: "65px" }}>バリエーション3</label>
-                <label style={{ marginLeft: "65px" }}>バリエーション4</label>
-                <label style={{ marginLeft: "60px" }}>品番</label>
-                <label style={{ marginLeft: "100px" }}>販売価格（税込）</label>
-              </div>
-              
-              <div style={{ display: 'flex', marginLeft: "150px" }}>
-                <div>{state.variItems.map((item, itemIndex) => {
-                  return (
-                    <div key={itemIndex} style={{ display: 'flex' }}>{
-                      item.map((value, index) =>
-                        index > 0 ? (
-                          <div key={index} style={{ display: 'flex', marginBottom: '5px', visibility: value == null ? 'hidden' : 'visible' }}>
-                            <input className="vari-row-input" /*type={value == null ? 'hidden' : 'text'}*/
-                              style={{ borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color }}
-                              disabled={!checkBock.flag} value={item[index]} onChange={(event) => onChangeValue(event, itemIndex, index)}
-                              onFocus={() => handleFocus(item)}
-                              onBlur={() => outForcus(item)} />
-                            {index < 5 &&
-                              <button disabled={!checkBock.flag} style={{ backgroundColor: checkBock.color }}
-                                className="plus-button" onClick={() => addNewVari(itemIndex, index)}>＋</button>
-                            }
-                          </div>
-                        ) : null
-                      )
-                    }
-                      <button className="btn-delete" style={{ marginLeft: '1px', height: '26px', paddingTop: '0px', paddingBottom: '0px' }}
-                        onClick={() => delButton(itemIndex)} disabled={isDisabled}>
-                        削除
-                      </button>
-                    </div>
-                  )
-                })}</div>
-              </div>
-              {errors?.variation && (
-                <div style={{ color: 'red', marginTop: '5px' }}>
-                  {errors.variation}
-                </div>
-              )}
-            </div>
+          <div style={{ marginTop: '8px' }}>
+            <label>バリエーション追加</label>
+            <label className="label-optional">任意</label>
+            <input style={{ marginTop: '5px' }} type="checkbox" onChange={handleCheck} />
           </div>
 
+          <div style={{ marginLeft: "160px" }}>
+            {/* ヘッダー部分 */}
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <label style={{whiteSpace: "nowrap"}}>バリエーション1</label>
+              <label style={{whiteSpace: "nowrap", marginLeft: '60px'}}>バリエーション2</label>
+              <label style={{whiteSpace: "nowrap", marginLeft: '60px'}}>バリエーション3</label>
+              <label style={{whiteSpace: "nowrap", marginLeft: '60px'}}>バリエーション4</label>
+              <label style={{whiteSpace: "nowrap", marginLeft: '55px'}}>品番</label>
+              <label style={{whiteSpace: "nowrap", marginLeft: '100px'}}>販売価格（税込）</label>
+            </div>
+
+            {/* 入力部分 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {state.variItems.map((item, itemIndex) => (
+                <div key={itemIndex} style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                  {item.map((value, index) =>
+                    index > 0 ? (
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', visibility: value == null ? 'hidden' : 'visible' }}>
+                        <input
+                          className="vari-row-input"
+                          style={{ borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color, marginRight: '5px' }}
+                          disabled={!checkBock.flag}
+                          value={item[index]}
+                          onChange={(event) => onChangeValue(event, itemIndex, index)}
+                          onFocus={() => handleFocus(item)}
+                          onBlur={() => outForcus(item)}
+                        />
+                        {index < 5 && (
+                          <button
+                            disabled={!checkBock.flag}
+                            style={{ backgroundColor: checkBock.color }}
+                            className="plus-button"
+                            onClick={() => addNewVari(itemIndex, index)}
+                          >
+                            ＋
+                          </button>
+                        )}
+                      </div>
+                    ) : null
+                  )}
+                  <button
+                    className="btn-delete"
+                    style={{ height: '26px', padding: '0 5px', whiteSpace: "nowrap" }}
+                    onClick={() => delButton(itemIndex)}
+                    disabled={isDisabled}
+                  >
+                    削除
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {errors?.variation && (
+              <div style={{ color: 'red', marginTop: '5px' }}>
+                {errors.variation}
+              </div>
+            )}
+          </div>
           <div>
             <Forms.FormGroupTextarea
               labelText="商品説明"
