@@ -418,7 +418,8 @@ useEffect(() => {
       </div>
       <div id="input-area">
         <div id="image-area">
-          <button className="btn-delete" style={{ marginLeft:'495px', marginBottom:'5px', height: '26px', paddingTop: '0px', paddingBottom: '0px'}}
+          <button className="btn-delete"
+                  style={{ marginLeft:'495px', marginBottom:'5px', height: '26px', paddingTop: '0px', paddingBottom: '0px', whiteSpace: "nowrap"}}
                   onClick={() => removeFileByName(selectImageSrc)}>
             削除
           </button>
