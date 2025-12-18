@@ -1260,6 +1260,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
   if (!hasFile) return [];
 
   try {
+    dispatch(AppActions.request());
     const res = await axios.post("/api/item/store_image_transaction", formData);
     return res.data.paths;
   } catch (error: any) {
@@ -1714,7 +1715,6 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
             <label className="label-optional">任意</label>
             <input style={{ marginTop: '5px' }} type="checkbox" onChange={handleCheck} />
           </div>
-
           <div style={{ marginLeft: "160px" }}>
             {/* ヘッダー部分 */}
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -1725,7 +1725,6 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               <label style={{whiteSpace: "nowrap", marginLeft: '55px'}}>品番</label>
               <label style={{whiteSpace: "nowrap", marginLeft: '100px'}}>販売価格（税込）</label>
             </div>
-
             {/* 入力部分 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {state.variItems.map((item, itemIndex) => (
