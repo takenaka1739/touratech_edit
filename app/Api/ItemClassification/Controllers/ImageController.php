@@ -37,13 +37,37 @@ class ImageController extends BaseController
     }
 
     /**
-     * 登録（新規）
+     * 商品分類の画像を登録する。
      */
     public function store(ImageStoreRequest $request)
     {
-        $this->service->store($request->validated());
+        $data = $request->validated();
 
-        return $this->success();
+        if ($request->hasFile('file')) {
+            try {
+                $file = $request->file('file');
+                $filename = $file->getClientOriginalName();
+                $directory = public_path('images');
+
+                if (!file_exists($directory)) mkdir($directory, 0777, true);
+
+                $file->move($directory, $filename);
+                $data['path'] = 'images/' . $filename;
+                $data['name'] = $filename;
+
+                // アップロードした画像情報を m_images に登録
+                $this->service->store([
+                    'category_id' => $request->input('category_id'),
+                    'name'        => $filename,
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('ファイルアップロード失敗', ['error' => $e->getMessage()]);
+                return response()->json(['success' => false, 'message' => 'アップロードに失敗しました'], 500);
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'アップロードに成功しました', 'data' => $data,]);
     }
 
     /**

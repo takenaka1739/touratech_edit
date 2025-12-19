@@ -1263,7 +1263,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
     const res = await axios.post("/api/item/store_image_transaction", formData);
     return res.data.paths;
   } catch (error: any) {
-    throw new Error("ファイルアップロードに失敗");
+    throw error;
   }
 };
 

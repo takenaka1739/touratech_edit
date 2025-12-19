@@ -115,14 +115,22 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     }
   }, [id, state.image_id, state.image, loadedImageId]);
 
+  /**
+   * 画像選択ボタンクリック時のイベントハンドラ
+   * 
+   * @param e ファイル選択イベント
+   * @returns void ファイルが選択されなかった場合は何もせず終了
+   */
   const onClickImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     setProfileImage(URL.createObjectURL(file));
     setImageName(file.name);
     setSelectedFile(file);
     setImageChanged(true);
   };
+
   useEffect(() => { if (state.image) setProfileImage('/images/' + state.image); }, [state.image]);
 
   const getVal = (v: any): string => (typeof v === 'string' ? v : v?.target?.value ?? '');
@@ -222,6 +230,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
 
   /**
    * 画像保存（アップロード or 既存選択の付替え）
+   * 
    * @param categoryId 新規作成直後のIDなど、明示的に保存先カテゴリIDを指定したい場合に利用
    */
   const saveImage = async (categoryId?: number): Promise<boolean> => {
@@ -230,6 +239,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     const targetCategoryId = categoryId ?? state.id;
     dispatch(AppActions.request());
     try {
+      // FormData 組み立て用のヘルパー関数
       const buildForm = () => {
         const form = new FormData();
         if (imageName) form.append('name', imageName);
@@ -243,9 +253,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
         if (state.image_id && Number(state.image_id) > 0) {
           const payload = buildForm();
           payload.append('_method', 'PUT');
-          const res = await axios.post(`/api/${slug}/image_edit/${state.image_id}`, payload, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          const res = await axios.post(`/api/${slug}/image_edit/${state.image_id}`, payload);
           if (res.status === 200 && res.data?.success) {
             const newId = res.data?.data?.image_id ?? state.image_id;
             const newName = res.data?.data?.name ?? imageName ?? state.image;
@@ -261,9 +269,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
             return false;
           }
         } else {
-          const res = await axios.post(`/api/${slug}/image_store`, buildForm(), {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          const res = await axios.post(`/api/${slug}/image_store`, buildForm());
           if (res.status === 200 && res.data?.success) {
             const newId = res.data?.data?.image_id ?? state.image_id;
             const newName = res.data?.data?.name ?? imageName ?? state.image;
@@ -329,7 +335,12 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     }
   };
 
-  /** 保存ボタン：新規・編集どちらでも保存後は一覧へ戻る */
+  /**
+   * 保存ボタンクリック時のイベントハンドラ
+   * 入力内容と画像を保存し、一覧画面へ遷移する
+   * 
+   * @returns void
+   */
   const onClickSave = async () => {
     const resCore = await saveCore();
     if (!resCore.ok) return;
@@ -482,11 +493,11 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           {/* 右：画像 */}
           <div className="mt-5">
             <div className="flex items-center gap-2">
-              <label className="btn py-7">
+              <button className="btn py-7 w-28" onClick={() => document.getElementById('fileInput')?.click()}>
                 画像選択
-                <input className="w-1" type="file" onChange={onClickImageSelect} style={{ visibility: 'hidden' }} />
-              </label>
-              <button className="btn py-7" onClick={() => setPickerOpen(true)}>
+              </button>
+              <input className="w-1" id="fileInput" type="file" onChange={onClickImageSelect} style={{ visibility: 'hidden' }} />
+              <button className="btn py-7 w-28" onClick={() => setPickerOpen(true)}>
                 既存から選ぶ
               </button>
             </div>
