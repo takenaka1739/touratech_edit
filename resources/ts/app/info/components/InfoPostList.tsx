@@ -55,7 +55,7 @@ export const InfoPostList: React.FC<Props> = ({
 
   const rows = Array.isArray(posts) ? posts : [];
 
-  // ★ ヘッダ/本文で「同じpadding・同じ開始位置」を保証するための共通クラス
+  //  ヘッダ/本文で「同じpadding・同じ開始位置」を保証するための共通クラス
   const thBase = 'px-3 py-2 text-left align-middle whitespace-nowrap';
   const tdBase = 'px-3 py-2 align-middle';
   const cellWrapLeft = 'flex items-center min-w-0'; // 左揃え用のラッパー
@@ -78,7 +78,7 @@ export const InfoPostList: React.FC<Props> = ({
       {/* 一覧テーブル */}
       <div className="overflow-auto max-h-[620px]">
         <table className="w-full table-fixed text-xs">
-          {/* ★ 列幅を明示して、ヘッダ/本文のズレ要因を排除 */}
+          {/*  列幅を明示して、ヘッダ/本文のズレ要因を排除 */}
           <colgroup>
             <col style={{ width: '110px' }} />
             <col />

@@ -20,7 +20,6 @@
             "@/*": ["resources/ts/*"]
         },
 
-        /* ✅ 以下2行が重要 */
         "skipLibCheck": true,
         "noEmitOnError": false,
 

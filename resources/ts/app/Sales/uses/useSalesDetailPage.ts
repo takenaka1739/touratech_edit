@@ -210,7 +210,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     }
   );
 
-  // ★ 新規(id 未指定)のときは API を呼ばない（/api/sales/edit/ を叩かない）
+  //  新規(id 未指定)のときは API を呼ばない（/api/sales/edit/ を叩かない）
   const get: (id: number | undefined) => Promise<boolean> = async (idArg) => {
     if (!from_receive && (idArg === undefined || idArg === null)) {
       dispatch(AppActions.success());
@@ -254,7 +254,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           st.tel = delivery?.tel ?? st.tel ?? '';
         }
 
-        // ★ setStateは“関数形式”で。古いstateを潰さない
+        //  setStateは“関数形式”で。古いstateを潰さない
         setState((prev) => ({
           ...prev,
           ...st,
@@ -351,7 +351,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   };
 
   useEffect(() => {
-    // ★ 新規はロードだけ解除（APIは叩かない）
+    //  新規はロードだけ解除（APIは叩かない）
     if (!from_receive && (id === undefined || id === null)) {
       setIsLoading(false);
       return;

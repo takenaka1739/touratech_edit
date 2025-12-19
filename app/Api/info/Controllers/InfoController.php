@@ -87,14 +87,14 @@ class InfoController extends Controller
         $keyword = $request->query('keyword');
         $page    = (int) $request->query('page', 1);
 
-        // ★ 追加：カテゴリID（m_categories.id）
+        //  追加：カテゴリID（m_categories.id）
         $categoryIdRaw = $request->query('category_id');
         $categoryId = null;
         if ($categoryIdRaw !== null && $categoryIdRaw !== '') {
             $categoryId = (int) $categoryIdRaw;
         }
 
-        // ★ 追加：1ページ件数（フロントから渡る想定）
+        //  追加：1ページ件数（フロントから渡る想定）
         $perPageRaw = $request->query('per_page');
         $perPage = null;
         if ($perPageRaw !== null && $perPageRaw !== '') {
@@ -108,7 +108,7 @@ class InfoController extends Controller
             'per_page'     => $perPage,
         ]);
 
-        // ★ 変更：categoryId / perPage を service に渡す
+        //  変更：categoryId / perPage を service に渡す
         $result = $service->searchItems($keyword, $page, $categoryId, $perPage);
 
         return response()->json($result);

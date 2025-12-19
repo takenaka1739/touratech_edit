@@ -9,7 +9,7 @@ use App\Api\Estimate\Requests\EstimateDetailRequest;
 use App\Api\Estimate\Services\EstimateService;
 use App\Api\Estimate\Services\EstimatePdfService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // ★ 追加
+use Illuminate\Support\Facades\DB; //  追加
 
 /**
  * 見積データコントローラー
@@ -141,7 +141,7 @@ class EstimateController extends BaseController
     $cond = $request->validated();
     $data = $this->service->getPdfData($cond);
 
-    // ★ t_estimates から割引・備考を補完する
+    //  t_estimates から割引・備考を補完する
     //   テーブル名が違う場合はここを適宜変更してください。
     $estimateId = $data['id'] ?? ($cond['id'] ?? null);
 

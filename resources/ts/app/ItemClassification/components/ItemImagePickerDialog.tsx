@@ -8,7 +8,7 @@ type ImageRow = {
   category_id?: number | null;
   order_by?: number | null;
   created_at?: string | null;
-  // ★ 使用中カテゴリ情報（バックで付与済）
+  //  使用中カテゴリ情報（バックで付与済）
   category_name?: string | null;
   category_code?: string | null;
 };
@@ -25,7 +25,7 @@ export type ItemImagePickerDialogProps = {
   onClose: () => void;
   onSelect: (img: { id: number; name: string; url?: string | null }) => void;
   title?: string;
-  /** ★ 現在編集中のカテゴリID（他カテゴリ使用中チェック用） */
+  /**  現在編集中のカテゴリID（他カテゴリ使用中チェック用） */
   currentCategoryId?: number;
 };
 

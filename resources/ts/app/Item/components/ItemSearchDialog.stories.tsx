@@ -79,6 +79,7 @@ const Template: Story<ItemSearchDialogProps & { props: number }> = args => {
         combIdList: [],
         specialSalesDelFlag: false,
         categoryListAll: [],
+        preImageList: [],
         v,
       };
     });

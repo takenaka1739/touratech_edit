@@ -2096,7 +2096,7 @@
 //                // item_number を決定
 //                const itemNumber = changeItem ? changeItem[5] : matchedRow.item_number;
 //              
-//                // ★ すでに処理済みならスキップ
+//                //  すでに処理済みならスキップ
 //                if (processedItemNumbers.has(itemNumber)) {
 //                  console.log("重複 item_number をスキップ:", itemNumber);
 //                  continue;
@@ -2131,7 +2131,7 @@
 //              if (changeItem) {
 //                const itemNumber = changeItem[5];
 //              
-//                // ★ すでに処理済みならスキップ
+//                //  すでに処理済みならスキップ
 //                if (processedItemNumbers.has(itemNumber)) {
 //                  console.log("重複 item_number をスキップ:", itemNumber);
 //                  continue;
@@ -2163,7 +2163,7 @@
 //                // item_number を決定
 //                const itemNumber = changeItem ? changeItem[5] : matchedRow.item_number;
 //              
-//                // ★ すでに処理済みならスキップ
+//                //  すでに処理済みならスキップ
 //                if (proItemNumbers.has(itemNumber)) {
 //                  console.log("重複 item_number をスキップ:", itemNumber);
 //                  continue;
@@ -2198,7 +2198,7 @@
 //              if (changeItem) {
 //                const itemNumber = changeItem[5];
 //              
-//                // ★ すでに処理済みならスキップ
+//                //  すでに処理済みならスキップ
 //                if (proItemNumbers.has(itemNumber)) {
 //                  console.log("重複 item_number をスキップ:", itemNumber);
 //                  continue;

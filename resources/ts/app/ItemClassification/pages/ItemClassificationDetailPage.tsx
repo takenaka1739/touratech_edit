@@ -21,7 +21,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   const title = '商品分類マスタ';
   const slug = 'item_classification';
 
-  const history = useHistory(); // ★ 一覧に戻るための history
+  const history = useHistory(); //  一覧に戻るための history
 
   const {
     isLoading,
@@ -356,7 +356,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
 
     appAlert('保存しました。');
 
-    // ★ 新規・編集問わず、保存成功後は一覧へ
+    //  新規・編集問わず、保存成功後は一覧へ
     history.push(`/${slug}`);
   };
 
@@ -512,7 +512,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
         {id && <button className="btn-delete" onClick={handleDelete} disabled={isDisabled}>削除</button>}
       </div>
 
-      {/* 既存画像ピッカー（★ 現在カテゴリIDを渡す） */}
+      {/* 既存画像ピッカー（ 現在カテゴリIDを渡す） */}
       <ItemImagePickerDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
