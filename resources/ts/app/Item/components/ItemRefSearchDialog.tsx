@@ -44,7 +44,7 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
     onClickSearchButton,
     onClickClearButton,
     onChangePage,
-    onClickSelect,
+    //onClickSelect,
     onClickCancel,
   } = useCommonSearchDialog<ItemSearchDialogConditionsState, Item>(
     {
@@ -53,7 +53,7 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
       c_is_set_item: isSetItem,
       page: 1,
     },
-    '/api/item/refdialog',
+    '/api/item/dialog',
     isShown,
     onSelected,
     onCancel
@@ -77,7 +77,7 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
         <td>
-          <span data-id={r.id} onClick={onClickSelect} className="link">
+          <span data-id={r.id} onClick={() => onClickDetail(r.id)} className="link">
             <div className="text-xs">{r.item_number}</div>
             <div>{r.name}</div>
             <div>{r.name_note}</div>
@@ -115,26 +115,30 @@ export const ItemRefSearchDialog: React.VFC<ItemSearchDialogProps> = ({
   return (
     <DialogWrapper title="商品検索" isShown={isShown && !isLoading} onClickCancel={onClickCancel}>
       <BoxConditions
+        bodyClassName="mt-0"
         onClickSearchButton={onClickSearchButton}
         onClickClearButton={onClickClearButton}
       >
-        <Forms.FormGroupInputText
-          labelText="文字列"
-          name="c_keyword"
-          value={conditions.c_keyword}
-          onChange={onChange}
-          onCompositionStart={onCompositionStart}
-          onCompositionEnd={onCompositionEnd}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !composing) {
-              onClickSearchButton();
-            }
-          }}
-          maxLength={30}
-          groupClassName="max-w-sm mr-4"
-          removeOptionalLabel
-        />
+        <div className="flex">
+          <Forms.FormGroupInputText
+            labelText="文字列"
+            name="c_keyword"
+            value={conditions.c_keyword}
+            onChange={onChange}
+            onCompositionStart={onCompositionStart}
+            onCompositionEnd={onCompositionEnd}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !composing) {
+                onClickSearchButton();
+              }
+            }}
+            maxLength={30}
+            groupClassName="max-w-sm mr-4"
+            removeOptionalLabel
+          />
+        </div>
       </BoxConditions>
+
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
       </TableWrapper>

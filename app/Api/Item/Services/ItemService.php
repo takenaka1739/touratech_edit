@@ -25,15 +25,18 @@ class ItemService
   public function dialog(array $cond)
   {
     $query = Item::select(
-      'm_items.id',
-      'm_items.code',
-      'm_items.item_number',
-      'm_items.name',
-      'm_items.sales_unit_price',
-      'm_items.purchase_unit_price',
-      'm_items.is_display',
+      'id',
+      'code',
+      'item_number',
+      'name',
+      'sales_unit_price',
+      'purchase_unit_price',
+      'is_display',
     );
-    $query->orderBy('code', 'asc');
+    //$query->orderBy('code', 'asc');
+    //return $query->paginate(config('const.paginate.per_page'))->toArray();
+    $query = $this->setCondition($query, $cond);
+    $query->orderBy('name', 'asc');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
