@@ -1424,7 +1424,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                         />
                         <button
                           className="btn py-0 px-2"
-                          style={{ marginTop: "5px" }}
+                          style={{ marginTop: "5px", marginLeft: '8px' }}
                           onClick={() => onChangeCategory(item.originalIndex)}
                         >
                           ...
