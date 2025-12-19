@@ -10,7 +10,7 @@ return new class extends Migration {
         // 命名規則：リンク系はプレフィックス無し（既存クエリ互換のため t_link_r_order_p_order を採用）
         if (!Schema::hasTable('t_link_r_order_p_order')) {
             Schema::create('t_link_r_order_p_order', function (Blueprint $table) {
-                // ★カラムはそのまま（変更しない）
+                // カラムはそのまま（変更しない）
                 $table->unsignedBigInteger('receive_order_id');
                 $table->unsignedBigInteger('place_order_id');
 

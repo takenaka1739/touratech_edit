@@ -32,7 +32,7 @@ class ReceiveOrder extends Model
     'remarks',
     'rate',
     'fraction',
-    // ★ Square 関連（テーブルに追加済みのカラム）
+    //  Square 関連（テーブルに追加済みのカラム）
     'square_payment_id',
     'square_status',
   ];

@@ -55,7 +55,7 @@ export const buildCategoryTree = (rows: CategoryLike[]): CategoryNode[] => {
   const roots: CategoryNode[] = [];
   map.forEach(node => {
     const p = node.parent_code ? norm(node.parent_code) : '';
-    const isRoot = !p || p === node.code || !map.has(p); // ★ ここがポイント
+    const isRoot = !p || p === node.code || !map.has(p); //  ここがポイント
 
     if (isRoot) {
       node.level = 0;

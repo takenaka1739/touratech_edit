@@ -110,7 +110,7 @@ trait ReadMailServiceATrait
    */
   private function getRemarksA(string $body)
   {
-    if (preg_match('/^(納期★.*)$/m', $body, $matches)) {
+    if (preg_match('/^(納期.*)$/m', $body, $matches)) {
       return $matches[1];
     }
     return "";
@@ -198,7 +198,7 @@ trait ReadMailServiceATrait
    */
   private function getQuantityA(string $body)
   {
-    if (preg_match('/^定価\(税込\).*★([0-9]+)\s+.*★$/m', $body, $matches)) {
+    if (preg_match('/^定価\(税込\).*([0-9]+)\s+.*$/m', $body, $matches)) {
       return intval($matches[1]);
     }
     return "";

@@ -230,7 +230,7 @@ class SalesService
                 'item_id'          => isset($d['item_id']) ? (int)$d['item_id'] : null,
                 'sales_unit_price' => $num($d['sales_unit_price'] ?? 0, 2),
 
-                // ★ 明細から rate が送られてきたときだけ整数キャスト。無ければ null
+                //  明細から rate が送られてきたときだけ整数キャスト。無ければ null
                 'rate'             => (
                     array_key_exists('rate', $d)
                     && $d['rate'] !== null
@@ -334,7 +334,7 @@ class SalesService
                 'success' => true,
                 'id'      => $id,
             ];
-        } catch (\Throwable $e) { // ★ グローバル名前空間の Throwable を指定
+        } catch (\Throwable $e) { //  グローバル名前空間の Throwable を指定
 
             // 失敗内容をログに出す（ローカル調査用）
             \Log::error('[SalesService][store] failed', [
@@ -385,7 +385,7 @@ class SalesService
     }
 
     // =========================================================================
-    // ★★★ ここから下：元コントローラー互換の“薄いアダプタ”を追加 ★★★
+    //  ここから下：元コントローラー互換の“薄いアダプタ”を追加 
     // =========================================================================
 
     /**
@@ -423,7 +423,7 @@ class SalesService
             'sales_at'    => date('Y/m/d'),
         ];
 
-        // ★ デフォルト担当者（管理者）を取得
+        //  デフォルト担当者（管理者）を取得
         $defaultPersonnel = $this->getDefaultPersonnel();
 
         if ($defaultPersonnel) {
@@ -855,7 +855,7 @@ class SalesService
 
             if (Schema::hasColumn($table, 'fax')) $sales->fax = $norm['fax'] ?? null;
 
-            // ★ 担当者（personnel_id）：未指定なら管理者を補完
+            //  担当者（personnel_id）：未指定なら管理者を補完
             $personnelId = $norm['user_id'] ?? null;
             if (!$personnelId) {
                 $defaultPersonnel = $this->getDefaultPersonnel();
@@ -918,7 +918,7 @@ class SalesService
                 if (Schema::hasColumn($dtTable, 'item_kind'))        $row['item_kind']        = $d['item_kind'] ?? null;
                 if (Schema::hasColumn($dtTable, 'sales_unit_price')) $row['sales_unit_price'] = $d['sales_unit_price'] ?? 0;
 
-                // ★ 明細ごとの rate → 無ければヘッダ rate → さらに無ければ 100
+                //  明細ごとの rate → 無ければヘッダ rate → さらに無ければ 100
                 if (Schema::hasColumn($dtTable, 'rate')) {
                     $row['rate'] = (int)$detailRate;
                 }
@@ -1040,7 +1040,7 @@ class SalesService
 
             if (Schema::hasColumn($table, 'fax')) $sales->fax = $norm['fax'] ?? null;
 
-            // ★ 担当者（personnel_id）：送られてきた user_id を優先しつつ、なければ既存値 or 管理者
+            //  担当者（personnel_id）：送られてきた user_id を優先しつつ、なければ既存値 or 管理者
             $personnelId = $norm['user_id'] ?? $sales->personnel_id ?? null;
             if (!$personnelId) {
                 $defaultPersonnel = $this->getDefaultPersonnel();
@@ -1105,7 +1105,7 @@ class SalesService
                 if (Schema::hasColumn($dtTable, 'item_kind'))        $row['item_kind']        = $d['item_kind'] ?? null;
                 if (Schema::hasColumn($dtTable, 'sales_unit_price')) $row['sales_unit_price'] = $d['sales_unit_price'] ?? 0;
 
-                // ★ 明細ごとの rate → 無ければヘッダ rate → さらに無ければ 100
+                //  明細ごとの rate → 無ければヘッダ rate → さらに無ければ 100
                 if (Schema::hasColumn($dtTable, 'rate')) {
                     $row['rate'] = (int)$detailRate;
                 }

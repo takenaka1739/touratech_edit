@@ -108,7 +108,7 @@ class ItemClassificationService
 
       if ($existing) {
         if ($existing->trashed()) {
-          // ★ ソフトデリート済み → 復活＆上書き更新として扱う
+          //  ソフトデリート済み → 復活＆上書き更新として扱う
           Log::info('ItemClassificationService@store:restore deleted classification', [
             'code' => $code,
             'id'   => $existing->id,

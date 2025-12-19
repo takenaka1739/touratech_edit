@@ -204,7 +204,7 @@ class ItemService
     $category_list = [];
     $category_list_all = [];
     $category_list = ItemCategoryCombination::where('item_id', $selectItems['id'])
-        ->whereNull('t_category_item_combinations.deleted_at') // ★ ここで削除済みを除外
+        ->whereNull('t_category_item_combinations.deleted_at') //  ここで削除済みを除外
         ->join('m_categories', 't_category_item_combinations.category_id', '=', 'm_categories.id')
         ->select(
             't_category_item_combinations.id as combId',
@@ -225,7 +225,7 @@ class ItemService
         ->values()
         ->toArray();
 
-    // ★ 空だった場合はダミー行を追加
+    //  空だった場合はダミー行を追加
     if (empty($category_list)) {
         $category_list = [[
             'combId' => null,
@@ -265,7 +265,7 @@ class ItemService
           ->values()
           ->toArray();
         
-      // ★ 空だった場合はダミー行を追加
+      //  空だった場合はダミー行を追加
       if (empty($category)) {
           $category = [[
               'combId' => null,
@@ -277,7 +277,7 @@ class ItemService
           ]];
       }
 
-      // ★ itemId をキーにして格納
+      //  itemId をキーにして格納
       $itemId = $category[0]['itemId']; // 先頭の itemId をキーにする
       $category_list_key[$item->id] = $category;
       array_push($category_list_all, $category_list_key);

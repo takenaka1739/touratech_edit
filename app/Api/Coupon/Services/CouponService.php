@@ -82,7 +82,7 @@ class CouponService
      */
     public function store(array $data): void
     {
-        // ★ 入口ログ
+        //  入口ログ
         Log::debug('【クーポン登録開始】', [
             'raw_input' => $data,
         ]);

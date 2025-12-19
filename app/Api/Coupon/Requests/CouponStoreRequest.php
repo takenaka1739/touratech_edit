@@ -14,7 +14,6 @@ class CouponStoreRequest extends CouponRequest
      */
     protected function failedValidation(Validator $validator)
     {
-        // ★ ここでログを必ず吐く
         Log::warning('【クーポン登録バリデーションエラー】', [
             'input'  => $this->all(),
             'errors' => $validator->errors()->toArray(),
@@ -47,7 +46,7 @@ class CouponStoreRequest extends CouponRequest
             'rules.*.condition_type'     => ['required', 'string'],
             'rules.*.condition_value'    => ['nullable'],
             'rules.*.price_operator'     => ['nullable', 'in:gte,lte,eq'],
-            // ★ benefit_type / benefit_value は 1 回だけ定義（discount / free_item / free_shipping / special_item を許可）
+            //  benefit_type / benefit_value は 1 回だけ定義（discount / free_item / free_shipping / special_item を許可）
             'rules.*.benefit_type'       => ['required', 'in:discount,free_item,free_shipping,special_item'],
             'rules.*.benefit_value'      => ['required', 'array'],
         ];
@@ -78,7 +77,7 @@ class CouponStoreRequest extends CouponRequest
                 } else {
                     // それ以外（item_id, category_id, brand_id 等）
 
-                    // ★ item_id / category_id / brand_id は「単一ID でも配列でもOK」にする
+                    //  item_id / category_id / brand_id は「単一ID でも配列でもOK」にする
                     if (in_array($type, ['item_id', 'category_id', 'brand_id'], true)) {
                         // 単一値（数値/文字列）は許可 → 後で配列に寄せるのでここではエラーにしない
                         if (!is_array($value) && !is_null($value) && !is_numeric($value) && !is_string($value)) {
@@ -149,7 +148,7 @@ class CouponStoreRequest extends CouponRequest
 
         foreach ($validated['rules'] ?? [] as $i => $rule) {
 
-            // ★ ID 条件（item_id, category_id, brand_id）は単一値なら配列に寄せる
+            //  ID 条件（item_id, category_id, brand_id）は単一値なら配列に寄せる
             if (isset($rule['condition_type']) &&
                 in_array($rule['condition_type'], ['item_id', 'category_id', 'brand_id'], true)
             ) {

@@ -159,7 +159,7 @@ export const CouponRuleForm: React.FC<Props> = ({
         options={effectiveConditionTypeOptions}
         required
         groupClassName="mb-2"
-        disabled={isSpecialItem} // ★ benefit_typeがspecial_itemならcondition_typeのセレクトはdisable
+        disabled={isSpecialItem} //  benefit_typeがspecial_itemならcondition_typeのセレクトはdisable
       />
 
       {renderConditionInput()}

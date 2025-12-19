@@ -46,7 +46,7 @@ export const InfoPostForm: React.FC<Props> = ({
   const bodyLength = form.body_md ? form.body_md.length : 0;
   const BODY_MAX = 2000; // お好みで調整
 
-  // ★ InfoPostList の「新規作成」寄せの見た目
+  //  InfoPostList の「新規作成」寄せの見た目
   const btnLikeNewCreate =
     'px-3 py-1 text-xs rounded-md border bg-white hover:bg-gray-100 active:bg-gray-200';
 
@@ -123,7 +123,7 @@ export const InfoPostForm: React.FC<Props> = ({
                   : '未選択'}
               </div>
 
-              {/* ★ ボタンっぽく */}
+              {/*  ボタンっぽく */}
               <button
                 type="button"
                 className={btnLikeNewCreate}

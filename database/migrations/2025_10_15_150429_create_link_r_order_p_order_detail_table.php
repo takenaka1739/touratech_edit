@@ -10,7 +10,7 @@ return new class extends Migration {
         // 既存互換のためテーブル名は t_ なし（link_r_order_p_order_detail）
         if (!Schema::hasTable('link_r_order_p_order_detail')) {
             Schema::create('link_r_order_p_order_detail', function (Blueprint $table) {
-                // ★カラム名はそのまま（変更しない）
+                // カラム名はそのまま（変更しない）
                 $table->unsignedBigInteger('receive_order_detail_id');
                 $table->unsignedBigInteger('place_order_detail_id');
 

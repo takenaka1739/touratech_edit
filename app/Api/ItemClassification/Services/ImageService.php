@@ -26,7 +26,7 @@ class ImageService
     $perPage    = (int) config('const.paginate.per_page', 20);
     $page       = max(1, (int) ($cond->get('page') ?? request('page', 1)));
 
-    // ★ Eloquentではなく DB::table を使用（stdClass を返す）※エイリアス i / c
+    //  Eloquentではなく DB::table を使用（stdClass を返す）※エイリアス i / c
     $base = DB::table('m_images as i')
         ->leftJoin('m_categories as c', 'c.id', '=', 'i.category_id')
         ->select([

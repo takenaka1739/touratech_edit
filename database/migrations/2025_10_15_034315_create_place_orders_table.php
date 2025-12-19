@@ -17,7 +17,7 @@ return new class extends Migration {
                     ->useCurrentOnUpdate()
                     ->comment('発注日');
 
-                // ★カラム名は旧システムのまま user_id を使用（参照先だけ t_customers）
+                // カラム名は旧システムのまま user_id を使用（参照先だけ t_customers）
                 $table->unsignedBigInteger('user_id')->nullable()->comment('取引先ID（m_personnels.id）');
 
                 $table->string('delivery_day', 30)->nullable()->comment('納期/回答日など');

@@ -66,7 +66,7 @@ class ReadMailServiceStoreTest extends TestCase
       "discount" => 0,
       "total_amount" => 3200,
       "order_no" => "201201R02211",
-      "remarks" => "納期★1 ヶ月半★",
+      "remarks" => "納期1 ヶ月半",
       "rate" => 80,
       "fraction" => 2,
       "details" => [
