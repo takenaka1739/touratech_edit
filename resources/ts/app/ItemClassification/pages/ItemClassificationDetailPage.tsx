@@ -8,7 +8,6 @@ import { AppActions } from '@/app/App/modules/appModule';
 import axios from 'axios';
 import { appAlert } from '@/components';
 import { ItemImagePickerDialog } from '@/app/ItemClassification/components/ItemImagePickerDialog';
-import { InfoItemSelectModal } from '@/app/info/components/InfoItemSelectModal';
 
 export type ItemClassificationDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 

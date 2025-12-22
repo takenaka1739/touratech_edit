@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Exception;
 
 /**
- * 見積データPDFサービス
+ * 見積データPDFサービス（レイアウトC：掛率・定価列あり）
  */
 class EstimatePdfService
 {
@@ -23,19 +23,42 @@ class EstimatePdfService
     protected $base_path;
 
     /**
-     * 割引をどこか1行にだけ出すためのフラグ
+     * 明細行（商品ごとの割引）をどこか1行にだけ出すためのフラグ
      * （複数ページになっても1回だけ表示する）
      */
     protected bool $discountPrinted = false;
+
+    /** 明細枠内の固定値（既存レイアウトに合わせた座標） */
+    private const TABLE_TOP_Y = 115.559;
+    private const TABLE_BOTTOM_Y = 275.709;
+    private const ROW_HEIGHT = 8.545;
+    private const ROW_BASE_Y = 113.395; // ループ内で y+=ROW_HEIGHT して1行目が121.94になる基準
+
+    /** 明細枠の下3行に固定で出す集計行数（小計/値引/合計） */
+    private const SUMMARY_ROWS = 3;
+
+    /**
+     * レイアウトC：列定義（X座標）
+     * 左端は既存に合わせて 21.771、右端は Rect(21.541, ..., 174.864, ...) に合わせて 196.405 付近
+     */
+    private const X_LEFT = 21.771;
+    private const X_RIGHT = 196.405;
+
+    // 列境界
+    private const X_CONTENT_R = 84.0;   // 内容・仕様 右端
+    private const X_QTY_R = 106.0;      // 数量 右端
+    private const X_UNIT_R = 116.0;     // 単位 右端
+    private const X_RATE_R = 126.0;     // 掛率 右端
+    private const X_LIST_R = 141.0;     // 定価 右端
+    private const X_UNITPRICE_R = 154.0;// 単価 右端
+    private const X_DISC_R = 167.0;     // 割引 右端
+    private const X_AMOUNT_L = 167.0;   // 金額 左端（割引右端と同じ）
 
     public function __construct()
     {
         $this->base_path = config('const.paths.estimate.output_path');
     }
 
-    /**
-     * @return string
-     */
     public function getBasePath()
     {
         return $this->base_path;
@@ -43,9 +66,6 @@ class EstimatePdfService
 
     /**
      * PDFを作成する
-     *
-     * @param array $data
-     * @return string
      */
     public function createPdf(array $data)
     {
@@ -64,19 +84,13 @@ class EstimatePdfService
         return $file_id;
     }
 
-    /**
-     * パスを取得する
-     *
-     * @param string $file_id
-     * @return string
-     */
     public function getStoragePath(string $file_id)
     {
         if (!strpos($file_id, '_')) {
             throw new Exception("Failed get path.");
         }
 
-        list($ymd, $file_name) = explode('_', $file_id);
+        [$ymd, $file_name] = explode('_', $file_id);
         $path = $this->base_path . $ymd . DIRECTORY_SEPARATOR;
 
         Storage::makeDirectory($path);
@@ -85,44 +99,37 @@ class EstimatePdfService
     }
 
     /**
-     * 書き込む
+     * 書き込む（ページ数計算）
      *
-     * @param array $data
+     * - 送料/手数料は最終ページの明細枠内に行として出す
+     * - 小計/値引/合計は「最終ページの明細枠下3行」に固定で出す（=常に3行確保）
      */
     protected function write(array $data)
     {
         $d       = new Collection($data);
-        $details = $d->get('details');
+        $details = $d->get('details', []);
+        if (!is_array($details)) {
+            $details = (array) $details;
+        }
 
-        $count = count($details);
-        if ($d->get('shipping_amount', 0) > 0) {
-            $count++;
-        }
-        if ($d->get('fee', 0) > 0) {
-            $count++;
-        }
-        if ($d->get('discount', 0) > 0) {
-            $count++;
-        }
-        $max_page = ceil($count / $this::PER_PAGE);
+        // 最終ページに追加表示する「送料/代引手数料」行をカウント
+        $extraRows = 0;
+        if ((float)$d->get('shipping_amount', 0) > 0) $extraRows++;
+        if ((float)$d->get('fee', 0) > 0)             $extraRows++;
+
+        // ★小計/値引/合計（3行）を必ず確保
+        $totalRows = count($details) + $extraRows + self::SUMMARY_ROWS;
+        $totalRows = max(1, $totalRows);
+
+        $max_page  = (int) ceil($totalRows / self::PER_PAGE);
 
         for ($i = 1; $i <= $max_page; $i++) {
             $this->writePage($data, $i, $max_page);
         }
     }
 
-    /**
-     * 書き込む
-     *
-     * @param array $data
-     * @param int   $page
-     * @param int   $max_page
-     */
-    protected function writePage(
-        array $data,
-        int $page,
-        int $max_page
-    ) {
+    protected function writePage(array $data, int $page, int $max_page)
+    {
         $data   = new Collection($data);
         $config = new Collection($data->get('config_data'));
 
@@ -136,9 +143,8 @@ class EstimatePdfService
         $this->pdf->SetFontSize(10);
         $this->pdf->TextRight(192.723, 21.633, $page . '頁');
 
-        $y    = "";
-        $m    = "";
-        $d    = "";
+        // 日付
+        $y = ""; $m = ""; $d = "";
         $date = $data->get('estimate_date');
         if ($date) {
             $dt = new Carbon($date);
@@ -175,11 +181,10 @@ class EstimatePdfService
         $this->pdf->SetFontSize(8);
         $this->pdf->Text(32.666, 62.41, "下記の通り御見積申し上げます。");
 
+        // 納入期日
         $this->pdf->SetFontSize(9);
         $this->pdf->Text(20.901, 73.269, "納入期日：");
-        $y    = "";
-        $m    = "";
-        $d    = "";
+        $y = ""; $m = ""; $d = "";
         $date = $data->get('delivery_date');
         if ($date) {
             $dt = new Carbon($date);
@@ -194,16 +199,17 @@ class EstimatePdfService
         $this->pdf->TextRight(70.086, 73.269, $d);
         $this->pdf->Text(71.086, 73.269, "日");
 
+        // 納入場所
         $this->pdf->Text(20.901, 77.523, "納入場所：");
         $this->pdf->Text(37, 77.523, $data->get('address1', "") . $data->get('address2', ""));
 
+        // 取引方法
         $this->pdf->Text(20.901, 81.781, "取引方法：");
         $this->pdf->Text(37, 81.781, get_corporate_class_name($data->get('corporate_class')));
 
+        // 有効期限
         $this->pdf->Text(20.901, 86.051, "有効期限：");
-        $y    = "";
-        $m    = "";
-        $d    = "";
+        $y = ""; $m = ""; $d = "";
         $date = $data->get('estimate_date');
         if ($date) {
             $dt = new Carbon($date);
@@ -219,18 +225,18 @@ class EstimatePdfService
         $this->pdf->TextRight(70.086, 86.051, $d);
         $this->pdf->Text(71.086, 86.051, "日");
 
+        // 合計金額（ヘッダ表示は従来どおり total_amount）
         $this->pdf->lineBold();
         $this->pdf->rect(21.771, 96.413, 81.405, 12.764);
         $this->pdf->lineNormal();
         $this->pdf->lineH(50.915, 96.413, 12.764);
 
-        // 合計金額
         $this->pdf->SetFontSize(11);
         $this->pdf->SetXY(24.373, 100.509);
         $this->pdf->Cell(23.054, 5.57, "合計金額", 0, 0, "", false, "", 4);
         $this->pdf->SetFontSize(16);
         $this->pdf->SetXY(50.915, 96.413);
-        $this->pdf->Cell(51.5, 12.764, '￥' . number_format($data->get('total_amount'), 0), 0, 0, "R");
+        $this->pdf->Cell(51.5, 12.764, '￥' . number_format((float)$data->get('total_amount', 0), 0), 0, 0, "R");
 
         // ロゴ
         $this->pdf->Image(resource_path('images/logo.gif'), 122.421, 36.433, 75);
@@ -245,181 +251,242 @@ class EstimatePdfService
         $this->pdf->Text(122.421, 75.657, 'TEL:' . $config->get('tel') . '  FAX:' . $config->get('fax'));
         $this->pdf->Text(122.421, 80.36, '登録番号 ' . config('const.invoice_no'));
 
-        // 明細の外枠
+        // -----------------------------
+        // 明細テーブル枠
+        // -----------------------------
         $this->pdf->lineBold();
         $this->pdf->Rect(21.541, 115.505, 174.864, 168.092);
-        $this->pdf->lineW(21.771, 121.941, 174.864);   // ヘッダ下
-        $this->pdf->lineW(21.771, 275.709, 174.864);   // 明細部と備考の境界
+        $this->pdf->lineW(21.771, 121.941, 174.864); // ヘッダ下
+        $this->pdf->lineW(21.771, 275.709, 174.864); // 明細部と備考の境界
 
-        // 明細部の縦線（備考枠には伸ばさない）
+        // 縦線（備考枠には伸ばさない）
         $this->pdf->lineNormal();
-        $detailHeight = 275.709 - 115.559;
-        $this->pdf->lineH(94.135, 115.559, $detailHeight);
-        $this->pdf->lineH(120.265, 115.559, $detailHeight);
-        $this->pdf->lineH(130.317, 115.559, $detailHeight); // 単価
-        $this->pdf->lineH(145.0,   115.559, $detailHeight); // 割引
-        $this->pdf->lineH(160.471, 115.559, $detailHeight); // 金額
+        $detailHeight = self::TABLE_BOTTOM_Y - self::TABLE_TOP_Y;
+        $this->pdf->lineH(self::X_CONTENT_R,   self::TABLE_TOP_Y, $detailHeight);
+        $this->pdf->lineH(self::X_QTY_R,       self::TABLE_TOP_Y, $detailHeight);
+        $this->pdf->lineH(self::X_UNIT_R,      self::TABLE_TOP_Y, $detailHeight);
+        $this->pdf->lineH(self::X_RATE_R,      self::TABLE_TOP_Y, $detailHeight);
+        $this->pdf->lineH(self::X_LIST_R,      self::TABLE_TOP_Y, $detailHeight);
+        $this->pdf->lineH(self::X_UNITPRICE_R, self::TABLE_TOP_Y, $detailHeight);
+        $this->pdf->lineH(self::X_DISC_R,      self::TABLE_TOP_Y, $detailHeight);
 
-        // ヘッダ
+        // ヘッダ（列名）
         $this->pdf->SetFontSize(9);
-        $this->pdf->SetXY(21.771, 116.559);
-        $this->pdf->Cell(72.364, 6.436, "内　容　・　仕　様", 0, 0, "C");
-        $this->pdf->SetXY(94.135, 116.559);
-        $this->pdf->Cell(26.13, 6.436, "数　量", 0, 0, "C");
-        $this->pdf->SetXY(120.265, 116.559);
-        $this->pdf->Cell(10.052, 6.436, "単位", 0, 0, "C");
-        $this->pdf->SetXY(130.317, 116.559);
-        $this->pdf->Cell(14.683, 6.436, "単　価", 0, 0, "C");
-        $this->pdf->SetXY(145.0, 116.559);
-        $this->pdf->Cell(15.471, 6.436, "割　引", 0, 0, "C");
-        $this->pdf->SetXY(160.471, 116.559);
-        $this->pdf->Cell(35.934, 6.436, "金　　額", 0, 0, "C");
 
-        // 行ごとの横線（備考部分には引かない）
+        $this->pdf->SetXY(self::X_LEFT, 116.559);
+        $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, 6.436, "内　容　・　仕　様", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_CONTENT_R, 116.559);
+        $this->pdf->Cell(self::X_QTY_R - self::X_CONTENT_R, 6.436, "数　量", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_QTY_R, 116.559);
+        $this->pdf->Cell(self::X_UNIT_R - self::X_QTY_R, 6.436, "単位", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_UNIT_R, 116.559);
+        $this->pdf->Cell(self::X_RATE_R - self::X_UNIT_R, 6.436, "掛率", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_RATE_R, 116.559);
+        $this->pdf->Cell(self::X_LIST_R - self::X_RATE_R, 6.436, "定価", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_LIST_R, 116.559);
+        $this->pdf->Cell(self::X_UNITPRICE_R - self::X_LIST_R, 6.436, "単価", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_UNITPRICE_R, 116.559);
+        $this->pdf->Cell(self::X_DISC_R - self::X_UNITPRICE_R, 6.436, "割引", 0, 0, "C");
+
+        $this->pdf->SetXY(self::X_DISC_R, 116.559);
+        $this->pdf->Cell(self::X_RIGHT - self::X_DISC_R, 6.436, "金　　額", 0, 0, "C");
+
+        // 横罫線（最下段まで）
         $h = 121.94;
-        for ($i = 0; $i < 18; $i++) {
-            $h = $h + 8.545;
-            if ($h >= 275.709) {
-                break;
-            }
-            $this->pdf->lineW(21.771, $h, 174.864);
+        for ($i = 0; $i < self::PER_PAGE; $i++) {
+            $h += self::ROW_HEIGHT;
+            if ($h >= self::TABLE_BOTTOM_Y) break;
+            $this->pdf->lineW(self::X_LEFT, $h, self::X_RIGHT - self::X_LEFT);
         }
 
-        // 全体割引額（t_estimates.discount 想定）
-        $headerDiscount = (float) $data->get('discount', 0);
+        // -----------------------------
+        // 明細描画
+        // -----------------------------
+        $details = new Collection($data->get('details', []));
+        $rows    = $details->forPage($page, self::PER_PAGE);
 
-        // 明細行
-        $details = $data->get('details');
-        $details = new Collection($details);
-        $rows    = $details->forPage($page, $this::PER_PAGE);
-        $y       = 113.395;
+        $yRowTop = self::ROW_BASE_Y;
+
+        // 最終ページのみ：明細枠の下3行（小計/値引/合計）を明細で潰さない
+        $isLastPage = ($page === $max_page);
+        $ySummaryStart = self::ROW_BASE_Y + self::ROW_HEIGHT * (self::PER_PAGE - self::SUMMARY_ROWS + 1); // 16行目のy
+
         foreach ($rows as $row) {
             $row = new Collection($row);
 
-            $y = $y + 8.545;
+            $nextY = $yRowTop + self::ROW_HEIGHT;
+            if ($isLastPage && $nextY >= $ySummaryStart) {
+                break;
+            }
+            $yRowTop = $nextY;
 
-            // 元の金額・税
-            $rowAmount = (float) $row->get('amount', 0);    // 税込金額
-            $rowTax    = (float) $row->get('sales_tax', 0); // 税額
+            $rowAmount = (float) $row->get('amount', 0);            // 既存仕様：税込想定
+            $rowTax    = (float) $row->get('sales_tax', 0);         // 税額
+            $discountForThisRow = (float) $row->get('discount', 0); // 明細割引
+            $netAmount   = $rowAmount - $discountForThisRow;        // 税込
+            $netAmountEx = $netAmount - $rowTax;                    // 税抜（簡易）
 
-            // この行に割引を乗せるか
-            $discountForThisRow = 0.0;
-            if (!$this->discountPrinted && $headerDiscount != 0) {
-                $discountForThisRow = $headerDiscount;
+            $rate = $row->get('rate', null);                        // 掛率
+            $salesUnitPrice = (float) $row->get('sales_unit_price', 0); // 定価
+            $unitPrice = (float) $row->get('unit_price', 0);        // 単価
+
+            // 内容 上（品番）
+            $this->pdf->SetFontSize(8);
+            $this->pdf->SetXY(self::X_LEFT + 36.0, $yRowTop);
+            $this->pdf->Cell(self::X_CONTENT_R - (self::X_LEFT + 36.0), 4.5, (string)$row->get('item_number', ''));
+
+            // 内容 下（商品名）
+            $this->pdf->SetFontSize(10);
+            $this->pdf->SetXY(self::X_LEFT, $yRowTop + 3);
+
+            $name = trim((string) $row->get('item_name_jp', ''));
+            if ($name === '') {
+                $name = trim((string) $row->get('item_name', ''));
             }
 
-            // 割引後金額
-            $netAmount   = $rowAmount - $discountForThisRow; // 税込
-            $netAmountEx = $netAmount - $rowTax;             // 税抜（ざっくり）
-
-            // 内容・仕様 上
-            $this->pdf->SetFontSize(8);
-            $this->pdf->SetXY(57.953, $y);
-            $this->pdf->Cell(36.182, 4.5, $row->get('item_number'));
-
-            // 内容・仕様 下
-            $this->pdf->SetFontSize(10);
-            $this->pdf->SetXY(21.771, $y + 3);
-            $this->pdf->Cell(72.364, 5.545, mb_strimwidth($row->get('item_name_jp', ''), 0, 40));
+            $this->pdf->Cell(
+                self::X_CONTENT_R - self::X_LEFT,
+                5.545,
+                mb_strimwidth($name, 0, 40)
+            );
 
             // 数量
             $this->pdf->SetFontSize(9);
-            $this->pdf->SetXY(94.135, $y + 3);
-            $this->pdf->Cell(26.13, 5.545, number_format($row->get('quantity', 0)), 0, 0, "R");
+            $this->pdf->SetXY(self::X_CONTENT_R, $yRowTop + 3);
+            $this->pdf->Cell(self::X_QTY_R - self::X_CONTENT_R, 5.545, number_format((float)$row->get('quantity', 0), 0), 0, 0, "R");
 
             // 単位
-            $unit = "個";
-            if ($row->get('item_kind') == 2) {
-                $unit = "ｾｯﾄ";
-            }
-            $this->pdf->SetXY(120.265, $y + 2);
-            $this->pdf->Cell(10.052, 6.545, $unit, 0, 0, "C");
+            $unit = ((int)$row->get('item_kind', 1) === 2) ? "ｾｯﾄ" : "個";
+            $this->pdf->SetXY(self::X_QTY_R, $yRowTop + 2);
+            $this->pdf->Cell(self::X_UNIT_R - self::X_QTY_R, 6.545, $unit, 0, 0, "C");
 
-            // 単価
-            $this->pdf->SetXY(130.317, $y + 2);
-            $this->pdf->Cell(14.683, 6.545, number_format($row->get('unit_price'), 2), 0, 0, "R");
+            // 掛率
+            $this->pdf->SetXY(self::X_UNIT_R, $yRowTop + 2);
+            $rateStr = ($rate === null || $rate === '') ? '' : ((string)$rate . '%');
+            $this->pdf->Cell(self::X_RATE_R - self::X_UNIT_R, 6.545, $rateStr, 0, 0, "C");
 
-            // 割引列
-            if ($discountForThisRow != 0.0) {
-                $this->pdf->SetXY(145.0, $y + 2);
-                $this->pdf->Cell(15.471, 6.545, number_format($discountForThisRow, 2), 0, 0, "R");
-                $this->discountPrinted = true;
-            }
+            // 定価（小数なし）
+            $this->pdf->SetXY(self::X_RATE_R, $yRowTop + 2);
+            $this->pdf->Cell(self::X_LIST_R - self::X_RATE_R, 6.545, $salesUnitPrice ? number_format($salesUnitPrice, 0) : '', 0, 0, "R");
 
-            // 金額 上（税抜）→ 割引後
-            $this->pdf->SetXY(160.471, $y);
-            $this->pdf->Cell(35.934, 4.5, number_format($netAmountEx, 2), 0, 0, "R");
+            // 単価（小数なし）
+            $this->pdf->SetXY(self::X_LIST_R, $yRowTop + 2);
+            $this->pdf->Cell(self::X_UNITPRICE_R - self::X_LIST_R, 6.545, $unitPrice ? number_format($unitPrice, 0) : '', 0, 0, "R");
 
-            // 金額 下（税込）→ 割引後
+            // 割引（明細、小数なし）
+            $this->pdf->SetXY(self::X_UNITPRICE_R, $yRowTop + 2);
+            $this->pdf->Cell(self::X_DISC_R - self::X_UNITPRICE_R, 6.545, $discountForThisRow ? number_format($discountForThisRow, 0) : '', 0, 0, "R");
+
+            // 金額（上：税抜 / 下：税込）※小数なし
+            $this->pdf->SetFontSize(9);
+            $this->pdf->SetXY(self::X_AMOUNT_L, $yRowTop);
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 4.5, $netAmountEx ? number_format($netAmountEx, 0) : '', 0, 0, "R");
+
             $this->pdf->SetFontSize(13);
-            $this->pdf->SetXY(160.471, $y + 2.6);
-            $this->pdf->Cell(25, 5.945, number_format($netAmount, 0), 0, 0, "R");
+            $this->pdf->SetXY(self::X_AMOUNT_L, $yRowTop + 2.6);
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, $netAmount ? number_format($netAmount, 0) : '0', 0, 0, "R");
         }
 
+        // -----------------------------
+        // 最終ページ：送料/手数料 + 集計（小計/値引/合計）を下3行固定で描画
+        // -----------------------------
         if ($page === $max_page) {
 
-            $shipping_amount = $data->get('shipping_amount', 0);
+            $ySummaryStart = self::ROW_BASE_Y + self::ROW_HEIGHT * (self::PER_PAGE - self::SUMMARY_ROWS + 1);
+            $ySubtotal = $ySummaryStart;                      // 16行目
+            $yHeaderDiscount = $ySubtotal + self::ROW_HEIGHT; // 17行目
+            $yTotal = $yHeaderDiscount + self::ROW_HEIGHT;    // 18行目
+
+            // 送料/代引手数料は集計開始より上で詰めて表示
+            $yExtra = $yRowTop;
+
+            $shipping_amount = (float) $data->get('shipping_amount', 0);
             if ($shipping_amount > 0) {
-                // 送料
-                $y = $y + 8.545;
+                $next = $yExtra + self::ROW_HEIGHT;
+                if ($next < $ySummaryStart) {
+                    $yExtra = $next;
 
-                $this->pdf->SetFontSize(10);
-                $this->pdf->SetXY(21.771, $y + 3);
-                $this->pdf->Cell(72.364, 5.545, "送料");
+                    $this->pdf->SetFontSize(10);
+                    $this->pdf->SetXY(self::X_LEFT, $yExtra + 3);
+                    $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, 5.545, "送料");
 
-                $this->pdf->SetFontSize(13);
-                $this->pdf->SetXY(160.471, $y + 2.6);
-                $this->pdf->Cell(25, 5.945, number_format($shipping_amount, 2), 0, 0, "R");
+                    $this->pdf->SetFontSize(13);
+                    $this->pdf->SetXY(self::X_AMOUNT_L, $yExtra + 2.6);
+                    $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, number_format($shipping_amount, 0), 0, 0, "R");
+                }
             }
 
-            $fee = $data->get('fee', 0);
+            $fee = (float) $data->get('fee', 0);
             if ($fee > 0) {
-                // 代引手数料
-                $y = $y + 8.545;
+                $next = $yExtra + self::ROW_HEIGHT;
+                if ($next < $ySummaryStart) {
+                    $yExtra = $next;
 
-                $this->pdf->SetFontSize(10);
-                $this->pdf->SetXY(21.771, $y + 3);
-                $this->pdf->Cell(72.364, 5.545, "代引手数料");
+                    $this->pdf->SetFontSize(10);
+                    $this->pdf->SetXY(self::X_LEFT, $yExtra + 3);
+                    $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, 5.545, "代引手数料");
 
-                $this->pdf->SetFontSize(13);
-                $this->pdf->SetXY(160.471, $y + 2.6);
-                $this->pdf->Cell(25, 5.945, number_format($fee, 2), 0, 0, "R");
+                    $this->pdf->SetFontSize(13);
+                    $this->pdf->SetXY(self::X_AMOUNT_L, $yExtra + 2.6);
+                    $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, number_format($fee, 0), 0, 0, "R");
+                }
             }
 
-            // 以前の「値引」行は削除。割引は明細の1行目の割引列にのみ表示。
+            // 親の値引（手入力）
+            $headerDiscount = (float) $data->get('discount', 0);
 
-            // 小計（明細の最下行付近）
-            $subtotalY = 275.709 - 8.545;
+            // 集計値：小計 = 合計 + 値引（値引が合計から引かれている想定）
+            $total = (float) $data->get('total_amount', 0);
+            $subtotal = $total + $headerDiscount;
 
+            // 小計（下3行固定）
             $this->pdf->SetFontSize(10);
-            $this->pdf->SetXY(21.771, $subtotalY);
-            $this->pdf->Cell(72.364, 8.545, "小　　　　計", 0, 0, "C");
+            $this->pdf->SetXY(self::X_LEFT, $ySubtotal);
+            $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, self::ROW_HEIGHT, "小　　　　計", 0, 0, "C");
 
             $this->pdf->SetFontSize(13);
-            $this->pdf->SetXY(160.471, $subtotalY + 2);
-            $this->pdf->Cell(35.934, 5.945, number_format($data->get('total_amount'), 0), 0, 0, "R");
+            $this->pdf->SetXY(self::X_AMOUNT_L, $ySubtotal + 2);
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, number_format($subtotal, 0), 0, 0, "R");
 
-            // 備考欄（t_estimates.remarks 想定。無ければ空）
+            // 値引（親）
+            $this->pdf->SetFontSize(10);
+            $this->pdf->SetXY(self::X_LEFT, $yHeaderDiscount);
+            $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, self::ROW_HEIGHT, "値　　　　引", 0, 0, "C");
+
+            $this->pdf->SetFontSize(13);
+            $this->pdf->SetXY(self::X_AMOUNT_L, $yHeaderDiscount + 2);
+            $discText = ($headerDiscount > 0) ? ('▲' . number_format($headerDiscount, 0)) : number_format($headerDiscount, 0);
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, $discText, 0, 0, "R");
+
+            // 合計
+            $this->pdf->SetFontSize(10);
+            $this->pdf->SetXY(self::X_LEFT, $yTotal);
+            $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, self::ROW_HEIGHT, "合　　　　計", 0, 0, "C");
+
+            $this->pdf->SetFontSize(13);
+            $this->pdf->SetXY(self::X_AMOUNT_L, $yTotal + 2);
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, number_format($total, 0), 0, 0, "R");
+
+            // 備考（フリー入力風：縦線なし）
             $remarks = (string) ($data->get('remarks', '') ?? '');
 
             $this->pdf->SetFontSize(9);
-            // ラベル
-            $this->pdf->SetXY(21.771, 275.709 + 1);
-            $this->pdf->Cell(10, 5.545, "備考");
+            $this->pdf->SetXY(21.771, self::TABLE_BOTTOM_Y + 1);
+            $this->pdf->Cell(12, 5.545, "備考");
 
             if ($remarks !== '') {
-                $this->pdf->SetXY(30, 275.709 + 1);
+                $this->pdf->SetXY(33, self::TABLE_BOTTOM_Y + 1);
                 $this->pdf->MultiCell(160, 4, $remarks);
             }
         }
     }
 
-    /**
-     * ファイルIDを取得する
-     *
-     * @param string $prefix
-     * @return string
-     */
     private function getFileId(string $prefix)
     {
         return $prefix . "_" . Str::random(32);

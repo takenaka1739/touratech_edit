@@ -138,14 +138,31 @@ class EstimateController extends BaseController
    */
   public function output(EstimateUpdateRequest $request)
   {
+    // ★重要：validated() では id が落ちることがあるため、先に生で取得する
+    $estimateId =
+      $request->input('id')
+      ?? $request->route('id')
+      ?? null;
+
     $cond = $request->validated();
+
+    // getPdfData は config_data を足すだけなので、id を明示的に載せる
+    if ($estimateId !== null) {
+      $cond['id'] = $estimateId;
+    }
+
     $data = $this->service->getPdfData($cond);
 
-    //  t_estimates から割引・備考を補完する
-    //   テーブル名が違う場合はここを適宜変更してください。
-    $estimateId = $data['id'] ?? ($cond['id'] ?? null);
+    // ★ここでIDが取れていないと、DBからdiscount_amount付きで取れないのでログで即検知
+    logger()->info('pdf details meta', [
+      'estimate_id' => $estimateId,
+      'db' => DB::connection()->getDatabaseName(),
+      'req_id' => $request->input('id'),
+      'route_id' => $request->route('id'),
+    ]);
 
     if ($estimateId) {
+      // 親（値引・備考）
       $extra = DB::table('t_estimates')
         ->where('id', $estimateId)
         ->select('discount', 'remarks')
@@ -155,7 +172,41 @@ class EstimateController extends BaseController
         $data['discount'] = $extra->discount;
         $data['remarks']  = $extra->remarks;
       }
+
+      // ★明細：discount_amount を必ずキーとして返す（NULLでも0で返す）
+      $data['details'] = DB::table('t_estimate_details')
+        ->select([
+          'id',
+          'estimate_id',
+          'no',
+          'item_kind',
+          'item_id',
+          'item_number',
+          'item_name',
+          'item_name_jp',
+          'sales_unit_price',
+          'rate',
+          'fraction',
+          'unit_price',
+          'quantity',
+          'amount',
+          'sales_tax_rate',
+          'sales_tax',
+          'parent_id',
+          DB::raw('COALESCE(discount, 0) as discount'),
+        ])
+        ->where('estimate_id', $estimateId)
+        ->whereIn('item_kind', [1, 2])
+        ->orderBy('no')
+        ->get()
+        ->toArray();
     }
+
+    $first = $data['details'][0] ?? null;
+    logger()->info('pdf details first row keys', [
+      'keys' => $first ? array_keys((array)$first) : [],
+      'first' => $first,
+    ]);
 
     $pdf = new EstimatePdfService();
     $file_id = $pdf->createPdf($data);

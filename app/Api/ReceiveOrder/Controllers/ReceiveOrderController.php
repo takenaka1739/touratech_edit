@@ -12,7 +12,7 @@ use App\Api\ReceiveOrder\Services\ReceiveOrderService;
 use App\Api\ReceiveOrder\Services\ReceiveOrderPdfService;
 use App\Api\Sales\Services\SalesService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; //  追加
+use Illuminate\Support\Facades\DB;
 
 /**
  * 受注データコントローラー
@@ -22,17 +22,11 @@ class ReceiveOrderController extends BaseController
   /** @var \App\Api\ReceiveOrder\Services\ReceiveOrderService */
   protected $service;
 
-  /**
-   * @param \App\Api\ReceiveOrder\Services\ReceiveOrderService $service
-   */
   public function __construct(ReceiveOrderService $service)
   {
     $this->service = $service;
   }
 
-  /**
-   * 検索画面
-   */
   public function dialog(Request $request)
   {
     $input = $request->all();
@@ -41,11 +35,6 @@ class ReceiveOrderController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 選択
-   *
-   * @param int $id 受注ID
-   */
   public function selected(int $id)
   {
     $data = $this->service->get($id);
@@ -53,11 +42,6 @@ class ReceiveOrderController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 選択（売上用）
-   *
-   * @param int $id 受注ID
-   */
   public function selected_for_sales(int $id)
   {
     $s = new SalesService();
@@ -66,11 +50,6 @@ class ReceiveOrderController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 選択（発注用）
-   *
-   * @param int $id 受注ID
-   */
   public function selected_for_place(int $id)
   {
     $s = new PlaceOrderService();
@@ -79,9 +58,6 @@ class ReceiveOrderController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 一覧画面
-   */
   public function fetch(Request $request)
   {
     $input = $request->all();
@@ -90,11 +66,6 @@ class ReceiveOrderController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 詳細画面
-   *
-   * @param int $id 受注ID
-   */
   public function edit($id = null)
   {
     if ($id) {
@@ -106,9 +77,6 @@ class ReceiveOrderController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 登録
-   */
   public function store(ReceiveOrderStoreRequest $request)
   {
     $id = $this->service->store($request->validated());
@@ -118,11 +86,6 @@ class ReceiveOrderController extends BaseController
     ]);
   }
 
-  /**
-   * 更新
-   *
-   * @param int $id 受注ID
-   */
   public function update(ReceiveOrderUpdateRequest $request, int $id)
   {
     if ($this->service->hasSales($id)) {
@@ -136,11 +99,6 @@ class ReceiveOrderController extends BaseController
     return $this->success();
   }
 
-  /**
-   * バリデーション（削除）
-   *
-   * @param int $id 受注ID
-   */
   public function validate_delete(int $id)
   {
     $check = $this->service->validate_delete($id);
@@ -149,11 +107,6 @@ class ReceiveOrderController extends BaseController
     ]);
   }
 
-  /**
-   * 削除
-   *
-   * @param int $id 受注ID
-   */
   public function delete(int $id)
   {
     if ($this->service->hasSales($id)) {
@@ -167,9 +120,6 @@ class ReceiveOrderController extends BaseController
     return $this->success();
   }
 
-  /**
-   * 明細（バリデーション）
-   */
   public function detail(ReceiveOrderDetailRequest $request)
   {
     return $this->success();
@@ -183,21 +133,54 @@ class ReceiveOrderController extends BaseController
     $cond = $request->validated();
     $data = $this->service->getPdfData($cond);
 
-    //  ここで t_receive_orders から割引・備考を補完する
     // getPdfData から戻る配列には id が入っている想定
     $orderId = $data['id'] ?? ($cond['id'] ?? null);
 
     if ($orderId) {
+      // 親（値引・備考）
       $extra = DB::table('t_receive_orders')
         ->where('id', $orderId)
         ->select('discount', 'remarks')
         ->first();
 
       if ($extra) {
-        // すでにキーがあれば上書き、なければ追加
         $data['discount'] = $extra->discount;
         $data['remarks']  = $extra->remarks;
       }
+
+      // ★PDF用 明細：t_receive_order_details を生で取り直す（discount_amount を必ず含める）
+      $data['details'] = DB::table('t_receive_order_details')
+        ->select([
+          'id',
+          'receive_order_id',
+          'no',
+          'item_kind',
+          'item_id',
+          'item_number',
+          'item_name',
+          'item_name_jp',
+          'sales_unit_price',
+          'rate',
+          'fraction',
+          'unit_price',
+          'quantity',
+          'amount',
+          'sales_tax_rate',
+          'sales_tax',
+          'parent_id',
+          'discount',
+        ])
+        ->where('receive_order_id', $orderId)
+        ->whereIn('item_kind', [1, 2]) // セット子(3)は出さない（必要ならここを調整）
+        ->orderBy('no')
+        ->get()
+        ->toArray();
+
+      logger()->info('receive pdf details meta', [
+        'receive_order_id' => $orderId,
+        'db' => DB::connection()->getDatabaseName(),
+        'first' => $data['details'][0] ?? null,
+      ]);
     }
 
     $pdf = new ReceiveOrderPdfService();
