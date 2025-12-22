@@ -31,6 +31,12 @@ export type ItemImagePickerDialogProps = {
 
 type SortKey = 'id_desc' | 'id_asc' | 'name_asc' | 'name_desc';
 
+/**
+ * サーバーにアップロードされている画像選択用ダイアログ（既存画像から選択）
+ * 
+ * @param param0 
+ * @returns 
+ */
 export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
   open,
   onClose,
@@ -46,15 +52,30 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
     per_page: 20,
     total: 0,
   });
+
+  // ==============================================================
+  // State: UI 状態
+  // ==============================================================
   const [loading, setLoading] = useState(false);
+
+  // ==============================================================
+  // State: 画像の選択状態
+  // ==============================================================
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = useMemo(() => rows.find(r => r.id === selectedId) || null, [rows, selectedId]);
 
-  // 並び順＆実ファイルのみ表示（既定ON）
+  // ==============================================================
+  // State: フィルタ条件 (並び順 & ファイル有のみチェックボックス)
+  // ==============================================================
   const [sort, setSort] = useState<SortKey>('id_desc');
   const [onlyWithFile, setOnlyWithFile] = useState<boolean>(true);
 
-  /** いろんなレスポンス形を吸収して、rows と pager を取り出す */
+  /**
+   * API レスポンスの形式ゆれを吸収して rows と pager を統一フォーマットに変換する。
+   * 
+   * @param raw API レスポンス（形式が一定でない可能性あり）
+   * @returns 正規化された rows と pager
+   */
   const normalize = (raw: any): { rows: ImageRow[]; pager: Pager } => {
     const payload = raw?.data ?? raw;
 
@@ -101,6 +122,11 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
         });
 
         const n = normalize(res.data);
+        console.log("📌 page:", page);
+        console.log("📌 rows:", n.rows);
+        console.log("📌 ids:", n.rows?.map(r => r.id));
+        console.log("📌 urls:", n.rows?.map(r => r.url));
+
         setRows(n.rows ?? []);
         setPager(n.pager);
       } catch (e) {
@@ -131,19 +157,22 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
     if (open) fetchList(1, keyword.trim());
   }, [sort, onlyWithFile]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ==============================================================
+  // Handlers: UI イベント
+  // ==============================================================
+  // 検索ボタンクリックイベント
   const onSearch = () => fetchList(1, keyword.trim());
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') onSearch();
-  };
 
-  const goPrev = () => {
-    if (pager.current_page > 1) fetchList(pager.current_page - 1, keyword.trim());
-  };
-  const goNext = () => {
-    if (pager.current_page < pager.last_page) fetchList(pager.current_page + 1, keyword.trim());
-  };
+  // キーダウンイベント
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => (e.key === 'Enter') && onSearch();
 
-  /** 決定時の確認（他カテゴリで使用中なら警告→はい/いいえ） */
+  // 前ページボタンクリックイベント
+  const goPrev = () => (pager.current_page > 1) && fetchList(pager.current_page - 1, keyword.trim());
+
+  // 次ページボタンクリックイベント
+  const goNext = () => (pager.current_page < pager.last_page) && fetchList(pager.current_page + 1, keyword.trim());
+
+  // 決定ボタンクリックイベント（他カテゴリで使用中なら警告→はい/いいえ）
   const handleDecide = () => {
     if (!selected) return;
 
@@ -171,186 +200,116 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
 
   if (!open) return null;
 
-  const styles = {
-    overlay: {
-      position: 'fixed' as const,
-      inset: 0,
-      background: 'rgba(0,0,0,0.4)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '16px',
-    },
-    container: {
-      width: 'min(900px, 95vw)',
-      maxHeight: '90vh',
-      background: '#fff',
-      borderRadius: 8,
-      boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column' as const,
-    },
-    header: {
-      padding: '12px 16px',
-      borderBottom: '1px solid #e5e7eb',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      fontWeight: 700,
-    },
-    body: { padding: '12px 16px', overflow: 'auto' },
-    footer: {
-      padding: '12px 16px',
-      borderTop: '1px solid #e5e7eb',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: 8,
-    },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 },
-    card: (active: boolean) => ({
-      border: active ? '2px solid #2563eb' : '1px solid #e5e7eb',
-      borderRadius: 8,
-      padding: 8,
-      cursor: 'pointer',
-      background: active ? '#eff6ff' : '#fff',
-      position: 'relative' as const,
-    }),
-    thumbWrap: {
-      width: '100%',
-      aspectRatio: '1 / 1',
-      background: '#f3f4f6',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 6,
-      overflow: 'hidden',
-      marginBottom: 6,
-    },
-    thumb: { width: '100%', height: '100%', objectFit: 'cover' as const },
-    filename: { fontSize: 12, wordBreak: 'break-all' as const },
-    badge: {
-      position: 'absolute' as const,
-      top: 8,
-      left: 8,
-      padding: '2px 6px',
-      borderRadius: 9999,
-      fontSize: 10,
-      background: '#f97316', // orange
-      color: '#fff',
-    },
-  };
-
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.container} onClick={e => e.stopPropagation()}>
-        {/* header */}
-        <div style={styles.header}>
-          <div>{title}</div>
-          <button className="btn" onClick={onClose}>× 閉じる</button>
-        </div>
+    <div className="item-image-picker-dialog">
+      <div className="item-image-picker-dialog__overlay" onClick={onClose}>
+        <div className="item-image-picker-dialog__container" onClick={e => e.stopPropagation()}>
+          {/* header */}
+          <div className="item-image-picker-dialog__header">
+            <div>{title}</div>
+            <button className="btn" onClick={onClose}>× 閉じる</button>
+          </div>
 
-        {/* search + options */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <input
-              className="form-input w-full max-w-lg"
-              placeholder="ファイル名で検索"
-              value={keyword}
-              onChange={e => setKeyword(e.target.value)}
-              onKeyDown={onKeyDown}
-            />
-            <button className="btn" onClick={onSearch} disabled={loading}>検索</button>
-
-            <select
-              className="form-input"
-              value={sort}
-              onChange={e => setSort(e.target.value as SortKey)}
-              title="並び順"
-            >
-              <option value="id_desc">新しい順</option>
-              <option value="id_asc">古い順</option>
-              <option value="name_asc">名前(A→Z)</option>
-              <option value="name_desc">名前(Z→A)</option>
-            </select>
-
-            <label className="inline-flex items-center ml-2 text-sm">
+          {/* search + options */}
+          <div className="item-image-picker-dialog__search">
+            <div className="flex items-center gap-2 flex-wrap">
               <input
-                type="checkbox"
-                className="mr-1"
-                checked={onlyWithFile}
-                onChange={e => setOnlyWithFile(e.target.checked)}
+                className="form-input w-full max-w-lg"
+                placeholder="ファイル名で検索"
+                value={keyword}
+                onChange={e => setKeyword(e.target.value)}
+                onKeyDown={onKeyDown}
               />
-              ファイル有りのみ
-            </label>
+              <button className="btn" onClick={onSearch} disabled={loading}>検索</button>
+
+              <select
+                className="form-input"
+                value={sort}
+                onChange={e => setSort(e.target.value as SortKey)}
+                title="並び順"
+              >
+                <option value="id_desc">新しい順</option>
+                <option value="id_asc">古い順</option>
+                <option value="name_asc">名前(A→Z)</option>
+                <option value="name_desc">名前(Z→A)</option>
+              </select>
+
+              <label className="inline-flex items-center ml-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mr-1"
+                  checked={onlyWithFile}
+                  onChange={e => setOnlyWithFile(e.target.checked)}
+                />
+                ファイル有りのみ
+              </label>
+            </div>
+
+            <div className="text-sm text-gray-500 mt-1">
+              {loading ? '読み込み中…' : `全 ${pager.total} 件`}
+            </div>
           </div>
 
-          <div className="text-sm text-gray-500 mt-1">
-            {loading ? '読み込み中…' : `全 ${pager.total} 件`}
-          </div>
-        </div>
+          {/* body: grid */}
+          <div className="item-image-picker-dialog__body">
+            {rows.length === 0 && !loading ? (
+              <div className="text-center text-gray-500 py-10">画像が見つかりませんでした。</div>
+            ) : (
+              <div className="item-image-picker-dialog__grid">
+                {rows.map(row => {
+                  const active = row.id === selectedId;
+                  const usedText =
+                    row.category_name && row.category_code
+                      ? `${row.category_name}（${row.category_code}）`
+                      : (row.category_name || row.category_code || null);
 
-        {/* body: grid */}
-        <div style={styles.body}>
-          {rows.length === 0 && !loading ? (
-            <div className="text-center text-gray-500 py-10">画像が見つかりませんでした。</div>
-          ) : (
-            <div style={styles.grid}>
-              {rows.map(row => {
-                const active = row.id === selectedId;
-                const usedText =
-                  row.category_name && row.category_code
-                    ? `${row.category_name}（${row.category_code}）`
-                    : (row.category_name || row.category_code || null);
-
-                return (
-                  <div
-                    key={row.id}
-                    style={styles.card(active)}
-                    onClick={() => setSelectedId(row.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={e => e.key === 'Enter' && setSelectedId(row.id)}
-                    aria-label={`画像 ${row.name} を選択`}
-                    title={usedText ? `使用中: ${usedText}` : ''}
-                  >
-                    {usedText && <span style={styles.badge}>使用中</span>}
-                    <div style={styles.thumbWrap}>
-                      {row.url ? (
-                        <img src={row.url} alt={row.name ?? ''} style={styles.thumb} />
-                      ) : (
-                        <span className="text-gray-400 text-sm">no image</span>
+                  return (
+                    <div
+                      key={row.id}
+                      className={`item-image-picker-dialog__card ${active ? 'item-image-picker-dialog__card--active' : ''}`}
+                      onClick={() => setSelectedId(row.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && setSelectedId(row.id)}
+                      aria-label={`画像 ${row.name} を選択`}
+                      title={usedText ? `使用中: ${usedText}` : ''}
+                    >
+                      {usedText && <span className="item-image-picker-dialog__badge">使用中</span>}
+                      <div className="item-image-picker-dialog__thumb-wrap">
+                        {row.url ? (
+                          <img src={row.url} alt={row.name ?? ''} className="item-image-picker-dialog__thumb" />
+                        ) : (
+                          <span className="text-gray-400 text-sm">no image</span>
+                        )}
+                      </div>
+                      <div className="item-image-picker-dialog__filename" title={row.name}>{row.name}</div>
+                      {usedText && (
+                        <div className="text-[11px] text-gray-500 mt-1" title={usedText}>
+                          {usedText}
+                        </div>
                       )}
                     </div>
-                    <div style={styles.filename} title={row.name}>{row.name}</div>
-                    {usedText && (
-                      <div className="text-[11px] text-gray-500 mt-1" title={usedText}>
-                        {usedText}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* footer */}
-        <div style={styles.footer}>
-          <div className="flex items-center gap-2">
-            <button className="btn" onClick={goPrev} disabled={pager.current_page <= 1 || loading}>前へ</button>
-            <span className="text-sm text-gray-600">
-              {pager.current_page} / {pager.last_page}
-            </span>
-            <button className="btn" onClick={goNext} disabled={pager.current_page >= pager.last_page || loading}>次へ</button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button className="btn" onClick={onClose}>キャンセル</button>
-            <button className="btn-primary" onClick={handleDecide} disabled={!selected || loading}>
-              決定
-            </button>
+
+          {/* footer */}
+          <div className="item-image-picker-dialog__footer">
+            <div className="flex items-center gap-2">
+              <button className="btn" onClick={goPrev} disabled={pager.current_page <= 1 || loading}>前へ</button>
+              <span className="text-sm text-gray-600">
+                {pager.current_page} / {pager.last_page}
+              </span>
+              <button className="btn" onClick={goNext} disabled={pager.current_page >= pager.last_page || loading}>次へ</button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="btn" onClick={onClose}>キャンセル</button>
+              <button className="btn-primary" onClick={handleDecide} disabled={!selected || loading}>
+                決定
+              </button>
+            </div>
           </div>
         </div>
       </div>

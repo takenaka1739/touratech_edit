@@ -5,7 +5,7 @@ import { useItemClassificationListPage } from '../uses/useItemClassificationList
 import { useComposing } from '@/uses';
 
 /**
- * 商品分類マスタ（一覧）画面 Component
+ * 商品分類マスタ一覧ページ
  */
 export const ItemClassificationListPage: React.VFC = () => {
   const title = '商品分類マスタ';

@@ -2,6 +2,8 @@
 
 namespace App\Api\ItemClassification\Requests;
 
+use Illuminate\Validation\Rule;
+
 /**
  * 画像フォームバリデーション
  */
@@ -10,21 +12,31 @@ trait ImageRequestTrait
   public function commonRules()
   {
     return [
-    //  //'id' => 'unsigned',
-      'category_id' => 'integer|exists:m_categories,id',
-      'item_id' => 'integer|exists:m_items,id',
-      'name' => 'string|max:30',
-      'order_by' => 'integer'
+      // m_images のカラムに対応
+      'category_id' => ['nullable', 'integer', 'exists:m_categories,id'],
+      'item_id'     => ['nullable', 'integer', 'exists:m_items,id'],
+      'name'        => ['required', 'string', 'max:200'],
+      'order_by'    => ['nullable', 'integer'],
+
+      // 画像ファイル
+      'file' => [
+        'nullable',
+        'file',
+        'image',
+        'mimes:jpg,jpeg,png,gif,webp',
+        'max:10240',
+      ],
     ];
   }
 
   public function attributes()
   {
     return [
-      'category_id' => '商品分類名ID',
-      'item_id' => '商品ID',
-      'name' => '商品分類名',
-      'order_by' => '表示順'
+      'category_id' => 'カテゴリID',
+      'item_id'     => '商品ID',
+      'name'        => '画像名',
+      'order_by'    => '表示順',
+      'file'        => '画像ファイル',
     ];
   }
 }
