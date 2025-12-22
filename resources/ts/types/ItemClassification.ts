@@ -14,5 +14,5 @@ export interface ItemClassification {
   name: string | undefined;
   remarks: string | undefined;
   image: string;
-  image_id: number | undefined;
+  image_id: number | string | undefined;
 }

@@ -104,6 +104,9 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
     }
   }
 
+  console.log('errors');
+  console.log(errors);
+
   return errors;
 };
 

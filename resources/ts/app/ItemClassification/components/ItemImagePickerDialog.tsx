@@ -214,7 +214,7 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
           <div className="item-image-picker-dialog__search">
             <div className="flex items-center gap-2 flex-wrap">
               <input
-                className="form-input w-full max-w-lg"
+                className="w-full max-w-lg border border-gray-300 rounded px-2 py-1"
                 placeholder="ファイル名で検索"
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
@@ -257,7 +257,7 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
             ) : (
               <div className="item-image-picker-dialog__grid">
                 {rows.map(row => {
-                  const active = row.id === selectedId;
+                  const active = selectedId !== null && row.id !== null && row.id === selectedId;
                   const usedText =
                     row.category_name && row.category_code
                       ? `${row.category_name}（${row.category_code}）`
@@ -305,10 +305,10 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
               <button className="btn" onClick={goNext} disabled={pager.current_page >= pager.last_page || loading}>次へ</button>
             </div>
             <div className="flex items-center gap-2">
-              <button className="btn" onClick={onClose}>キャンセル</button>
-              <button className="btn-primary" onClick={handleDecide} disabled={!selected || loading}>
+              <button className="btn btn-primary w-28" onClick={handleDecide} disabled={!selected || loading}>
                 決定
               </button>
+              <button className="btn w-28" onClick={onClose}>キャンセル</button>
             </div>
           </div>
         </div>

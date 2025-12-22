@@ -111,7 +111,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // 旧画像ID/名前（編集時の置換で旧リンク解除に使用）
-  const [loadedImageId, setLoadedImageId] = useState<number | undefined>(undefined);
+  const [loadedImageId, setLoadedImageId] = useState<number | string | undefined>(undefined);
   const [loadedImageName, setLoadedImageName] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (id != null && loadedImageId === undefined) {
@@ -237,7 +237,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   };
 
   /**
-   * 新規登録する商品分類の画像のアップロード、データベース登録のリクエストを行う。
+   * ローカルから商品分類の画像を選択してアップロード、データベース登録のリクエストを行う。
    * 
    * @param targetCategoryId 
    * @returns 
@@ -281,28 +281,21 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   };
 
   /**
-   * 変更があった際の商品分類の画像のアップロード、データベース更新のリクエストを行う。
+   * ローカルから商品分類の画像の変更によるアップロード、データベース更新のリクエストを行う。
    * 
    * @param targetCategoryId 
    * @returns 
    */
   const replaceImageFile = async (targetCategoryId?: number): Promise<boolean> => {
     try {
-      // FormData 構築
       const form = new FormData();
       if (imageName) form.append('name', imageName);
-      if (targetCategoryId !== undefined) {
-        form.append('category_id', String(targetCategoryId));
-      }
+      if (targetCategoryId !== undefined) form.append('category_id', String(targetCategoryId));
       if (selectedFile) form.append('file', selectedFile);
 
       // Laravel の PUT 対応
       form.append('_method', 'PUT');
-
-      const res = await axios.post(
-        `/api/${slug}/image_edit/${state.image_id}`,
-        form
-      );
+      const res = await axios.post(`/api/${slug}/image_edit/${state.image_id}`, form);
 
       if (res.status === 200 && res.data?.success) {
         const newId = res.data?.data?.image_id ?? state.image_id;
@@ -345,48 +338,65 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     const targetCategoryId = categoryId ?? state.id;
     dispatch(AppActions.request());
     try {
+      // ローカル画像の選択
       if (selectedFile) {
-        if (!state.image_id && Number(state.image_id) === 0) {
+        // 商品分類にはじめて画像の紐づけ（新規追加・編集は問わない）
+        if (!state.image_id) {
           return await uploadNewImage(targetCategoryId);
+
+        // 既に画像紐づけのある商品分類の画像差し替え
         } else {
           return await replaceImageFile(targetCategoryId);
         }
+
+      // サーバーアップロード済画像の選択
       } else {
-        // 既存画像の選択（ファイル無し → リンク付替え）
-        if (!state.image_id) return true; // 変更なし
-
-        // 旧画像リンク解除（このカテゴリに既に別画像が紐づいていた場合のみ）
-        if (loadedImageId && loadedImageId !== state.image_id) {
-          const resOld = await axios.put(`/api/${slug}/image_edit/${loadedImageId}`, {
-            name: loadedImageName,
-            category_id: null,
+        // サーバー画像（selectedFile がない）
+        const imgId = state.image_id;
+        
+        // 何も選ばれていない → 変更なし
+        if (!imgId) return true;
+        
+        // ① 未登録サーバー画像（file_xxx）
+        if (typeof imgId === 'string' && imgId.startsWith('file_')) {
+          // m_images に新規登録（アップロード不要）
+          const res = await axios.post(`/api/${slug}/image_store_meta`, {
+            name: imageName || state.image,
+            category_id: targetCategoryId,
+            order_by: state.sort_order,
+            temp_id: imgId, // file_xxx を識別するため
           });
-          if (!(resOld.status === 200 && resOld.data?.success)) {
-            const msg = extractApiMessage(resOld) ?? '旧画像の解除に失敗しました。';
-            appAlert(msg);
-            dispatch(AppActions.failed(msg));
-            return false;
+          
+          if (res.status === 200 && res.data?.success) {
+            setLoadedImageId(res.data.id);
+            setLoadedImageName(imageName || state.image);
+            dispatch(AppActions.success());
+            return true;
           }
-        }
-
-        // 新しい画像をこのカテゴリに紐付け（他カテゴリで使用中だった画像も、ここで「移動」される）
-        const resNew = await axios.put(`/api/${slug}/image_edit/${state.image_id}`, {
-          name: imageName || state.image,
-          category_id: targetCategoryId,
-        });
-        if (resNew.status === 200 && resNew.data?.success) {
-          const newId = state.image_id;
-          const newName = imageName || state.image;
-          setLoadedImageId(newId);
-          setLoadedImageName(newName);
-          dispatch(AppActions.success());
-          return true;
-        } else {
-          const msg = extractApiMessage(resNew) ?? '画像の保存に失敗しました。';
+          
+          const msg = extractApiMessage(res) ?? '画像の登録に失敗しました。';
           appAlert(msg);
           dispatch(AppActions.failed(msg));
           return false;
         }
+        // ② 登録済サーバー画像（数値ID）
+        const res = await axios.put(`/api/${slug}/image_edit_meta/${imgId}`, {
+          name: imageName || state.image,
+          category_id: targetCategoryId,
+          order_by: state.sort_order,
+        });
+        
+        if (res.status === 200 && res.data?.success) {
+          setLoadedImageId(imgId);
+          setLoadedImageName(imageName || state.image);
+          dispatch(AppActions.success());
+          return true;
+        }
+        
+        const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
+        appAlert(msg);
+        dispatch(AppActions.failed(msg));
+        return false;
       }
     } catch (e: any) {
       console.error('❌ 画像保存エラー', e);
@@ -485,25 +495,31 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           {/* 左：フォーム */}
           <div className="py-2 px-4" style={{ width: '60%' }}>
             {/* 親カテゴリ（子モード時は必須） */}
-            <Forms.FormGroup labelText={`親カテゴリ${mode === 'child' ? '（必須）' : ''}`} error={errors?.parent_code}>
-              <select
-                className="form-input max-w-lg"
-                disabled={mode !== 'child'}
+            {mode === 'child' && (
+              <Forms.FormGroup
+                labelText="親カテゴリ"
+                error={errors?.parent_code}
                 required={mode === 'child'}
-                value={state.parent_code ?? ''}
-                onChange={e => setParentCode(e.target.value || undefined)}
-              >
-                <option value="">（未選択）</option>
-                {parentSelectOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              {mode === 'child' && state.parent_code && (
-                <div className="text-sm text-gray-500 mt-1">選択コード: {state.parent_code}</div>
-              )}
-            </Forms.FormGroup>
+                >
+                <select
+                  className="max-w-lg border border-gray-500 rounded px-2 py-1"
+                  disabled={mode !== 'child'}
+                  required={mode === 'child'}
+                  value={state.parent_code ?? ''}
+                  onChange={e => setParentCode(e.target.value || undefined)}
+                >
+                  <option value="">（未選択）</option>
+                  {parentSelectOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                {mode === 'child' && state.parent_code && (
+                  <div className="text-sm text-gray-500 mt-1">選択コード: {state.parent_code}</div>
+                )}
+              </Forms.FormGroup>
+            )}
 
             {/* 分類名 */}
             <Forms.FormGroupInputText
@@ -562,7 +578,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               </button>
               <input className="w-1" id="fileInput" type="file" onChange={onClickImageSelect} style={{ visibility: 'hidden' }} />
               <button className="btn py-7 w-28" onClick={() => setPickerOpen(true)}>
-                既存から選ぶ
+                既存画像選択
               </button>
             </div>
             <p />

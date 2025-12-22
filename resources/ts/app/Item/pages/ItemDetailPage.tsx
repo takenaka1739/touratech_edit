@@ -156,12 +156,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const [preCategoryId, setPreCategoryId] = useState<number | undefined>(undefined);
   const [domestic_url, setDomestic_url] = useState<string>('');
 
-  console.log('errors');
-  console.log(errors);
-
-  console.log('typeof state.is_payment_id1');
-  console.log(typeof state.is_payment_id1);
-
   // 初期値設定
   useEffect(() => {
     const isValid = Array.isArray(state.variItems) &&
@@ -334,6 +328,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     open: openItemListDialog,
     searchDialogProps: itemListSearchDialogProps,
   } = useCommonSearchDialogProps<Item>('m_items', async props => {
+    console.log('state1');
+    console.log(state);
     const { id, name } = props;
     {
       updateState({
@@ -343,10 +339,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       updateErrors({
         id: '',
       });
-
       return true;
     }
   });
+
+  console.log('state2');
+  console.log(state);
 
   const {
     open: openSpecialSalesDialog,
@@ -365,12 +363,15 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   const changeState = (value: any) => {
+    console.log('changeState');
+    console.log(value['imageList']);
     setState(prev => ({
       ...prev,
       item_number: value['item_number'],
       name: value['name'],
       name_note: value['name_note'],
       name_label: value['name_label'],
+      categoryList: value['categoryList'],
       category_name: value['category_name'],
       category_id: value['category_id'],
       sales_unit_price: value['sales_unit_price'],
@@ -1754,14 +1755,16 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
                       </div>
                     ) : null
                   )}
-                  <button
-                    className="btn-delete"
-                    style={{ height: '26px', padding: '0 5px', whiteSpace: "nowrap" }}
-                    onClick={() => delButton(itemIndex)}
-                    disabled={isDisabled}
-                  >
-                    削除
-                  </button>
+                  {state.variItems.length > 1 && (
+                    <button
+                      className="btn-delete"
+                      style={{ height: '26px', padding: '0 5px', whiteSpace: "nowrap" }}
+                      onClick={() => delButton(itemIndex)}
+                      disabled={isDisabled}
+                    >
+                      削除
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

@@ -17,8 +17,7 @@ class ItemClassification extends Model
         'parent_code',
         'name',
         'remarks',
-        'image'
-        //'order_by',
+        'sort_order'
     ];
     
     protected $hidden = [
