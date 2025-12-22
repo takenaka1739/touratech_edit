@@ -13,16 +13,31 @@ Route::group([
   Route::group([
     'middleware' => ['check.admin']
   ], function() {
-    // 商品分類データベース
+    // ==============================================================
+    // 商品分類用のルーティング
+    // ==============================================================
     Route::post('fetch',  [ItemClassificationController::class, 'fetch']);
     Route::post('store',  [ItemClassificationController::class, 'store']);
     Route::get('edit/{id}', [ItemClassificationController::class, 'edit']);
     Route::put('edit/{id}', [ItemClassificationController::class, 'update']);
     Route::delete('delete/{id}', [ItemClassificationController::class, 'delete']);
 
-    // 商品分類用の画像
-    Route::post('image_store',    [ImageController::class, 'store'])->name('images.store');     // 新規登録
-    Route::put('image_edit/{id}', [ImageController::class, 'update'])->name('images.update');   // 更新
-    Route::get('images',          [ImageController::class, 'list'])->name('images.list');       // 一覧取得
+    // ==============================================================
+    // 商品分類用の画像関連のルーティング
+    // ==============================================================
+    // ローカル画像アップロード & m_images 登録
+    Route::post('image_store', [ImageController::class, 'store'])->name('images.store');
+
+    // ローカル画像アップロード & m_images 更新
+    Route::put('image_edit/{id}', [ImageController::class, 'update'])->name('images.update');
+
+    // サーバー画像選択 & m_images 登録
+    Route::post('image_store_meta', [ImageController::class, 'storeMeta'])->name('images.store.meta');
+
+    // サーバー画像選択 & m_images 更新
+    Route::put('image_edit_meta/{id}', [ImageController::class, 'updateMeta'])->name('images.update.meta');
+
+    // サーバー画像の一覧取得
+    Route::get('images', [ImageController::class, 'list'])->name('images.list');
   });
 });

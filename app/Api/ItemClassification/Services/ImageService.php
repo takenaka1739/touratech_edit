@@ -68,10 +68,11 @@ class ImageService
   public function list(array $cond): array
   {
     Log::info('debug_public_images', [
-    'files' => Storage::disk('public_images')->files(),
-    'root'  => config('filesystems.disks.public_images.root'),
-    'exists_dir' => is_dir(config('filesystems.disks.public_images.root')),
-]);
+      'files' => Storage::disk('public_images')->files(),
+      'root'  => config('filesystems.disks.public_images.root'),
+      'exists_dir' => is_dir(config('filesystems.disks.public_images.root')),
+    ]);
+
     $cond    = new Collection($cond);
     $keyword = trim((string) $cond->get('keyword', ''));
     $sort    = (string) $cond->get('sort', 'id_desc');
@@ -97,10 +98,12 @@ class ImageService
     // ------------------------------------------------------------
     $merged = $files->map(function ($filename) use ($dbMap) {
 
-      $row = $dbMap->get($filename); // 紐づけ情報（あれば）
+      $row = $dbMap->get($filename);
+      $fullPath = config('filesystems.disks.public_images.root') . '/' . $filename;
+      $mtime = filemtime($fullPath);
 
       return [
-        'id'            => $row->id ?? null,
+        'id'            => $row->id ?? ('file_' . md5($filename)),
         'name'          => $filename,
         'url'           => '/images/' . $filename,
         'exists'        => true, // public/images にあるので true
@@ -109,6 +112,7 @@ class ImageService
         'created_at'    => $row->created_at    ?? null,
         'category_name' => $row->category_name ?? null,
         'category_code' => $row->category_code ?? null,
+        'mtime'         => $mtime,
       ];
     });
 
@@ -125,10 +129,11 @@ class ImageService
     // ✅ 5. ソート
     // ------------------------------------------------------------
     $merged = match ($sort) {
-      'id_asc'    => $merged->sortBy(fn($r) => $r['id'] ?? PHP_INT_MAX),
+      'id_asc'    => $merged->sortBy('mtime'),                    // 古い順
+      'id_desc'   => $merged->sortByDesc('mtime'),                // 新しい順
       'name_asc'  => $merged->sortBy('name', SORT_NATURAL),
       'name_desc' => $merged->sortByDesc('name', SORT_NATURAL),
-      default     => $merged->sortByDesc(fn($r) => $r['id'] ?? 0),
+      default     => $merged->sortByDesc('mtime'),
     };
 
     $merged = $merged->values();
@@ -204,15 +209,20 @@ class ImageService
   {
     return DB::transaction(function () use ($id, $data) {
 
-      /** @var Image $m */
-      $m = Image::findOrFail($id);
-      $before = $m->toArray();
+      // ✅ category_id をキーに既存レコードを探す
+      if (array_key_exists('category_id', $data)) {
+        $m = Image::firstOrNew(['category_id' => $data['category_id']]);
+      } else {
+        // category_id が無い場合は従来通り ID で検索
+        $m = Image::findOrFail($id);
+      }
+
+      $before = $m->exists ? $m->toArray() : null;
 
       if (array_key_exists('name', $data))        $m->name = $data['name'];
       if (array_key_exists('category_id', $data)) $m->category_id = $data['category_id'];
       if (array_key_exists('item_id', $data))     $m->item_id = $data['item_id'];
       if (array_key_exists('order_by', $data))    $m->order_by = $data['order_by'];
-      if (array_key_exists('path', $data))        $m->path = $data['path'];
 
       $m->save();
 
