@@ -68,7 +68,6 @@ class ItemService
    */
   public function fetch(array $cond)
   {
-    \Log::debug('fetch');
     $query = Item::select(
       'id',
       'code',
@@ -107,7 +106,6 @@ class ItemService
    */
   public function get(int $id)
   {
-    \Log::debug('getの中だよ');
     //return 
     $selectItems = Item::select(
       'm_items.id',
@@ -394,48 +392,30 @@ class ItemService
     $preId = -1;
 
 foreach ($idList as $id) {
-    $ss = [];
-    // idを特別枠として保持（order_byは仮に -1 など）
-    $ss[] = ['src' => $id, 'order_by' => -1];
+  $ss = [];
+  // idを特別枠として保持（order_byは仮に -1 など）
+  $ss[] = ['src' => $id, 'order_by' => -1];
 
-    foreach (Image::where('item_id', $id)->whereNull('deleted_at')->get() as $item) {
-        if (!empty($item->name)) {
-            $ssss[] = [$item->id, $id, $item->name, $item->order_by]; // 管理ID, item_id, ファイル名, 順番
+  foreach (Image::where('item_id', $id)->whereNull('deleted_at')->get() as $item) {
+      if (!empty($item->name)) {
+          $ssss[] = [$item->id, $id, $item->name, $item->order_by]; // 管理ID, item_id, ファイル名, 順番
 
-            if (preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)) {
-                $ss[] = ['src' => $item->name, 'order_by' => $item->order_by];
-            } else {
-                $ss[] = ['src' => '/images/' . $item->name, 'order_by' => $item->order_by];
-            }
-        }
-    }
+          if (preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)) {
+              $ss[] = ['src' => $item->name, 'order_by' => $item->order_by];
+          } else {
+              $ss[] = ['src' => '/images/' . $item->name, 'order_by' => $item->order_by];
+          }
+      }
+  }
 
-    // order_byで並び替え
-    usort($ss, function ($a, $b) {
-        return $a['order_by'] <=> $b['order_by'];
-    });
+  // order_byで並び替え
+  usort($ss, function ($a, $b) {
+      return $a['order_by'] <=> $b['order_by'];
+  });
 
-    // 並び替え後に src だけ取り出して格納
-    $sss[] = array_column($ss, 'src');
-}
-
-
-    //foreach($idList as $id){
-    //  $ss = [];
-    //  array_push($ss, $id);
-    //  foreach(Image::where('item_id', '=', $id)->whereNull('deleted_at')->get() as $item){
-    //    if($item->name != null && $item->name != ''){
-    //      array_push($ssss, [$item->id, $id, $item->name, $item->order_by]);   // m_imagesの管理ID, item_id, ファイル名の順番
-    //      if(preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $item->name)){
-    //        array_push($ss, $item->name);
-    //      }else{
-    //        //array_push($ss, 'http://localhost:8081/storage/images/' . $item->name);
-    //        array_push($ss, '/images/' . $item->name);
-    //      }
-    //    }
-    //  }
-    //  array_push($sss, $ss);
-    //}
+  // 並び替え後に src だけ取り出して格納
+  $sss[] = array_column($ss, 'src');
+  }
 
     if (count($variItems) < 1) {
       $variItems = [
@@ -467,9 +447,6 @@ foreach ($idList as $id) {
       if($selectItems['display_status'] === 1) $selectItems['shipping_pay'] = $selectItems['send_personal'];
       elseif($selectItems['display_status'] === 2) $selectItems['shipping_pay'] = $selectItems['send_trader'];
     }
-
-    \Log::debug('$selectItems');
-    \Log::debug($selectItems);
 
     return $selectItems;
   }
@@ -505,6 +482,8 @@ foreach ($idList as $id) {
    */
   public function update(int $id, array $data)
   {
+    \Log::debug('更新：updateだよ');
+
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = Item::find($id);
