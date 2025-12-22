@@ -13,18 +13,16 @@ Route::group([
   Route::group([
     'middleware' => ['check.admin']
   ], function() {
+    // 商品分類データベース
     Route::post('fetch',  [ItemClassificationController::class, 'fetch']);
     Route::post('store',  [ItemClassificationController::class, 'store']);
     Route::get('edit/{id}', [ItemClassificationController::class, 'edit']);
     Route::put('edit/{id}', [ItemClassificationController::class, 'update']);
     Route::delete('delete/{id}', [ItemClassificationController::class, 'delete']);
 
-    // 画像：新規登録・更新
-    Route::post('image_store',      [ImageController::class, 'store']);
-    Route::put('image_edit/{id}',   [ImageController::class, 'update']);
-
-    // 画像：一覧取得（既存画像から選択用）
-    // 例) GET /api/item_classification/images?keyword=abc&page=1
-    Route::get('images',            [ImageController::class, 'index']);
+    // 商品分類用の画像
+    Route::post('image_store',    [ImageController::class, 'store'])->name('images.store');     // 新規登録
+    Route::put('image_edit/{id}', [ImageController::class, 'update'])->name('images.update');   // 更新
+    Route::get('images',          [ImageController::class, 'list'])->name('images.list');       // 一覧取得
   });
 });

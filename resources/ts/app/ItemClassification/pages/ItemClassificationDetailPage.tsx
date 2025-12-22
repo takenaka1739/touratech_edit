@@ -8,6 +8,7 @@ import { AppActions } from '@/app/App/modules/appModule';
 import axios from 'axios';
 import { appAlert } from '@/components';
 import { ItemImagePickerDialog } from '@/app/ItemClassification/components/ItemImagePickerDialog';
+import { InfoItemSelectModal } from '@/app/info/components/InfoItemSelectModal';
 
 export type ItemClassificationDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -17,6 +18,11 @@ type ItemClassificationEx = Omit<ItemClassification, 'parent_name'> & {
 };
 type Mode = 'parent' | 'child';
 
+/**
+ * 商品分類マスタ詳細ページ
+ * 
+ * @returns 
+ */
 export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPageProps> = () => {
   const title = '商品分類マスタ';
   const slug = 'item_classification';
@@ -167,7 +173,10 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       : { ...base, code: state.code ?? '', parent_code: state.parent_code ?? '' };
   };
 
-  /** 本体保存（新規時は作成IDを返す） */
+  /**
+   * 商品分類情報のデータベース登録
+   * @returns 
+   */
   const saveCore = async (): Promise<{ ok: boolean; newId?: number }> => {
     const msg = validateForSave();
     if (msg) { appAlert(msg); return { ok: false }; }
@@ -229,7 +238,105 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   };
 
   /**
-   * 画像保存（アップロード or 既存選択の付替え）
+   * 新規登録する商品分類の画像のアップロード、データベース登録のリクエストを行う。
+   * 
+   * @param targetCategoryId 
+   * @returns 
+   */
+  const uploadNewImage = async (targetCategoryId?: number): Promise<boolean> => {
+    try {
+      const form = new FormData();
+      if (imageName) form.append('name', imageName);
+      if (targetCategoryId) form.append('category_id', String(targetCategoryId));
+      if (selectedFile) form.append('file', selectedFile);
+
+      const res = await axios.post(`/api/${slug}/image_store`, form);
+
+      if (res.status === 200 && res.data?.success) {
+        const newId = res.data?.data?.image_id ?? state.image_id;
+        const newName = res.data?.data?.name ?? imageName ?? state.image;
+
+        updateState({ image_id: newId, image: newName });
+        setLoadedImageId(newId);
+        setLoadedImageName(newName);
+
+        dispatch(AppActions.success());
+        return true;
+      } else {
+        const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
+        appAlert(msg);
+        dispatch(AppActions.failed(msg));
+        return false;
+      }
+    } catch (e: any) {
+      console.error('❌ 新規画像アップロードエラー', e);
+      const vmsg = extractValidationError(e);
+      if (vmsg) {
+        appAlert(vmsg);
+        dispatch(AppActions.failed(vmsg));
+      } else {
+        dispatch(AppActions.failed('画像の保存に失敗しました。'));
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 変更があった際の商品分類の画像のアップロード、データベース更新のリクエストを行う。
+   * 
+   * @param targetCategoryId 
+   * @returns 
+   */
+  const replaceImageFile = async (targetCategoryId?: number): Promise<boolean> => {
+    try {
+      // FormData 構築
+      const form = new FormData();
+      if (imageName) form.append('name', imageName);
+      if (targetCategoryId !== undefined) {
+        form.append('category_id', String(targetCategoryId));
+      }
+      if (selectedFile) form.append('file', selectedFile);
+
+      // Laravel の PUT 対応
+      form.append('_method', 'PUT');
+
+      const res = await axios.post(
+        `/api/${slug}/image_edit/${state.image_id}`,
+        form
+      );
+
+      if (res.status === 200 && res.data?.success) {
+        const newId = res.data?.data?.image_id ?? state.image_id;
+        const newName = res.data?.data?.name ?? imageName ?? state.image;
+
+        updateState({ image_id: newId, image: newName });
+        setLoadedImageId(newId);
+        setLoadedImageName(newName);
+
+        dispatch(AppActions.success());
+        return true;
+      } else {
+        const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
+        appAlert(msg);
+        dispatch(AppActions.failed(msg));
+        return false;
+      }
+    } catch (e: any) {
+      console.error('❌ 画像差し替えエラー', e);
+      const vmsg = extractValidationError(e);
+      if (vmsg) {
+        appAlert(vmsg);
+        dispatch(AppActions.failed(vmsg));
+      } else {
+        dispatch(AppActions.failed('画像の保存に失敗しました。'));
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 商品分類に用いる「画像」を保存する。
+   * public/imagesディレクトリへの画像アップロード、m_imagesテーブルの更新を責務とする。
    * 
    * @param categoryId 新規作成直後のIDなど、明示的に保存先カテゴリIDを指定したい場合に利用
    */
@@ -239,51 +346,11 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     const targetCategoryId = categoryId ?? state.id;
     dispatch(AppActions.request());
     try {
-      // FormData 組み立て用のヘルパー関数
-      const buildForm = () => {
-        const form = new FormData();
-        if (imageName) form.append('name', imageName);
-        if (targetCategoryId) form.append('category_id', String(targetCategoryId));
-        if (selectedFile) form.append('file', selectedFile);
-        return form;
-      };
-
       if (selectedFile) {
-        // ファイルアップロード差替え
-        if (state.image_id && Number(state.image_id) > 0) {
-          const payload = buildForm();
-          payload.append('_method', 'PUT');
-          const res = await axios.post(`/api/${slug}/image_edit/${state.image_id}`, payload);
-          if (res.status === 200 && res.data?.success) {
-            const newId = res.data?.data?.image_id ?? state.image_id;
-            const newName = res.data?.data?.name ?? imageName ?? state.image;
-            updateState({ image_id: newId, image: newName });
-            setLoadedImageId(newId);
-            setLoadedImageName(newName);
-            dispatch(AppActions.success());
-            return true;
-          } else {
-            const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
-            appAlert(msg);
-            dispatch(AppActions.failed(msg));
-            return false;
-          }
+        if (!state.image_id && Number(state.image_id) === 0) {
+          return await uploadNewImage(targetCategoryId);
         } else {
-          const res = await axios.post(`/api/${slug}/image_store`, buildForm());
-          if (res.status === 200 && res.data?.success) {
-            const newId = res.data?.data?.image_id ?? state.image_id;
-            const newName = res.data?.data?.name ?? imageName ?? state.image;
-            updateState({ image_id: newId, image: newName });
-            setLoadedImageId(newId);
-            setLoadedImageName(newName);
-            dispatch(AppActions.success());
-            return true;
-          } else {
-            const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
-            appAlert(msg);
-            dispatch(AppActions.failed(msg));
-            return false;
-          }
+          return await replaceImageFile(targetCategoryId);
         }
       } else {
         // 既存画像の選択（ファイル無し → リンク付替え）
@@ -335,12 +402,10 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     }
   };
 
-  /**
-   * 保存ボタンクリック時のイベントハンドラ
-   * 入力内容と画像を保存し、一覧画面へ遷移する
-   * 
-   * @returns void
-   */
+  // ==============================================================
+  // Handlers: UI イベント
+  // ==============================================================
+  // 保存ボタンクリックイベント
   const onClickSave = async () => {
     const resCore = await saveCore();
     if (!resCore.ok) return;
@@ -360,7 +425,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     history.push(`/${slug}`);
   };
 
-  /** 削除ボタン：削除成功後は一覧へ戻る */
+  // 削除ボタンクリックイベント（削除成功後は一覧へ戻る）
   const handleDelete = async () => {
     if (!id) return;
     // onClickDelete が true/false を返す前提で見ておく（void でも undefined なので true扱い）
