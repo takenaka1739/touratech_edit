@@ -29,7 +29,7 @@ trait SupplierRequestTrait
         'required',
         'string',
         'max:10',
-        Rule::unique('suppliers', 'output_no')
+        Rule::unique('m_suppliers', 'output_no')
           ->ignore($this->id, 'id'),
       ],
       'remarks' => 'nullable|string|max:200',

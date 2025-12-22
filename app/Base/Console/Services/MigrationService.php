@@ -15,22 +15,22 @@ class MigrationService
 
   public function migrate()
   {
-    $this->migrateDefaults('configs');
-    $this->migrateDefaults('config_currencies');
+    $this->migrateDefaults('m_configs');
+    $this->migrateDefaults('t_config_currencies');
     $this->migrateDefaults('users');
     $this->migrateDefaults('t_customers');
-    $this->migrateDefaults('suppliers');
+    $this->migrateDefaults('m_suppliers');
     $this->migrateDefaults('m_categories');
     $this->migrateDefaults('m_items');
     $this->migrateDefaults('t_set_items');
     $this->migrateDefaults('t_set_item_details');
 
-    $this->migrateDefaults('estimates');
-    $this->migrateDefaults('estimate_details');
+    $this->migrateDefaults('t_estimates');
+    $this->migrateDefaults('testimate_details');
     $this->migrateDefaults('t_receive_orders');
     $this->migrateDefaults('t_receive_order_details');
 
-    $this->migrateDefaults('link_estimate_receive_order');
+    $this->migrateDefaults('t_link_estimate_receive_order');
 
     $this->migrateDefaults('t_place_orders');
     $this->migrateDefaults('t_place_order_details');
