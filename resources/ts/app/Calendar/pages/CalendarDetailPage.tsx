@@ -1,13 +1,9 @@
 import React from 'react';
-//import { PageWrapper, Forms } from '@/components';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { Calendar } from '@/types';
 import { useState, useEffect } from 'react';
-//import { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
-//import { COMPANY_LEVEL } from '@/constants';
-//import { numberFormat } from '@/utils';
 
 export type CalendarDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -69,6 +65,9 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
     }
   }, [state.back_color, state.trans_flag]);
 
+  // ==============================================================
+  // Handlers: UI イベント
+  // ==============================================================
   const CheckBackColorFlag = () => {
     setBackColorFlag(!backColorFlag);
     checktransFlag();
@@ -109,8 +108,32 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
     }
   }
 
-  console.log('state');
-  console.log(state);
+  // 開始日 / 終了日の日付変更イベント
+  const onChangeDate = (name: string, value: string | number | boolean | undefined) => {
+    const newDateStr = typeof value === "string" ? value : "";
+    
+    setState(prev => {
+      const start = name === "start_at" ? newDateStr : prev.start_at;
+      const end = name === "end_at" ? newDateStr : prev.end_at;
+      
+      // 逆転チェック（string → Date に変換して比較）
+      const startDate = start ? new Date(start) : null;
+      const endDate = end ? new Date(end) : null;
+
+      // 日付の逆転チェック
+      if (startDate && endDate && startDate > endDate) {
+        if (name === "start_at") {
+          return { ...prev, start_at: newDateStr, end_at: newDateStr };
+        }
+        if (name === "end_at") {
+          return { ...prev, end_at: newDateStr, start_at: newDateStr };
+        }
+      }
+      
+      // 通常の更新
+      return { ...prev, [name]: newDateStr };
+    });
+  };
 
   return (
     <PageWrapper
@@ -135,19 +158,19 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
                         marginLeft: '0.5rem', fontSize: '0.75rem', borderRadius: '0.125rem', paddingLeft: '0.25rem', paddingRight: '0.25rem'}}>
             必須
           </span>
-          <div style={{ display: 'flex', marginLeft: '10px'}}>
+          <div style={{ display: 'flex', marginLeft: '10px', alignItems: 'center'}}>
             <Forms.FormInputDate
               name="start_at"
               value={state.start_at ? new Date(state.start_at) : null}
               error={errors?.start_at}
-              onChange={onChange}
+              onChange={onChangeDate}
             />
             <p style={{marginLeft: '10px', marginRight: '10px'}}>～</p>
             <Forms.FormInputDate
               name="end_at"
               value={state.end_at ? new Date(state.end_at) : null}
               error={errors?.end_at}
-              onChange={onChange}
+              onChange={onChangeDate}
             />
           </div>
         </div>

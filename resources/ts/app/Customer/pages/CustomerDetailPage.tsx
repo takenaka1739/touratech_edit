@@ -85,6 +85,7 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
             },
           ]}
           required
+          groupClassName="mb-4"
         />
 
         <Forms.FormGroupInputText

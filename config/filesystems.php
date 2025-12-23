@@ -55,6 +55,7 @@ return [
             'visibility' => 'public',
         ],
 
+        // 商品・商品分類用の画像格納先
         'public_images' => [
             'driver' => 'local',
             'root' => public_path('images'),

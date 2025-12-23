@@ -75,7 +75,9 @@ const Template: Story = args => {
         combIdList: [],
         sales_price: 0,
         specialSalesDelFlag: false,
-        categoryListAll: []
+        categoryListAll: [],
+        dataBaceAllCodeList: [],
+        initialCode: '',
       },
     ];
   }

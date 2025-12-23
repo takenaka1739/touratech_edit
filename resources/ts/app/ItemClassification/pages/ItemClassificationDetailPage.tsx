@@ -83,26 +83,22 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
         const res = await axios.post(`/api/${slug}/fetch`, { c_keyword: '' });
         const raw = (res.data?.data?.rows ?? res.data?.rows ?? res.data) as any[];
 
-        const parents = (raw || []).filter((r: any) => {
-          const code = r.code ?? '';
-          const pc   = r.parent_code ?? '';
-          return code && (pc === code || !pc);
-        });
+        const filtered = (raw || []).filter(r => r.code !== state.code);
 
-        parents.sort((a: any, b: any) => {
+        filtered.sort((a: any, b: any) => {
           const sa = a.sort_order ?? 0;
           const sb = b.sort_order ?? 0;
           if (sa !== sb) return sa - sb;
           return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'ja');
         });
 
-        setParentOptions(parents.map((r: any) => ({ code: r.code, name: r.name, level: 0 })));
+        setParentOptions(filtered.map((r: any) => ({ code: r.code, name: r.name, level: r.level ?? 0 })));
       } catch (e) {
         console.error('❌ 親カテゴリ取得エラー', e);
         setParentOptions([]);
       }
     })();
-  }, [slug]);
+  }, [slug, state.code]);
 
   /** 画像（アップロード or 既存選択） */
   const [profileImage, setProfileImage] = useState('');

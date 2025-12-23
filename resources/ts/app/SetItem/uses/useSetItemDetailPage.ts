@@ -58,7 +58,9 @@ export const useSetItemDetailPage = (slug: string) => {
     categoryList: [],
     specialSalesList: [],
     imageList: [[]],
-    categoryListAll: []
+    categoryListAll: [],
+    dataBaceAllCodeList: [],
+    initialCode: '',
     //is_set_item: false,
   });
 

@@ -79,7 +79,9 @@ const Template: Story<ItemDetailPageProps> = args => {
         combIdList: [],
         specialSalesDelFlag: false,
         categoryListAll: [],
-        preImageList: []
+        preImageList: [],
+        dataBaceAllCodeList: [],
+        initialCode: '',
       } as Item,
     });
     return () => {
