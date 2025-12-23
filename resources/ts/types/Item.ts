@@ -52,6 +52,8 @@
  * @param variItems               - 管理ID毎のバリエーション配列
  * @param backVariItems           - ユーザー表示用バリエーション配列
  * @param codeList                - 同一商品コードの商品情報リスト
+ * @param dataBaceAllCodeList     - データベースに登録されている全ての商品コードリスト
+ * @param initialCode             - 商品コード初期値
 
  商品分類 m_categories 関連
  // データベースカラム
@@ -128,6 +130,8 @@ export interface Item {
   is_payment_id5?: boolean | undefined;
   variItems: string[][];
   backVariItems: string[][];
+  dataBaceAllCodeList: string[];
+  initialCode: string | undefined;
 
   category_id?: number | undefined;
   category_name?: string | undefined;

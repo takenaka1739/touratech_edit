@@ -189,6 +189,11 @@ class ItemService
     $codeList = [];
     $specialSalesList = [];
     $backVariItems = [];
+    $dataBaceAllCodeList = Item::whereNull('deleted_at')->distinct()->pluck('code');
+    $initialCode = $selectItems['code'];
+
+    \Log::debug('$dataBaceAllCodeList');
+    \Log::debug($dataBaceAllCodeList);
 
     $c = [];
     $c['special_sale_id'] = $selectItems['special_sale_id'];
@@ -447,6 +452,8 @@ foreach ($idList as $id) {
       if($selectItems['display_status'] === 1) $selectItems['shipping_pay'] = $selectItems['send_personal'];
       elseif($selectItems['display_status'] === 2) $selectItems['shipping_pay'] = $selectItems['send_trader'];
     }
+    $selectItems['initialCode'] = $initialCode;
+    $selectItems['dataBaceAllCodeList'] = $dataBaceAllCodeList;
 
     return $selectItems;
   }

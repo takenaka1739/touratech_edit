@@ -115,17 +115,10 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     document_id: undefined,
     pdf: undefined,
     documentFileList: [],
-    categoryListAll: []
+    categoryListAll: [],
+    dataBaceAllCodeList: [],
+    initialCode: '',
   });
-
-  //type imageItem = {
-  //  id: number | null;
-  //  category_id: number | null;
-  //  item_id: number | undefined;
-  //  name: string;
-  //  order_by: number;
-  //  url: any;
-  //};
 
   type Category = {
     combId: number | undefined;
@@ -206,6 +199,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }, [state.categoryList]);
 
+  // 送料の設定（業販・一般・設定値）
   useEffect(() => {
     if (state.shipping_pay === null || state.shipping_pay === undefined) {
       if (state.display_status === 2) {
@@ -216,6 +210,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   }, []);
 
+  // 支払い方法のエラーメッセージの初期化
   useEffect(() => {
     if (state.is_payment_id1 === true || state.is_payment_id2 === true || state.is_payment_id3 === true ||
         state.is_payment_id4 === true || state.is_payment_id5 === true) {
@@ -226,6 +221,27 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
     }
   }, [state.is_payment_id1, state.is_payment_id2, state.is_payment_id3, state.is_payment_id4, state.is_payment_id5]);
+
+  // 商品コードが変更された時の重複判定
+  useEffect(() => {
+    if(state.initialCode === state.code) return;
+    if (!state.code) return; // 空なら何もしない（意味のない処理を避ける）
+
+    // 最後の入力があってから1秒待機してから判定
+    const timer = setTimeout(() => {
+      if (state.code){
+        const exists = state.dataBaceAllCodeList.includes(state.code);
+        if(exists){
+          setErrors(prev => ({
+            ...prev,
+            code: '重複した商品コードです',
+          }));
+        }
+      }
+    }, 1000);
+
+  return () => clearTimeout(timer);
+  }, [state.code]);
 
   // 取扱説明書の題目名設定
   useEffect(() => {
@@ -343,9 +359,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     }
   });
 
-  console.log('state2');
-  console.log(state);
-
   const {
     open: openSpecialSalesDialog,
     searchDialogProps: specialSalesProps
@@ -428,12 +441,12 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
       document_id: value['document_id'],
       type_status: value['type_status'],
       type_name: value['type_name'],
-      file_name: value['file_name']
+      file_name: value['file_name'],
+      dataBaceAllCodeList: value['dataBaceAllCodeList'],
+      initialCode: value['initialCode'],
     }));
 
     setVariChangeItem([]);
-    //setSpecialItem(value['specialSalesList']);
-    //setImageItems(value['imageList']);
     setCategoryChangeFlag(false);
     setSupplierChangeFlag(false);
     setvariClickFlag(false);
