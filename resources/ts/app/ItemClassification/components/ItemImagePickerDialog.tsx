@@ -65,10 +65,9 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
   const selected = useMemo(() => rows.find(r => r.id === selectedId) || null, [rows, selectedId]);
 
   // ==============================================================
-  // State: フィルタ条件 (並び順 & ファイル有のみチェックボックス)
+  // State: フィルタ条件 (並び順)
   // ==============================================================
   const [sort, setSort] = useState<SortKey>('id_desc');
-  const [onlyWithFile, setOnlyWithFile] = useState<boolean>(true);
 
   /**
    * API レスポンスの形式ゆれを吸収して rows と pager を統一フォーマットに変換する。
@@ -116,16 +115,20 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
           params: {
             page,
             keyword: kw,
-            sort,                  // 新しい順 既定
-            only_with_file: onlyWithFile ? 1 : 0, // 実ファイルのみ 既定ON
+            sort,
           },
         });
+
+        console.log("ログ取得ポイント 1", res.data);
 
         const n = normalize(res.data);
         console.log("📌 page:", page);
         console.log("📌 rows:", n.rows);
         console.log("📌 ids:", n.rows?.map(r => r.id));
         console.log("📌 urls:", n.rows?.map(r => r.url));
+        console.log("📌 category_ids:", n.rows?.map(r => r.category_id));
+        console.log("📌 category_names:", n.rows?.map(r => r.category_name));
+        console.log("📌 category_codes:", n.rows?.map(r => r.category_code));
 
         setRows(n.rows ?? []);
         setPager(n.pager);
@@ -137,7 +140,7 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
         setLoading(false);
       }
     },
-    [sort, onlyWithFile]
+    [sort]
   );
 
   // 開いたらロード、閉じたら初期化
@@ -155,7 +158,7 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
   // 並び順 or 実ファイルのみ切替時は再検索（1ページ目へ）
   useEffect(() => {
     if (open) fetchList(1, keyword.trim());
-  }, [sort, onlyWithFile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sort]);
 
   // ==============================================================
   // Handlers: UI イベント
@@ -187,10 +190,7 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
           ? `${selected.category_name}（${selected.category_code}）`
           : (selected.category_name || selected.category_code || '他のカテゴリ');
 
-      const ok = window.confirm(
-        `この画像は「${cname}」で使用中です。\nこのカテゴリに紐付け先を変更しますか？\n\n` +
-        `はい：このカテゴリに移動\nいいえ：選び直す`
-      );
+      const ok = window.confirm('この画像は他のカテゴリーで使用中です。\n紐づけしますか？');
       if (!ok) return; // キャンセル → そのままモーダル継続
     }
 
@@ -233,16 +233,6 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
                 <option value="name_asc">名前(A→Z)</option>
                 <option value="name_desc">名前(Z→A)</option>
               </select>
-
-              <label className="inline-flex items-center ml-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="mr-1"
-                  checked={onlyWithFile}
-                  onChange={e => setOnlyWithFile(e.target.checked)}
-                />
-                ファイル有りのみ
-              </label>
             </div>
 
             <div className="text-sm text-gray-500 mt-1">
