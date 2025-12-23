@@ -1,3 +1,4 @@
+// resources/ts/app/App/components/CommonDataDetailDialog.tsx
 import React, { useEffect } from 'react';
 import toNumber from 'lodash/toNumber';
 import { Item, CommonDataDetail } from '@/types';
@@ -17,9 +18,7 @@ export interface CommonDetailDialogProps<T> {
   salesTaxRate: number;
   showAnswerDate?: boolean;
   receiveOrderDate?: string | undefined;
-  updateState: <K extends keyof CommonDataDetail>(
-    props: { [key in K]: CommonDataDetail[K] }
-  ) => void;
+  updateState: <K extends keyof CommonDataDetail>(props: { [key in K]: CommonDataDetail[K] }) => void;
   selectedFuncBefore?: (props: Item) => Promise<boolean>;
   onSelected: (detail: T) => void;
   onDeleted: (no: number) => void;
@@ -30,11 +29,6 @@ type DataDetailDialog = <T extends CommonDataDetail>(
   props: CommonDetailDialogProps<T>
 ) => React.ReactElement<CommonDetailDialogProps<T>>;
 
-/**
- * データ（明細）画面共通 Component
- *
- * @param props
- */
 export const CommonDataDetailDialog: DataDetailDialog = ({
   title,
   slug,
@@ -51,50 +45,47 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   onCancel,
 }) => {
   const { errors, setErrors, save } = useCommonDataDetailDialog(slug);
-  const {
-    open: openItemDialog,
-    searchDialogProps: itemSearchDialogProps,
-  } = useCommonSearchDialogProps<Item>(
-    'item',
-    async props => {
-      const {
-        id,
-        //item_number,
-        //itemNumberItem,
-        name,
-        //name_jp,
-        name_note,
-        sales_unit_price,
-        is_set_item,
-        domestic_stocks,
-        overseas_stocks,
-      } = props;
-      const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
-      const ret = calcAmount(unit_price, 1, salesTaxRate, fraction);
-      let answer_date: string | undefined = undefined;
-      if (showAnswerDate) {
-        answer_date = getAnswerDate(receiveOrderDate, domestic_stocks, overseas_stocks);
-      }
-      updateState({
-        item_kind: is_set_item ? 2 : 1,
-        item_id: id,
-        //item_number,
-        //itemNumberItem,
-        item_name: name,
-        //item_name_jp: name_jp,
-        item_name_jp: name_note,
-        sales_unit_price,
-        unit_price,
-        quantity: 1,
-        sales_tax_rate: salesTaxRate,
-        ...ret,
-        answer_date,
-      });
-      setErrors(undefined);
-      return true;
-    },
-    selectedFuncBefore
-  );
+  const { open: openItemDialog, searchDialogProps: itemSearchDialogProps } =
+    useCommonSearchDialogProps<Item>(
+      'item',
+      async props => {
+        const {
+          id,
+          name,
+          name_note,
+          sales_unit_price,
+          is_set_item,
+          domestic_stocks,
+          overseas_stocks,
+        } = props;
+
+        const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
+        const ret = calcAmount(unit_price, 1, salesTaxRate, fraction);
+
+        let answer_date: string | undefined = undefined;
+        if (showAnswerDate) {
+          answer_date = getAnswerDate(receiveOrderDate, domestic_stocks, overseas_stocks);
+        }
+
+        updateState({
+          item_kind: is_set_item ? 2 : 1,
+          item_id: id,
+          item_name: name,
+          item_name_jp: name_note,
+          sales_unit_price,
+          unit_price,
+          quantity: 1,
+          discount: state.discount ?? 0,
+          sales_tax_rate: salesTaxRate,
+          ...ret,
+          answer_date,
+        });
+
+        setErrors(undefined);
+        return true;
+      },
+      selectedFuncBefore
+    );
 
   useEffect(() => {
     if (isShown) {
@@ -107,18 +98,17 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     value
   ) => {
     if (name === 'answer_date' && (typeof value === 'string' || typeof value === 'undefined')) {
-      updateState({ [name]: value });
+      updateState({ [name]: value } as any);
       setErrors({ ...errors, [name]: '' });
-    } else if (
-      name === 'item_name' &&
-      (typeof value === 'string' || typeof value === 'undefined')
-    ) {
-      updateState({ [name]: value });
-    } else if (
-      name === 'item_name_jp' &&
-      (typeof value === 'string' || typeof value === 'undefined')
-    ) {
-      updateState({ [name]: value });
+      return;
+    }
+    if (name === 'item_name' && (typeof value === 'string' || typeof value === 'undefined')) {
+      updateState({ [name]: value } as any);
+      return;
+    }
+    if (name === 'item_name_jp' && (typeof value === 'string' || typeof value === 'undefined')) {
+      updateState({ [name]: value } as any);
+      return;
     }
   };
 
@@ -129,7 +119,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const rate = value ? toNumber(value) : undefined;
     const unit_price = calcUnitPrice(state.sales_unit_price ?? 0, rate ?? 0, state.fraction);
     const ret = calcAmount(unit_price, state.quantity, salesTaxRate, state.fraction);
-    updateState({ [name]: rate, unit_price, ...ret });
+    updateState({ [name]: rate, unit_price, ...ret } as any);
   };
 
   const onChangeUnitPrice: (name: string, value: string | number | boolean | undefined) => void = (
@@ -138,7 +128,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   ) => {
     const unitPrice = value ? toNumber(value) : undefined;
     const ret = calcAmount(unitPrice, state.quantity, salesTaxRate, state.fraction);
-    updateState({ [name]: unitPrice, ...ret });
+    updateState({ [name]: unitPrice, ...ret } as any);
     setErrors({ ...errors, [name]: '' });
   };
 
@@ -148,7 +138,17 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   ) => {
     const quantity = value ? toNumber(value) : undefined;
     const ret = calcAmount(state.unit_price, quantity, salesTaxRate, state.fraction);
-    updateState({ [name]: quantity, ...ret });
+    updateState({ [name]: quantity, ...ret } as any);
+  };
+
+  // ★追加：割引入力（とりあえず表示復活＋state反映）
+  const onChangeDetailDiscount: (
+    name: string,
+    value: string | number | boolean | undefined
+  ) => void = (name, value) => {
+    const discount = value === '' || value === undefined ? undefined : toNumber(value);
+    updateState({ [name]: discount } as any);
+    setErrors({ ...errors, [name]: '' });
   };
 
   const onClickSave = () => {
@@ -186,6 +186,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           </Forms.FormGroup>
           <ItemSearchDialog {...itemSearchDialogProps} />
         </div>
+
         <Forms.FormGroupInputText
           labelText="商品名"
           name="item_name"
@@ -200,6 +201,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           onChange={onChange}
           removeOptionalLabel
         />
+
         <div className="w-1/2">
           <Forms.FormGroupInputText
             labelText="定価"
@@ -210,6 +212,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             removeOptionalLabel
           />
         </div>
+
         <div className="w-1/2">
           <Forms.FormGroupInputNumber
             labelText="掛率"
@@ -223,6 +226,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             max={100}
           />
         </div>
+
         <div className="w-1/2">
           <Forms.FormGroupInputNumber
             labelText="単価"
@@ -236,6 +240,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             readOnly={state.item_kind !== 1}
           />
         </div>
+
         <div className="w-1/2">
           <Forms.FormGroupInputNumber
             labelText="数量"
@@ -249,6 +254,19 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             max={999}
           />
         </div>
+
+        <div className="w-1/2">
+          <Forms.FormGroupInputNumber
+            labelText="割引"
+            name="discount"
+            value={state.discount ?? 0}
+            error={(errors as any)?.discount}
+            onChange={onChangeDetailDiscount}
+            precision={2}
+            min={0}
+          />
+        </div>
+
         <div className="flex max-w-2xl">
           <div className="w-1/2">
             <Forms.FormGroupInputText
@@ -271,6 +289,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             />
           </div>
         </div>
+
         {showAnswerDate && (
           <div className="max-w-xs">
             <Forms.FormGroupInputText

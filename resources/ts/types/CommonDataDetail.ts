@@ -1,3 +1,4 @@
+// 更新: resources/ts/types/CommonDataDetail.ts
 /**
  * データ明細共通
  *
@@ -12,6 +13,7 @@
  * @param rate - 掛率
  * @param unit_price - 単価
  * @param quantity - 数量
+ * @param discount - 明細割引
  * @param amount - 金額
  * @param sales_tax_rate - 消費税率
  * @param sales_tax - 消費税
@@ -30,6 +32,7 @@ export interface CommonDataDetail {
   rate: number;
   unit_price: number | undefined;
   quantity: number | undefined;
+  discount: number | undefined;
   amount: number | undefined;
   sales_tax_rate: number | undefined;
   sales_tax: number | undefined;

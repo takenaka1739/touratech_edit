@@ -1,4 +1,5 @@
 <?php
+// 更新: app/Api/Estimate/Services/EstimateService.php
 
 namespace App\Api\Estimate\Services;
 
@@ -25,7 +26,7 @@ class EstimateService
    */
   public function dialog(array $cond)
   {
-    $est = (new Estimate)->getTable(); // ← 追加：実テーブル名を取得（t_estimates）
+    $est = (new Estimate)->getTable();
     $query = Estimate::select(
       "{$est}.id",
       'estimate_date',
@@ -72,17 +73,57 @@ class EstimateService
   public function get(int $estimate_id)
   {
     $est = (new Estimate)->getTable();
-    $data = Estimate::select(
+
+    $model = Estimate::select(
       "{$est}.*",
       'm_personnels.name AS user_name',
       DB::raw("EXISTS(SELECT * FROM t_link_estimate_receive_order x WHERE x.estimate_id = {$est}.id) AS has_receive_order")
     )
       ->leftJoin('m_personnels', 'm_personnels.id', '=', "{$est}.user_id")
       ->where("{$est}.id", $estimate_id)
-      ->first()
-      ->toArray();
+      ->first();
+
+    if (!$model) {
+      \Log::warning('[EstimateService@get] not found', [
+        'estimate_id' => $estimate_id,
+        'table' => $est,
+      ]);
+      return [];
+    }
+
+    // ★ログ：ヘッダの値（特に estimate_date / fraction / rate / discount）
+    \Log::info('[EstimateService@get] header raw', [
+      'estimate_id'   => $estimate_id,
+      'table'         => $est,
+      'estimate_date' => $model->estimate_date, // accessor後（Y/m/d）になっているはず
+      'rate'          => $model->rate,
+      'fraction'      => $model->fraction,
+      'discount'      => $model->discount,
+      'total_amount'  => $model->total_amount,
+    ]);
+
+    $data = $model->toArray();
 
     $data['details'] = $this->getDetails($estimate_id);
+
+    // ★ログ：レスポンスとして返す details の sales_tax_rate を確認
+    \Log::info('[EstimateService@get] response details sales_tax_rate', [
+      'estimate_id' => $estimate_id,
+      'details' => collect($data['details'])->map(function ($r) {
+        // $r は stdClass or array の可能性があるため吸収
+        $arr = (array) $r;
+        return [
+          'id'            => $arr['id'] ?? null,
+          'no'            => $arr['no'] ?? null,
+          'item_kind'     => $arr['item_kind'] ?? null,
+          'sales_tax_rate'=> $arr['sales_tax_rate'] ?? null,
+          'sales_tax'     => $arr['sales_tax'] ?? null,
+          'amount'        => $arr['amount'] ?? null,
+          'discount'      => $arr['discount'] ?? null,
+        ];
+      })->toArray(),
+    ]);
+
     return $data;
   }
 
@@ -119,6 +160,25 @@ class EstimateService
   /** 登録 */
   public function store(array $input)
   {
+    // ★ログ：フロントから来た見積日・税率を確認（details の sales_tax_rate）
+    \Log::info('[EstimateService@store] request header', [
+      'estimate_date' => $input['estimate_date'] ?? null,
+      'fraction'      => $input['fraction'] ?? null,
+      'rate'          => $input['rate'] ?? null,
+    ]);
+    \Log::info('[EstimateService@store] request details sales_tax_rate', [
+      'details' => collect($input['details'] ?? [])->map(function ($d) {
+        return [
+          'no'            => $d['no'] ?? null,
+          'item_kind'     => $d['item_kind'] ?? null,
+          'sales_tax_rate'=> $d['sales_tax_rate'] ?? null,
+          'sales_tax'     => $d['sales_tax'] ?? null,
+          'amount'        => $d['amount'] ?? null,
+          'discount'      => $d['discount'] ?? null,
+        ];
+      })->toArray(),
+    ]);
+
     $data = new Collection($input);
     return DB::transaction(function () use ($data) {
       $m = Estimate::create($data->toArray());
@@ -134,6 +194,28 @@ class EstimateService
   /** 更新 */
   public function update(int $estimate_id, array $input)
   {
+    // ★ログ：フロントから来た見積日・税率を確認（details の sales_tax_rate）
+    \Log::info('[EstimateService@update] request header', [
+      'estimate_id'   => $estimate_id,
+      'estimate_date' => $input['estimate_date'] ?? null,
+      'fraction'      => $input['fraction'] ?? null,
+      'rate'          => $input['rate'] ?? null,
+    ]);
+    \Log::info('[EstimateService@update] request details sales_tax_rate', [
+      'estimate_id' => $estimate_id,
+      'details' => collect($input['details'] ?? [])->map(function ($d) {
+        return [
+          'id'            => $d['id'] ?? null,
+          'no'            => $d['no'] ?? null,
+          'item_kind'     => $d['item_kind'] ?? null,
+          'sales_tax_rate'=> $d['sales_tax_rate'] ?? null,
+          'sales_tax'     => $d['sales_tax'] ?? null,
+          'amount'        => $d['amount'] ?? null,
+          'discount'      => $d['discount'] ?? null,
+        ];
+      })->toArray(),
+    ]);
+
     $data = new Collection($input);
     DB::transaction(function () use ($estimate_id, $data) {
       $m = Estimate::find($estimate_id);
@@ -183,7 +265,7 @@ class EstimateService
   }
 
   /**
-   * 条件を設定する（※ $est を受け取るように変更）
+   * 条件を設定する
    *
    * @param \Illuminate\Database\Eloquent\Builder $query
    * @param array $cond
@@ -231,7 +313,7 @@ class EstimateService
         $q->select(DB::raw(1))
           ->from('estimate_details')
           ->whereRaw("estimate_details.estimate_id = {$est}.id")
-          ->where(function($q) use ($c_name) {
+          ->where(function ($q) use ($c_name) {
             $q->where('estimate_details.item_name', 'like', '%' . escape_like($c_name) . '%')
               ->orWhere('estimate_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
@@ -255,20 +337,39 @@ class EstimateService
     return $query;
   }
 
-  /** 明細取得（ここは互換VIEWを使うまま） */
+  /**
+   * 明細取得：t_estimate_details から取得（ログ付き）
+   */
   private function getDetails(int $estimate_id)
   {
-    return DB::table('estimate_details')
-      ->select('estimate_details.*')
+    $rows = DB::table('t_estimate_details')
+      ->select('t_estimate_details.*')
       ->where('estimate_id', $estimate_id)
       ->whereIn('item_kind', [1, 2])
       ->orderBy('estimate_id')
       ->orderBy('no')
-      ->get()
-      ->toArray();
+      ->get();
+
+    \Log::info('[EstimateService@getDetails] fetched from t_estimate_details', [
+      'estimate_id' => $estimate_id,
+      'count' => $rows->count(),
+      'details' => $rows->map(function ($r) {
+        return [
+          'id'            => $r->id,
+          'no'            => $r->no,
+          'item_kind'     => $r->item_kind,
+          'sales_tax_rate'=> $r->sales_tax_rate,
+          'sales_tax'     => $r->sales_tax,
+          'amount'        => $r->amount,
+          'discount'      => $r->discount,
+        ];
+      })->toArray(),
+    ]);
+
+    return $rows->toArray();
   }
 
-  /** 明細登録・更新・削除（最小変更のため据え置き） */
+  /** 明細登録・更新・削除 */
   private function insertDetails(int $estimte_id, $details)
   {
     if ($details) {
@@ -297,9 +398,22 @@ class EstimateService
     }
   }
 
-  private function createDetailItems(int $estimate_id, $detail) {
+  private function createDetailItems(int $estimate_id, $detail)
+  {
     $item_kind = $detail->get('item_kind');
     $item_id = $detail->get('item_id');
+    $detail_discount = (int) ($detail->get('discount') ?? 0);
+
+    // ★ログ：保存される sales_tax_rate を確認
+    \Log::info('[EstimateService@createDetailItems] incoming', [
+      'estimate_id' => $estimate_id,
+      'no' => $detail->get('no'),
+      'item_kind' => $item_kind,
+      'sales_tax_rate' => $detail->get('sales_tax_rate'),
+      'sales_tax' => $detail->get('sales_tax'),
+      'amount' => $detail->get('amount'),
+      'discount' => $detail_discount,
+    ]);
 
     $m = EstimateDetail::create([
       'id' => null,
@@ -315,6 +429,7 @@ class EstimateService
       'rate' => $detail->get('rate'),
       'unit_price' => $detail->get('unit_price'),
       'quantity' => $detail->get('quantity'),
+      'discount' => $detail_discount,
       'amount' => $detail->get('amount'),
       'sales_tax_rate' => $detail->get('sales_tax_rate'),
       'sales_tax' => $detail->get('sales_tax'),
@@ -325,11 +440,25 @@ class EstimateService
     }
   }
 
-  private function updateDetailItems(int $id, int $estimate_id, $detail) {
+  private function updateDetailItems(int $id, int $estimate_id, $detail)
+  {
     $item_kind = $detail->get('item_kind');
 
     $m = EstimateDetail::find($id);
     $prev = clone $m;
+    $detail_discount = (int) ($detail->get('discount') ?? 0);
+
+    // ★ログ：更新される sales_tax_rate を確認
+    \Log::info('[EstimateService@updateDetailItems] incoming', [
+      'detail_id' => $id,
+      'estimate_id' => $estimate_id,
+      'no' => $detail->get('no'),
+      'item_kind' => $item_kind,
+      'sales_tax_rate' => $detail->get('sales_tax_rate'),
+      'sales_tax' => $detail->get('sales_tax'),
+      'amount' => $detail->get('amount'),
+      'discount' => $detail_discount,
+    ]);
 
     $m->estimate_id = $estimate_id;
     $m->no = $detail->get('no');
@@ -343,6 +472,7 @@ class EstimateService
     $m->rate = $detail->get('rate');
     $m->unit_price = $detail->get('unit_price');
     $m->quantity = $detail->get('quantity');
+    $m->discount = $detail_discount;
     $m->amount = $detail->get('amount');
     $m->sales_tax_rate = $detail->get('sales_tax_rate');
     $m->sales_tax = $detail->get('sales_tax');
@@ -350,6 +480,7 @@ class EstimateService
 
     if ($item_kind === 2) {
       if ($prev->item_id != $m->item_id) {
+        // ※元コードのまま（テーブル名混在を確認したいので、まずはログで事実を見る）
         DB::table('estimate_details')->where('parent_id', $id)->delete();
         $this->createSetItems($m);
       } else if ($prev->quantity != $m->quantity) {
@@ -358,7 +489,8 @@ class EstimateService
     }
   }
 
-  private function createSetItems($parent) {
+  private function createSetItems($parent)
+  {
     $items = Item::getSetItems($parent->item_id);
     $data = [];
     foreach ($items as $item) {
@@ -382,16 +514,27 @@ class EstimateService
         'rate' => $rate,
         'unit_price' => $unit_price,
         'quantity' => $quantity,
+        'discount' => 0,
         'amount' => $amount,
         'sales_tax_rate' => $parent->sales_tax_rate,
         'sales_tax' => $sales_tax,
         'parent_id' => $parent->id,
       ];
     }
+
+    // ★ログ：セット内訳に入れる税率
+    \Log::info('[EstimateService@createSetItems] will insert children', [
+      'estimate_id' => $parent->estimate_id,
+      'parent_id' => $parent->id,
+      'parent_sales_tax_rate' => $parent->sales_tax_rate,
+      'children_count' => count($data),
+    ]);
+
     DB::table('estimate_details')->insert($data);
   }
 
-  private function updateSetItems($parent) {
+  private function updateSetItems($parent)
+  {
     $details = EstimateDetail::select([
       'estimate_details.id',
       't_set_item_details.set_price',
@@ -401,6 +544,13 @@ class EstimateService
       ->where('parent_id', $parent->id)
       ->where('set_item_id', $parent->item_id)
       ->get();
+
+    \Log::info('[EstimateService@updateSetItems] recalc children', [
+      'estimate_id' => $parent->estimate_id,
+      'parent_id' => $parent->id,
+      'parent_sales_tax_rate' => $parent->sales_tax_rate,
+      'children_count' => $details->count(),
+    ]);
 
     foreach ($details as $d) {
       $sales_unit_price = $d->set_price;
@@ -415,25 +565,37 @@ class EstimateService
           'rate' => $rate,
           'unit_price' => $unit_price,
           'quantity' => $quantity,
+          'discount' => 0,
           'amount' => $amount,
           'sales_tax' => $sales_tax
         ]);
     }
   }
 
-  private function deleteDetails(int $prev_estimate_id, $details) {
+  private function deleteDetails(int $prev_estimate_id, $details)
+  {
     $prevIds = $this->getPrevDetailIds($prev_estimate_id);
     $currentIds = Arr::pluck($details, 'id');
 
     $deleteIds = array_diff($prevIds, $currentIds);
+
+    // ★ログ：削除対象ID
+    \Log::info('[EstimateService@deleteDetails] diff', [
+      'estimate_id' => $prev_estimate_id,
+      'prev_count' => count($prevIds),
+      'current_count' => count($currentIds),
+      'delete_count' => count($deleteIds),
+      'delete_ids' => array_values($deleteIds),
+    ]);
 
     DB::table('estimate_details')
       ->whereIn('id', $deleteIds)
       ->delete();
   }
 
-  private function getPrevDetailIds(int $estimate_id) {
-    $data =  DB::table('estimate_details')
+  private function getPrevDetailIds(int $estimate_id)
+  {
+    $data = DB::table('estimate_details')
       ->where('estimate_id', $estimate_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')

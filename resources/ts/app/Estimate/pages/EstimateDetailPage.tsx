@@ -1,4 +1,4 @@
-// resources/ts/app/Estimate/pages/EstimateDetailPage.tsx
+// 更新: resources/ts/app/Estimate/pages/EstimateDetailPage.tsx
 import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
@@ -220,12 +220,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
         <div>
           <Forms.FormGroup labelText="担当者" error={errors?.user_id}>
             <div className="flex">
-              <Forms.FormInputText
-                name="user_name"
-                value={state.user_name}
-                error={errors?.user_id}
-                readOnly
-              />
+              <Forms.FormInputText name="user_name" value={state.user_name} error={errors?.user_id} readOnly />
               <input type="hidden" name="user_id" value={state.user_id ?? ''} />
               <button className="btn ml-2 py-0 px-2" onClick={openUserDialog}>
                 ...
@@ -243,7 +238,9 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
           className="max-w-xs"
           maxLength={20}
         />
+
         <hr className="border-dashed border-gray-400 mt-6" />
+
         <div className="p-6">
           <div className="flex items-center">
             <div>
@@ -275,6 +272,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
               </button>
             </div>
           </div>
+
           <table className="table w-full">
             <thead>
               <tr>
@@ -284,6 +282,8 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
                 <th className="w-16">掛率</th>
                 <th className="w-24">単価</th>
                 <th className="w-16">数量</th>
+                {/* 追加: 明細割引 */}
+                <th className="w-24">割引</th>
                 <th className="w-28">金額</th>
                 <th className="w-16">編集</th>
               </tr>
@@ -301,6 +301,8 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
                   <td className="text-right">{r.rate}</td>
                   <td className="text-right">{numberFormat(r.unit_price, 2)}</td>
                   <td className="text-right">{r.quantity}</td>
+                  {/* 追加: 明細割引（未設定は0表示） */}
+                  <td className="text-right">{numberFormat((r as any).discount ?? 0, 0)}</td>
                   <td className="text-right">{numberFormat(r.amount, 0)}</td>
                   <td className="col-btn">
                     <span onClick={onClickEditDetail} data-no={r.no}>
@@ -311,6 +313,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
               ))}
             </tbody>
           </table>
+
           {errors?.details && <div className="form-error mt-2">{errors.details}</div>}
 
           <CommonDataDetailDialog
@@ -321,6 +324,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
             salesTaxRate={state.sales_tax_rate ?? 0}
           />
         </div>
+
         <div className="flex max-w-2xl">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -345,6 +349,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
             />
           </div>
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -358,6 +363,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
             />
           </div>
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputText
@@ -370,6 +376,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
             />
           </div>
         </div>
+
         <Forms.FormGroupTextarea
           labelText="備考"
           name="remarks"
@@ -378,6 +385,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
           onChange={onChange}
         />
       </div>
+
       <div className="flex justify-between">
         <div>
           <button className="btn" onClick={onClickSave} disabled={state.has_receive_order}>

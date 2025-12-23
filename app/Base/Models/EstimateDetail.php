@@ -24,6 +24,7 @@ class EstimateDetail extends Model
     'fraction',
     'unit_price',
     'quantity',
+    'discount',
     'amount',
     'sales_tax_rate',
     'sales_tax',

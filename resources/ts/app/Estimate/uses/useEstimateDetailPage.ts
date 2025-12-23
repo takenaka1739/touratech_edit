@@ -60,20 +60,17 @@ export const useEstimateDetailPage = (slug: string) => {
   const get: (id: number | undefined) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
     const res = await axios.get(`/api/${slug}/edit/${id ?? ''}`);
-
     if (res.status === 200) {
       const st = toState(res.data.data);
       const sales_tax_rate = getRate(st.estimate_date);
       const has_receive_order = st.has_receive_order == 1 ? true : false;
-      setState({ ...state, ...st, sales_tax_rate, has_receive_order });
 
+      setState({ ...state, ...st, sales_tax_rate, has_receive_order });
       dispatch(AppActions.success());
       return true;
-    } else {
-      // dispatch(AppActions.failed('データの取得に失敗しました。'));
-      dispatch(AppActions.success());
-      history.push('/404');
     }
+    dispatch(AppActions.success());
+    history.push('/404');
     return false;
   };
 

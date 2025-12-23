@@ -32,6 +32,7 @@ export const detailinitialState: CommonDataDetail = {
   rate: 100,
   unit_price: undefined,
   quantity: 1,
+  discount: 0,
   amount: undefined,
   sales_tax_rate: undefined,
   sales_tax: undefined,
@@ -118,11 +119,13 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
    */
   const toState: <V extends CommonDataDetailPage>(data: V) => any = data => {
     const { shipping_amount, fee, discount, total_amount, details, ...props } = data;
-
-    // 👇 安全化：details が未定義/null でも動く
     const safeDetails = Array.isArray(details) ? details : [];
+    const normalizedDetails = safeDetails.map((d: any) => ({
+      ...d,
+      discount: d?.discount ?? 0,
+    }));
 
-    const details_amount = safeDetails.reduce((x, y) => {
+    const details_amount = normalizedDetails.reduce((x, y) => {
       return x + toNumber(y?.amount ?? 0);
     }, 0);
 
@@ -132,7 +135,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       fee,
       discount,
       total_amount: toNumber(total_amount ?? 0),
-      details: safeDetails,
+      details: normalizedDetails,
       details_amount,
     };
   };
@@ -303,6 +306,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
             quantity: 1,
             sales_tax_rate: state.sales_tax_rate,
             fraction: state.fraction,
+            discount: 0,
             ...ret,
           } as CommonDataDetail,
         ];
@@ -355,9 +359,11 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       if (x.item_number === $item_number) {
         const quantity = (x.quantity ?? 0) + 1;
         const ret = calcAmount(x.unit_price, quantity, x.sales_tax_rate ?? 0, x.fraction);
-        return { ...x, quantity, ...ret };
+
+        // ★重要：discount を落とさない
+        return { ...x, quantity, ...ret, discount: (x as any).discount ?? 0 };
       } else {
-        return { ...x };
+        return { ...x, discount: (x as any).discount ?? 0 };
       }
     });
     const details_amount = details.reduce((x, y) => {
@@ -403,7 +409,9 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
             sales_tax_rate,
             state.fraction
           );
-          return { ...x, amount, sales_tax };
+
+          // ★重要：discount を落とさない
+          return { ...x, amount, sales_tax, sales_tax_rate, discount: (x as any).discount ?? 0 };
         });
         setState({ ...state, [name]: value, sales_tax_rate, details });
       } else {

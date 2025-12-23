@@ -1,32 +1,77 @@
 import { Config } from '@/types';
-import { parse } from 'date-fns';
+import { parse, parseISO, isValid } from 'date-fns';
 
 /**
  * 消費税率を取得する
- * 日付が税率変更日より前の場合は変更前税率、以降の場合は現在の消費税率を取得
- *
- * @param date 日付
- * @param config 設定
- * @returns 消費税率(%)
  */
-export const getSalesTaxRate: (date: string | undefined, config: Config | undefined) => number = (
-  date,
-  config
-) => {
-  if (config != undefined && config.tax_rate_change_at != undefined) {
-    if (date) {
-      const currentDate = parse(date, 'yyyy/MM/dd', new Date());
-      const changeDate = parse(config.tax_rate_change_at, 'yyyy/MM/dd', new Date());
-
-      if (currentDate >= changeDate) {
-        return config.sales_tax_rate ?? 0;
-      } else {
-        return config.pre_tax_rate ?? 0;
-      }
-    } else {
-      return config.sales_tax_rate ?? 0;
-    }
-  } else {
+export const getSalesTaxRate = (
+  date: string | undefined,
+  config: Config | undefined
+): number => {
+  if (!config) {
     return 0;
+  }
+
+  const currentRate = config.sales_tax_rate ?? 0;
+  const preRate = config.pre_tax_rate ?? 0;
+  const changeAt = config.tax_rate_change_at;
+
+  if (!changeAt) {
+    return currentRate;
+  }
+
+  if (!date) {
+    return currentRate;
+  }
+
+  const currentDate = parseFlexibleDate(date);
+  const changeDate = parseFlexibleDate(changeAt);
+  if (!currentDate || !changeDate) {
+    debugLog('[getSalesTaxRate] parse failed → currentRate', {
+      currentRate,
+      preRate,
+    });
+    return currentRate;
+  }
+
+  const result = currentDate >= changeDate ? currentRate : preRate;
+
+  debugLog('[getSalesTaxRate] result', {
+    result,
+    branch: currentDate >= changeDate ? 'currentRate' : 'preRate',
+  });
+
+  return result;
+};
+
+/**
+ * yyyy/MM/dd, yyyy-MM-dd, yyyyMMdd, ISO を許容
+ */
+const parseFlexibleDate = (value: string): Date | null => {
+  const s = String(value).trim();
+  if (!s) return null;
+
+  const iso = parseISO(s);
+  if (isValid(iso)) return iso;
+
+  const slash = parse(s, 'yyyy/MM/dd', new Date());
+  if (isValid(slash)) return slash;
+
+  const dash = parse(s, 'yyyy-MM-dd', new Date());
+  if (isValid(dash)) return dash;
+
+  const compact = parse(s, 'yyyyMMdd', new Date());
+  if (isValid(compact)) return compact;
+
+  return null;
+};
+
+/**
+ * 開発時のみログ出力
+ */
+const debugLog = (message: string, payload: any) => {
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.log(message, payload);
   }
 };

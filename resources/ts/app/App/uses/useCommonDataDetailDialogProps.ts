@@ -1,3 +1,4 @@
+// 更新: resources/ts/app/App/uses/useCommonDataDetailDialogProps.ts
 import { useState } from 'react';
 import toNumber from 'lodash/toNumber';
 import { Item, CommonDataDetail } from '@/types';
@@ -35,15 +36,26 @@ export const useCommonDataDetailDialogProps = <T extends CommonDataDetail>(
     setState({ ...state, ...props });
   };
 
+  /**
+   * ★追加：明細stateを安全に正規化（discountの補完など）
+   */
+  const normalizeDetail = (src: T): T => {
+    return {
+      ...src,
+      // discountが未設定なら0
+      discount: (src.discount ?? 0) as any,
+    };
+  };
+
   const openDetailDialog = (no: string | undefined, rate: number, fraction: number) => {
     if (no) {
-      const current = details.find(x => x.no === Number(no));
-      setState({ ...(current ?? initialDetailState) });
-    } else {
-      setState({ ...initialDetailState, rate, fraction });
-    }
-    setIsShown(true);
-  };
+    const current = details.find(x => x.no === Number(no));
+    setState(current ?? initialDetailState);
+  } else {
+    setState({ ...initialDetailState, rate, fraction });
+  }
+  setIsShown(true);
+};
 
   const sumAmount: (details: T[]) => number = details => {
     return details.reduce((x, y) => {
@@ -52,19 +64,22 @@ export const useCommonDataDetailDialogProps = <T extends CommonDataDetail>(
   };
 
   const onSelected: (detail: T) => void = detail => {
-    if (detail.no) {
+    // ★保存反映時もdiscountを補完してから取り込む
+    const normalized = normalizeDetail(detail);
+
+    if (normalized.no) {
       const newDetails = details.map(x => {
-        if (x.no === detail.no) {
-          return { ...x, ...detail };
+        if (x.no === normalized.no) {
+          return { ...x, ...normalized };
         } else {
-          return x;
+          return { ...x };
         }
       });
       const details_amount = sumAmount(newDetails);
       updateDetails(sortDetails(newDetails), details_amount);
     } else {
-      let newDetails = details;
-      newDetails.push({ ...detail, no: newDetails.length + 1 });
+      const newDetails = [...details];
+      newDetails.push({ ...normalized, no: newDetails.length + 1 });
       const details_amount = sumAmount(newDetails);
       updateDetails(sortDetails(newDetails), details_amount);
     }
@@ -79,13 +94,6 @@ export const useCommonDataDetailDialogProps = <T extends CommonDataDetail>(
   };
 
   const sortDetails: (details: T[]) => T[] = details => {
-    // details.sort((a, b) => {
-    //   if ((a.item_number ?? 0) > (b.item_number ?? 0)) {
-    //     return 1;
-    //   } else {
-    //     return -1;
-    //   }
-    // });
     return details.map((x, i) => {
       return { ...x, no: i + 1 };
     });
