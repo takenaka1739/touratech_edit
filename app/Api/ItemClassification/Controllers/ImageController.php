@@ -8,6 +8,7 @@ use App\Api\ItemClassification\Requests\ImageUpdateRequest;
 use App\Api\ItemClassification\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * 商品分類マスタ（画像）
@@ -118,11 +119,14 @@ class ImageController extends BaseController
      */
     public function updateMeta(ImageUpdateRequest $request, int $id)
     {
+        Log::info('① updateMeta: メソッド開始');
         $data = $request->validated();
 
+        Log::info('② updateMeta: validated() 通過', ['data' => $data]);
         try {
             $image = $this->service->update($id, $data);
 
+            Log::info('④ updateMeta: service->update() 成功', ['image' => $image]);
             return response()->json(['success' => true, 'message' => '画像情報を登録しました', 'data' => $image,]);
 
         } catch (\Exception $e) {
@@ -140,5 +144,25 @@ class ImageController extends BaseController
         Log::info('ImageController@list:start', ['input' => $request->all()]);
         $data = $this->service->list($request->all());
         return $this->success($data);
+    }
+
+    /**
+     * 画像（ファイル名）の存在を確認する。
+     */
+    public function exists(Request $request)
+    {
+        Log::info('image_exists called', [ 'name_raw' => $request->query('name'), 'name_basename' => basename($request->query('name')), ]);
+
+        $name = basename($request->query('name'));
+
+        if (!$name) {
+            return response()->json(['exists' => false]);
+        }
+        
+        $exists = Storage::disk('public_images')->exists($name);
+        
+        return response()->json([
+            'exists' => $exists,
+        ]);
     }
 }

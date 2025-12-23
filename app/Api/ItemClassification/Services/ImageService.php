@@ -39,7 +39,8 @@ class ImageService
           ])
           ->when($keyword !== '', function ($q) use ($keyword) {
               $q->where('i.name', 'like', '%' . escape_like($keyword) . '%');
-          });
+          })
+          ->orderByRaw('CASE WHEN i.category_id IS NULL THEN 1 ELSE 0 END');
 
       // 並び順（DB側）
       switch ($sort) {
@@ -67,12 +68,6 @@ class ImageService
    */
   public function list(array $cond): array
   {
-    Log::info('debug_public_images', [
-      'files' => Storage::disk('public_images')->files(),
-      'root'  => config('filesystems.disks.public_images.root'),
-      'exists_dir' => is_dir(config('filesystems.disks.public_images.root')),
-    ]);
-
     $cond    = new Collection($cond);
     $keyword = trim((string) $cond->get('keyword', ''));
     $sort    = (string) $cond->get('sort', 'id_desc');
@@ -88,7 +83,8 @@ class ImageService
     // ------------------------------------------------------------
     // ✅ 2. m_images の紐づけ情報を取得（JOIN済み）
     // ------------------------------------------------------------
-    $dbRows = $this->buildBaseQuery('', 'id_desc')->get(); // keyword/ソートは後で適用する
+    $dbRows = $this->buildBaseQuery('', 'id_desc')->get();    // keyword/ソートは後で適用する
+    $dbRows = $dbRows->sortByDesc(fn($r) => $r->category_id !== null)->unique('name');
 
     // name → DB行 のマップを作る
     $dbMap = $dbRows->keyBy('name');
@@ -193,13 +189,6 @@ class ImageService
             'order_by'    => $data['order_by'] ?? 0,
           ]);
         }
-        
-        Log::info('ImageService@store: ' . $updateType, [
-          'image_id'    => $image->id,
-          'category_id' => $image->category_id,
-          'name'        => $image->name,
-          'order_by'    => $image->order_by,
-        ]);
 
         return $image;
     });
@@ -225,12 +214,6 @@ class ImageService
       if (array_key_exists('order_by', $data))    $m->order_by = $data['order_by'];
 
       $m->save();
-
-      Log::info('ImageService@update: saved', [
-          'id'     => $id,
-          'before' => $before,
-          'after'  => $m->toArray(),
-      ]);
 
       return $m;
     });

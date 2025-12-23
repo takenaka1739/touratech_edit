@@ -6,7 +6,7 @@ import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useDispatch } from 'react-redux';
 import { AppActions } from '@/app/App/modules/appModule';
 import axios from 'axios';
-import { appAlert } from '@/components';
+import { appAlert, appConfirm } from '@/components';
 import { ItemImagePickerDialog } from '@/app/ItemClassification/components/ItemImagePickerDialog';
 
 export type ItemClassificationDetailPageProps = {} & RouteComponentProps<{ id: string }>;
@@ -55,6 +55,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   /** 親/子のUIモード（初回のみ自動判定） */
   const [mode, setMode] = useState<Mode>('parent');
   const [modeFixed, setModeFixed] = useState<boolean>(false);
+  const [inputKey, setInputKey] = useState(Date.now());
 
   useEffect(() => {
     if (modeFixed) return;
@@ -126,17 +127,38 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
    * @param e ファイル選択イベント
    * @returns void ファイルが選択されなかった場合は何もせず終了
    */
-  const onClickImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onClickImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
     const file = e.target.files?.[0];
     if (!file) return;
-    
+    try {
+      const res = await axios.get(`/api/${slug}/image_exists`, {
+        params: { name: file.name },
+        withCredentials: true,
+      });
+
+      if (res.data.exists) {
+        setInputKey(Date.now());
+
+        const ok = await appConfirm('同名のファイルがサーバー上に存在します。\n差し替えますか？')
+        if (!ok) return;
+      }
+    } catch (err) {
+      appAlert("サーバーとの通信に失敗しました。時間をおいて再度お試しください。");
+      e.target.value = "";
+      return;
+    }
+
     setProfileImage(URL.createObjectURL(file));
     setImageName(file.name);
     setSelectedFile(file);
     setImageChanged(true);
   };
 
-  useEffect(() => { if (state.image) setProfileImage('/images/' + state.image); }, [state.image]);
+  useEffect(() => {
+    if (state.image) setProfileImage(`/images/${state.image}?t=${Date.now()}`);
+  }, [state.image]);
 
   const getVal = (v: any): string => (typeof v === 'string' ? v : v?.target?.value ?? '');
   const setParentCode = (code: string | undefined) => updateState({ parent_code: code ?? undefined });
@@ -380,11 +402,15 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           return false;
         }
         // ② 登録済サーバー画像（数値ID）
+        console.log('テスト確認0');
         const res = await axios.put(`/api/${slug}/image_edit_meta/${imgId}`, {
           name: imageName || state.image,
           category_id: targetCategoryId,
           order_by: state.sort_order,
         });
+
+        console.log('テスト確認1');
+        console.log("res:", res); console.log("res.data:", res.data); console.log("res.status:", res.status);
         
         if (res.status === 200 && res.data?.success) {
           setLoadedImageId(imgId);
@@ -392,13 +418,17 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           dispatch(AppActions.success());
           return true;
         }
+
+        console.log('テスト確認2');
         
         const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
         appAlert(msg);
         dispatch(AppActions.failed(msg));
+        console.log('テスト確認3');
         return false;
       }
     } catch (e: any) {
+      console.log('テスト確認：例外発生');
       console.error('❌ 画像保存エラー', e);
       const vmsg = extractValidationError(e);
       if (vmsg) {
@@ -461,12 +491,16 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     >
       <div className="form-group-wrapper">
         {/* 表示フラグ */}
-        <Forms.FormGroup labelText="ショップへの公開" error={errors?.is_display} groupClassName="items-center mt-4">
+        <Forms.FormGroup
+          labelText="ショップへの公開"
+          error={errors?.is_display}
+          groupClassName="items-center mt-4"
+          >
           <Forms.FormInputCheck id="is_display" name="is_display" checked={state.is_display} onChange={onChange} />
         </Forms.FormGroup>
 
         {/* 親/子の切替 */}
-        <Forms.FormGroup labelText="階層" groupClassName="mt-2">
+        <Forms.FormGroup labelText="階層" groupClassName="mt-2 items-center w-[300px]">
           <div className="flex gap-4">
             <label className="inline-flex items-center">
               <input
@@ -498,11 +532,12 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
             {mode === 'child' && (
               <Forms.FormGroup
                 labelText="親カテゴリ"
+                groupClassName="mb-2"
                 error={errors?.parent_code}
                 required={mode === 'child'}
                 >
                 <select
-                  className="max-w-lg border border-gray-500 rounded px-2 py-1"
+                  className="max-w-lg border border-gray-500 rounded-sm px-2 py-1"
                   disabled={mode !== 'child'}
                   required={mode === 'child'}
                   value={state.parent_code ?? ''}
@@ -515,9 +550,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
                     </option>
                   ))}
                 </select>
-                {mode === 'child' && state.parent_code && (
-                  <div className="text-sm text-gray-500 mt-1">選択コード: {state.parent_code}</div>
-                )}
               </Forms.FormGroup>
             )}
 
@@ -541,7 +573,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               value={state.code ?? ''}
               error={errors?.code}
               onChange={(v: any) => updateState({ code: getVal(v) })}
-              groupClassName="mt-0"
+              groupClassName="mt-0 items-center"
               className="max-w-lg mt-2"
               required
               maxLength={30}
@@ -553,7 +585,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               name="sort_order"
               value={(state.sort_order ?? 0).toString()}
               onChange={(v: any) => updateState({ sort_order: Number(getVal(v) || 0) })}
-              groupClassName="mt-0"
+              groupClassName="mt-0 items-center"
               className="max-w-xs mt-2"
               maxLength={6}
             />
@@ -576,7 +608,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               <button className="btn py-7 w-28" onClick={() => document.getElementById('fileInput')?.click()}>
                 画像選択
               </button>
-              <input className="w-1" id="fileInput" type="file" onChange={onClickImageSelect} style={{ visibility: 'hidden' }} />
+              <input className="w-1" id="fileInput" key={inputKey} type="file" onChange={onClickImageSelect} style={{ visibility: 'hidden' }} />
               <button className="btn py-7 w-28" onClick={() => setPickerOpen(true)}>
                 既存画像選択
               </button>
@@ -602,7 +634,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           setImageName(img.name);
           setSelectedFile(null);
           setImageChanged(true);
-          setProfileImage(img.url ?? `/images/${img.name}`);
+          setProfileImage((img.url ?? `/images/${img.name}`) + `?t=${Date.now()}`);
           setPickerOpen(false);
         }}
         currentCategoryId={state.id}

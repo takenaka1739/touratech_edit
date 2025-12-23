@@ -19,12 +19,10 @@ class ImageStoreRequest extends FormRequest
         return array_merge(
             $this->commonRules(),
             [
-                // ✅ 新規登録時のみ name の unique を追加
                 'name' => [
                     'required',
                     'string',
                     'max:200',
-                    Rule::unique('m_images', 'name')->whereNull('deleted_at'),
                 ],
             ]
         );
@@ -34,7 +32,6 @@ class ImageStoreRequest extends FormRequest
     {
         return [
             'name.required' => '画像名は必須です。',
-            'name.unique'   => '同名の画像が既に存在します。別名にしてください。',
             'name.max'      => '画像名は200文字以内で入力してください。',
 
             'file.image'    => '画像ファイルを選択してください。',
