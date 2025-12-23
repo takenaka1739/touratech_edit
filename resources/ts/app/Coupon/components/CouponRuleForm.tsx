@@ -172,8 +172,7 @@ export const CouponRuleForm: React.FC<Props> = ({
         options={[
           { value: '', name: '選択してください' },
           { value: 'discount', name: '割引' },
-          { value: 'free_item', name: '無料商品' },
-          { value: 'special_item', name: '特別な商品' },
+          { value: 'free_item', name: '無料アイテム' },
           { value: 'free_shipping', name: '送料無料' },
         ]}
         required

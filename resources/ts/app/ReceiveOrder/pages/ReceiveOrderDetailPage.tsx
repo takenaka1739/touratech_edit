@@ -87,9 +87,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
 
   // Square 決済ボタン表示条件
   const canShowSquareActions =
-    !!id &&
-    !!state?.square_payment_id &&
-    state?.square_status === 'authorized';
+    !!id && !!state?.square_payment_id && state?.square_status === 'authorized';
 
   // Square 決済実行（キャプチャ）
   const handleSquarePayment = useCallback(async () => {
@@ -192,10 +190,12 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           </div>
         </div>
       </div>
+
       <div className="form-group-wrapper">
         {errors?.has_sales && (
           <div className="bg-red-200 py-2 px-4 text-sm">{errors?.has_sales}</div>
         )}
+
         <div className="flex max-w-4xl">
           <div className="w-2/6">
             <Forms.FormGroupInputDate
@@ -233,6 +233,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             )}
           </div>
         </div>
+
         <div>
           <Forms.FormGroup labelText="得意先" error={errors?.customer_id}>
             <div className="flex">
@@ -251,6 +252,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           </Forms.FormGroup>
           <CustomerSearchDialog {...customerSearchDialogProps} />
         </div>
+
         <div className="flex max-w-4xl">
           <div className="w-4/6">
             <Forms.FormGroupInputText
@@ -322,6 +324,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           className="max-w-lg"
           maxLength={30}
         />
+
         <div className="flex max-w-2xl">
           <div className="w-2/5">
             <Forms.FormGroupInputTel
@@ -343,12 +346,14 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             />
           </div>
         </div>
+
         <Forms.FormCorporateClass
           corporateClass={state.corporate_class}
           error={errors?.corporate_class}
           required
           onChange={onChange}
         />
+
         <div>
           <Forms.FormGroup labelText="担当者" error={errors?.user_id}>
             <div className="flex">
@@ -367,6 +372,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           </Forms.FormGroup>
           <UserSearchDialog {...userSearchDialogProps} />
         </div>
+
         <Forms.FormGroupInputText
           labelText="注文番号"
           name="order_no"
@@ -376,7 +382,9 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           className="max-w-xs"
           maxLength={20}
         />
+
         <hr className="border-dashed border-gray-400 mt-6" />
+
         <div className="p-6">
           <div className="flex items-center">
             <div>
@@ -408,6 +416,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
               </button>
             </div>
           </div>
+
           <table className="table w-full">
             <thead>
               <tr>
@@ -417,6 +426,8 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
                 <th className="w-16">掛率</th>
                 <th className="w-24">単価</th>
                 <th className="w-16">数量</th>
+                {/* ★追加：明細割引 */}
+                <th className="w-24">割引</th>
                 <th className="w-28">金額</th>
                 <th className="w-16">編集</th>
               </tr>
@@ -434,6 +445,10 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
                   <td className="text-right">{r.rate}</td>
                   <td className="text-right">{numberFormat(r.unit_price, 2)}</td>
                   <td className="text-right">{r.quantity}</td>
+
+                  {/* ★追加：割引 */}
+                  <td className="text-right">{numberFormat((r as any).discount ?? 0, 0)}</td>
+
                   <td className="text-right">{numberFormat(r.amount, 0)}</td>
                   <td className="col-btn">
                     <span onClick={onClickEditDetail} data-no={r.no}>
@@ -444,6 +459,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
               ))}
             </tbody>
           </table>
+
           {errors?.details && <div className="form-error ml-2">{errors.details}</div>}
 
           <CommonDataDetailDialog
@@ -456,6 +472,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             receiveOrderDate={state.receive_order_date}
           />
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -482,6 +499,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             />
           </div>
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -496,6 +514,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             />
           </div>
         </div>
+
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputText
@@ -508,6 +527,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             />
           </div>
         </div>
+
         <Forms.FormGroupTextarea
           labelText="備考"
           name="remarks"
@@ -517,6 +537,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           onChange={onChange}
         />
       </div>
+
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>

@@ -24,6 +24,7 @@ type ReceiveOrderDetailPageState = ReceiveOrder & {
 export const useReceiveOrderDetailPage = (slug: string) => {
   const dispatch = useDispatch();
   const initCustomer = useInitCustomer();
+
   const {
     id,
     state,
@@ -70,6 +71,33 @@ export const useReceiveOrderDetailPage = (slug: string) => {
     square_status: undefined,
   });
 
+  /**
+   * 見積取得 → 受注明細に詰め替え
+   * - discount を必ず引き継ぐ（無ければ 0）
+   * - 計算系が number 前提のため、ここで number 化しておく（文字列混入対策）
+   */
+  const normalizeDetailFromEstimate = (x: any) => {
+    return {
+      ...x,
+      // 受注側では新規明細として扱う
+      id: null,
+      estimate_detail_id: x.id,
+
+      // ▼ 明細割引（追加）
+      discount: x.discount != null && x.discount !== '' ? Number(x.discount) : 0,
+
+      // ▼ 数値項目は number 化（混在対策）
+      amount: x.amount != null && x.amount !== '' ? Number(x.amount) : 0,
+      sales_tax: x.sales_tax != null && x.sales_tax !== '' ? Number(x.sales_tax) : 0,
+      sales_tax_rate: x.sales_tax_rate != null && x.sales_tax_rate !== '' ? Number(x.sales_tax_rate) : undefined,
+      unit_price: x.unit_price != null && x.unit_price !== '' ? Number(x.unit_price) : undefined,
+      quantity: x.quantity != null && x.quantity !== '' ? Number(x.quantity) : undefined,
+      rate: x.rate != null && x.rate !== '' ? Number(x.rate) : x.rate,
+      sales_unit_price:
+        x.sales_unit_price != null && x.sales_unit_price !== '' ? Number(x.sales_unit_price) : x.sales_unit_price,
+    };
+  };
+
   const {
     open: openEstimateDialog,
     searchDialogProps: estimateSearchDialogProps,
@@ -97,9 +125,9 @@ export const useReceiveOrderDetailPage = (slug: string) => {
       rate,
       fraction,
     } = props;
-    const _details = details.map(function(x: any) {
-      return { ...x, id: null, estimate_detail_id: x.id };
-    });
+
+    const _details = (details ?? []).map((x: any) => normalizeDetailFromEstimate(x));
+
     updateState({
       delivery_date,
       customer_id,
@@ -123,6 +151,7 @@ export const useReceiveOrderDetailPage = (slug: string) => {
       fraction,
       estimate_id: id,
     });
+
     setErrors(undefined);
     return true;
   });

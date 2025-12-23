@@ -13,13 +13,21 @@ class ImageController extends BaseController
 {
     /**
      * 画像一覧（フロントが期待する { rows, pager } 形式で返却）
-     * GET /api/images?search=&page=1
+     * GET /api/images?search=&page=1&per_page=12
      */
     public function index(Request $request)
     {
         $search  = (string) $request->query('search', '');
         $page    = (int) $request->query('page', 1);
-        $perPage = 12;
+
+        // ★追加: per_page をクエリから受ける（範囲制限つき）
+        $perPage = (int) $request->query('per_page', 12);
+        // 不正値対策（小数/0/巨大値など）
+        if ($perPage <= 0) {
+            $perPage = 12;
+        }
+        // 上限・下限（必要に応じて調整）
+        $perPage = max(4, min(48, $perPage));
 
         $q = MImage::query()->select(['id', 'name']);
         if ($search !== '') {
@@ -28,7 +36,6 @@ class ImageController extends BaseController
 
         $paginator = $q->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
-        // rows は [ {id, name}, ... ] で返す
         $rows = array_map(
             fn ($r) => ['id' => $r->id, 'name' => $r->name],
             $paginator->items()
@@ -52,13 +59,12 @@ class ImageController extends BaseController
      */
     public function upload(Request $request)
     {
-        // バリデーション（必要に応じて拡張してください）
         $request->validate([
             'files.*' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:20480'], // 20MB
         ]);
 
         $created   = [];
-        $targetDir = public_path('images'); // 既存フローに合わせて public/images へ保存
+        $targetDir = public_path('images');
 
         if (!File::exists($targetDir)) {
             File::makeDirectory($targetDir, 0755, true);
@@ -68,11 +74,8 @@ class ImageController extends BaseController
             $ext  = strtolower($file->getClientOriginalExtension());
             $fname = Str::uuid()->toString() . '.' . $ext;
 
-            // 保存先: public/images/{fname}
             $file->move($targetDir, $fname);
 
-            // m_images に登録
-            // ※ MImage 側で fillable(['name','category_id','item_id']) を用意しておく
             $img = MImage::create([
                 'name'        => $fname,
                 'category_id' => null,

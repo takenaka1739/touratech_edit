@@ -1,4 +1,3 @@
-// resources/ts/app/App/components/CommonDataDetailDialog.tsx
 import React, { useEffect } from 'react';
 import toNumber from 'lodash/toNumber';
 import { Item, CommonDataDetail } from '@/types';
@@ -6,8 +5,9 @@ import { DialogWrapper, Forms } from '@/components';
 import { useCommonSearchDialogProps } from '../uses/useCommonSearchDialogProps';
 import { useCommonDataDetailDialog } from '../uses/useCommonDataDetailDialog';
 import { ItemSearchDialog } from '@/app/Item/components/ItemSearchDialog';
-import { numberFormat, calcUnitPrice, calcAmount } from '@/utils';
 import { getAnswerDate } from '@/utils/getAnswerDate';
+import { numberFormat, calcUnitPrice } from '@/utils';
+import { calcAmountExternalTax } from '@/utils/calcAmountExternalTax';
 
 export interface CommonDetailDialogProps<T> {
   title: string;
@@ -45,6 +45,24 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   onCancel,
 }) => {
   const { errors, setErrors, save } = useCommonDataDetailDialog(slug);
+
+  /**
+   * 🔽 外税再計算を1か所に集約
+   */
+  const recalc = (
+    unitPrice: number | undefined,
+    quantity: number | undefined,
+    discount: number | undefined
+  ) => {
+    return calcAmountExternalTax(
+      unitPrice,
+      quantity,
+      discount,
+      salesTaxRate,
+      fraction
+    );
+  };
+
   const { open: openItemDialog, searchDialogProps: itemSearchDialogProps } =
     useCommonSearchDialogProps<Item>(
       'item',
@@ -60,7 +78,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         } = props;
 
         const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
-        const ret = calcAmount(unit_price, 1, salesTaxRate, fraction);
+        const ret = recalc(unit_price, 1, state.discount ?? 0);
 
         let answer_date: string | undefined = undefined;
         if (showAnswerDate) {
@@ -93,61 +111,50 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     }
   }, [isShown]);
 
-  const onChange: (name: string, value: string | number | boolean | undefined) => void = (
-    name,
-    value
-  ) => {
+  const onChange = (name: string, value: string | number | boolean | undefined) => {
     if (name === 'answer_date' && (typeof value === 'string' || typeof value === 'undefined')) {
       updateState({ [name]: value } as any);
       setErrors({ ...errors, [name]: '' });
       return;
     }
-    if (name === 'item_name' && (typeof value === 'string' || typeof value === 'undefined')) {
+    if (
+      (name === 'item_name' || name === 'item_name_jp') &&
+      (typeof value === 'string' || typeof value === 'undefined')
+    ) {
       updateState({ [name]: value } as any);
-      return;
-    }
-    if (name === 'item_name_jp' && (typeof value === 'string' || typeof value === 'undefined')) {
-      updateState({ [name]: value } as any);
-      return;
     }
   };
 
-  const onChangeRate: (name: string, value: string | number | boolean | undefined) => void = (
-    name,
-    value
-  ) => {
+  const onChangeRate = (name: string, value: string | number | boolean | undefined) => {
     const rate = value ? toNumber(value) : undefined;
-    const unit_price = calcUnitPrice(state.sales_unit_price ?? 0, rate ?? 0, state.fraction);
-    const ret = calcAmount(unit_price, state.quantity, salesTaxRate, state.fraction);
+    const unit_price = calcUnitPrice(state.sales_unit_price ?? 0, rate ?? 0, fraction);
+    const ret = recalc(unit_price, state.quantity, state.discount);
     updateState({ [name]: rate, unit_price, ...ret } as any);
   };
 
-  const onChangeUnitPrice: (name: string, value: string | number | boolean | undefined) => void = (
-    name,
-    value
-  ) => {
+  const onChangeUnitPrice = (name: string, value: string | number | boolean | undefined) => {
     const unitPrice = value ? toNumber(value) : undefined;
-    const ret = calcAmount(unitPrice, state.quantity, salesTaxRate, state.fraction);
+    const ret = recalc(unitPrice, state.quantity, state.discount);
     updateState({ [name]: unitPrice, ...ret } as any);
     setErrors({ ...errors, [name]: '' });
   };
 
-  const onChangeQuantity: (name: string, value: string | number | boolean | undefined) => void = (
-    name,
-    value
-  ) => {
+  const onChangeQuantity = (name: string, value: string | number | boolean | undefined) => {
     const quantity = value ? toNumber(value) : undefined;
-    const ret = calcAmount(state.unit_price, quantity, salesTaxRate, state.fraction);
+    const ret = recalc(state.unit_price, quantity, state.discount);
     updateState({ [name]: quantity, ...ret } as any);
   };
 
-  // ★追加：割引入力（とりあえず表示復活＋state反映）
-  const onChangeDetailDiscount: (
+  /**
+   * ★ 割引：自動再計算あり
+   */
+  const onChangeDetailDiscount = (
     name: string,
     value: string | number | boolean | undefined
-  ) => void = (name, value) => {
-    const discount = value === '' || value === undefined ? undefined : toNumber(value);
-    updateState({ [name]: discount } as any);
+  ) => {
+    const discount = value === '' || value === undefined ? 0 : toNumber(value);
+    const ret = recalc(state.unit_price, state.quantity, discount);
+    updateState({ [name]: discount, ...ret } as any);
     setErrors({ ...errors, [name]: '' });
   };
 
@@ -194,6 +201,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           onChange={onChange}
           removeOptionalLabel
         />
+
         <Forms.FormGroupInputText
           labelText="商品名（納品書）"
           name="item_name_jp"
@@ -270,7 +278,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         <div className="flex max-w-2xl">
           <div className="w-1/2">
             <Forms.FormGroupInputText
-              labelText="金額"
+              labelText="金額（税込）"
               name="amount"
               value={numberFormat(state.amount, 0)}
               className="max-w-8 text-right"

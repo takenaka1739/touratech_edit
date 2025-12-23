@@ -326,15 +326,21 @@ class EstimatePdfService
             }
             $yRowTop = $nextY;
 
-            $rowAmount = (float) $row->get('amount', 0);            // 既存仕様：税込想定
-            $rowTax    = (float) $row->get('sales_tax', 0);         // 税額
-            $discountForThisRow = (float) $row->get('discount', 0); // 明細割引
-            $netAmount   = $rowAmount - $discountForThisRow;        // 税込
-            $netAmountEx = $netAmount - $rowTax;                    // 税抜（簡易）
+            /**
+             * ★重要：PDFの「金額」は DB の amount をそのまま税込として扱う
+             * - t_estimate_details.amount は「割引後の課税対象額に外税を乗せた税込金額」を想定
+             * - ここで amount - discount をすると割引が二重に引かれてズレるため禁止
+             */
+            $amountIncTax = (float) $row->get('amount', 0);            // 税込（割引反映済み想定）
+            $taxAmount    = (float) $row->get('sales_tax', 0);         // 税額（割引後に対する外税）
+            $discountForThisRow = (float) $row->get('discount', 0);    // 明細割引（表示用）
 
-            $rate = $row->get('rate', null);                        // 掛率
-            $salesUnitPrice = (float) $row->get('sales_unit_price', 0); // 定価
-            $unitPrice = (float) $row->get('unit_price', 0);        // 単価
+            // 税抜は「税込 - 税額」で求める（外税前提）
+            $amountExTax = $amountIncTax - $taxAmount;
+
+            $rate = $row->get('rate', null);                           // 掛率
+            $salesUnitPrice = (float) $row->get('sales_unit_price', 0);// 定価
+            $unitPrice = (float) $row->get('unit_price', 0);           // 単価（税抜想定）
 
             // 内容 上（品番）
             $this->pdf->SetFontSize(8);
@@ -379,18 +385,21 @@ class EstimatePdfService
             $this->pdf->SetXY(self::X_LIST_R, $yRowTop + 2);
             $this->pdf->Cell(self::X_UNITPRICE_R - self::X_LIST_R, 6.545, $unitPrice ? number_format($unitPrice, 0) : '', 0, 0, "R");
 
-            // 割引（明細、小数なし）
+            // 割引（明細、小数なし）※表示のみ（amount からは引かない）
             $this->pdf->SetXY(self::X_UNITPRICE_R, $yRowTop + 2);
             $this->pdf->Cell(self::X_DISC_R - self::X_UNITPRICE_R, 6.545, $discountForThisRow ? number_format($discountForThisRow, 0) : '', 0, 0, "R");
 
-            // 金額（上：税抜 / 下：税込）※小数なし
+            /**
+             * 金額（上：税抜 / 下：税込）
+             * - 下段は「税込（DBの amount）」を表示することで、画面とPDFの一致を担保
+             */
             $this->pdf->SetFontSize(9);
             $this->pdf->SetXY(self::X_AMOUNT_L, $yRowTop);
-            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 4.5, $netAmountEx ? number_format($netAmountEx, 0) : '', 0, 0, "R");
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 4.5, $amountExTax ? number_format($amountExTax, 0) : '', 0, 0, "R");
 
             $this->pdf->SetFontSize(13);
             $this->pdf->SetXY(self::X_AMOUNT_L, $yRowTop + 2.6);
-            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, $netAmount ? number_format($netAmount, 0) : '0', 0, 0, "R");
+            $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, $amountIncTax ? number_format($amountIncTax, 0) : '0', 0, 0, "R");
         }
 
         // -----------------------------

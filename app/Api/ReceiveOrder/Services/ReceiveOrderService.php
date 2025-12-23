@@ -378,13 +378,15 @@ class ReceiveOrderService
    *
    * @param int $receive_order_id 受注ID
    * @param Collection $detail 明細データ
-   */
+  */
   private function createDetailItems(
     int $receive_order_id,
     $detail
   ) {
     $item_kind = $detail->get('item_kind');
     $item_id = $detail->get('item_id');
+
+    $detail_discount = (int) ($detail->get('discount') ?? 0);
 
     $m = ReceiveOrderDetail::create([
       'id' => null,
@@ -400,13 +402,13 @@ class ReceiveOrderService
       'rate' => $detail->get('rate'),
       'unit_price' => $detail->get('unit_price'),
       'quantity' => $detail->get('quantity'),
+      'discount' => $detail_discount,
       'amount' => $detail->get('amount'),
       'sales_tax_rate' => $detail->get('sales_tax_rate'),
       'sales_tax' => $detail->get('sales_tax'),
       'answer_date' => $detail->get('answer_date'),
     ]);
 
-    // セット品の場合、セット品の明細を登録する
     if ($item_kind === 2) {
       $this->createSetItems($m);
     }
@@ -425,6 +427,9 @@ class ReceiveOrderService
     $m = ReceiveOrderDetail::find($id);
     $prev = clone $m;
 
+    // ★追加：discount 正規化
+    $detail_discount = (int) ($detail->get('discount') ?? 0);
+
     $m->receive_order_id = $receive_order_id;
     $m->no = $detail->get('no');
     $m->item_kind = $item_kind;
@@ -437,21 +442,18 @@ class ReceiveOrderService
     $m->rate = $detail->get('rate');
     $m->unit_price = $detail->get('unit_price');
     $m->quantity = $detail->get('quantity');
+    $m->discount = $detail_discount;
     $m->amount = $detail->get('amount');
     $m->sales_tax_rate = $detail->get('sales_tax_rate');
     $m->sales_tax = $detail->get('sales_tax');
     $m->answer_date = $detail->get('answer_date');
     $m->save();
 
-    // セット品の場合、セット品の明細を登録する
     if ($item_kind === 2) {
       if ($prev->item_id != $m->item_id) {
-        // 商品IDが変わった場合、セット品の明細を削除し登録する
         DB::table('t_receive_order_details')->where('parent_id', $id)->delete();
         $this->createSetItems($m);
-
       } else if ($prev->quantity != $m->quantity) {
-        // 数量が変わった場合、セット品の明細を更新する
         $this->updateSetItems($m);
       }
     }
@@ -486,6 +488,7 @@ class ReceiveOrderService
         'rate' => $rate,
         'unit_price' => $unit_price,
         'quantity' => $quantity,
+        'discount' => 0,
         'amount' => $amount,
         'sales_tax_rate' => $parent->sales_tax_rate,
         'sales_tax' => $sales_tax,
