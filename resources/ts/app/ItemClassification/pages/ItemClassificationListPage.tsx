@@ -33,65 +33,76 @@ export const ItemClassificationListPage: React.VFC = () => {
     sort_order?: number | null;
   };
 
-  type FlatRow = Row & { level: 0 | 1; isParent: boolean };
+  type FlatRow = Row & { level: number; isParent: boolean };
 
-  /** 親→子の順でフラット化（2階層想定） */
+  // 親から子の順でフラット化（多層構造）
   const flatRows: FlatRow[] = useMemo(() => {
     const rows = (state?.rows ?? []) as Row[];
 
-    const norm = (v: any) => (v === undefined || v === null ? '' : String(v));
+    const toHalfWidth = (str: string) =>
+      str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s =>
+        String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
+      );
 
-    const parents = rows
-      .filter(r => {
-        const code = norm(r.code);
-        const pc   = norm(r.parent_code);
-        // 親判定：parent_code が空 or 自己参照
-        return code && (pc === '' || pc === code);
-      })
-      .sort((a, b) => {
+    const norm = (v: any) => {
+      if (v === undefined || v === null) return '';
+      const s = String(v).trim();
+      return toHalfWidth(s);
+    };
+
+    // Map: parent_code → children
+    const childrenMap = new Map<string, Row[]>();
+    rows.forEach(r => {
+      const code = norm(r.code);
+      const pc = norm(r.parent_code);
+
+      if (!childrenMap.has(pc)) childrenMap.set(pc, []);
+      childrenMap.get(pc)!.push(r);
+    });
+
+    // 並び替え
+    const sortRows = (list: Row[]) =>
+      list.sort((a, b) => {
         const sa = a.sort_order ?? 0;
         const sb = b.sort_order ?? 0;
         if (sa !== sb) return sa - sb;
         return norm(a.name).localeCompare(norm(b.name), 'ja');
-      });
-
-    const byParentCode = new Map<string, Row[]>();
-    rows.forEach(r => {
-      const code = norm(r.code);
-      const pc   = norm(r.parent_code);
-      // 子判定：親コードがあり、かつ親コード ≠ 自分のコード
-      if (pc && pc !== code) {
-        const list = byParentCode.get(pc) ?? [];
-        list.push(r);
-        byParentCode.set(pc, list);
-      }
     });
-
+      
     const result: FlatRow[] = [];
-    const pushSortedChildren = (list?: Row[]) => {
-      if (!list?.length) return;
-      list
-        .sort((a, b) => {
-          const sa = a.sort_order ?? 0;
-          const sb = b.sort_order ?? 0;
-          if (sa !== sb) return sa - sb;
-          return norm(a.name).localeCompare(norm(b.name), 'ja');
-        })
-        .forEach(c => result.push({ ...(c as Row), level: 1, isParent: false }));
+
+    // 再帰フラット化
+    const walk = (parentCode: string, level: number) => {
+
+      const list = childrenMap.get(parentCode);
+      if (!list) return;
+      
+      sortRows(list).forEach(r => {
+        const code = norm(r.code);
+        const pc = norm(r.parent_code);
+
+        const isTopLevel = pc === code;
+        const currentLevel = code === parentCode ? level : level + 1;
+
+        result.push({
+          ...(r as Row),
+          level: currentLevel,
+          isParent: isTopLevel,   // TOP階層のみ親扱い
+        });
+        
+        if (code !== parentCode) {
+          walk(code, currentLevel);
+        }
+      });
     };
 
-    parents.forEach(p => {
-      result.push({ ...(p as Row), level: 0, isParent: true });
-      const children = byParentCode.get(norm(p.code));
-      pushSortedChildren(children);
-      byParentCode.delete(norm(p.code));
-    });
-
-    // 親が見つからない孤立行も最後に表示（親扱い）
-    byParentCode.forEach(list => {
-      pushSortedChildren(list.map(c => ({ ...c, parent_code: '' })));
-    });
-
+    const topLevelCodes = rows
+      .filter(r => norm(r.parent_code) === norm(r.code))
+      .map(r => norm(r.code));
+    
+    // 最上位カテゴリから再帰開始
+    topLevelCodes.forEach(code => walk(code, 0));
+    
     return result;
   }, [state.rows]);
 
@@ -123,7 +134,7 @@ export const ItemClassificationListPage: React.VFC = () => {
   const tables = useMemo(() => {
     const tbody = flatRows.map(r => {
       const isDisplay = Number(r.is_display) === 1;
-      const isChild = r.level === 1;
+      const isChild = r.level >= 1;
 
       return (
         <tr key={r.id} style={isChild ? styles.childRow : undefined}>
@@ -131,11 +142,11 @@ export const ItemClassificationListPage: React.VFC = () => {
             {/* 左ガイド（子だけ表示） */}
             {isChild && <span aria-hidden style={styles.childGuide} />}
             <div style={styles.nameCell}>
-              <span style={styles.indent(isChild ? 24 : 4)} />
+              <span style={styles.indent(20 * r.level)} />
               {r.isParent ? (
                 <span style={styles.iconParent}>P</span>
               ) : (
-                <span style={styles.iconChild}>↳</span>
+                <span style={styles.iconChild}>{'↳'.repeat(r.level)}</span>
               )}
               <span style={{ fontWeight: r.isParent ? 700 : 500 }}>{r.name}</span>
             </div>
