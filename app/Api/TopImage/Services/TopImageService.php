@@ -122,6 +122,7 @@ class TopImageService
         try {
             return DB::transaction(function () use ($id) {
                 $item = TSlideItem::findOrFail($id);
+
                 $item->is_published = !$item->is_published;
                 $item->save();
 
@@ -131,8 +132,8 @@ class TopImageService
                 ]);
 
                 return [
-                    'id'           => (int) $item->id,
-                    'is_published' => (bool) $item->is_published,
+                    'id'         => (int) $item->id,
+                    'is_enabled' => (bool) $item->is_published,
                 ];
             });
         } catch (\Throwable $e) {
@@ -144,6 +145,7 @@ class TopImageService
             throw $e;
         }
     }
+
 
     public function delete(int $id)
     {
