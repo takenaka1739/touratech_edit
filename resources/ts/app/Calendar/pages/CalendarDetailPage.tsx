@@ -4,6 +4,9 @@ import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { Calendar } from '@/types';
 import { useState, useEffect } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import { validateItemState } from '@/app/Calendar/utils/validation';
+import { useDispatch } from 'react-redux';
+import { AppActions } from '@/app/App/modules/appModule';
 
 export type CalendarDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -23,7 +26,7 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
     //updateState,
     //updateErrors,
     onChange,
-    //setErrors,
+    setErrors,
     //onChangeItem,
     onClickSave,
     onClickDelete,
@@ -41,9 +44,11 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
     is_sunday: false,
     font_color: '',
     back_color: '',
-    trans_flag: false
+    trans_flag: false,
+    atErrorMsg: ''
   });
 
+  const dispatch = useDispatch();
   const [backColorFlag, setBackColorFlag] = useState(false);
   const [backColorHold, setBackColorHold] = useState<string | undefined>();
 
@@ -64,6 +69,29 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
       setBackColorFlag(false);
     }
   }, [state.back_color, state.trans_flag]);
+
+  // エラーメッセージが表示後、値入力時のエラーメッセージの初期化
+  useEffect(() => {
+    if(state.start_at !== ''){
+      setErrors(prev => ({
+        ...prev,
+        start_at: '',
+      }));
+    }
+
+    if(state.end_at !== ''){
+      setErrors(prev => ({
+        ...prev,
+        end_at: '',
+      }));
+    }
+
+    setErrors(prev => ({
+      ...prev,
+      atErrorMsg: '',
+    }));
+
+  }, [state.start_at, state.end_at]);
 
   // ==============================================================
   // Handlers: UI イベント
@@ -135,6 +163,19 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
     });
   };
 
+  const saveClick = () => {
+    // 必須入力項目の未入力チェック
+    const validationErrors = validateItemState(state);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      dispatch(AppActions.failed('必須項目を入力してください'));
+      return;
+    }else{
+    onClickSave();
+    }
+
+  }
+
   return (
     <PageWrapper
       prefix={`${slug}-detail`}
@@ -174,7 +215,10 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
             />
           </div>
         </div>
-
+       {/* エラーメッセージ表示エリア */}
+        <div className="form-error ml-40">
+          {errors?.atErrorMsg}
+        </div>
         <div style={{ display: 'flex', marginLeft: '58px', marginTop: '15px'}}>
           <p style={{ fontSize: '13px', color: '#4a5568'}}>定期曜日</p>
           <span style={{alignSelf: 'flex-start', marginLeft: '0.5rem', backgroundColor: '#a0aec0', border: '1px solid #a0aec0', color: '#fff', fontSize: '0.75rem',
@@ -271,7 +315,8 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
 
       <div className="mt-4 flex justify-between">
         {/*<button className="btn" onClick={onClickSave} disabled={isDisabled}>*/}
-        <button className="btn" onClick={onClickSave}>
+        {/*<button className="btn" onClick={onClickSave}>*/}
+        <button className="btn" onClick={() => saveClick()}>
           保存
         </button>
         <button className="btn" onClick={onClickDelete}>

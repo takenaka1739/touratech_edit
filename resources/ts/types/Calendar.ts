@@ -14,6 +14,7 @@
  * @param is_sunday - 日曜日の定期フラグ
  * @param font_color - 文字色
  * @param backColor - 背景色
+ * @param atErrorMsg - 開始日 / 終了日のエラーメッセージ格納用変数
  */
 
 export interface Calendar {
@@ -31,4 +32,5 @@ export interface Calendar {
   font_color: string | undefined;
   back_color: string | undefined;
   trans_flag: boolean | undefined;
+  atErrorMsg: string | undefined;
 }
