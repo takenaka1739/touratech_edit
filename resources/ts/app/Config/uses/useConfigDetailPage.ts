@@ -98,12 +98,27 @@ export const useConfigDetailPage = () => {
     });
   }, []);
 
+  console.dir('errors1');
+  console.dir(errors);
+
   const onChange: (name: string, value: string | number | boolean | undefined) => void = (
     name,
     value
   ) => {
     setState({ ...state, [name]: value });
+    setErrors({ ...errors, [name]: '' });
+    //if (errors && !Object.values(errors).some(v => v)) setDisabled(true);
   };
+
+  console.log('isDisabled');
+  console.log(isDisabled);
+
+  useEffect(() => {
+    if (errors && !Object.values(errors).some(v => v)) setDisabled(false);
+  }, [errors]);
+
+  console.dir('errors2'); 
+  console.dir(errors);
 
   const onChangeRate: (name: string, value: string | number | boolean | undefined) => void = (
     name,
@@ -149,6 +164,7 @@ export const useConfigDetailPage = () => {
     state,
     errors,
     isDisabled,
+    setErrors,
     onChange,
     onChangeRate,
     onChangeCodAmount,
