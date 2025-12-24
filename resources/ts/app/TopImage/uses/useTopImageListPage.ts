@@ -1,29 +1,15 @@
 // resources/ts/app/TopImage/uses/useTopImageListPage.ts
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { TopImage as BaseTopImage } from '@/types/TopImage';
 
-// API返却に合わせて“ゆるく”型を受ける（フラット or ネストの両対応）
 export type TopImageRow = BaseTopImage & {
-  // フラットで返る場合
   image_name?: string;
   image_url?: string;
   sort_order: number;
+  is_published?: boolean;
   is_enabled?: boolean;
   url?: string;
-  // ネストで返る場合（with('image')）
-  image?: {
-    id: number;
-    name?: string;
-    image_name?: string;
-  };
-};
-
-type CreatePayload = {
-  image_id: number;
-  sort_order: number;
-  is_enabled?: boolean; // ← 追加
-  url?: string;         // ← urlは送らないなら削除してOK
 };
 
 export const useTopImageListPage = () => {
@@ -34,58 +20,169 @@ export const useTopImageListPage = () => {
     setIsLoading(true);
     try {
       const res = await axios.get('/api/TopImage');
-      const rows: TopImageRow[] = (res.data as TopImageRow[]).map((row) => ({
+      const rows = (res.data as TopImageRow[]).map((row) => ({
         ...row,
-        is_enabled: row.is_enabled ?? false, // null/undefined を防ぐ
+        is_enabled: row.is_published ?? false,
       }));
-
       setSlideItems(rows);
-    } catch (err) {
-      console.error('一覧取得に失敗しました', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const onToggleVisible = async (id: number) => {
-    try {
-      await axios.patch(`/api/TopImage/${id}/toggle`);
-      setSlideItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, is_enabled: !item.is_enabled } : item
-        )
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [stagedItems, setStagedItems] = useState<any[]>([]);
+  const [markedForDelete, setMarkedForDelete] = useState<number[]>([]);
+  const [previewItemsState, setPreviewItemsState] = useState<any[]>([]);
+  const [togglingIdx, setTogglingIdx] = useState<number | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  // プレビュー再構築
+  useEffect(() => {
+    setPreviewItemsState((prevState) => {
+      const existing = slideItems.map((it) => {
+        const prev = prevState.find((p) => p.image_id === it.image_id);
+        return {
+          id: it.id,
+          image_id: it.image_id,
+          src: it.image_url || '',
+          persisted: true,
+          markedForDelete: markedForDelete.includes(it.id),
+          is_enabled: it.is_enabled ?? true,
+          url: it.url ?? '',
+          localUrl: prev?.localUrl ?? it.url ?? '', // ← IME 対応
+        };
+      });
+
+      const staged = stagedItems.map((s) => {
+        const prev = prevState.find((p) => p.image_id === s.image_id);
+        return {
+          image_id: s.image_id,
+          src: s.img_url,
+          persisted: false,
+          is_enabled: true,
+          url: s.url ?? '',
+          localUrl: prev?.localUrl ?? s.url ?? '', // ← IME 対応
+        };
+      });
+
+      return [...existing, ...staged];
+    });
+  }, [slideItems, stagedItems, markedForDelete]);
+
+  // 並び替え
+  const move = (from: number, to: number) => {
+    setPreviewItemsState((prev) => {
+      if (to < 0 || to >= prev.length) return prev;
+      const copy = [...prev];
+      const [m] = copy.splice(from, 1);
+      copy.splice(to, 0, m);
+      return copy;
+    });
+  };
+
+  // 削除
+  const removeAt = (idx: number) => {
+    const target = previewItemsState[idx];
+    setPreviewItemsState((prev) => prev.filter((_, i) => i !== idx));
+    if (!target.persisted) {
+      setStagedItems((prev) =>
+        prev.filter((s) => s.image_id !== target.image_id)
       );
-    } catch (err) {
-      console.error('表示切り替えに失敗しました', err);
     }
   };
 
-  const onDelete = async (id: number) => {
-    if (!window.confirm('この画像を削除しますか？')) return;
+  // 削除マーク
+  const toggleMarkDelete = (id: number) => {
+    setMarkedForDelete((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  // 表示/非表示トグル
+  const togglePreviewEnabled = async (idx: number) => {
+    const target = previewItemsState[idx];
+    if (!target) return;
+
+    setPreviewItemsState((prev) =>
+      prev.map((p, i) =>
+        i === idx ? { ...p, is_enabled: !p.is_enabled } : p
+      )
+    );
+
+    if (!target.persisted || !target.id) return;
+
+    let timer: NodeJS.Timeout | null = setTimeout(() => {
+      setTogglingIdx(idx);
+    }, 300);
+
     try {
-      await axios.delete(`/api/TopImage/${id}`);
-      setSlideItems((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      console.error('削除に失敗しました', err);
+      await axios.patch(`/api/TopImage/${target.id}/toggle`);
+      await fetchSlideItems();
+    } finally {
+      if (timer) clearTimeout(timer);
+      setTogglingIdx((cur) => (cur === idx ? null : cur));
     }
   };
 
-const createTopImage = async (data: CreatePayload) => {
-  return axios.post('/api/TopImage', data);
-};
+  // 登録
+  const handlePublish = async () => {
+    if (!previewItemsState.length) return;
+    setIsPublishing(true);
 
+    try {
+      const items = previewItemsState
+        .filter((p) => !p.markedForDelete)
+        .map((p, order) => ({
+          id: p.persisted ? p.id : undefined,
+          image_id: p.persisted ? undefined : p.image_id,
+          is_enabled: p.is_enabled ?? true,
+          url: p.localUrl.trim() || null,   // ← localUrl を使用
+          sort_order: order + 1,
+        }));
 
-  const bulkCreateTopImages = async (items: CreatePayload[]) => {
-    return axios.post('/api/TopImage/bulk', { items });
+      await axios.post('/api/TopImage/sync', { items });
+      await fetchSlideItems();
+      setStagedItems([]);
+      setMarkedForDelete([]);
+    } finally {
+      setIsPublishing(false);
+    }
   };
+
+  const sliderSettings = useMemo(
+    () => ({
+      dots: true,
+      infinite: false,
+      arrows: true,
+      speed: 350,
+      slidesToShow: 3,
+      slidesToScroll: 1,
+    }),
+    []
+  );
 
   return {
     slideItems,
     isLoading,
     fetchSlideItems,
-    onToggleVisible,
-    onDelete,
-    createTopImage,
-    bulkCreateTopImages,
+
+    isModalOpen,
+    setModalOpen,
+    stagedItems,
+    setStagedItems,
+    markedForDelete,
+    previewItemsState,
+    setPreviewItemsState,
+    togglingIdx,
+    isPublishing,
+
+    move,
+    removeAt,
+    toggleMarkDelete,
+    togglePreviewEnabled,
+    handlePublish,
+
+    sliderSettings,
   };
 };
