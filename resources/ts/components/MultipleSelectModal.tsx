@@ -59,6 +59,8 @@ export const MultipleSelectModal: React.VFC<Props> = ({
   const [categories, setCategories] = useState<MultipleSelectCategory[]>([]);
   const [rows, setRows] = useState<MultipleSelectRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>(initialSelectedIds);
+  const [initialIds, setInitialIds] = useState<number[]>(initialSelectedIds);
+
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
 
@@ -70,6 +72,8 @@ export const MultipleSelectModal: React.VFC<Props> = ({
     setKeyword('');
     setCategoryId(null);
     setSelectedIds(initialSelectedIds);
+    setInitialIds(initialSelectedIds);
+
     setPage(1);
 
     (async () => {
@@ -103,6 +107,10 @@ export const MultipleSelectModal: React.VFC<Props> = ({
   const resetSelection = () => {
     setSelectedIds([]);
   };
+
+  const isChanged =
+    initialIds.length !== selectedIds.length ||
+    initialIds.some((id) => !selectedIds.includes(id));
 
   if (!isOpen) return null;
 
@@ -198,28 +206,34 @@ export const MultipleSelectModal: React.VFC<Props> = ({
         </div>
 
         {/* フッター */}
-        <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+        <div className="flex justify-between items-center gap-3 mt-4 pt-4 border-t">
           <button
             type="button"
-            className="btn-sub"
+            className="btn"
             onClick={resetSelection}
             disabled={selectedIds.length === 0}
           >
             選択リセット
           </button>
 
-          <button
-            type="button"
-            className="btn"
-            disabled={selectedIds.length === 0}
-            onClick={() => onConfirm(selectedIds)}
-          >
-            決定
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="btn w-28"
+              disabled={!isChanged}
+              onClick={() => onConfirm(selectedIds)}
+            >
+              決定
+            </button>
 
-          <button type="button" className="btn-delete" onClick={onClose}>
-            キャンセル
-          </button>
+            <button
+              type="button"
+              className="btn w-28"
+              onClick={onClose}
+            >
+              キャンセル
+            </button>
+          </div>
         </div>
       </div>
     </div>

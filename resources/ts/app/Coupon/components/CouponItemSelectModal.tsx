@@ -11,14 +11,14 @@ import {
 
 type Props = {
   isOpen: boolean;
-  selectedItemIds: number[];
+  selected: number[];
   onClose: () => void;
   onConfirm: (itemIds: number[]) => void;
 };
 
 export const CouponItemSelectModal: React.VFC<Props> = ({
   isOpen,
-  selectedItemIds,
+  selected,
   onClose,
   onConfirm,
 }) => {
@@ -61,7 +61,7 @@ export const CouponItemSelectModal: React.VFC<Props> = ({
     <MultipleSelectModal
       isOpen={isOpen}
       title="商品を選択（複数可）"
-      initialSelectedIds={selectedItemIds}
+      initialSelectedIds={selected}
       perPage={8}
       categoryLabel="カテゴリ"
       onFetchCategories={fetchCategories}

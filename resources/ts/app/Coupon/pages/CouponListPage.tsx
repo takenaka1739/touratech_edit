@@ -97,11 +97,11 @@ export const CouponListPage: React.VFC = () => {
             className="btn-toggle"
             onClick={() => onClickToggle(r.id, r.is_active === false)}
           >
-            {r.is_active === true ? '無効' : '有効'}
+            {r.is_active === true ? '有効' : '無効'}
           </button>
         </td>
         <td className="col-btn">
-          <Link to={`/${slug}/${r.id}`} className="btn-edit">編集</Link>
+          <Link to={`/${slug}/${r.id}`}>編集</Link>
         </td>
       </tr>
     ));
@@ -137,7 +137,7 @@ export const CouponListPage: React.VFC = () => {
         onClickClearButton={onClickClearButton}
       >
         <Forms.FormGroupInputText
-          labelText="クーポン名／コード"
+          labelText="文字列"
           name="c_keyword"
           value={conditions.c_keyword}
           onChange={onChange}
@@ -153,6 +153,33 @@ export const CouponListPage: React.VFC = () => {
           removeOptionalLabel
         />
       </BoxConditions>
+
+      <div style={{
+        display: 'flex',
+        gap: '20px',
+        padding: '10px',
+        margin: '10px 0',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '20px', height: '20px', backgroundColor: '#d4f5d4', border: '1px solid #ccc' }}></span>
+          <span>有効期限内</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '20px', height: '20px', backgroundColor: '#d4e4ff', border: '1px solid #ccc' }}></span>
+          <span>有効期限前</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '20px', height: '20px', backgroundColor: '#ffd4d4', border: '1px solid #ccc' }}></span>
+          <span>有効期限切</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '20px', height: '20px', backgroundColor: '#e0e0e0', border: '1px solid #ccc' }}></span>
+          <span>無効</span>
+        </div>
+      </div>
 
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}

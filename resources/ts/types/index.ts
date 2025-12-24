@@ -11,6 +11,7 @@ export { InvoiceDetail } from './InvoiceDetail';
 export { Item } from './Item';
 export { Image } from './Image';
 export { ItemClassification } from './ItemClassification';
+export { ItemPayload } from './ItemPayload';
 export { Category } from './Category';
 export { Calendar } from './Calendar';
 export { PageErrors } from './PageErrors';

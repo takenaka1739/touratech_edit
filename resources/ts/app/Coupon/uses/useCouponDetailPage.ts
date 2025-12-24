@@ -65,10 +65,12 @@ export const useCouponDetailPage = (slug: string) => {
         dispatch(AppActions.failed('クーポンコードは必須で、12桁以内で入力してください'));
         return;
       }
+
       if (!state.name) {
         dispatch(AppActions.failed('クーポン名は必須です'));
         return;
       }
+      
       if (!state.start_at || !state.end_at) {
         dispatch(AppActions.failed('開始日・終了日は必須です'));
         return;
@@ -116,6 +118,35 @@ export const useCouponDetailPage = (slug: string) => {
     },
     [setState]
   );
+
+  const onChangeDate = useCallback(
+    (name: string, value: string | number | boolean | undefined) => {
+      const newDateStr = typeof value === "string" ? value : "";
+
+      setState(prev => {
+        const start = name === "start_at" ? newDateStr : prev.start_at;
+        const end = name === "end_at" ? newDateStr : prev.end_at;
+
+        const startDate = start ? new Date(start) : null;
+        const endDate = end ? new Date(end) : null;
+
+        // 逆転チェック
+        if (startDate && endDate && startDate > endDate) {
+          if (name === "start_at") {
+            return { ...prev, start_at: newDateStr, end_at: newDateStr };
+          }
+          if (name === "end_at") {
+            return { ...prev, end_at: newDateStr, start_at: newDateStr };
+          }
+        }
+
+        // 通常更新
+        return { ...prev, [name]: newDateStr };
+      });
+    },
+    [setState]
+  );
+
 
   const onChangeRule = useCallback(
     (index: number) =>
@@ -195,11 +226,13 @@ export const useCouponDetailPage = (slug: string) => {
   );
 
   const {
-    isModalOpen,
-    openModal,
-    closeModal,
-    updateSelectedItems,
-    selectedItemIds,
+    isOpen,
+    open,
+    close,
+    confirm,
+    reset,
+    selected,
+    setSelected,
   } = useItemSelectModal();
 
   const [targetRuleIndex, setTargetRuleIndex] = useState<number | null>(null);
@@ -207,11 +240,11 @@ export const useCouponDetailPage = (slug: string) => {
   const handleOpenItemModal = useCallback(
     (initialSelected: string[] = [], index: number) => {
       const ids = initialSelected.map(Number).filter(n => !isNaN(n));
-      updateSelectedItems(ids);
+      setSelected(ids);
       setTargetRuleIndex(index);
-      openModal();
+      open();
     },
-    [openModal, updateSelectedItems]
+    [open, setSelected]
   );
 
   const handleConfirmItemModal = useCallback(
@@ -227,10 +260,10 @@ export const useCouponDetailPage = (slug: string) => {
         };
         return { ...prev, rules };
       });
-      closeModal();
+      confirm(ids);
       setTargetRuleIndex(null);
     },
-    [closeModal, setState, targetRuleIndex]
+    [confirm, setState, targetRuleIndex]
   );
 
   const itemClassificationModal = useItemClassificationSelectModal();
@@ -269,6 +302,7 @@ export const useCouponDetailPage = (slug: string) => {
     errors,
     isDisabled,
     onChange,
+    onChangeDate,
     onClickSave,
     onClickDelete,
     onChangeRule,
@@ -283,10 +317,10 @@ export const useCouponDetailPage = (slug: string) => {
       confirm: handleConfirmItemClassificationModal,
     },
     itemModal: {
-      isOpen: isModalOpen,
-      selectedItemIds,
+      isOpen,
+      selected,
       open: handleOpenItemModal,
-      close: closeModal,
+      close,
       confirm: handleConfirmItemModal,
     },
   };

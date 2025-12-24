@@ -4,27 +4,42 @@ import { useState, useCallback } from 'react';
  * 商品選択モーダル用のカスタムフック
  */
 export const useItemSelectModal = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  const openModal = useCallback((initialSelected: number[] = []) => {
-    setSelectedItemIds(initialSelected);
-    setIsModalOpen(true);
+  const open = useCallback(() => {
+    setIsOpen(true);
   }, []);
 
-  const closeModal = useCallback(() => {
-    setIsModalOpen(false);
+  const close = useCallback(() => {
+    setIsOpen(false);
   }, []);
 
-  const updateSelectedItems = useCallback((ids: number[]) => {
-    setSelectedItemIds(ids);
+  const setSelected = useCallback((ids: number[]) => {
+    setSelectedIds(ids);
+  }, []);
+
+  const confirm = useCallback(
+    (ids: number[]) => {
+      setSelectedIds(ids);
+      close();
+    },
+    [close]
+  );
+
+  const reset = useCallback(() => {
+    setSelectedIds([]);
   }, []);
 
   return {
-    isModalOpen,
-    selectedItemIds,
-    openModal,
-    closeModal,
-    updateSelectedItems,
+    isOpen,
+    selected: selectedIds,
+    open,
+    close,
+    confirm,
+    reset,
+    setSelected,
   };
 };
+
+

@@ -30,6 +30,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     errors,
     isDisabled,
     onChange,
+    onChangeDate,
     onClickSave,
     onClickDelete,
     onChangeRule,
@@ -95,7 +96,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
           name="start_at"
           value={state.start_at ? new Date(state.start_at) : null}
           error={errors?.start_at}
-          onChange={onChange}
+          onChange={onChangeDate}
           required
         />
         <Forms.FormGroupInputDate
@@ -103,7 +104,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
           name="end_at"
           value={state.end_at ? new Date(state.end_at) : null}
           error={errors?.end_at}
-          onChange={onChange}
+          onChange={onChangeDate}
           required
         />
 
@@ -138,7 +139,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
 
       <CouponItemSelectModal
           isOpen={itemModal.isOpen}
-          selectedItemIds={itemModal.selectedItemIds}
+          selected={itemModal.selected}
           onClose={itemModal.close}
           onConfirm={itemModal.confirm}
       />
