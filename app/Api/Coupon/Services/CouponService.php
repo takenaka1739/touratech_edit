@@ -1,5 +1,6 @@
 <?php
 
+// 更新: app/Api/Coupon/Services/CouponService.php
 namespace App\Api\Coupon\Services;
 
 use App\Base\Models\Coupon;
@@ -364,24 +365,74 @@ class CouponService
      * @param array $cond
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    private function setCondition($query, array $cond)
-    {
-        $cond = new Collection($cond);
-        $c_keyword = $cond->get('c_keyword');
+    /**
+ * 検索条件設定
+ *
+ * @param \Illuminate\Database\Eloquent\Builder $query
+ * @param array $cond
+ * @return \Illuminate\Database\Eloquent\Builder
+ */
+private function setCondition($query, array $cond)
+{
+    $cond = new Collection($cond);
+    $c_keyword = trim((string) ($cond->get('c_keyword') ?? ''));
 
-        if (!empty($c_keyword)) {
-            $keywords = explode(' ', $c_keyword);
-            foreach ($keywords as $key) {
-                $query->where(function ($query) use ($key) {
-                    $query->where('code', 'like', '%' . escape_like($key) . '%')
-                          ->orWhere('name', 'like', '%' . escape_like($key) . '%')
-                          ->orWhere('details', 'like', '%' . escape_like($key) . '%');
-                });
-            }
-        }
-
+    if ($c_keyword === '') {
         return $query;
     }
+
+    // 半角/全角スペースで分割（複数ワード対応）
+    $keywords = preg_split('/[ 　]+/u', $c_keyword, -1, PREG_SPLIT_NO_EMPTY);
+
+    foreach ($keywords as $key) {
+        $key = trim((string) $key);
+        if ($key === '') {
+            continue;
+        }
+
+        // =========================
+        // 日付検索用 正規化
+        // =========================
+        $dateLikes = [];
+
+        if (preg_match('#^(\d{4})/(\d{1,2})/(\d{1,2})$#', $key, $m)) {
+            $dateLikes[] = sprintf('%04d-%02d-%02d', $m[1], $m[2], $m[3]);
+        }
+
+        if (preg_match('#^(\d{4})(\d{2})(\d{2})$#', $key, $m)) {
+            $dateLikes[] = sprintf('%04d-%02d-%02d', $m[1], $m[2], $m[3]);
+        }
+
+        if (preg_match('#^(\d{4})(\d{2})$#', $key, $m)) {
+            $dateLikes[] = sprintf('%04d-%02d', $m[1], $m[2]);
+        }
+
+        if (preg_match('#^(\d{4})/(\d{1,2})$#', $key, $m)) {
+            $dateLikes[] = sprintf('%04d-%02d', $m[1], $m[2]);
+        }
+
+        $query->where(function ($query) use ($key, $dateLikes) {
+            $escaped = escape_like($key);
+
+            // 通常の文字列検索
+            $query->where('code', 'like', '%' . $escaped . '%')
+                  ->orWhere('name', 'like', '%' . $escaped . '%')
+                  ->orWhere('details', 'like', '%' . $escaped . '%')
+                  ->orWhere('start_at', 'like', '%' . $escaped . '%')
+                  ->orWhere('end_at', 'like', '%' . $escaped . '%');
+
+            // 正規化した日付パターンでも検索
+            foreach ($dateLikes as $dateLike) {
+                $d = escape_like($dateLike);
+                $query->orWhere('start_at', 'like', '%' . $d . '%')
+                      ->orWhere('end_at', 'like', '%' . $d . '%');
+            }
+        });
+    }
+
+    return $query;
+}
+
 
     /**
      * ルール情報から自動的に details を生成
@@ -436,5 +487,4 @@ class CouponService
 
         return implode(' / ', $descriptions);
     }
-
 }
