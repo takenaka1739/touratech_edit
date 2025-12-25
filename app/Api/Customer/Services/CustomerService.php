@@ -86,7 +86,8 @@ class CustomerService
           bank_class,
           cutoff_date,
           notice AS remarks,
-          email_pc AS email
+          email_pc,
+          email_phone
       ")->find($id);
 
       if (!$customer) {
@@ -105,22 +106,24 @@ class CustomerService
     DB::transaction(function () use ($data) {
       $p = $data;
 
-      $p['rank_id']      = $p['rank_id']      ?? config('const.customer.default_rank_id', 1);
-      $p['distinguish']  = $p['distinguish']  ?? config('const.customer.default_distinguish', 0); // 0:個人, 1:法人 など
-      $p['name']         = $p['name']         ?? '名無し';
-      $p['kana']         = $p['kana']         ?? '';
-      $p['nickname']     = $p['nickname']     ?? ($p['name'] ?? '');
-      $p['zip_code']     = $p['zip_code']     ?? '';
-      $p['prefectures']  = $p['prefectures']  ?? '';
-      $p['municipality'] = $p['municipality'] ?? '';
-      $p['number']       = $p['number']       ?? '';
-      $p['tel']          = $p['tel']          ?? '';
-      $p['gender']       = $p['gender']       ?? '不明';
-      // パスワード（ハッシュ必須）
-      $p['password']     = $p['password']     ?? Hash::make(Str::random(24));
-      // 既定値があるが念のため補完
-      $p['rate']         = $p['rate']         ?? 100;
-      $p['fraction']     = $p['fraction']     ?? 3;
+      $p['rank_id']      = $p['rank_id']        ?? config('const.customer.default_rank_id', 1);
+      $p['distinguish']  = $p['distinguish']    ?? config('const.customer.default_distinguish', 0); // 0:個人, 1:法人 など
+      $p['name']         = $p['name']           ?? '名無し';
+      $p['kana']         = $p['kana']           ?? '';
+      $p['nickname']     = $p['nickname']       ?? ($p['name'] ?? '');
+      $p['zip_code']     = $p['zip_code']       ?? '';
+      $p['prefectures']  = $p['prefectures']    ?? '';
+      $p['municipality'] = $p['municipality']   ?? '';
+      $p['number']       = $p['number']         ?? '';
+      $p['tel']          = $p['tel']            ?? '';
+      $p['gender']       = $p['gender']         ?? '不明';
+      // パスワード（ハッシュ必須） 
+      $p['password']     = $p['password']       ?? Hash::make(Str::random(24));
+      // 既定値があるが念のため補完 
+      $p['rate']         = $p['rate']           ?? 100;
+      $p['fraction']     = $p['fraction']       ?? 3;
+      $p['email_pc']     = $p['email_pc']       ?? '';
+      $p['email_phone']     = $p['email_phone'] ?? '';
 
       Customer::create($p);
     });
@@ -189,9 +192,11 @@ class CustomerService
       }
 
       // メール（得意先マスタでは email を PC メールとして扱う想定）
-      if ($data->has('email')) {
-        $m->email_pc = $data->get('email', $m->email_pc);
-      }
+      //if ($data->has('email')) {
+      //  $m->email_pc = $data->get('email', $m->email_pc);
+      //}
+      $m->email_pc = $data->get('email_pc', $m->email_pc);
+      $m->email_phone  = $data->get('email_phone', $m->email_phone );
 
       // 備考：リクエスト側は remarks、DB カラムは notice
       if ($data->has('remarks')) {
@@ -323,7 +328,8 @@ class CustomerService
             ->orWhere('number', 'like', '%' . escape_like($key) . '%')
             ->orWhere('tel', 'like', '%' . escape_like($key) . '%')
             ->orWhere('fax', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('email_pc', 'like', '%' . escape_like($key) . '%');
+            ->orWhere('email_pc', 'like', '%' . escape_like($key) . '%')
+            ->orWhere('email_phone', 'like', '%' . escape_like($key) . '%');
         });
       }
     }

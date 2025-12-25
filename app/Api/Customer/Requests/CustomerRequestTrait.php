@@ -12,9 +12,10 @@ trait CustomerRequestTrait
   public function commonRules()
   {
     return [
-      'name'     => 'required|string|max:30',
-      'kana'     => 'required|string|max:30',
-      'zip_code' => 'required|zip_code',
+      'name'        => 'required|string|max:30',
+      'kana'        => 'required|string|max:30',
+      'zip_code'    => 'required|zip_code',
+      'distinguish' => 'required|numeric|price',
 
       // ▼ DBの定義に合わせて長さを調整
       //   t_customers.prefectures: varchar(8) NOT NULL
@@ -29,7 +30,9 @@ trait CustomerRequestTrait
 
       'tel'      => 'required|tel',
       'fax'      => 'nullable|tel',
-      'email'    => 'bail|nullable|string|email:rfc|max:128',
+      //'email'    => 'bail|nullable|string|email:rfc|max:128',
+      'email_pc'    => 'bail|required|string|email:rfc|max:128',
+      'email_phone'    => 'bail|nullable|string|email:rfc|max:128',
       'fraction' => [
         'required',
         'integer',
@@ -55,6 +58,7 @@ trait CustomerRequestTrait
   {
     return [
       'name'           => '得意先名',
+      'distinguish'    => '区分',
       'kana'           => 'カナ',
       'zip_code'       => '郵便番号',
       'prefectures'    => '都道府県',
@@ -62,7 +66,9 @@ trait CustomerRequestTrait
       'number'         => '建物名・番地',
       'tel'            => 'TEL',
       'fax'            => 'FAX',
-      'email'          => 'MAIL',
+      //'email'        => 'MAIL',
+      'email_pc'       => 'MAIL',
+      'email_phone'    => 'MAIL',
       'fraction'       => '端数処理',
       'corporate_class'=> '支払方法',
       'bank_class'     => '口座選択',

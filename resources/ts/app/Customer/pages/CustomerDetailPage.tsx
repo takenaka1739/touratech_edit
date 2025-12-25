@@ -5,6 +5,9 @@ import { Customer } from '@/types';
 import { PageWrapper, Forms } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
+import { validateItemState } from '@/app/Customer/utils/validation';
+import { AppActions } from '@/app/App/modules/appModule';
+import { useDispatch } from 'react-redux';
 
 export type CustomerDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -20,6 +23,7 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     state,
     errors,
     isDisabled,
+    setErrors,
     onChange,
     onClickSave,
     onClickDelete,
@@ -32,7 +36,8 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     address2: '',
     tel: '',
     fax: '',
-    email: '',
+    email_pc: '',
+    email_phone: '',
     fraction: 3,
     corporate_class: 1,
     bank_class: 1,
@@ -41,6 +46,8 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     remarks: '',
     distinguish: 0,
   });
+
+  const dispatch = useDispatch();
 
   // 郵便番号 → 住所検索用フック
   const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
@@ -57,6 +64,19 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
       setFieldValue('address1', address);
     }
   };
+
+  const saveClick = () => {
+    const validationErrors = validateItemState(state);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      dispatch(AppActions.failed('必須項目を入力してください'));
+      return;
+    }else{
+      onClickSave();
+    }
+  }
+
+  console.log(state);
 
   return (
     <PageWrapper
@@ -177,10 +197,20 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
           </div>
         </div>
         <Forms.FormGroupInputText
-          labelText="MAIL"
-          name="email"
-          value={state.email ?? ''}
-          error={errors?.email}
+          labelText="EMAIL(pc)"
+          name="email_pc"
+          value={state.email_pc}
+          error={errors?.email_pc}
+          onChange={onChange}
+          className="max-w-lg"
+          maxLength={128}
+          required
+        />
+        <Forms.FormGroupInputText
+          labelText="EMAIL(phone)"
+          name="email_phone"
+          value={state.email_phone}
+          error={errors?.email_phone}
           onChange={onChange}
           className="max-w-lg"
           maxLength={128}
@@ -259,7 +289,8 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
         />
       </div>
       <div className="flex justify-between">
-        <button className="btn" onClick={onClickSave} disabled={isDisabled}>
+        {/*<button className="btn" onClick={onClickSave} disabled={isDisabled}>*/}
+        <button className="btn" onClick={() => saveClick()} disabled={isDisabled}>
           保存
         </button>
         {id && (
