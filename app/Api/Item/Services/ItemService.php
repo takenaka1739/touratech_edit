@@ -574,11 +574,13 @@ foreach ($idList as $id) {
   {
     $query = Item::select(
       'id',
-      'code',
+      'item_number',
       'name',
-      'name',
+      'name_note',
       'sales_unit_price',
       'purchase_unit_price',
+      'domestic_stocks',
+      'overseas_stocks',
     );
     $query = $this->setCondition($query, $cond);
     $query->orderBy('code', 'asc');
