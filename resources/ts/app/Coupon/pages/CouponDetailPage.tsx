@@ -29,6 +29,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     state,
     errors,
     isDisabled,
+    setErrors,
     onChange,
     onChangeDate,
     onClickSave,
@@ -41,6 +42,20 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     itemClassificationModal,
     onOpenItemClassificationModal,
   } = useCouponDetailPage(slug);
+
+  const updateRuleError = (ruleIndex: number, field: string, value: string) => {
+    setErrors((prev: any) => {
+      console.log(value);
+      const next = { ...prev };
+
+      if (!next.rules) next.rules = [];
+      if (!next.rules[ruleIndex]) next.rules[ruleIndex] = {};
+
+      next.rules[ruleIndex][field] = '';
+
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!isNew && couponId > 0 && !fetched.current) {
@@ -119,6 +134,8 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
             conditionTypeOptions={conditionTypeOptions}
             onOpenItemModal={handleOpenItemModal}
             onOpenItemClassificationModal={onOpenItemClassificationModal}
+            errors={errors}
+            updateRuleError={updateRuleError}
           />
         ))}
         <button className="btn" type="button" onClick={addRule}>

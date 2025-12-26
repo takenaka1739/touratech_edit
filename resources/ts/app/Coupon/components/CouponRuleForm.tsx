@@ -1,5 +1,6 @@
 import React from 'react';
 import { Forms } from '@/components';
+import { useEffect } from 'react';
 
 /**
  * クーポンルール1件分の入力フォーム
@@ -13,22 +14,45 @@ type Props = {
     benefit_type: string;
     benefit_value: any;
   };
+  errors: any;
   onChangeRule: (index: number) => (name: string, value: any) => void;
   onRemoveRule: (index: number) => void;
   conditionTypeOptions: { value: string; name: string }[];
   onOpenItemModal: (selectedIds: number[], ruleIndex: number) => void;
   onOpenItemClassificationModal: (selectedIds: number[], ruleIndex: number) => void;
+  updateRuleError: (index: number, field: string, value: string) => void;
 };
 
 export const CouponRuleForm: React.FC<Props> = ({
   rule,
   index,
   conditionTypeOptions,
+  errors,
+  updateRuleError,
   onChangeRule,
   onRemoveRule,
   onOpenItemModal,
   onOpenItemClassificationModal,
 }) => {
+
+  useEffect(() => {
+    console.log('rule');
+    console.log(rule);
+    updateRuleError(index, 'condition_type', '');
+  }, [rule.condition_type]);
+
+  useEffect(() => {
+    updateRuleError(index, 'condition_value', '');
+  }, [rule.condition_value]);
+
+  useEffect(() => {
+    updateRuleError(index, 'benefit_type', '');
+  }, [rule.benefit_type]);
+
+  useEffect(() => {
+    updateRuleError(index, 'benefit_value', '');
+  }, [rule.benefit_value]);
+
   // benefit_typeがspecial_itemなら常にitem_idに固定
   const effectiveConditionTypeOptions =
     rule.benefit_type === 'special_item'
@@ -78,6 +102,11 @@ export const CouponRuleForm: React.FC<Props> = ({
                 {rule.condition_value?.length ? `${rule.condition_value.length} 件選択中` : '未選択'}
               </span>
             </div>
+            {errors?.rules?.[index] && (
+              <div className="form-error">
+                {errors.rules[index].condition_value}
+              </div>
+            )}
           </Forms.FormGroup>
         );
       case 'category_id':
@@ -99,48 +128,67 @@ export const CouponRuleForm: React.FC<Props> = ({
                 {rule.condition_value?.length ? `${rule.condition_value.length} 件選択中` : '未選択'}
               </span>
             </div>
+            {errors?.rules?.[index] && (
+              <div className="form-error">
+                {errors.rules[index].condition_value}
+              </div>
+            )}
           </Forms.FormGroup>
         );
       case 'price':
         return (
-          <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
-            <Forms.FormGroupSelect
-              labelText="条件"
-              name={`rules[${index}].price_operator`}
-              value={rule.price_operator ?? 'gte'}
-              onChange={onChangeRule(index)}
-              options={[
-                { value: 'gte', name: '以上' },
-                { value: 'lte', name: '以下' },
-                { value: 'eq', name: 'と一致する' },
-              ]}
-              required
-              groupClassName="mb-0"
-              disabled={isSpecialItem}
-            />
-            <Forms.FormGroupInputText
-              labelText="金額"
-              name={`rules[${index}].condition_value`}
-              value={rule.condition_value}
-              onChange={onChangeRule(index)}
-              required
-              groupClassName="mb-0"
-              disabled={isSpecialItem}
-            />
+          <div>
+            <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
+              <Forms.FormGroupSelect
+                labelText="条件"
+                name={`rules[${index}].price_operator`}
+                value={rule.price_operator ?? 'gte'}
+                onChange={onChangeRule(index)}
+                options={[
+                  { value: 'gte', name: '以上' },
+                  { value: 'lte', name: '以下' },
+                  { value: 'eq', name: 'と一致する' },
+                ]}
+                required
+                groupClassName="mb-0"
+                disabled={isSpecialItem}
+              />
+              <Forms.FormGroupInputText
+                labelText="金額"
+                name={`rules[${index}].condition_value`}
+                value={rule.condition_value}
+                onChange={onChangeRule(index)}
+                required
+                groupClassName="mb-0"
+                disabled={isSpecialItem}
+              />
+            </div>
+            {errors?.rules?.[index]?.condition_value && (
+              <div className="form-error ml-40">
+                {errors.rules[index].condition_value}
+              </div>
+            )}
           </div>
         );
       case 'all_items':
         return null;
       default:
         return (
-          <Forms.FormGroupTextarea
-            labelText="条件値"
-            name={`rules[${index}].condition_value`}
-            value={rule.condition_value}
-            onChange={onChangeRule(index)}
-            required
-            disabled={isSpecialItem}
-          />
+          <div>
+            <Forms.FormGroupTextarea
+              labelText="条件値"
+              name={`rules[${index}].condition_value`}
+              value={rule.condition_value}
+              onChange={onChangeRule(index)}
+              required
+              disabled={isSpecialItem}
+            />
+            {errors?.rules?.[index]?.condition_value && (
+              <div className="form-error ml-40">
+                {errors.rules[index].condition_value}
+              </div>
+            )}
+          </div>
         );
     }
   };
@@ -161,6 +209,11 @@ export const CouponRuleForm: React.FC<Props> = ({
         groupClassName="mb-2"
         disabled={isSpecialItem} //  benefit_typeがspecial_itemならcondition_typeのセレクトはdisable
       />
+      {errors?.rules?.[index] && (
+        <div className="form-error ml-40">
+          {errors.rules[index].condition_type}
+        </div>
+      )}
 
       {renderConditionInput()}
 
@@ -177,6 +230,11 @@ export const CouponRuleForm: React.FC<Props> = ({
         ]}
         required
       />
+      {errors?.rules?.[index] && (
+        <div className="form-error ml-40">
+          {errors.rules[index].benefit_type}
+        </div>
+      )}
 
       {rule.benefit_type === 'discount' && (
         <div className="mb-2">
@@ -209,6 +267,11 @@ export const CouponRuleForm: React.FC<Props> = ({
             }}
             required
           />
+          {errors?.rules?.[index] && (
+            <div className="form-error ml-40">
+              {errors.rules[index].benefit_value?.value}
+            </div>
+          )}
         </div>
       )}
 
@@ -225,6 +288,11 @@ export const CouponRuleForm: React.FC<Props> = ({
           }}
           required
         />
+      )}
+      {errors?.rules?.[index] && (
+        <div className="form-error ml-40">
+          {errors.rules[index].benefit_value}
+        </div>
       )}
 
       {rule.benefit_type === 'free_shipping' && (

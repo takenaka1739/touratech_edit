@@ -5,6 +5,7 @@ import { useItemSelectModal } from '@/app/Coupon/uses/useItemSelectModal';
 import { useItemClassificationSelectModal } from '../uses/useItemClassificationSelectModal';
 import { useDispatch } from 'react-redux';
 import { AppActions } from '@/app/App/modules/appModule';
+import { validateItemState } from '@/app/Coupon/utils/validation';
 
 export const useCouponDetailPage = (slug: string) => {
   const dispatch = useDispatch();
@@ -60,22 +61,12 @@ export const useCouponDetailPage = (slug: string) => {
   } = commonDetail;
 
   const onClickSave = useCallback(async () => {
+
+  const validationErrors = validateItemState(state);
+  console.log('validationErrors');
+  console.log(validationErrors);
+    
     try {
-      if (!state.code || state.code.length > 12) {
-        dispatch(AppActions.failed('クーポンコードは必須で、12桁以内で入力してください'));
-        return;
-      }
-
-      if (!state.name) {
-        dispatch(AppActions.failed('クーポン名は必須です'));
-        return;
-      }
-      
-      if (!state.start_at || !state.end_at) {
-        dispatch(AppActions.failed('開始日・終了日は必須です'));
-        return;
-      }
-
       const fixedState = {
         ...state,
         rules: state.rules.map((r) => {
@@ -91,7 +82,13 @@ export const useCouponDetailPage = (slug: string) => {
       };
 
       setState(fixedState);
-      await originalSave();
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        dispatch(AppActions.failed('必須項目を入力してください'));
+        return;
+      }else{
+        await originalSave();
+      }
     } catch (error: any) {
       if (error?.response?.status === 422 && error.response.data?.errors) {
         setErrors(error.response.data.errors); // ✅ バリデーションエラーセット
@@ -107,13 +104,15 @@ export const useCouponDetailPage = (slug: string) => {
     }
   }, [state, originalSave, dispatch, setState, setErrors]);
 
-
-
   const onChange = useCallback(
     (name: string, value: string | number | boolean | string[] | undefined) => {
       setState(prev => ({
         ...prev,
         [name]: value,
+      }));
+      setErrors(prev => ({
+        ...prev,
+        [name]: '',
       }));
     },
     [setState]
@@ -140,6 +139,10 @@ export const useCouponDetailPage = (slug: string) => {
           }
         }
 
+        setErrors(prev => ({
+          ...prev,
+          [name]: '',
+        }));
         // 通常更新
         return { ...prev, [name]: newDateStr };
       });
@@ -230,7 +233,7 @@ export const useCouponDetailPage = (slug: string) => {
     open,
     close,
     confirm,
-    reset,
+    //reset,
     selected,
     setSelected,
   } = useItemSelectModal();
@@ -301,6 +304,7 @@ export const useCouponDetailPage = (slug: string) => {
     state,
     errors,
     isDisabled,
+    setErrors,
     onChange,
     onChangeDate,
     onClickSave,
