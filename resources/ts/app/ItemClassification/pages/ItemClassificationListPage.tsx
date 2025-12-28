@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PageWrapper, BoxConditions, TableWrapper, Forms } from '@/components';
-import { useItemClassificationListPage } from '../uses/useItemClassificationListPage';
 import { useComposing } from '@/uses';
+import { useItemClassificationListPage } from '@/app/ItemClassification/uses/useItemClassificationListPage';
 import { useFlatItemClassification } from '@/app/ItemClassification/uses/useFlatItemClassification';
 
 /**
@@ -31,6 +31,7 @@ export const ItemClassificationListPage: React.VFC = () => {
   const tables = useMemo(() => {
     const tbody = flatRows.map(r => {
       const isDisplay = Number(r.is_display) === 1;
+      const isTop = r.level === 0;
       const isChild = r.level >= 1;
 
       return (
@@ -52,12 +53,12 @@ export const ItemClassificationListPage: React.VFC = () => {
                   className="indent"
                   style={{ width: 20 * r.level, minWidth: 20 * r.level }}
                 />
-                {r.isParent ? (
+                {isTop ? (
                   <span className="icon-parent">P</span>
                 ) : (
                   <span className="icon-child">{'↳'.repeat(r.level)}</span>
                 )}
-                <span className={r.isParent ? 'name-parent' : 'name-child'}>
+                <span className={isTop ? 'name-parent' : 'name-child'}>
                   {r.name}
                 </span>
               </div>

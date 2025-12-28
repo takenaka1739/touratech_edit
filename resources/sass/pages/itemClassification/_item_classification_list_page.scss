@@ -21,21 +21,31 @@
   }
 
   /* ------------------------------
-     テーブル行の背景色
+     テーブル行の背景色（公開・非公開）
   ------------------------------ */
+
+  /* 公開行 */
   .row-child {
     background: #fafafa;
+
+    &:hover {
+      background: #f0f0f0;
+    }
   }
 
+  /* 非公開行 */
   .row-hidden {
     background: #d5d7db;
+
+    &:hover {
+      background: #c7c9cc;
+    }
   }
 
   /* ------------------------------
      商品分類名セルの構造
   ------------------------------ */
 
-  /* td の中に置くラッパー（高さ揃えのため） */
   .name-cell-wrapper {
     position: relative;
     display: flex;
@@ -43,18 +53,15 @@
     height: 100%;
   }
 
-  /* 実際の内容を横並びにする */
   .name-cell {
     display: flex;
     align-items: center;
   }
 
-  /* インデント（動的 px は inline-style で OK） */
   .indent {
     display: inline-block;
   }
 
-  /* 親アイコン */
   .icon-parent {
     display: inline-block;
     width: 18px;
@@ -69,23 +76,20 @@
     margin-right: 8px;
   }
 
-  /* 子アイコン */
   .icon-child {
     color: #6b7280;
     margin-right: 8px;
     font-size: 14px;
   }
 
-  /* 子階層のガイド線 */
   .child-guide {
     position: absolute;
     left: 8px;
     top: 0;
-    bottom: 0; // ← 高さを100%にする
+    bottom: 0;
     border-left: 3px solid #e5e7eb;
   }
 
-  /* 親名・子名のフォント調整 */
   .name-parent {
     font-weight: 700;
   }

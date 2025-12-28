@@ -10,18 +10,17 @@ export type Row = {
 };
 
 export type FlatRow = Row & {
-  level: number;
-  isParent: boolean;
-  hiddenByParent: boolean;
+  level: number;              // 階層（0 = TOP）
+  hiddenByParent: boolean;    // 親の表示設定による非表示の伝播
 };
 
 /**
- * 商品分類の階層構造をフラット化するカスタムフック
+ * 商品分類の階層構造をフラット化するカスタムフック。
  */
 export const useFlatItemClassification = (rows: Row[]) => {
   return useMemo<FlatRow[]>(() => {
     // ------------------------------
-    // ① 正規化
+    // 正規化
     // ------------------------------
     const toHalfWidth = (str: string) =>
       str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s =>
@@ -34,22 +33,37 @@ export const useFlatItemClassification = (rows: Row[]) => {
     };
 
     // ------------------------------
-    // ② childrenMap の構築
+    // childrenMap の構築
     // ------------------------------
     const buildChildrenMap = (rows: Row[]) => {
       const map = new Map<string, Row[]>();
+
       rows.forEach(r => {
-        const pc = norm(r.parent_code);
-        if (!map.has(pc)) map.set(pc, []);
-        map.get(pc)!.push(r);
+        const parent = norm(r.parent_code);
+        const code = norm(r.code);
+
+        const isTop = parent === '' || parent === code;
+
+        if (isTop) {
+          const key = ''; // TOP は空キーにまとめる
+          if (!map.has(key)) map.set(key, []);
+          map.get(key)!.push(r);
+          return;
+        }
+
+        const key = parent;
+
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(r);
       });
+
       return map;
     };
 
     const childrenMap = buildChildrenMap(rows);
 
     // ------------------------------
-    // ③ 比較関数（単一責務）
+    // 比較関数（単一責務）
     // ------------------------------
     const compareRows = (a: Row, b: Row) => {
       const sa = a.sort_order ?? 0;
@@ -59,54 +73,34 @@ export const useFlatItemClassification = (rows: Row[]) => {
       return norm(a.name).localeCompare(norm(b.name), 'ja');
     };
 
-    // ------------------------------
-    // ④ 並び替え（比較関数に委譲）
-    // ------------------------------
     const sortRows = (list: Row[]) => list.sort(compareRows);
 
     // ------------------------------
-    // ⑤ 再帰フラット化
+    // 再帰フラット化
     // ------------------------------
     const result: FlatRow[] = [];
 
-    const walk = (parentCode: string, level: number, parentHidden: boolean) => {
+    const walk = (parentCode: string, parentHidden: boolean, level = 0) => {
       const list = childrenMap.get(parentCode);
       if (!list) return;
 
       sortRows(list).forEach(r => {
-        const code = norm(r.code);
-        const pc = norm(r.parent_code);
-
-        const isTopLevel = pc === code;
-        const currentLevel = code === parentCode ? level : level + 1;
+        const code = r.code || '';
 
         const isDisplay = Number(r.is_display) === 1;
         const hiddenByParent = parentHidden || !isDisplay;
 
         result.push({
           ...(r as Row),
-          level: currentLevel,
-          isParent: isTopLevel,
+          level,
           hiddenByParent,
         });
 
-        if (code !== parentCode) {
-          walk(code, currentLevel, hiddenByParent);
-        }
+        walk(code, hiddenByParent, level + 1);
       });
     };
 
-    // ------------------------------
-    // ⑥ 起点（トップ階層）の抽出
-    // ------------------------------
-    const topLevelCodes = rows
-      .filter(r => norm(r.parent_code) === norm(r.code))
-      .map(r => norm(r.code));
-
-    // ------------------------------
-    // ⑦ 実行
-    // ------------------------------
-    topLevelCodes.forEach(code => walk(code, 0, false));
+    walk('', false, 0);
 
     return result;
   }, [rows]);
