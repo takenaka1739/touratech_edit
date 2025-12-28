@@ -1463,6 +1463,103 @@ label {
   cursor: not-allowed;
 }
 
+.item-classification-list-page {
+  /* ------------------------------
+     テーブル行の背景色
+  ------------------------------ */
+  /* ------------------------------
+     商品分類名セルの構造
+  ------------------------------ */
+  /* td の中に置くラッパー（高さ揃えのため） */
+  /* 実際の内容を横並びにする */
+  /* インデント（動的 px は inline-style で OK） */
+  /* 親アイコン */
+  /* 子アイコン */
+  /* 子階層のガイド線 */
+  /* 親名・子名のフォント調整 */
+}
+.item-classification-list-page__legend {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 20px;
+  padding: 10px;
+  margin: 10px 0;
+}
+.item-classification-list-page__legend-item {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 6px;
+}
+.item-classification-list-page__legend-item-color {
+  width: 20px;
+  height: 20px;
+  background-color: #d5d7db;
+  border: 1px solid #bbb;
+}
+.item-classification-list-page .row-child {
+  background: #fafafa;
+}
+.item-classification-list-page .row-hidden {
+  background: #d5d7db;
+}
+.item-classification-list-page .name-cell-wrapper {
+  position: relative;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  height: 100%;
+}
+.item-classification-list-page .name-cell {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+.item-classification-list-page .indent {
+  display: inline-block;
+}
+.item-classification-list-page .icon-parent {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 4px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 700;
+  font-size: 12px;
+  margin-right: 8px;
+}
+.item-classification-list-page .icon-child {
+  color: #6b7280;
+  margin-right: 8px;
+  font-size: 14px;
+}
+.item-classification-list-page .child-guide {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  border-left: 3px solid #e5e7eb;
+}
+.item-classification-list-page .name-parent {
+  font-weight: 700;
+}
+.item-classification-list-page .name-child {
+  font-weight: 500;
+}
+
 .item-image-picker-dialog__overlay {
   position: fixed;
   inset: 0;

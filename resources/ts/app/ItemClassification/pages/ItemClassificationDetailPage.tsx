@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RouteComponentProps, useHistory } from 'react-router-dom';
-import { ItemClassification } from '@/types';
-import { PageWrapper, Forms } from '@/components';
-import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useDispatch } from 'react-redux';
-import { AppActions } from '@/app/App/modules/appModule';
 import axios from 'axios';
-import { appAlert, appConfirm } from '@/components';
+import { ItemClassification } from '@/types';
+import { PageWrapper, Forms, appAlert, appConfirm } from '@/components';
+import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
+import { AppActions } from '@/app/App/modules/appModule';
 import { ItemImagePickerDialog } from '@/app/ItemClassification/components/ItemImagePickerDialog';
 
 export type ItemClassificationDetailPageProps = {} & RouteComponentProps<{ id: string }>;
@@ -441,7 +440,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   // Handlers: UI イベント
   // ==============================================================
   // 保存ボタンクリックイベント
-  const onClickSave = async () => {
+  const handleSave = async () => {
     const resCore = await saveCore();
     if (!resCore.ok) return;
 
@@ -616,7 +615,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       </div>
 
       <div className="flex justify-between">
-        <button className="btn" onClick={onClickSave} disabled={isDisabled}>保存</button>
+        <button className="btn" onClick={handleSave} disabled={isDisabled}>保存</button>
         {id && <button className="btn-delete" onClick={handleDelete} disabled={isDisabled}>削除</button>}
       </div>
 

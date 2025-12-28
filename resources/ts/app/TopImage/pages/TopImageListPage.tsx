@@ -26,7 +26,7 @@ const TopImageListPage: React.FC = () => {
     removeAt,
     toggleMarkDelete,
     togglePreviewEnabled,
-    handlePublish,
+    handleSave,
 
     sliderSettings,
     setPreviewItemsState,
@@ -47,9 +47,9 @@ const TopImageListPage: React.FC = () => {
           <button
             className="btn btn-primary"
             disabled={!previewItemsState.length || isPublishing}
-            onClick={handlePublish}
+            onClick={handleSave}
           >
-            登録
+            保存
           </button>
 
           <button

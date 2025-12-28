@@ -1,24 +1,23 @@
-import React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { RouteComponentProps, useHistory, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
-import { Item, ItemClassification, Supplier } from '@/types';
-import { PageWrapper, Forms } from '@/components';
+import { Item, ItemClassification, Supplier, ItemPayload } from '@/types';
+import { PageWrapper, Forms, appAlert } from '@/components';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 import { ItemClassificationSearchDialog } from '@/app/ItemClassification/components/ItemClassificationSearchDialog';
 import { SupplierSearchDialog } from '@/app/Supplier/components/SupplierSearchDialog';
-import { ItemRefSearchDialog } from '@/app/Item/components/ItemRefSearchDialog';
-import { SpecialSalesDialog } from '@/app/Item/components/SpecialSalesDialog';
 import { useSpecialSalesPage } from '@/app/Item/uses/useSpecialSalesPage';
 import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { AppActions } from '@/app/App/modules/appModule';
-import { useState, useEffect, useRef } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
-import { appAlert } from '@/components';
 import { validateItemState } from '@/app/Item/utils/validation';
-import { ItemPayload } from '@/types/ItemPayload';
+import { itemInitialState } from '@/app/Item/modules/itemInitialState';
+import { Category } from '@/app/Item/modules/types/Category';
+import { ItemRefSearchDialog } from '@/app/Item/components/ItemRefSearchDialog';
+import { SpecialSalesDialog } from '@/app/Item/components/SpecialSalesDialog';
+import { ItemCategoryRow, ItemVariationRow, ItemVariationHeader } from '@/app/Item/components';
 
 export type ItemDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -44,109 +43,34 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     onChange,
     setErrors,
     onClickDelete,
-  } = useCommonDetailPage<Item & { selected: number[] | undefined; }>(slug, {
-    id: undefined,
-    supplier_id: undefined,
-    code: '',
-    name: '',
-    item_number: undefined,
-    variations1: '',
-    variations2: '',
-    variations3: '',
-    variations4: '',
-    explanation: '',
-    explanation_details: '',
-    name_note: '',
-    name_label: '',
-    is_sell: false,
-    purchase_price: undefined,
-    sales_price: 0,
-    special_sale_id: undefined,
-    sales_unit_price: undefined,
-    purchase_unit_price: undefined,
-    sample_price: undefined,
-    is_discontinued: false,
-    discontinued_at: '',
-    is_display: false,
-    is_point_rebates: false,
-    number_reservations: undefined,
-    is_shipping_fee: false,
-    is_cash_delivery_fee: false,
-    additional_shipping_fee: undefined,
-    is_payment_id1: false,
-    is_payment_id2: false,
-    is_payment_id3: false,
-    is_payment_id4: false,
-    is_payment_id5: false,
-    payErrorMessage: '',
-    display_status: 0,
-    variItems: [[]],  // variItemsとimageListの要素数・要素内容は対（要素0の管理IDまたはnewで判定）
-    backVariItems: [[]],
-    //image_name: undefined,
-    imageList: [[]], // variItemsとimageListの要素数・要素内容は対（要素0の管理IDまたはnewで判定）
-    shipping_pay: undefined,
+  } = useCommonDetailPage<Item & { selected: number[] | undefined }>(
+    slug,
+    itemInitialState
+  );
 
-    category_id: undefined,
-    category_name: '',
-    supplier_name: '',
-    domestic_stocks: undefined,
-    overseas_stocks: undefined,
-    is_set_item: false,
-
-    item_id: undefined,
-    is_sales_members_only: false,
-    start_at: '',
-    end_at: '',
-    special_sale_price: 0,
-    refund_rate: 0,
-    codeList: [],
-    categoryList: [],
-    specialSalesList: [],
-    specialSalesDelFlag: false,
-    selected: undefined,
-    preImageList: [[]],
-    combination_id: undefined,
-    combIdList: [],
-    send_trader: undefined,
-    send_personal: undefined,
-    type_status: undefined,
-    type_name: '',
-    file_name: '',
-    document_id: undefined,
-    pdf: undefined,
-    documentFileList: [],
-    categoryListAll: [],
-    dataBaceAllCodeList: [],
-    initialCode: '',
-  });
-
-  type Category = {
-    combId: number | undefined;
-    categoryId: number | null;
-    name: string;
-    status: string;
-    initialcategoryId: number | undefined;
-  };
-
-  //const domestic_url = createUrl(TEMPLATE_ITEM_URLS.template_domestic_url, state.item_number);
   const overseas_url = createUrl(TEMPLATE_ITEM_URLS.template_overseas_url, state.item_number);
 
+  // ==============================================================
+  // State
+  // ==============================================================
   const [variItems, setVariItems] = useState([['', '', '', '', '', '', '']]);
-  const [checkBock, setCheckBock] = useState({ color: '#EDF2F7', flag: false });
-  const [backColor, setbackColor] = useState('#ffffff');
+  const [variDelItem, setVariDelItem] = useState<string[][]>([]);
   const [variChangeItem, setVariChangeItem] = useState<string[][]>([]);
-  const dispatch = useDispatch();
-  const [onFocusItem, setonFocusItem] = useState<string[]>();
-  const location = useLocation<any>();
+
+  const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
   const [categoryChangeFlag, setCategoryChangeFlag] = useState(false);
   const [supplierChangeFlag, setSupplierChangeFlag] = useState(false);
-  const [variClickFlag, setvariClickFlag] = useState(false);
-  const [variDelItem, setVariDelItem] = useState<string[][]>([]);
+
+  const [isVariationEditable, setIsVariationEditable] = useState(false);        // バリエーションの編集モード状態
+  const [backColor, setbackColor] = useState('#ffffff');
   const [typeName, setTypeName] = useState('');
   const [typeNameBackColor, setTypeNameBackColor] = useState('#EDF2F7');
-  const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
-  const [changeCategoryFlag, setChangeCategoryFlag] = useState(false);
-  const [preCategoryId, setPreCategoryId] = useState<number | undefined>(undefined);
+  const [variClickFlag, setvariClickFlag] = useState(false);
+  const [onFocusItem, setonFocusItem] = useState<string[]>();
+
+  const dispatch = useDispatch();
+  const location = useLocation<any>();
+  
   const [domestic_url, setDomestic_url] = useState<string>('');
 
   // 初期値設定
@@ -189,8 +113,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
         categoryList: [arr]
       }));
     }
-  }, [state, state.variItems, state.purchase_price, state.number_reservations,
-    state.specialSalesList, state.imageList]);
+  }, [state]);
 
   // state.categoryListの初期値（新規作成時の1行目の作成）
   useEffect(() => {
@@ -275,7 +198,7 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     if(state.category_name == undefined){
       setDomestic_url(`https://touratech.matrix.jp/ec/category-products/カテゴリーの一覧/${state.categoryList[0].name}/${state.id}`);
     }
-  }, [state.category_name]);
+  }, [state.category_name, state.categoryList, state.id]);
 
   const onChangeTypeName = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTypeName(event.target.value);
@@ -299,30 +222,24 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   const {
     open: openItemClassDialog,
     searchDialogProps: itemClassSearchDialogProps,
-  } = useCommonSearchDialogProps<ItemClassification>('item_classification', async props => {
-    const { id, name } = props;
-    updateState({
-      category_id: id,
-      category_name: name,
-    });
+  } = useCommonSearchDialogProps<ItemClassification>(
+    'item_classification',
+    async ({ id, name }) => {
+      // 重複チェック
+      const isDuplicate = state.categoryList.some(item =>
+        item.status !== "del" &&
+        item.categoryId === id &&
+        item.originalIndex !== changeCategoryIndex
+      );
 
-    if (preCategoryId !== undefined && state.category_id !== undefined) {
-      if (preCategoryId === state.category_id) {
-        const matched = state.categoryList.find(
-          item => item.categoryId === preCategoryId
-        );
-        if ((matched?.status !== 'del') && (matched !== undefined)) {
-          setChangeCategoryFlag(true);
-        } else {
-          changeCategory();
-        }
-      } else {
-        changeCategory();
+      // 重複が無ければ更新
+      if (!isDuplicate) {
+        changeCategory({ id: id ?? 0, name: name ?? "" });
       }
+      
+      return true;
     }
-    setCategoryChangeFlag(true);
-    return true;
-  });
+  );
 
   const {
     open: openSupplierDialog,
@@ -376,74 +293,11 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   };
 
   const changeState = (value: any) => {
-    console.log('changeState');
-    console.log(value['imageList']);
+    console.log('changeState', value.imageList);
+
     setState(prev => ({
       ...prev,
-      item_number: value['item_number'],
-      name: value['name'],
-      name_note: value['name_note'],
-      name_label: value['name_label'],
-      categoryList: value['categoryList'],
-      category_name: value['category_name'],
-      category_id: value['category_id'],
-      sales_unit_price: value['sales_unit_price'],
-      purchase_unit_price: value['purchase_unit_price'],
-      sample_price: value['sample_price'],
-      supplier_name: value['supplier_name'],
-      supplier_id: value['supplier_id'],
-      is_discontinued: value['is_discontinued'],
-      discontinued_at: value['discontinued_at'],
-      is_display: value['is_display'],
-      domestic_stocks: value['domestic_stocks'],
-      overseas_stocks: value['overseas_stocks'],
-      display_status: value['display_status'],
-      remarks: value['remarks'],
-      is_sell: value['is_sell'],
-      code: value['code'],
-      variItems: value['variItems'],
-      explanation: value['explanation'],
-      explanation_details: value['explanation_details'],
-      sales_price: value['sales_price'],
-      purchase_price: value['purchase_price'],
-      number_reservations: value['number_reservations'],
-      is_shipping_fee: value['is_shipping_fee'],
-      shipping_pay: value['shipping_pay'],
-      additional_shipping_fee: value['additional_shipping_fee'],
-      is_cash_delivery_fee: value['is_cash_delivery_fee'],
-      is_point_rebates: value['is_point_rebates'],
-      is_payment_id1: value['is_payment_id1'],
-      is_payment_id2: value['is_payment_id2'],
-      is_payment_id3: value['is_payment_id3'],
-      is_payment_id4: value['is_payment_id4'],
-      is_payment_id5: value['is_payment_id5'],
-
-      backVariItems: value['backVariItems'],
-      codeList: value['codeList'],
-      combIdList: value['combIdList'],
-      combination_id: value['combination_id'],
-      imageList: value['imageList'],
-      //image_name: value['image_name'],
-      is_sales_members_only: value['is_sales_members_only'],
-      refund_rate: value['refund_rate'],
-      send_personal: value['send_personal'],
-      send_trader: value['send_trader'],
-      specialSalesList: value['specialSalesList'],
-      special_sale_id: value['special_sale_id'],
-      special_sale_item_id: value['special_sale_item_id'],
-      special_sale_price: value['special_sale_price'],
-      start_at: value['start_at'],
-      end_at: value['end_at'],
-      variations1: value['variations1'],
-      variations2: value['variations2'],
-      variations3: value['variations3'],
-      variations4: value['variations4'],
-      document_id: value['document_id'],
-      type_status: value['type_status'],
-      type_name: value['type_name'],
-      file_name: value['file_name'],
-      dataBaceAllCodeList: value['dataBaceAllCodeList'],
-      initialCode: value['initialCode'],
+      ...value,
     }));
 
     setVariChangeItem([]);
@@ -451,11 +305,8 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
     setSupplierChangeFlag(false);
     setvariClickFlag(false);
     setVariDelItem([]);
-    if (value['type_status'] === 3) {
-      setTypeName(value['type_name']);
-    } else {
-      setTypeName('');
-    }
+
+    setTypeName(value.type_status === 3 ? value.type_name : '');
   }
 
   const onClickPrint = async () => {
@@ -565,8 +416,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
   // 商品分類の行追加
   // select:選択された行、index:選択された列
   const addNewCategory = () => {
-    setChangeCategoryFlag(false);
-
     setState(prev => {
       // categoryList が未定義/null の場合は空配列にして扱う
       const currentList = Array.isArray(prev.categoryList) ? prev.categoryList : [];
@@ -608,8 +457,6 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
             item.categoryId === state.category_id
         );
 
-        setChangeCategoryFlag(flag);
-
         if (!flag) {
           setState((prev) => {
             const delIndex = prev.categoryList.findIndex(
@@ -696,129 +543,64 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
               }),
             };
           });
-        } else {
-          setChangeCategoryFlag(true);
         }
       }
-      setPreCategoryId(state.category_id);
     }
   }, [state.category_id, state.category_name]);
 
-  const changeCategory = () => {
-    if (changeCategoryIndex !== null) {
-      if (state.category_id !== undefined && state.category_name !== undefined) {
-        // 同じカテゴリが選択されているかのチェック
-        const flag = state.categoryList.some(
-          item =>
-            item.categoryId !== null && // ← nullは無視
-            item.status !== "del" &&
-            item.categoryId === state.category_id
-        );
-      
-        setChangeCategoryFlag(flag);
-      
-        if (!flag) {
-          setState((prev) => {
-            const delIndex = prev.categoryList.findIndex(
-              (item) =>
-                item.status === "del" &&
-                item.categoryId === state.category_id
-            );
-          
-            if (delIndex !== -1) {
-              const delItem = prev.categoryList[delIndex];
-            
-              // 1. 復活処理
-              const revivedList = prev.categoryList.map((item, idx) => {
-                if (idx === changeCategoryIndex) {
-                  return {
-                    ...item,
-                    combId: delItem.combId,
-                    categoryId: delItem.categoryId,
-                    name: delItem.name,
-                    initialcategoryId: delItem.initialcategoryId,
-                    status:
-                      delItem.categoryId === delItem.initialcategoryId
-                        ? "no update"
-                        : "update",
-                  };
-                }
-                return item;
-              });
-            
-              // 2. 最大 newX 行を探索
-              const maxNewIndex = revivedList.reduce(
-                (acc, item, idx) => {
-                  if (item.categoryId == null && /^new\d+$/.test(item.status)) {
-                    const num = parseInt(item.status.replace("new", ""), 10);
-                    if (num > acc.value) {
-                      return { value: num, index: idx };
-                    }
-                  }
-                  return acc;
-                },
-                { value: -1, index: -1 }
-              );
-            
-              // 3. 見つかった newX 行を削除（復活させた行が changeCategoryIndex の場合のみ）
-              let filteredList = revivedList;
-              if (maxNewIndex.index !== -1 && delIndex === changeCategoryIndex) {
-                filteredList = revivedList.filter(
-                  (_, idx) => idx !== maxNewIndex.index
-                );
-              }
-            
-              // 4. 最終結果
-              return { ...prev, categoryList: filteredList };
-            }
-            // del 行がなければ通常処理
-            return {
-              ...prev,
-              categoryList: prev.categoryList.map((item, index) => {
-                if (index !== changeCategoryIndex) return item;
-              
-                if (item.status.includes("new")) {
-                  return {
-                    ...item,
-                    categoryId: state.category_id,
-                    name: state.category_name,
-                    status: item.status,
-                  };
-                } else if (state.category_id === item.initialcategoryId) {
-                  return {
-                    ...item,
-                    categoryId: state.category_id,
-                    name: state.category_name,
-                    status: "no update",
-                  };
-                } else {
-                  return {
-                    ...item,
-                    categoryId: state.category_id,
-                    name: state.category_name,
-                    status: "update",
-                  };
-                }
-              }),
-            };
-          });
-        } else {
-          setChangeCategoryFlag(true);
-        }
-      }
-      setPreCategoryId(state.category_id);
-    }
-  }
+  const changeCategory = ({ id, name }: { id: number; name: string }) => {
+    if (changeCategoryIndex === null) return;
 
+    setState(prev => {
+      const list = [...prev.categoryList];
+      const target = list[changeCategoryIndex];
+      
+      // 削除済みの同じカテゴリがあれば復活
+      const deletedIndex = list.findIndex(
+        item => item.status === "del" && item.categoryId === id
+      );
+      
+      if (deletedIndex !== -1) {
+        const deletedItem = list[deletedIndex];
+
+        list[changeCategoryIndex] = {
+          ...target, combId: deletedItem.combId,
+          categoryId: deletedItem.categoryId,
+          name: deletedItem.name,
+          initialcategoryId: deletedItem.initialcategoryId,
+          status: deletedItem.categoryId === deletedItem.initialcategoryId ? "no update" : "update",
+        };
+        
+        // 復活させたので del 行は削除
+        list.splice(deletedIndex, 1);
+        
+        return { ...prev, categoryList: list };
+      }
+      
+      // 通常の更新
+      list[changeCategoryIndex] = {
+        ...target,
+        categoryId: id,
+        name,
+        status: target.combId ? (id === target.initialcategoryId ? "no update" : "update") : "new",
+      };
+      
+      return { ...prev, categoryList: list };
+    });
+  };
+
+  // ==============================================================
+  // Handlers: UI イベント
+  // ==============================================================
+  // 商品分類変更ボタンクリックイベント
   const onChangeCategory = (originalIndex: number) => {
-    setChangeCategoryFlag(false);
     setChangeCategoryIndex(originalIndex);
     openItemClassDialog();
   };
 
-  const categoryDelButton = (originalIndex: number) => {
+  // 商品分類削除ボタンクリックイベント
+  const onDeleteCategory = (originalIndex: number) => {
     setCategoryChangeFlag(true);
-    setChangeCategoryFlag(false);
 
     setState(prev => {
       const target = prev.categoryList[originalIndex];
@@ -873,20 +655,13 @@ export const ItemDetailPage: React.VFC<ItemDetailPageProps> = () => {
 
   // チェックボックスのチェックが変更された場合、Stateの更新
   const handleCheck = (e: any) => {
-    // 操作したチェックボックスの値
-    // チェックされている場合
-    if (e.target.checked) {
-      // 値の追加
-      setCheckBock({ color: '#ffffff', flag: true });
+    const checked = e.target.checked;
+    setIsVariationEditable(checked);
+
+    if (checked) {
       setbackColor('#EDF2F7');
-      setState(prev => ({
-        ...prev,
-        sales_price: 0
-      }));
+      setState(prev => ({ ...prev, sales_price: 0 }));
     } else {
-      //チェックがはずされた場合
-      //値の削除
-      setCheckBock({ color: '#EDF2F7', flag: false });
       setbackColor('#ffffff');
     }
   };
@@ -1378,6 +1153,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
           required
           autoFocus
         />
+
         <Forms.FormGroupInputText
           labelText="商品名"
           name="name"
@@ -1388,6 +1164,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
           required
           maxLength={401}
         />
+
         <Forms.FormGroupInputText
           labelText="商品名（納品書）"
           name="name_note"
@@ -1398,6 +1175,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
           required
           maxLength={401}
         />
+
         <Forms.FormGroupInputText
           labelText="商品名（ラベル用）"
           name="name_label"
@@ -1407,6 +1185,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
           className="max-w-lg"
           maxLength={401}
         />
+
         <div style={{ display: 'flex', marginTop: '6px' }}>
           <div style={{ width: '790px', display: 'flex' }}>
             <div style={{ display: 'flex', marginTop: '8px', marginLeft: '60px' }}>
@@ -1417,55 +1196,22 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               {state.categoryList
                 .map((item, originalIndex) => ({ ...item, originalIndex }))
                 .filter(item => item.status !== "del")
-                .map((item, index) => {
-                  // 条件付きでボーダーカラーを決定
-                  const borderColor =
-                    changeCategoryFlag && item.originalIndex === changeCategoryIndex
-                      ? "red"   // 重複している行は赤枠
-                      : "#BCC7D4"; // 通常はグレー枠
-                  return (
-                    <div key={item.originalIndex}>
-                      <div style={{ display: "flex" }}>
-                        <input
-                          className="vari-row-input"
-                          style={{
-                            border: `1px solid ${borderColor}`,
-                            backgroundColor: "#EDF2F7",
-                            marginTop: "5px",
-                            width: "512px",
-                          }}
-                          value={item.name}
-                        />
-                        <button
-                          className="btn py-0 px-2"
-                          style={{ marginTop: "5px", marginLeft: '8px' }}
-                          onClick={() => onChangeCategory(item.originalIndex)}
-                        >
-                          ...
-                        </button>
-                        {index >= 1 && (
-                          <button
-                            className="btn-delete"
-                            style={{ marginTop: "5px", marginLeft: "5px", whiteSpace: "nowrap" }}
-                            onClick={() => categoryDelButton(item.originalIndex)}
-                          >
-                            削除
-                          </button>
-                        )}
-                      </div>
-
-                      {/* 重複チェック */}
-                      {changeCategoryFlag && item.originalIndex === changeCategoryIndex && (
-                        <div className="form-error">重複した商品分類です</div>
-                      )}
-                    </div>
-                  );
-                })}
+                .map(item => (
+                  <ItemCategoryRow
+                    key={item.originalIndex}
+                    item={item}
+                    isDuplicate={item.originalIndex === changeCategoryIndex}
+                    onChangeCategory={onChangeCategory}
+                    onDeleteCategory={onDeleteCategory}
+                    showDelete={state.categoryList.filter(i => i.status !== "del").length >= 2}
+                  />
+                ))}
             </div>
           </div>
-          <button className="category-plus-button" onClick={() => addNewCategory()}>＋</button>
+          <button className="category-plus-button" style={{ marginLeft: "10px" }} onClick={() => addNewCategory()}>＋</button>
           <ItemClassificationSearchDialog {...itemClassSearchDialogProps} />
         </div>
+
         <div className="flex flex-wrap max-w-2xl">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
@@ -1479,6 +1225,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               min={0}
             />
           </div>
+
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
               labelText="仕入単価"
@@ -1492,6 +1239,7 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               required
             />
           </div>
+
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
               labelText="サンプル品単価"
@@ -1659,11 +1407,6 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               }}
               value={typeName} onChange={(event) => onChangeTypeName(event)}
             />
-            {/*<Forms.FormInputText
-              name="type_name"
-              value={typeName}
-              className="type_name"
-            />*/}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginLeft: '160px', marginTop: '10px' }}>
             <label style={{ marginRight: '5px' }}>ファイル選択</label>
@@ -1724,70 +1467,39 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
             required
             maxLength={400}
           />
+
           <div style={{ marginTop: '8px' }}>
             <label>バリエーション追加</label>
             <label className="label-optional">任意</label>
             <input style={{ marginTop: '5px' }} type="checkbox" onChange={handleCheck} />
           </div>
           <div style={{ marginLeft: "160px" }}>
-            {/* ヘッダー部分 */}
-            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <label style={{whiteSpace: "nowrap"}}>バリエーション1</label>
-              <label style={{whiteSpace: "nowrap", marginLeft: '60px'}}>バリエーション2</label>
-              <label style={{whiteSpace: "nowrap", marginLeft: '60px'}}>バリエーション3</label>
-              <label style={{whiteSpace: "nowrap", marginLeft: '60px'}}>バリエーション4</label>
-              <label style={{whiteSpace: "nowrap", marginLeft: '55px'}}>品番</label>
-              <label style={{whiteSpace: "nowrap", marginLeft: '100px'}}>販売価格（税込）</label>
-            </div>
-            {/* 入力部分 */}
+            <ItemVariationHeader />
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {state.variItems.map((item, itemIndex) => (
-                <div key={itemIndex} style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-                  {item.map((value, index) =>
-                    index > 0 ? (
-                      <div key={index} style={{ display: 'flex', alignItems: 'center', visibility: value == null ? 'hidden' : 'visible' }}>
-                        <input
-                          className="vari-row-input"
-                          style={{ borderRight: '1px solid #a0aec0', backgroundColor: checkBock.color, marginRight: '5px' }}
-                          disabled={!checkBock.flag}
-                          value={item[index]}
-                          onChange={(event) => onChangeValue(event, itemIndex, index)}
-                          onFocus={() => handleFocus(item)}
-                          onBlur={() => outForcus(item)}
-                        />
-                        {index < 5 && (
-                          <button
-                            disabled={!checkBock.flag}
-                            style={{ backgroundColor: checkBock.color }}
-                            className="plus-button"
-                            onClick={() => addNewVari(itemIndex, index)}
-                          >
-                            ＋
-                          </button>
-                        )}
-                      </div>
-                    ) : null
-                  )}
-                  {state.variItems.length > 1 && (
-                    <button
-                      className="btn-delete"
-                      style={{ height: '26px', padding: '0 5px', whiteSpace: "nowrap" }}
-                      onClick={() => delButton(itemIndex)}
-                      disabled={isDisabled}
-                    >
-                      削除
-                    </button>
-                  )}
-                </div>
+                <ItemVariationRow
+                  key={itemIndex}
+                  item={item}
+                  itemIndex={itemIndex}
+                  isEditable={isVariationEditable}
+                  onChangeValue={onChangeValue}
+                  onAdd={addNewVari}
+                  onDelete={delButton}
+                  onFocus={handleFocus}
+                  onBlur={outForcus}
+                  showDelete={state.variItems.length > 1}
+                  isDisabled={isDisabled}
+                />
               ))}
             </div>
-            
             {errors?.variation && (
               <div style={{ color: 'red', marginTop: '5px' }}>
                 {errors.variation}
               </div>
             )}
           </div>
+
           <div>
             <Forms.FormGroupTextarea
               labelText="商品説明"
@@ -1812,7 +1524,8 @@ const uploadImages = async (imageList: any[][] | null, document?: File): Promise
               <label style={{ marginTop: '5px' }} className="label-required">必須</label>
               <input type="number" className="input w-full text-right max-w-8"
                 value={state.sales_price}
-                disabled={checkBock.flag} style={{ backgroundColor: backColor }}
+                disabled={isVariationEditable}
+                style={{ backgroundColor: backColor }}
                 onChange={(event) => salesPriceChange(event.target.value)}
               />
             </div>

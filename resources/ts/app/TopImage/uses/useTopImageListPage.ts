@@ -1,6 +1,7 @@
 // resources/ts/app/TopImage/uses/useTopImageListPage.ts
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { appAlert } from '@/components';
 import { TopImage as BaseTopImage } from '@/types/TopImage';
 
 export type TopImageRow = BaseTopImage & {
@@ -126,7 +127,7 @@ export const useTopImageListPage = () => {
   };
 
   // 登録
-  const handlePublish = async () => {
+  const handleSave = async () => {
     if (!previewItemsState.length) return;
     setIsPublishing(true);
 
@@ -145,6 +146,8 @@ export const useTopImageListPage = () => {
       await fetchSlideItems();
       setStagedItems([]);
       setMarkedForDelete([]);
+
+      appAlert('保存しました。');
     } finally {
       setIsPublishing(false);
     }
@@ -181,7 +184,7 @@ export const useTopImageListPage = () => {
     removeAt,
     toggleMarkDelete,
     togglePreviewEnabled,
-    handlePublish,
+    handleSave,
 
     sliderSettings,
   };
