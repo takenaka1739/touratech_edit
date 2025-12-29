@@ -36,8 +36,6 @@ export const CouponRuleForm: React.FC<Props> = ({
 }) => {
 
   useEffect(() => {
-    console.log('rule');
-    console.log(rule);
     updateRuleError(index, 'condition_type', '');
   }, [rule.condition_type]);
 
@@ -154,6 +152,7 @@ export const CouponRuleForm: React.FC<Props> = ({
                 disabled={isSpecialItem}
               />
               <Forms.FormGroupInputText
+                error={errors?.rules?.[index]?.condition_value}
                 labelText="金額"
                 name={`rules[${index}].condition_value`}
                 value={rule.condition_value}
@@ -163,11 +162,6 @@ export const CouponRuleForm: React.FC<Props> = ({
                 disabled={isSpecialItem}
               />
             </div>
-            {errors?.rules?.[index]?.condition_value && (
-              <div className="form-error ml-40">
-                {errors.rules[index].condition_value}
-              </div>
-            )}
           </div>
         );
       case 'all_items':
@@ -176,6 +170,7 @@ export const CouponRuleForm: React.FC<Props> = ({
         return (
           <div>
             <Forms.FormGroupTextarea
+              error={errors?.rules?.[index]?.condition_value}
               labelText="条件値"
               name={`rules[${index}].condition_value`}
               value={rule.condition_value}
@@ -183,11 +178,6 @@ export const CouponRuleForm: React.FC<Props> = ({
               required
               disabled={isSpecialItem}
             />
-            {errors?.rules?.[index]?.condition_value && (
-              <div className="form-error ml-40">
-                {errors.rules[index].condition_value}
-              </div>
-            )}
           </div>
         );
     }
@@ -196,6 +186,7 @@ export const CouponRuleForm: React.FC<Props> = ({
   return (
     <div className="p-3 border rounded mb-4">
       <Forms.FormGroupSelect
+        error={errors?.rules?.[index]?.condition_type}
         labelText="条件タイプ"
         name={`rules[${index}].condition_type`}
         value={rule.condition_type}
@@ -209,15 +200,11 @@ export const CouponRuleForm: React.FC<Props> = ({
         groupClassName="mb-2"
         disabled={isSpecialItem} //  benefit_typeがspecial_itemならcondition_typeのセレクトはdisable
       />
-      {errors?.rules?.[index] && (
-        <div className="form-error ml-40">
-          {errors.rules[index].condition_type}
-        </div>
-      )}
 
       {renderConditionInput()}
 
       <Forms.FormGroupSelect
+        error={errors?.rules?.[index]?.benefit_type}
         labelText="特典タイプ"
         name={`rules[${index}].benefit_type`}
         value={rule.benefit_type}
@@ -230,11 +217,6 @@ export const CouponRuleForm: React.FC<Props> = ({
         ]}
         required
       />
-      {errors?.rules?.[index] && (
-        <div className="form-error ml-40">
-          {errors.rules[index].benefit_type}
-        </div>
-      )}
 
       {rule.benefit_type === 'discount' && (
         <div className="mb-2">
@@ -256,6 +238,7 @@ export const CouponRuleForm: React.FC<Props> = ({
           />
 
           <Forms.FormGroupInputText
+            error={errors?.rules?.[index]?.benefit_value}
             labelText="割引値"
             name={`rules[${index}].benefit_value.value`}
             value={rule.benefit_value?.value ?? ''}
@@ -267,16 +250,12 @@ export const CouponRuleForm: React.FC<Props> = ({
             }}
             required
           />
-          {errors?.rules?.[index] && (
-            <div className="form-error ml-40">
-              {errors.rules[index].benefit_value?.value}
-            </div>
-          )}
         </div>
       )}
 
       {rule.benefit_type === 'free_item' && (
         <Forms.FormGroupTextarea
+          error={errors?.rules?.[index]?.benefit_value}
           labelText="おまけ商品内容"
           name={`rules[${index}].benefit_value.value`}
           value={rule.benefit_value?.value ?? ''}
@@ -288,11 +267,6 @@ export const CouponRuleForm: React.FC<Props> = ({
           }}
           required
         />
-      )}
-      {errors?.rules?.[index] && (
-        <div className="form-error ml-40">
-          {errors.rules[index].benefit_value}
-        </div>
       )}
 
       {rule.benefit_type === 'free_shipping' && (

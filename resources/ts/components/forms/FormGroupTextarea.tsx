@@ -23,7 +23,7 @@ export const FormGroupTextarea: React.VFC<FormGroupTextareaProps> = ({
       removeOptionalLabel={removeOptionalLabel}
       required={rest.required}
     >
-      <FormTextarea {...rest} />
+      <FormTextarea error={error} {...rest} />
     </FormGroup>
   );
 };

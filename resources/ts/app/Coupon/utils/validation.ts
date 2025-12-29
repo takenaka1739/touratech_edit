@@ -75,9 +75,7 @@ export const validateItemState = (state: any): Record<string, any> => {
     }
 
     if(rule.condition_type === 'price'){
-      if (!Array.isArray(rule.condition_value) || rule.condition_value.length === 0) {
-        errors.rules[index].condition_value = '金額を入力してください';
-      }
+      if (!rule.condition_value) errors.rules[index].condition_value = '金額を入力してください';
     }
   });
 

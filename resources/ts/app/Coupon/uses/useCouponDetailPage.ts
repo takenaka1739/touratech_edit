@@ -63,9 +63,6 @@ export const useCouponDetailPage = (slug: string) => {
   const onClickSave = useCallback(async () => {
 
   const validationErrors = validateItemState(state);
-  console.log('validationErrors');
-  console.log(validationErrors);
-    
     try {
       const fixedState = {
         ...state,

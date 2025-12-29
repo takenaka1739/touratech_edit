@@ -43,9 +43,8 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     onOpenItemClassificationModal,
   } = useCouponDetailPage(slug);
 
-  const updateRuleError = (ruleIndex: number, field: string, value: string) => {
+  const updateRuleError = (ruleIndex: number, field: string) => {
     setErrors((prev: any) => {
-      console.log(value);
       const next = { ...prev };
 
       if (!next.rules) next.rules = [];
@@ -68,6 +67,9 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     const parsedIds = selectedIds.filter(n => !isNaN(n)).map(n => n.toString());
     itemModal.open(parsedIds, ruleIndex);
   };
+
+  console.log('errors');
+  console.log(errors);
 
   return (
     <PageWrapper
