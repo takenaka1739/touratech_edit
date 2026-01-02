@@ -1,5 +1,4 @@
-// resources/ts/app/TopImage/pages/TopImageListPage.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { PageWrapper } from '@/components';
 import { ImageSelectModal } from '../components/ImageSelectModal';
 import Slider from 'react-slick';
@@ -30,11 +29,34 @@ const TopImageListPage: React.FC = () => {
 
     sliderSettings,
     setPreviewItemsState,
+
+    isDirty,
   } = useTopImageListPage();
 
+  // 初回ロード
   useEffect(() => {
     fetchSlideItems();
   }, []);
+
+  // URL 入力変更
+  const handleUrlChange = useCallback(
+    (i: number, v: string, p: any) => {
+      setPreviewItemsState((prev) =>
+        prev.map((item, idx2) =>
+          idx2 === i ? { ...item, localUrl: v } : item
+        )
+      );
+
+      if (!p.persisted) {
+        setStagedItems((prev) =>
+          prev.map((s) =>
+            s.image_id === p.image_id ? { ...s, url: v } : s
+          )
+        );
+      }
+    },
+    [setPreviewItemsState, setStagedItems]
+  );
 
   return (
     <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
@@ -44,9 +66,10 @@ const TopImageListPage: React.FC = () => {
         </button>
 
         <div className="flex gap-3">
+          {/* 保存ボタンは isDirty のときだけ有効 */}
           <button
             className="btn btn-primary"
-            disabled={!previewItemsState.length || isPublishing}
+            disabled={!isDirty || isPublishing}
             onClick={handleSave}
           >
             保存
@@ -116,31 +139,13 @@ const TopImageListPage: React.FC = () => {
                         {p.persisted ? '登録済み' : '(新規プレビュー)'}
                       </div>
 
-                      {/* URL 入力（IME 完全対応版） */}
+                      {/* URL 入力 */}
                       <div className="mt-2">
                         <input
                           className="input w-full"
                           placeholder="リンク先URL（任意）"
-                          value={p.localUrl ?? ''}   // ← IME 対応：localUrl を使う
-                          onChange={(e) => {
-                            const v = e.target.value;
-
-                            // localUrl を更新（IME 未確定文字が消えない）
-                            setPreviewItemsState((prev) =>
-                              prev.map((item, idx2) =>
-                                idx2 === i ? { ...item, localUrl: v } : item
-                              )
-                            );
-
-                            // 新規の場合は stagedItems にも反映
-                            if (!p.persisted) {
-                              setStagedItems((prev) =>
-                                prev.map((s) =>
-                                  s.image_id === p.image_id ? { ...s, url: v } : s
-                                )
-                              );
-                            }
-                          }}
+                          value={p.localUrl ?? ''}
+                          onChange={(e) => handleUrlChange(i, e.target.value, p)}
                         />
                       </div>
 
@@ -157,7 +162,7 @@ const TopImageListPage: React.FC = () => {
                           onClick={() => togglePreviewEnabled(i)}
                           disabled={isBusy}
                         >
-                          {isBusy ? '更新中…' : p.is_enabled ? '表示中' : '非表示'}
+                          {p.is_published ? '表示中' : '非表示'}
                         </button>
                       </div>
 
