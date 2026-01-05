@@ -9,8 +9,8 @@
  * @param address2 - 住所2
  * @param tel - TEL
  * @param fax - FAX
- * @param email_pc - email(pc)
- * @param email_phone - email(phone)
+ * @param email_main - email(main)
+ * @param email_sub - email(sub)
  * @param fraction - 端数処理 1:切り捨て 2:切り上げ 3:四捨五入
  * @param corporate_class - 支払方法 1:現金、2:掛売、3:宅配代引、4:銀行振込、5:クレジットカード
  * @param bank_class - 口座選択 1:銀行1、2:銀行2
@@ -28,8 +28,8 @@ export interface Customer {
   tel: string | undefined;
   fax: string | undefined;
   //email: string | undefined;
-  email_pc: string | undefined;
-  email_phone: string | undefined;
+  email_main: string | undefined;
+  email_sub: string | undefined;
   fraction: number | undefined;
   corporate_class: number | undefined;
   bank_class: number | undefined;

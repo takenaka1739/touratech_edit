@@ -86,8 +86,8 @@ class CustomerService
           bank_class,
           cutoff_date,
           notice AS remarks,
-          email_pc,
-          email_phone
+          email_main,
+          email_sub
       ")->find($id);
 
       if (!$customer) {
@@ -122,8 +122,8 @@ class CustomerService
       // 既定値があるが念のため補完 
       $p['rate']         = $p['rate']           ?? 100;
       $p['fraction']     = $p['fraction']       ?? 3;
-      $p['email_pc']     = $p['email_pc']       ?? '';
-      $p['email_phone']     = $p['email_phone'] ?? '';
+      $p['email_main']   = $p['email_main']       ?? '';
+      $p['email_sub']    = $p['email_sub'] ?? '';
 
       Customer::create($p);
     });
@@ -195,8 +195,8 @@ class CustomerService
       //if ($data->has('email')) {
       //  $m->email_pc = $data->get('email', $m->email_pc);
       //}
-      $m->email_pc = $data->get('email_pc', $m->email_pc);
-      $m->email_phone  = $data->get('email_phone', $m->email_phone );
+      $m->email_main = $data->get('email_main', $m->email_main);
+      $m->email_sub  = $data->get('email_sub', $m->email_sub);
 
       // 備考：リクエスト側は remarks、DB カラムは notice
       if ($data->has('remarks')) {
@@ -254,8 +254,8 @@ class CustomerService
         'rate'           => (int)$d->get('rate', 100),
         'fraction'       => (int)$d->get('fraction', 3),
         // NULL許容のものはそのまま
-        'email_pc'       => $d->get('email_pc'),
-        'email_phone'    => $d->get('email_phone'),
+        'email_main'     => $d->get('email_main'),
+        'email_sub'      => $d->get('email_sub'),
         'tel_phone'      => $d->get('tel_phone'),
         'birthday'       => $d->get('birthday'),
         'occupation'     => $d->get('occupation'),
@@ -328,8 +328,8 @@ class CustomerService
             ->orWhere('number', 'like', '%' . escape_like($key) . '%')
             ->orWhere('tel', 'like', '%' . escape_like($key) . '%')
             ->orWhere('fax', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('email_pc', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('email_phone', 'like', '%' . escape_like($key) . '%');
+            ->orWhere('email_main', 'like', '%' . escape_like($key) . '%')
+            ->orWhere('email_sub', 'like', '%' . escape_like($key) . '%');
         });
       }
     }
