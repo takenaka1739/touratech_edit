@@ -64,6 +64,41 @@ class InvoiceService
     $cutoff_date = $cond->get('c_cutoff_date');
 
     DB::transaction(function () use ($invoice_month, $cutoff_date) {
+
+      /**
+       * 0) 既存の当月請求データ（必要なら締日指定分）に紐づく link を先に消す
+       *    ※現行DBは invoice_id にFKが無いので、ここで消さないと「請求済み」が残る
+       */
+      $invoiceIdsQuery = Invoice::query()
+        ->where('invoice_month', $invoice_month);
+
+      if ($cutoff_date) {
+        $invoiceIdsQuery->join('t_customers', 't_customers.id', '=', 't_invoices.customer_id')
+          ->where('t_customers.cutoff_date', '=', $cutoff_date);
+      }
+
+      // pluck は join が入っても t_invoices.id を取れるよう明示
+      $invoiceIds = $invoiceIdsQuery->pluck('t_invoices.id');
+
+      if ($invoiceIds->isNotEmpty()) {
+        // 売上↔請求 link を削除
+        DB::table('t_link_sales_invoice')
+          ->whereIn('invoice_id', $invoiceIds)
+          ->delete();
+
+        // 入金↔請求 link を削除（存在する場合のみ）
+        if (Schema::hasTable('t_link_receipt_invoice')) {
+          DB::table('t_link_receipt_invoice')
+            ->whereIn('invoice_id', $invoiceIds)
+            ->delete();
+        }
+      }
+
+      /**
+       * 1) 既存の当月請求データを削除
+       *    ※Invoice の delete で t_invoice_details が消えない設計なら、
+       *      t_invoice_details 側も別途削除が必要（ここでは既存仕様に合わせて Invoice delete に寄せる）
+       */
       if ($cutoff_date) {
         Invoice::join('t_customers', 't_customers.id', '=', 't_invoices.customer_id')
           ->where('t_invoices.invoice_month', $invoice_month)
@@ -166,6 +201,24 @@ class InvoiceService
     $invoice_month = $cond->get('c_invoice_month');
 
     DB::transaction(function () use ($invoice_month) {
+      // 1) 当月 invoice_id を取得
+      $invoiceIds = Invoice::where('invoice_month', $invoice_month)->pluck('id');
+
+      if ($invoiceIds->isNotEmpty()) {
+        // 2) 売上↔請求 link を削除
+        DB::table('t_link_sales_invoice')
+          ->whereIn('invoice_id', $invoiceIds)
+          ->delete();
+
+        // 3) 入金↔請求 link を削除（存在する場合のみ）
+        if (Schema::hasTable('t_link_receipt_invoice')) {
+          DB::table('t_link_receipt_invoice')
+            ->whereIn('invoice_id', $invoiceIds)
+            ->delete();
+        }
+      }
+
+      // 4) 請求データを削除
       Invoice::where('invoice_month', $invoice_month)->delete();
     });
   }
