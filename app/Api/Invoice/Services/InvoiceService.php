@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -84,6 +85,14 @@ class InvoiceService
 
       foreach ($Ids as $id) {
         $customer = $customers->where('id', $id)->first();
+        if (!$customer) {
+          Log::warning('[InvoiceService] customer not found', [
+            'customer_id' => $id,
+            'invoice_month' => $invoice_month,
+          ]);
+          continue;
+        }
+
         $sales = $sales_list->where('customer_id', $id);
         $receipts = $receipts_list->where('customer_id', $id);
         $pre_invoices = $pre_invoices_list->where('customer_id', $id)->first();
@@ -103,16 +112,19 @@ class InvoiceService
         $pre_amount = $pre_invoices ? $pre_invoices->total_invoice : 0;
         $carried_forward = $pre_amount - $total_receipt;
 
+        // ★ 住所の NULL を回避
+        [$zip, $address1, $address2] = $this->resolveCustomerAddress($customer);
+
         $m = Invoice::create([
           'invoice_date' => $invoice_date,
           'invoice_month' => $invoice_month,
           'customer_id' => $id,
           'customer_name' => $customer->name,
-          'zip_code' => $customer->zip_code,
-          'address1' => $customer->address1,
-          'address2' => $customer->address2,
-          'tel' => $customer->tel,
-          'fax' => $customer->fax,
+          'zip_code' => $zip,
+          'address1' => $address1,
+          'address2' => $address2,
+          'tel' => (string)($customer->tel ?? ''),
+          'fax' => (string)($customer->fax ?? ''),
           'user_id' => Auth::user()->id,
           'pre_amount' => $pre_amount,
           'total_receipt' => $total_receipt,
@@ -187,9 +199,9 @@ class InvoiceService
       'total_amount',
       'total_tax',
       'total_invoice',
-      // 'link_sales_invoice.sales_id',
+      // 'link_sales_invoice.sale_id',
     ]);
-      // ->leftJoin('t_link_sales_invoice', 't_link_sales_invoice.invoice_id', '=', 't_invoices.id');
+    // ->leftJoin('t_link_sales_invoice', 't_link_sales_invoice.invoice_id', '=', 't_invoices.id');
     $query = $this->setCondition($query, $cond);
     $rows = $query->whereIn('id', $selected)
       ->orderBy('invoice_date', 'desc')
@@ -284,7 +296,7 @@ class InvoiceService
           ->whereRaw('t_sales.customer_id = t_customers.id')
           ->where('t_sales.sales_at', '>=', $tmp_dt);
       })
-      ->orWhere(function($query) use ($tmp_dt) {
+      ->orWhere(function ($query) use ($tmp_dt) {
         $query->whereExists(function ($query) use ($tmp_dt) {
           $query->select(DB::raw(1))
             ->from('t_receipts')
@@ -342,7 +354,7 @@ class InvoiceService
     return $data;
   }
 
-    /**
+  /**
    * 入金データを取得する
    *
    * @param string $invoice_month 請求月
@@ -372,15 +384,15 @@ class InvoiceService
   private function getLatestInvoices(string $invoice_month)
   {
     $rows = DB::table('t_invoices')
-    ->join(DB::raw("(SELECT b.customer_id, MAX(b.invoice_month) AS invoice_month FROM t_invoices b WHERE b.invoice_month < '" . $invoice_month . "' GROUP BY b.customer_id) AS x"), function ($join) {
-      $join->on('x.invoice_month', "=", 't_invoices.invoice_month')
-        ->on('x.customer_id', "=", 't_invoices.customer_id');
-    })
-    ->select(
-      't_invoices.customer_id',
-      'total_invoice'
-    )
-    ->get();
+      ->join(DB::raw("(SELECT b.customer_id, MAX(b.invoice_month) AS invoice_month FROM t_invoices b WHERE b.invoice_month < '" . $invoice_month . "' GROUP BY b.customer_id) AS x"), function ($join) {
+        $join->on('x.invoice_month', "=", 't_invoices.invoice_month')
+          ->on('x.customer_id', "=", 't_invoices.customer_id');
+      })
+      ->select(
+        't_invoices.customer_id',
+        'total_invoice'
+      )
+      ->get();
 
     return $rows;
   }
@@ -419,7 +431,7 @@ class InvoiceService
           'detail_kind' => 1,
           'item_kind' => $d->item_kind,
           'item_id' => $d->item_id,
-          'item_name' => $d->item_name . ' ' . $d->parent_item_name,
+          'item_name' => trim(($d->item_name ?? '') . ' ' . ($d->parent_item_name ?? '')),
           'unit_price' => $d->unit_price,
           'quantity' => $d->quantity,
           'amount' => $d->amount,
@@ -465,7 +477,7 @@ class InvoiceService
         'item_name' => '値引額',
         'unit_price' => null,
         'quantity' => null,
-        'amount' => $s->discount * -1,
+        'amount' => ($s->discount ?? 0) * -1,
         'sales_tax_rate' => $sales_tax_rate,
         'sales_tax' => get_sales_tax2($s->discount ?? 0, $sales_tax_rate, 1) * -1,
       ];
@@ -509,16 +521,16 @@ class InvoiceService
   private function insertSalesInvoice($sales, int $invoice_id)
   {
     $data = [];
-    foreach ($sales as $s)
-    {
+    foreach ($sales as $s) {
       $data[] = [
         'sales_id' => $s->id,
         'invoice_id' => $invoice_id,
       ];
     }
-    DB::table('t_link_sales_invoice')->insert($data);
+    if (!empty($data)) {
+      DB::table('t_link_sales_invoice')->insert($data);
+    }
   }
-
 
   /**
    * 入金請求連結データを登録する
@@ -529,38 +541,49 @@ class InvoiceService
   private function insertReceiptInvoice($receipts, int $invoice_id)
   {
     $data = [];
-    foreach ($receipts as $r)
-    {
+    foreach ($receipts as $r) {
       $data[] = [
         'receipt_id' => $r->id,
         'invoice_id' => $invoice_id,
       ];
     }
-    DB::table('t_link_receipt_invoice')->insert($data);
+    if (!empty($data)) {
+      DB::table('t_link_receipt_invoice')->insert($data);
+    }
   }
 
   /**
    * 売上明細を取得する
-   * 
+   *
    * @param int $salesId
    */
   private function getSalesDetails(int $salesId)
   {
-    $rows = SalesDetail::where('t_sale_details.sales_id', '=', $salesId)
-      ->leftJoin('t_sale_details as x', 'x.id', '=', 't_sale_details.parent_id')
-      ->select([
-        't_sale_details.*',
-        'x.item_name as parent_item_name'
-      ])
-      ->where('t_sale_details.item_kind', '<>', 2)
-      ->get();
+    // parent_id が無い環境でも落とさない（まずは明細を取る）
+    $hasParentId = Schema::hasColumn('t_sale_details', 'parent_id');
 
-    return $rows;
+    $q = DB::table('t_sale_details as d')
+      ->leftJoin('m_items as mi', 'mi.id', '=', 'd.item_id')
+      ->select([
+        'd.*',
+        DB::raw('mi.name as item_name'),
+        DB::raw("'' as parent_item_name"),
+      ])
+      ->where('d.sale_id', '=', $salesId)
+      ->where('d.item_kind', '<>', 2);
+
+    if ($hasParentId) {
+      $q->leftJoin('t_sale_details as x', 'x.id', '=', 'd.parent_id')
+        ->leftJoin('m_items as mi_parent', 'mi_parent.id', '=', 'x.item_id')
+        ->addSelect(DB::raw('mi_parent.name as parent_item_name'));
+    }
+
+    return $q->get();
   }
 
   /**
    * 請求残がある請求データを作成する
-   * 
+   *
    * @param string $invoice_month 請求月
    */
   private function createInvoiceFromRemainingBill($invoice_month, $customers)
@@ -569,19 +592,29 @@ class InvoiceService
 
     foreach ($rows as $row) {
       $customer = $customers->where('id', $row->customer_id)->first();
+      if (!$customer) {
+        Log::warning('[InvoiceService] customer not found (remaining bill)', [
+          'customer_id' => $row->customer_id,
+          'invoice_month' => $invoice_month,
+        ]);
+        continue;
+      }
 
       $invoice_date = get_cutoff_date($invoice_month, $customer->cutoff_date);
-      
+
+      // ★ 住所の NULL を回避
+      [$zip, $address1, $address2] = $this->resolveCustomerAddress($customer);
+
       Invoice::create([
         'invoice_date' => $invoice_date,
         'invoice_month' => $invoice_month,
         'customer_id' => $row->customer_id,
         'customer_name' => $customer->name,
-        'zip_code' => $customer->zip_code,
-        'address1' => $customer->address1,
-        'address2' => $customer->address2,
-        'tel' => $customer->tel,
-        'fax' => $customer->fax,
+        'zip_code' => $zip,
+        'address1' => $address1,
+        'address2' => $address2,
+        'tel' => (string)($customer->tel ?? ''),
+        'fax' => (string)($customer->fax ?? ''),
         'user_id' => Auth::user()->id,
         'pre_amount' => $row->total_invoice,
         'total_invoice' => $row->total_invoice,
@@ -591,7 +624,7 @@ class InvoiceService
 
   /**
    * 請求残があるデータを取得する
-   * 
+   *
    * @param string $invoice_month 請求月
    */
   private function getInvoiceFromRemainingBill($invoice_month)
@@ -613,5 +646,33 @@ class InvoiceService
       })
       ->where('total_invoice', '<>', 0)
       ->get();
+  }
+
+  /**
+   * 住所を NOT NULL で確実に作る
+   */
+  private function resolveCustomerAddress(Customer $customer): array
+  {
+    $zip = (string)($customer->zip_code ?? '');
+
+    $address1 = $customer->address1 ?? null;
+    $address2 = $customer->address2 ?? null;
+
+    if (empty($address1)) {
+      $pref = $customer->prefectures ?? '';
+      $muni = $customer->municipality ?? '';
+      $num = $customer->number ?? '';
+
+      $built1 = trim($pref . $muni);
+      $built2 = trim($num);
+
+      $address1 = $built1 !== '' ? $built1 : '';
+      $address2 = $built2 !== '' ? $built2 : ($address2 ?? '');
+    }
+
+    $address1 = (string)($address1 ?? '');
+    $address2 = (string)($address2 ?? '');
+
+    return [$zip, $address1, $address2];
   }
 }
