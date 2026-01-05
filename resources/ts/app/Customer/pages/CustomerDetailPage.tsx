@@ -36,8 +36,8 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     address2: '',
     tel: '',
     fax: '',
-    email_pc: '',
-    email_phone: '',
+    email_main: '',
+    email_sub: '',
     fraction: 3,
     corporate_class: 1,
     bank_class: 1,
@@ -197,20 +197,20 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
           </div>
         </div>
         <Forms.FormGroupInputText
-          labelText="EMAIL(pc)"
-          name="email_pc"
-          value={state.email_pc}
-          error={errors?.email_pc}
+          labelText="EMAIL(MAIN)"
+          name="email_main"
+          value={state.email_main}
+          error={errors?.email_main}
           onChange={onChange}
           className="max-w-lg"
           maxLength={128}
           required
         />
         <Forms.FormGroupInputText
-          labelText="EMAIL(phone)"
-          name="email_phone"
-          value={state.email_phone}
-          error={errors?.email_phone}
+          labelText="EMAIL(SUB)"
+          name="email_sub"
+          value={state.email_sub}
+          error={errors?.email_sub}
           onChange={onChange}
           className="max-w-lg"
           maxLength={128}
