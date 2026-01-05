@@ -5,8 +5,33 @@ namespace App\Api\Sales\Services\Concerns;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * SalesDetailHydrator
+ *
+ * 目的:
+ * - 売上詳細取得（SalesService::get）で必要となる「画面表示用の補完処理」を集約する。
+ * - DBの実カラムと、旧UI（SalesDetailPage.tsx）が参照するキーの差異を吸収する。
+ *
+ * この trait の役割:
+ * 1) 得意先（customers）由来の補完
+ *    - 売上側の zip_code/address/tel 等が空の場合のみ customers から補完する
+ *    - corporate_class は補完しない（payment_id から復元する方針のため）
+ * 2) 宛先（ship_to_*）の別名キー補完（今回の不具合対応）
+ *    - DBは ship_to_* に保存しているが、旧UIは name/zip_code/address1/address2/tel を参照する
+ *    - そのため「空のときだけ」ship_to_* → name/zip_code/address1/address2/tel へ詰め替える
+ * 3) 明細取得（getDetails / getDetailsByReceiveId）
+ */
 trait SalesDetailHydrator
 {
+    /**
+     * 得意先（customer）由来の補完（旧版互換）
+     *
+     * 補完対象:
+     * - zip_code / address1 / address2 / fax / tel が空のときのみ customers から補完する
+     *
+     * 方針:
+     * - corporate_class は補完しない（payment_id から復元する運用）
+     */
     private function hydrateCustomerFieldsForEdit(array $data): array
     {
         $customerId = (int)($data['customer_id'] ?? 0);
@@ -79,6 +104,53 @@ trait SalesDetailHydrator
             } else {
                 $num = property_exists($c, 'number') ? (string)($c->number ?? '') : '';
                 if ($num !== '') $data['address2'] = $num;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * 【今回の不具合対応】
+     * ship_to_* → 旧UIキー（name/zip_code/address1/address2/tel）の補完
+     *
+     * 背景:
+     * - t_sales は宛先を ship_to_* に保存している
+     *   (ship_to_name, ship_to_zip_code, ship_to_address1, ship_to_address2, ship_to_tel)
+     * - しかし SalesDetailPage.tsx は name/zip_code/address1/address2/tel を参照する
+     * - そのため、編集画面で値が表示されない（DBには入っているのにUIが見ていない）問題が発生する
+     *
+     * 方針:
+     * - 「表示用の詰め替え」なので、DBの実値（ship_to_*）がある場合に限り、
+     *   旧UIキーが空なら補完する（ユーザーが旧キーで上書き編集しているケースを尊重する）
+     * - t_sales に ship_to_* が存在しない環境では何もしない（安全側）
+     */
+    private function hydrateShipToAliasesForEdit(array $data): array
+    {
+        $map = [
+            'ship_to_name'      => 'name',
+            'ship_to_zip_code'  => 'zip_code',
+            'ship_to_address1'  => 'address1',
+            'ship_to_address2'  => 'address2',
+            'ship_to_tel'       => 'tel',
+        ];
+
+        foreach ($map as $shipCol => $uiKey) {
+            // ship_to_* カラムが無いなら何もしない（環境差吸収）
+            if (!$this->hasColumnSafe('t_sales', $shipCol)) {
+                continue;
+            }
+
+            $shipVal = $data[$shipCol] ?? null;
+            if ($shipVal === null || $shipVal === '') {
+                continue; // ship_to 側が空なら補完できない
+            }
+
+            $uiVal = $data[$uiKey] ?? null;
+
+            // 旧UIキーが空のときだけ ship_to_* を詰め替え
+            if ($uiVal === null || $uiVal === '') {
+                $data[$uiKey] = $shipVal;
             }
         }
 

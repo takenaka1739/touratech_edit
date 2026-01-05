@@ -33,6 +33,11 @@ class Sales extends Model
         'remarks',
         'send_flg',
         'is_send',
+        'ship_to_name',
+        'ship_to_zip_code',
+        'ship_to_address1',
+        'ship_to_address2',
+        'ship_to_tel',
     ];
 
     protected $hidden = [

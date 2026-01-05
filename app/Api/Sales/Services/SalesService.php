@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-
 /**
  * 売上データサービス（旧版挙動を維持したまま現行テーブルに合わせた版）
  *
@@ -85,6 +84,12 @@ class SalesService
 
     /**
      * 詳細データを取得（旧版 get と同等に: details と receive_order_id を含む）
+     *
+     * 【今回の不具合対応ポイント】
+     * - t_sales に「ship_to_*」で値が入っていても、フロント（SalesDetailPage.tsx）は
+     *   name / zip_code / address1 / address2 / tel を表示に使っている。
+     * - そのため、DB上は値があっても、返却payloadで name 等に詰め替えない限り表示されない。
+     * - ここでは「表示用の互換キー」として、ship_to_* → name等へ補完する。
      */
     public function get(int $sales_id): array
     {
@@ -100,6 +105,7 @@ class SalesService
                 DB::raw("t_sales.{$salesDateCol} as sales_date"),
             ]);
 
+        // customer / user join（環境差吸収）
         $q = $this->applyDetailJoins($q);
 
         $row = $q->where('t_sales.id', $sales_id)->first();
@@ -107,19 +113,35 @@ class SalesService
 
         $data = $row->toArray();
 
-        // 住所などを補完（corporate_classはcustomerから補完しない方針のまま）
+        /**
+         * 得意先由来の補完（旧版互換）
+         * - zip_code / address / tel 等が空のときに customers から補完する
+         * - corporate_class は補完しない方針
+         */
         $data = $this->hydrateCustomerFieldsForEdit($data);
 
+        /**
+         * 【今回の修正】ship_to_* → 旧UIキーの補完
+         * - SalesDetailPage.tsx は name/zip_code/address1/address2/tel を参照するため、
+         *   ship_to_* に入っている値を表示用に詰め替える（空のときだけ）。
+         */
+        $data = $this->hydrateShipToAliasesForEdit($data);
+
+        /**
+         * corporate_class は t_sales に保存されない前提（payment_id から復元）
+         * - フロントのラジオは corporate_class を見るため、payment_id から再推定して入れる
+         */
         if ($this->hasColumnSafe('t_sales', 'payment_id')) {
             $pid = (int)($data['payment_id'] ?? 0);
             if ($pid > 0) {
                 $cc = $this->resolveCorporateClassByPaymentId($pid);
                 if ($cc !== null) {
-                    $data['corporate_class'] = $cc; // ← フロントのラジオはこれを見る
+                    $data['corporate_class'] = $cc;
                 }
             }
         }
 
+        // 明細
         $data['details'] = $this->getDetails($sales_id);
 
         return $data;
@@ -135,21 +157,19 @@ class SalesService
 
         $salesDateCol = $this->salesDateColumn();
 
-        // ★明細モーダルの税計算に必要（CommonDataDetailDialog が salesTaxRate を参照する）
-        // m_configs の sales_tax_rate を優先して取得。取得できない場合は 10 を保険値とする。
+        // 明細モーダルの税計算に必要（CommonDataDetailDialog が salesTaxRate を参照）
         $salesTaxRate = $this->resolveSalesTaxRate();
 
         return [
             $salesDateCol     => $today,
-            'sales_date'      => $today, // 旧画面が sales_date を参照している可能性を残す
+            'sales_date'      => $today,
             'shipping_amount' => null,
             'fee'             => null,
             'discount'        => 0,
             'total_amount'    => null,
             'sales_tax_rate'  => $salesTaxRate,
 
-            // ★要望: 消費税算出は切り捨て（1:切捨, 2:四捨五入, 3:切上）
-            // 売上の新規では 1 を明示しておく（見積/受注と切り離して売上だけ切捨にしたい場合）
+            // 消費税算出は切り捨て（1:切捨, 2:四捨五入, 3:切上）
             'fraction'        => 1,
 
             'user_id'         => $user?->id,
@@ -168,16 +188,16 @@ class SalesService
             return ['success' => false, 'errors' => ['receive_order_id' => '受注が見つかりません']];
         }
 
-        // ★売上画面側で必ず税率を持つ（モーダル計算で使う）
+        // 売上画面側で必ず税率を持つ（モーダル計算で使う）
         $salesTaxRate = (float)($r->sales_tax_rate ?? 0);
         if ($salesTaxRate <= 0) {
             $salesTaxRate = $this->resolveSalesTaxRate();
         }
 
-        // 受注→売上に載せる明細候補（旧版は sales_completed != 1 かつ 在庫>0 など）
+        // 受注→売上に載せる明細候補
         $details = $this->getDetailsByReceiveId($receive_order_id);
 
-        // すでに売上済み数量（旧版: ReceiveOrder::getSalesQuantityGroups）
+        // すでに売上済み数量
         $groups = ReceiveOrder::getSalesQuantityGroups($receive_order_id);
 
         $no = 1;
@@ -185,32 +205,25 @@ class SalesService
             $id = $d->receive_order_detail_id;
             $d->no = $no++;
 
-            // すでに売上済み数量
             $salesQty = $groups->has($id)
                 ? (int)$groups->get($id)->sum('s_quantity')
                 : 0;
             $d->sales_quantity = $salesQty;
 
-            // 国内在庫制御
             $domestic = (int)($d->domestic_stock ?? 0);
             if ((int)$d->quantity > $domestic) {
                 $d->quantity = $domestic;
             }
 
-            // 未売上分
             $d->quantity = (int)$d->quantity - $salesQty;
             if ($d->quantity < 0) {
                 $d->quantity = 0;
             }
 
-            /* ================================
-            * 割引を受注明細から引き継ぐ
-            * ================================ */
+            // 割引を受注明細から引き継ぐ
             $d->discount = (float)($d->discount ?? 0);
 
-            /* ================================
-            * amount / tax を割引込みで再計算
-            * ================================ */
+            // amount / tax を割引込みで再計算
             $unitPrice = (float)$d->unit_price;
             $qty       = (int)$d->quantity;
             $rate      = (float)$d->sales_tax_rate;
@@ -264,10 +277,7 @@ class SalesService
             'order_no'         => $r->order_no ?? null,
             'remarks'          => $r->remarks ?? null,
             'rate'             => (int)($r->rate ?? 100),
-
-            // ★要望: 売上側は切捨で扱いたい場合は 1 を優先
             'fraction'         => (int)($r->fraction ?? 1),
-
             'sales_tax_rate'   => $salesTaxRate,
             'details_amount'   => $details_amount,
             'receive_order_id' => (int)$r->id,
@@ -298,11 +308,9 @@ class SalesService
 
         $ct = $this->resolveCustomerTable();
         if (!$ct) {
-            // 得意先テーブルが見つからないなら、旧版互換としては判定不能＝OK扱い
             return "OK";
         }
 
-        // corporate_class 列が無いなら比較できないので OK
         if (!$this->hasColumnSafe($ct, 'corporate_class')) {
             return "OK";
         }
@@ -313,13 +321,11 @@ class SalesService
             ->first();
 
         if (!$customer) {
-            // customer が存在しないケースは旧版でも想定薄いが、ここでは OK
             return "OK";
         }
 
         $inputCorporate = $data->get('corporate_class');
 
-        // 入力 corporate_class が null の場合は "違う" とみなさず OK（旧版でも実質こうなる）
         if ($inputCorporate === null || $inputCorporate === '') {
             return "OK";
         }
@@ -350,7 +356,6 @@ class SalesService
                 $this->insertReceiveOrderSales((int)$receive_order_id, (int)$sales->id);
             }
 
-            // 明細登録（旧版: 受注紐付けあり）
             $details = $data->get('details') ?? [];
             $this->insertDetails((int)$sales->id, $details, $receive_order_id);
 
@@ -359,7 +364,6 @@ class SalesService
                 $this->updateHasSales((int)$receive_order_id);
             }
 
-            // 在庫（登録なので減算）
             $this->applyStockDeltaBySaleId((int)$sales->id, -1);
 
             DB::commit();
@@ -379,28 +383,23 @@ class SalesService
             /** @var Sales $sales */
             $sales = Sales::query()->from('t_sales')->findOrFail($sales_id);
 
-            // 更新前の在庫差分用
             $beforeDetails = $this->getSaleStockAffectDetails($sales_id);
 
-            // ヘッダ更新
             $this->fillSalesHeader($sales, $data);
             $sales->save();
 
-            // 明細更新
             $details = $data->get('details') ?? [];
             $this->updateDetails($sales_id, $details);
 
-            // 受注状態更新
             $receive_order_id = $this->getReceiveOrderIdBySaleId($sales_id);
             if ($receive_order_id) {
                 $this->updateSalesCompleted((int)$receive_order_id);
                 $this->updateHasSales((int)$receive_order_id);
             }
 
-            // 在庫差分（before を戻す / after を引く）
-            $this->applyStockDeltaByDetails($beforeDetails, +1); // 戻す
+            $this->applyStockDeltaByDetails($beforeDetails, +1);
             $afterDetails = $this->getSaleStockAffectDetails($sales_id);
-            $this->applyStockDeltaByDetails($afterDetails, -1);  // 引く
+            $this->applyStockDeltaByDetails($afterDetails, -1);
 
             DB::commit();
             return ['success' => true];
@@ -414,28 +413,22 @@ class SalesService
     {
         DB::transaction(function () use ($sales_id) {
 
-            // 在庫を戻すため、削除前の対象明細を取得
             $beforeDetails = $this->getSaleStockAffectDetails($sales_id);
 
             $sales = Sales::query()->from('t_sales')->findOrFail($sales_id);
             $receive_order_id = $this->getReceiveOrderIdBySaleId($sales_id);
 
-            // 明細削除（モデルが SoftDeletes の場合もあるが、旧版は delete）
             $sales->details()->delete();
 
-            // 連結削除（存在すれば）
             $this->deleteReceiveOrderLinksBySalesId($sales_id);
 
-            // ヘッダ削除（Sales が SoftDeletes を持つなら delete、無いなら delete でOK）
             $sales->delete();
 
-            // 受注状態更新
             if ($receive_order_id) {
                 $this->updateSalesCompleted((int)$receive_order_id);
                 $this->updateHasSales((int)$receive_order_id);
             }
 
-            // 在庫戻し（削除なので +）
             $this->applyStockDeltaByDetails($beforeDetails, +1);
         });
     }
@@ -447,7 +440,6 @@ class SalesService
      */
     private function resolveSalesTaxRate(): float
     {
-        // m_configs が無い/読めない環境の保険
         try {
             if (!$this->hasColumnSafe('m_configs', 'id')) {
                 return 10.0;
@@ -456,7 +448,6 @@ class SalesService
             return 10.0;
         }
 
-        // key/name の揺れ吸収
         $keyCol = null;
         foreach (['key', 'name', 'config_key', 'code'] as $c) {
             if ($this->hasColumnSafe('m_configs', $c)) { $keyCol = $c; break; }
@@ -483,6 +474,40 @@ class SalesService
     }
 
     /**
+     * 編集画面互換のため、ship_to_* を旧キーへ補完する
+     *
+     * 背景:
+     * - 保存時は SalesPersistence::fillSalesHeader() で
+     *   name/zip_code/address1/address2/tel → ship_to_* に保存している。
+     * - しかしフロント（SalesDetailPage.tsx）は name/zip_code/address1/address2/tel を表示に使っている。
+     * - よって get() の返却で ship_to_* → name 等へ詰め替えないと「DBに値があるのに表示されない」。
+     *
+     * 方針:
+     * - 旧キーが空のときだけ ship_to_* で補完（ユーザーが意図的に旧キーへ別値を入れる可能性を尊重）
+     */
+    private function hydrateShipToAliasesForEdit(array $data): array
+    {
+        $map = [
+            'name'     => 'ship_to_name',
+            'zip_code' => 'ship_to_zip_code',
+            'address1' => 'ship_to_address1',
+            'address2' => 'ship_to_address2',
+            'tel'      => 'ship_to_tel',
+        ];
+
+        foreach ($map as $legacyKey => $shipKey) {
+            $legacyEmpty = (!array_key_exists($legacyKey, $data) || $data[$legacyKey] === null || $data[$legacyKey] === '');
+            $shipHas     = (array_key_exists($shipKey, $data) && $data[$shipKey] !== null && $data[$shipKey] !== '');
+
+            if ($legacyEmpty && $shipHas) {
+                $data[$legacyKey] = $data[$shipKey];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * PDF用データを作成する（旧版互換）
      *
      * 想定入力:
@@ -492,43 +517,41 @@ class SalesService
      */
     public function getPdfData(array $input): array
     {
-        // 1) 入力を吸収（data があればそれを優先）
         $payload = $input['data'] ?? $input;
 
-        // 2) sales 本体を確定（id があればDBから取得）
         if (!empty($payload['id'])) {
-        $salesId = (int)$payload['id'];
+            $salesId = (int)$payload['id'];
 
-        \Log::info('[SalesService][getPdfData] refetch sales by id for PDF', [
-            'id' => $salesId,
-            'incoming_has_details' => isset($payload['details']) && is_array($payload['details']),
-            'incoming_detail_keys_0' => (isset($payload['details'][0]) && is_array($payload['details'][0]))
-                ? array_keys($payload['details'][0])
-                : null,
-        ]);
-
-        $dbPayload = $this->get($salesId);
-
-        if (!$dbPayload) {
-            return [
+            \Log::info('[SalesService][getPdfData] refetch sales by id for PDF', [
                 'id' => $salesId,
-                'details' => [],
-                'config_data' => [],
-                'customer_data' => [],
-            ];
+                'incoming_has_details' => isset($payload['details']) && is_array($payload['details']),
+                'incoming_detail_keys_0' => (isset($payload['details'][0]) && is_array($payload['details'][0]))
+                    ? array_keys($payload['details'][0])
+                    : null,
+            ]);
+
+            $dbPayload = $this->get($salesId);
+
+            if (!$dbPayload) {
+                return [
+                    'id' => $salesId,
+                    'details' => [],
+                    'config_data' => [],
+                    'customer_data' => [],
+                ];
+            }
+
+            $payload = $dbPayload;
+
+            \Log::info('[SalesService][getPdfData] refetched details keys', [
+                'id' => $salesId,
+                'detail_keys_0' => (isset($payload['details'][0]) && is_array($payload['details'][0]))
+                    ? array_keys($payload['details'][0])
+                    : null,
+            ]);
         }
 
-        $payload = $dbPayload;
-
-        \Log::info('[SalesService][getPdfData] refetched details keys', [
-            'id' => $salesId,
-            'detail_keys_0' => (isset($payload['details'][0]) && is_array($payload['details'][0]))
-                ? array_keys($payload['details'][0])
-                : null,
-        ]);
-    }
-
-        // 3) sales_date の補完（SalesPdfService は sales_date を見る）
+        // sales_date の補完（SalesPdfService は sales_date を見る）
         if (empty($payload['sales_date'])) {
             if (!empty($payload['sales_at'])) {
                 $payload['sales_date'] = $payload['sales_at'];
@@ -537,12 +560,11 @@ class SalesService
             }
         }
 
-        // 4) config_data を取得（旧版: Config::getSelf）
+        // config_data（旧版: Config::getSelf）
         $configData = [];
         try {
             if (class_exists(Config::class) && method_exists(Config::class, 'getSelf')) {
                 $configs = Config::getSelf();
-                // Collection の場合もあるので吸収
                 if ($configs instanceof \Illuminate\Support\Collection) {
                     $configData = $configs->toArray();
                 } elseif (is_object($configs) && method_exists($configs, 'toArray')) {
@@ -552,14 +574,13 @@ class SalesService
                 }
             }
         } catch (\Throwable $e) {
-            // fallthrough
+            // ignore
         }
 
-        // Config モデルが取れない場合のフォールバック（m_configs が key/value の場合）
+        // Config モデルが取れない場合のフォールバック
         if (empty($configData)) {
             try {
                 if (Schema::hasTable('m_configs')) {
-                    // key/name/value の揺れを吸収して key=>value 配列にする
                     $keyCol = null;
                     foreach (['key', 'name', 'config_key', 'code'] as $c) {
                         if (Schema::hasColumn('m_configs', $c)) { $keyCol = $c; break; }
@@ -586,7 +607,7 @@ class SalesService
             }
         }
 
-        // 5) customer_data（bank_class が必要）
+        // customer_data（bank_class が必要）
         $customerData = [];
         try {
             $customerId = (int)($payload['customer_id'] ?? 0);
@@ -595,7 +616,6 @@ class SalesService
                 if ($ct) {
                     $cols = ['id'];
                     if ($this->hasColumnSafe($ct, 'bank_class')) $cols[] = 'bank_class';
-                    // 必要なら増やせる（現状は bank_class だけでPDF側の分岐が動く）
 
                     $c = DB::table($ct)->select($cols)->where('id', $customerId)->first();
                     if ($c) $customerData = (array)$c;
@@ -605,18 +625,16 @@ class SalesService
             // ignore
         }
 
-        // 6) sales_tax_rate の補完（無ければシステム設定から）
+        // sales_tax_rate の補完
         $salesTaxRate = (float)($payload['sales_tax_rate'] ?? 0);
         if ($salesTaxRate <= 0) {
             $salesTaxRate = $this->resolveSalesTaxRate();
             $payload['sales_tax_rate'] = $salesTaxRate;
         }
 
-        // 7) 返却（SalesPdfService が期待するキーを追加）
         $payload['config_data'] = $configData;
         $payload['customer_data'] = $customerData;
 
         return $payload;
     }
-
 }

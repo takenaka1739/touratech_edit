@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Log;
 
 trait SalesPersistence
 {
+    /**
+     * 売上明細をまとめて登録する
+     *
+     * - $details は配列（フロント payload の details）を想定
+     * - 1件ずつ createDetailItems() に委譲して保存する
+     * - $receive_order_id がある場合は受注明細⇔売上明細の連結も作る（createDetailItems 内）
+     */
     private function insertDetails(int $sales_id, $details, $receive_order_id = null): void
     {
         if (!$details) return;
@@ -21,6 +28,15 @@ trait SalesPersistence
         }
     }
 
+    /**
+     * 売上明細を更新する（差し替え方式）
+     *
+     * 方針:
+     * - deleteDetails() で「現在payloadに存在しない明細」を削除
+     * - payloadの各明細について
+     *   - id があれば updateDetailItems()
+     *   - id がなければ createDetailItems()
+     */
     private function updateDetails(int $sales_id, $details): void
     {
         $this->deleteDetails($sales_id, $details);
@@ -41,13 +57,15 @@ trait SalesPersistence
 
     /**
      * ★discount の入力キー揺れを吸収して正規化（数値化）する
+     *
+     * 目的:
+     * - 過去に discount キーが複数名で混在した運用の吸収
+     * - 税計算（fillTaxAndAmountForDetailModel）に入る前に必ず数値へ正規化する
      */
     private function resolveDetailDiscount(Collection $detail): float
     {
-        // 基本キー
         $v = $detail->get('discount');
 
-        // 揺れ候補（プロジェクトによって過去に混在しがち）
         if ($v === null || $v === '') {
             foreach (['detail_discount', 'discount_amount', 'discount_value'] as $alt) {
                 $altVal = $detail->get($alt);
@@ -58,13 +76,20 @@ trait SalesPersistence
             }
         }
 
-        // 空は 0
         if ($v === null || $v === '') return 0.0;
 
-        // 文字列 "100" / "100.00" も吸収
         return (float)$v;
     }
 
+    /**
+     * 売上明細（1行）を新規作成する
+     *
+     * ポイント:
+     * - テーブル/列の揺れを hasColumnSafe で吸収し、存在する列だけ埋める
+     * - discount を正規化して保存
+     * - sales_tax_rate/sales_tax/amount は「無ければ計算して埋める」
+     * - 受注由来の場合は受注明細⇔売上明細の連結も作成する
+     */
     private function createDetailItems(int $sales_id, Collection $detail, $receive_order_id = null): void
     {
         $item_kind = (int)$detail->get('item_kind');
@@ -90,7 +115,7 @@ trait SalesPersistence
         $m->unit_price       = $detail->get('unit_price');
         $m->quantity         = $detail->get('quantity');
 
-        // ===== discount: ここが今回の主役 =====
+        // ===== discount: 入力キー揺れを吸収して保存 =====
         $incomingDiscount = $this->resolveDetailDiscount($detail);
         $hasDiscountCol = $this->hasColumnSafe($detailTable, 'discount');
 
@@ -114,7 +139,7 @@ trait SalesPersistence
             $m->discount = $incomingDiscount;
         }
 
-        // ★ sales_tax_rate / sales_tax / amount を「無ければ計算して埋める」
+        // sales_tax_rate / sales_tax / amount を「無ければ計算して埋める」
         $this->fillTaxAndAmountForDetailModel($m, $detail);
 
         if ($this->hasColumnSafe($detailTable, 'item_number'))   $m->item_number   = $detail->get('item_number');
@@ -146,12 +171,20 @@ trait SalesPersistence
             ]);
         }
 
+        // 受注由来の場合は「受注明細⇔売上明細」の連結を作る
         if ($receive_order_id) {
             $receive_detail_id = $detail->get('receive_order_detail_id');
             $this->insertReceiveOrderDetailSalesDetail($receive_detail_id, (int)$m->id);
         }
     }
 
+    /**
+     * 売上明細（既存行）を更新する
+     *
+     * ポイント:
+     * - discount を create と同じ手順で正規化して保存
+     * - sales_tax_rate/sales_tax/amount は「無ければ計算して埋める」
+     */
     private function updateDetailItems(int $id, int $sales_id, Collection $detail): void
     {
         /** @var SalesDetail $m */
@@ -228,6 +261,17 @@ trait SalesPersistence
         }
     }
 
+    /**
+     * 明細の削除（差分削除）
+     *
+     * 方針:
+     * - DB上の既存明細ID一覧（prevIds）と、payload上の明細ID一覧（currentIds）を比較し、
+     *   payload に存在しないIDだけ削除する。
+     *
+     * 注意:
+     * - DB::table(...)->delete() は SoftDeletes を考慮しない（物理delete）。
+     *   SalesDetail が SoftDeletes を使う運用なら、モデル経由 delete を検討余地あり。
+     */
     private function deleteDetails(int $sales_id, $details): void
     {
         $detailTable = $this->salesDetailTable();
@@ -248,9 +292,22 @@ trait SalesPersistence
         }
     }
 
-    // fillSalesHeader / fillTaxAndAmountForDetailModel / defaultSalesTaxRate は現状のまま（省略せずに残す）
-    // ---- 以下、あなたが貼ってくれた現行実装をそのまま維持 ----
-
+    /**
+     * 売上ヘッダ（t_sales）に payload を詰める
+     *
+     * 重要（今回の ship_to_* 不具合の最重要ポイント）:
+     * - この実装は「フロントが送る name/zip_code/address... を ship_to_* に保存する」仕様。
+     * - つまり、フロントの name/zip/address/tel は “請求先” ではなく “送り先” として t_sales に入る。
+     *
+     * そのため、編集画面で ship_to_* を表示したい場合は、
+     * - get() のレスポンスに ship_to_* を含める
+     * - さらにフロントが ship_to_* を表示欄に使う（name ではなく ship_to_name など）
+     * が必要。
+     *
+     * 逆に、編集画面が name/zip/address... を表示している場合、
+     * - get() 側で ship_to_* → name/zip/address... にマッピングして返さない限り表示されない。
+     * （これが「DBにはあるのに編集に出ない」の典型的な原因）
+     */
     private function fillSalesHeader(Sales $sales, Collection $data): void
     {
         $salesDateCol = $this->salesDateColumn();
@@ -264,6 +321,7 @@ trait SalesPersistence
 
         $sales->customer_id = $data->get('customer_id');
 
+        // 送付フラグ（旧: send_flg / 新: is_send の揺れを吸収）
         if ($this->hasColumnSafe('t_sales', 'send_flg')) {
             $sales->send_flg = $data->get('send_flg') ? 1 : 0;
         } elseif ($this->hasColumnSafe('t_sales', 'is_send')) {
@@ -275,7 +333,9 @@ trait SalesPersistence
          * 旧実装の name/zip_code/address... では保存されないため、
          * 入力キー（name等）→保存先（ship_to_*）にマッピングする。
          *
-         * フロント側は name/zip_code/address1/address2/tel/fax を送ってくる想定でOK。
+         * ※この設計を採るなら、
+         *   - 編集画面表示側でも ship_to_* を使う（または get() で name等へ詰め替える）
+         *   のどちらかに統一しないと、値が「入っているのに見えない」状態が起きる。
          */
         $shipMap = [
             'name'     => 'ship_to_name',
@@ -286,7 +346,6 @@ trait SalesPersistence
             // t_sales に ship_to_fax は無いので対象外
         ];
 
-        // デバッグログ：validated に何が来ているか、ship_to に何を入れるか
         if (config('app.debug')) {
             \Log::info('[SalesPersistence] fillSalesHeader ship_to input snapshot', [
                 'sale_id' => $sales->id ?? null,
@@ -302,17 +361,17 @@ trait SalesPersistence
 
         foreach ($shipMap as $inputKey => $col) {
             if ($this->hasColumnSafe('t_sales', $col)) {
-                // empty も保存したい（クリア操作）可能性があるので has() で判定せず get() で入れる
+                // クリア操作（空文字）も反映したいので、has() ではなく get() でセットする
                 $sales->{$col} = $data->get($inputKey);
             }
         }
 
-        // 旧テーブルに存在する可能性がある fax を保存したい場合は、t_sales側にカラムがある時だけ
-        //（今回のDDLでは fax列が無いのでここは実質何もしない）
+        // 旧テーブルに fax 列がある環境だけ保存
         if ($this->hasColumnSafe('t_sales', 'fax')) {
             $sales->fax = $data->get('fax');
         }
 
+        // 金額系（存在する列だけセット）
         if ($this->hasColumnSafe('t_sales', 'shipping_amount') && $data->has('shipping_amount')) {
             $sales->shipping_amount = $data->get('shipping_amount');
         }
@@ -332,6 +391,7 @@ trait SalesPersistence
             $sales->order_no = $data->get('order_no');
         }
 
+        // 担当者（personnel_id or user_id の揺れ）
         $userId = $data->get('user_id');
         $resolvedUserId = $userId ?? Auth::id() ?? null;
 
@@ -345,6 +405,7 @@ trait SalesPersistence
             }
         }
 
+        // 代表商品（ヘッダに item_id を持つ構造の場合のみ）
         if ($this->hasColumnSafe('t_sales', 'item_id')) {
             $firstItemId = 0;
             $details = $data->get('details') ?? [];
@@ -355,12 +416,12 @@ trait SalesPersistence
             $sales->item_id = $firstItemId;
         }
 
-        // ★DDLに corporate_class は無い。payment_id で持つ設計なので corporate_class は保存しない。
-        // ※validate_edit の比較用に corporate_class を payload に持つのはOK（DB保存は別）
+        // corporate_class は t_sales に無い前提（payment_id から復元する設計）
         if ($this->hasColumnSafe('t_sales', 'corporate_class') && $data->has('corporate_class')) {
             $sales->corporate_class = $data->get('corporate_class');
         }
 
+        // payment_id（入力優先。無ければ corporate_class から解決）
         if ($this->hasColumnSafe('t_sales', 'payment_id')) {
             if ($data->has('payment_id') && $data->get('payment_id')) {
                 $sales->payment_id = (int)$data->get('payment_id');
@@ -374,6 +435,14 @@ trait SalesPersistence
         }
     }
 
+    /**
+     * 明細の税・金額を補完/再計算してモデルへ詰める
+     *
+     * 仕様:
+     * - sales_tax_rate が無い/0 の場合は defaultSalesTaxRate() を使う
+     * - taxable = unit_price * quantity - discount（マイナスにならないよう max）
+     * - tax は fraction（1:切捨 2:四捨五入 3:切上）で丸める
+     */
     private function fillTaxAndAmountForDetailModel(SalesDetail $m, Collection $detail): void
     {
         $detailTable = $m->getTable();
@@ -401,7 +470,7 @@ trait SalesPersistence
         $unitPrice = (float)($detail->get('unit_price') ?? $m->unit_price ?? 0);
         $qty       = (float)($detail->get('quantity') ?? $m->quantity ?? 0);
 
-        // ★discount はここでも resolve を使っておく（ログで原因追える）
+        // discount は resolve を使って正規化（create/update と同一ロジック）
         $disc = (float)($this->resolveDetailDiscount($detail) ?? $m->discount ?? 0);
 
         $subtotal = $unitPrice * $qty;
@@ -425,6 +494,12 @@ trait SalesPersistence
         }
     }
 
+    /**
+     * デフォルト税率（m_configs.sales_tax_rate から取得。取れない場合は 10）
+     *
+     * ※SalesService 側にも resolveSalesTaxRate() があり、役割が重複している。
+     *   「不要メソッド削除（優先度2）」の候補として、どちらかに寄せるのが望ましい。
+     */
     private function defaultSalesTaxRate(): float
     {
         if (!$this->hasColumnSafe('m_configs', 'id')) {

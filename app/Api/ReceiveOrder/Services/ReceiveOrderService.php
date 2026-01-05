@@ -1,31 +1,24 @@
 <?php
+// 更新: app/Api/ReceiveOrder/Services/ReceiveOrderService.php
 
 namespace App\Api\ReceiveOrder\Services;
 
 use App\Base\Models\Config;
 use App\Base\Models\Customer;
-use App\Base\Models\EstimateDetail;
 use App\Base\Models\Item;
 use App\Base\Models\ReceiveOrder;
 use App\Base\Models\ReceiveOrderDetail;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 受注データサービス
  */
 class ReceiveOrderService
 {
-  /**
-   * 検索画面用の一覧データを取得する
-   *
-   * @param array $cond 検索条件
-   * @return array
-   */
   public function dialog(array $cond)
   {
     $query = ReceiveOrder::select(
@@ -42,12 +35,6 @@ class ReceiveOrderService
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
-  /**
-   * 一覧データを取得する
-   *
-   * @param array $cond 検索条件
-   * @return array
-   */
   public function fetch(array $cond)
   {
     $query = ReceiveOrder::select(
@@ -64,38 +51,33 @@ class ReceiveOrderService
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
-  /**
-   * 詳細データを取得する
-   *
-   * @param int $receive_order_id 受注ID
-   * @return array
-   */
   public function get(int $receive_order_id)
   {
-    $data = ReceiveOrder::select(
+    $row = ReceiveOrder::select(
       't_receive_orders.*',
       'm_personnels.name AS user_name',
-      'link_estimate_receive_order.estimate_id',
+      // ★統一：t_link_estimate_receive_order
+      't_link_estimate_receive_order.estimate_id',
       'receive_order_has_sales.has_sales',
       't_receive_order_has_p_order.has_p_order as has_place',
     )
       ->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receive_orders.user_id')
-      ->leftJoin('link_estimate_receive_order', 'link_estimate_receive_order.receive_order_id', '=', 't_receive_orders.id')
+      ->leftJoin('t_link_estimate_receive_order', 't_link_estimate_receive_order.receive_order_id', '=', 't_receive_orders.id')
       ->leftJoin('receive_order_has_sales', 'receive_order_has_sales.receive_order_id', '=', 't_receive_orders.id')
       ->leftJoin('t_receive_order_has_p_order', 't_receive_order_has_p_order.receive_order_id', '=', 't_receive_orders.id')
       ->where('t_receive_orders.id', $receive_order_id)
-      ->first()
-      ->toArray();
+      ->first();
 
+    if (!$row) {
+      return [];
+    }
+
+    $data = $row->toArray();
     $data['details'] = $this->getDetails($receive_order_id);
+
     return $data;
   }
 
-  /**
-   * 新規作成時のデータを作成する
-   *
-   * @return array
-   */
   public function newData()
   {
     $m = new ReceiveOrder();
@@ -113,12 +95,6 @@ class ReceiveOrderService
     return $data;
   }
 
-  /**
-   * 受注と連結している売上データがある場合はtrue
-   *
-   * @param int $receive_order_id
-   * @return bool
-   */
   public function hasSales(int $receive_order_id)
   {
     return DB::table('t_link_r_order_sales')
@@ -126,11 +102,6 @@ class ReceiveOrderService
       ->count() > 0;
   }
 
-  /**
-   * 登録
-   *
-   * @param array $input 登録データ
-   */
   public function store(array $input)
   {
     $data = new Collection($input);
@@ -151,12 +122,6 @@ class ReceiveOrderService
     });
   }
 
-  /**
-   * 更新
-   *
-   * @param int $receive_order_id 受注ID
-   * @param array $input 更新データ
-   */
   public function update(int $receive_order_id, array $input)
   {
     $data = new Collection($input);
@@ -185,35 +150,20 @@ class ReceiveOrderService
       $m->fraction = $data->get('fraction');
       $m->save();
 
-      // 明細を更新する
       $details = $data->get('details');
       $this->updateDetails($receive_order_id, $details);
     });
   }
 
-  /**
-   * バリデーション（削除）
-   *
-   * @param int $receive_order_id 受注ID
-   * @return string
-   */
   public function validate_delete(int $receive_order_id)
   {
     $has_place = DB::table('t_link_r_order_p_order')
       ->where('receive_order_id', '=', $receive_order_id)
       ->exists();
 
-    if ($has_place) {
-      return "NG";
-    }
-    return "OK";
+    return $has_place ? "NG" : "OK";
   }
 
-  /**
-   * 削除
-   *
-   * @param int $receive_order_id 受注ID
-   */
   public function delete(int $receive_order_id)
   {
     DB::transaction(function () use ($receive_order_id) {
@@ -221,34 +171,17 @@ class ReceiveOrderService
     });
   }
 
-  /**
-   * PDF用データを作成する
-   *
-   * @param array $data
-   * @return array
-   */
   public function getPdfData(array $data)
   {
     $config = Config::getSelf();
     $data['config_data'] = $config->toArray();
 
     $customer = Customer::find($data['customer_id']);
-    if ($customer) {
-      $data['customer_bank_class'] = $customer->bank_class;
-    } else {
-      $data['customer_bank_class'] = 1;
-    }
+    $data['customer_bank_class'] = $customer ? $customer->bank_class : 1;
 
     return $data;
   }
 
-  /**
-   * 条件を設定する
-   *
-   * @param \Illuminate\Database\Eloquent\Builder $query
-   * @param array $cond 条件
-   * @return mixed
-   */
   private function setCondition($query, array $cond)
   {
     $query->leftJoin('m_personnels', 'm_personnels.id', '=', 't_receive_orders.user_id')
@@ -256,14 +189,14 @@ class ReceiveOrderService
 
     $cond = new Collection($cond);
 
-    $c_receive_order_date_from = $cond->get('c_receive_order_date_from');
-    if ($c_receive_order_date_from) {
-      $query->where('receive_order_date', '>=', $c_receive_order_date_from);
+    $from = $cond->get('c_receive_order_date_from');
+    if ($from) {
+      $query->where('receive_order_date', '>=', $from);
     }
 
-    $c_receive_order_date_to = $cond->get('c_receive_order_date_to');
-    if ($c_receive_order_date_to) {
-      $query->where('receive_order_date', '<=', $c_receive_order_date_to);
+    $to = $cond->get('c_receive_order_date_to');
+    if ($to) {
+      $query->where('receive_order_date', '<=', $to);
     }
 
     $c_customer_name = $cond->get('c_customer_name');
@@ -271,9 +204,10 @@ class ReceiveOrderService
       $query->where('customer_name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
-    $c_customer_name = $cond->get('c_user_name');
-    if ($c_customer_name) {
-      $query->where('m_personnels.name', 'like', '%' . escape_like($c_customer_name) . '%');
+    // ★変数名を正常化（旧コード由来の上書きを排除）
+    $c_user_name = $cond->get('c_user_name');
+    if ($c_user_name) {
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_user_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');
@@ -283,7 +217,7 @@ class ReceiveOrderService
           ->from('t_receive_order_details')
           ->whereRaw('t_receive_order_details.receive_order_id = t_receive_orders.id')
           ->where('t_receive_order_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
-        });
+      });
     }
 
     $c_name = $cond->get('c_name');
@@ -292,11 +226,11 @@ class ReceiveOrderService
         $q->select(DB::raw(1))
           ->from('t_receive_order_details')
           ->whereRaw('t_receive_order_details.receive_order_id = t_receive_orders.id')
-          ->where(function($q) use ($c_name) {
+          ->where(function ($q) use ($c_name) {
             $q->where('t_receive_order_details.item_name', 'like', '%' . escape_like($c_name) . '%')
               ->orWhere('t_receive_order_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
-        });
+      });
     }
 
     $c_order_no = $cond->get('c_order_no');
@@ -307,12 +241,6 @@ class ReceiveOrderService
     return $query;
   }
 
-  /**
-   * 明細を取得する
-   *
-   * @param int $receive_order_id 受注ID
-   * @return array
-   */
   private function getDetails(int $receive_order_id)
   {
     return DB::table('t_receive_order_details')
@@ -329,33 +257,18 @@ class ReceiveOrderService
       ->toArray();
   }
 
-  /**
-   * 明細を登録する
-   *
-   * @param int $receive_order_id 受注ID
-   * @param mixed $details 明細データ
-   * @param int|null $estimate_id 見積ID
-   */
   private function insertDetails(int $receive_order_id, $details, $estimate_id)
   {
     if ($details) {
       foreach ($details as $detail) {
         $detail = new Collection($detail);
-
         $this->createDetailItems($receive_order_id, $detail);
       }
     }
   }
 
-  /**
-   * 明細を更新する
-   *
-   * @param int $receive_order_id 受注ID
-   * @param mixed $details 明細データ
-   */
   private function updateDetails(int $receive_order_id, $details)
   {
-    // 削除された明細をDBから削除する
     $this->deleteDetails($receive_order_id, $details);
 
     if ($details) {
@@ -363,7 +276,6 @@ class ReceiveOrderService
         $detail = new Collection($detail);
         $id = $detail->get('id');
 
-        // 明細IDが存在する場合は更新、しない場合は登録する
         if ($id) {
           $this->updateDetailItems($id, $receive_order_id, $detail);
         } else {
@@ -373,19 +285,12 @@ class ReceiveOrderService
     }
   }
 
-  /**
-   * 明細を生成する
-   *
-   * @param int $receive_order_id 受注ID
-   * @param Collection $detail 明細データ
-  */
-  private function createDetailItems(
-    int $receive_order_id,
-    $detail
-  ) {
+  private function createDetailItems(int $receive_order_id, $detail)
+  {
     $item_kind = $detail->get('item_kind');
     $item_id = $detail->get('item_id');
 
+    // ★discount 正規化（新仕様）
     $detail_discount = (int) ($detail->get('discount') ?? 0);
 
     $m = ReceiveOrderDetail::create([
@@ -414,20 +319,13 @@ class ReceiveOrderService
     }
   }
 
-  /**
-   * 明細を更新する
-   *
-   * @param int $id 受注明細ID
-   * @param int $receive_order_id 受注ID
-   * @param Collection $detail 明細データ
-   */
-  private function updateDetailItems(int $id, int $receive_order_id, $detail) {
+  private function updateDetailItems(int $id, int $receive_order_id, $detail)
+  {
     $item_kind = $detail->get('item_kind');
 
     $m = ReceiveOrderDetail::find($id);
     $prev = clone $m;
 
-    // ★追加：discount 正規化
     $detail_discount = (int) ($detail->get('discount') ?? 0);
 
     $m->receive_order_id = $receive_order_id;
@@ -459,14 +357,11 @@ class ReceiveOrderService
     }
   }
 
-  /**
-   * セット品の明細を生成する
-   *
-   * @param ReceiveOrderDetail $parent 親データ
-   */
-  private function createSetItems($parent) {
+  private function createSetItems($parent)
+  {
     $items = Item::getSetItems($parent->item_id);
     $data = [];
+
     foreach ($items as $item) {
       $sales_unit_price = $item->set_price;
       $rate = $parent->rate;
@@ -495,17 +390,16 @@ class ReceiveOrderService
         'parent_id' => $parent->id,
       ];
     }
+
     DB::table('t_receive_order_details')->insert($data);
   }
 
-  /**
-   * セット品の明細を更新する
-   *
-   * @param ReceiveOrderDetail $parent 親の明細データ
-   */
-  private function updateSetItems($parent) {
+  private function updateSetItems($parent)
+  {
+    // ★バグ修正：set_price を select に含める
     $details = ReceiveOrderDetail::select([
       't_receive_order_details.id',
+      't_set_item_details.set_price',
       't_set_item_details.quantity',
     ])
       ->join('t_set_item_details', 't_set_item_details.id', '=', 't_receive_order_details.item_id')
@@ -526,53 +420,41 @@ class ReceiveOrderService
           'rate' => $rate,
           'unit_price' => $unit_price,
           'quantity' => $quantity,
+          'discount' => 0,
           'amount' => $amount,
-          'sales_tax' => $sales_tax
+          'sales_tax' => $sales_tax,
         ]);
     }
   }
 
-  /**
-   * 削除された明細をDBから削除する
-   *
-   * @param int $receive_order_id 受注ID
-   * @param mixed $details 明細データ
-   */
-  private function deleteDetails(int $receive_order_id, $details) {
+  private function deleteDetails(int $receive_order_id, $details)
+  {
     $prevIds = $this->getPrevDetailIds($receive_order_id);
     $currentIds = Arr::pluck($details, 'id');
-
-    // 変更前のIDと更新されたIDの差分を取得する
     $deleteIds = array_diff($prevIds, $currentIds);
+
+    if (empty($deleteIds)) {
+      return;
+    }
 
     DB::table('t_receive_order_details')
       ->whereIn('id', $deleteIds)
       ->delete();
   }
 
-  /**
-   * 変更前の明細のIDの配列を取得する
-   *
-   * @param int $receive_order_id 受注ID
-   * @return array
-   */
-  private function getPrevDetailIds(int $receive_order_id) {
-    $data =  DB::table('t_receive_order_details')
+  private function getPrevDetailIds(int $receive_order_id)
+  {
+    return DB::table('t_receive_order_details')
       ->where('receive_order_id', $receive_order_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')
       ->toArray();
-    return $data;
   }
 
-  /**
-   * 見積受注連結テーブルを登録する
-   *
-   * @param int $estimate_id 見積ID
-   * @param int $receive_order_id 受注ID
-   */
-  private function insertEstimateReceiveOrder(int $estimate_id, int $receive_order_id) {
-    DB::table('link_estimate_receive_order')->insert([
+  private function insertEstimateReceiveOrder(int $estimate_id, int $receive_order_id)
+  {
+    // ★統一：t_link_estimate_receive_order
+    DB::table('t_link_estimate_receive_order')->insert([
       ['estimate_id' => $estimate_id, 'receive_order_id' => $receive_order_id]
     ]);
   }

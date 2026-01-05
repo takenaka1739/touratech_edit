@@ -10,8 +10,8 @@ use App\Base\Models\EstimateDetail;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 見積データサービス
@@ -273,6 +273,8 @@ class EstimateService
    */
   private function setCondition($query, array $cond, string $est)
   {
+    $det = (new EstimateDetail)->getTable();
+
     $query->leftJoin('m_personnels', 'm_personnels.id', '=', "{$est}.user_id");
 
     $cond = new Collection($cond);
@@ -297,25 +299,27 @@ class EstimateService
       $query->where('m_personnels.name', 'like', '%' . escape_like($c_user_name) . '%');
     }
 
+    // ★検索（明細：品番）
     $c_item_number = $cond->get('c_item_number');
     if ($c_item_number) {
-      $query->whereExists(function ($q) use ($c_item_number, $est) {
+      $query->whereExists(function ($q) use ($c_item_number, $est, $det) {
         $q->select(DB::raw(1))
-          ->from('estimate_details')
-          ->whereRaw("estimate_details.estimate_id = {$est}.id")
-          ->where('estimate_details.item_number', 'like', '%' . escape_like($c_item_number) . '%');
+          ->from("{$det} as d")
+          ->whereRaw("d.estimate_id = {$est}.id")
+          ->where('d.item_number', 'like', '%' . escape_like($c_item_number) . '%');
       });
     }
 
+    // ★検索（明細：名称）
     $c_name = $cond->get('c_name');
     if ($c_name) {
-      $query->whereExists(function ($q) use ($c_name, $est) {
+      $query->whereExists(function ($q) use ($c_name, $est, $det) {
         $q->select(DB::raw(1))
-          ->from('estimate_details')
-          ->whereRaw("estimate_details.estimate_id = {$est}.id")
+          ->from("{$det} as d")
+          ->whereRaw("d.estimate_id = {$est}.id")
           ->where(function ($q) use ($c_name) {
-            $q->where('estimate_details.item_name', 'like', '%' . escape_like($c_name) . '%')
-              ->orWhere('estimate_details.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
+            $q->where('d.item_name', 'like', '%' . escape_like($c_name) . '%')
+              ->orWhere('d.item_name_jp', 'like', '%' . escape_like($c_name) . '%');
           });
       });
     }
@@ -342,8 +346,10 @@ class EstimateService
    */
   private function getDetails(int $estimate_id)
   {
-    $rows = DB::table('t_estimate_details')
-      ->select('t_estimate_details.*')
+    $det = (new EstimateDetail)->getTable();
+
+    $rows = DB::table($det)
+      ->select("{$det}.*")
       ->where('estimate_id', $estimate_id)
       ->whereIn('item_kind', [1, 2])
       ->orderBy('estimate_id')
@@ -479,9 +485,11 @@ class EstimateService
     $m->save();
 
     if ($item_kind === 2) {
+      $det = (new EstimateDetail)->getTable();
+
       if ($prev->item_id != $m->item_id) {
-        // ※元コードのまま（テーブル名混在を確認したいので、まずはログで事実を見る）
-        DB::table('estimate_details')->where('parent_id', $id)->delete();
+        // 商品IDが変わった場合、セット品の明細を削除し登録する
+        DB::table($det)->where('parent_id', $id)->delete();
         $this->createSetItems($m);
       } else if ($prev->quantity != $m->quantity) {
         $this->updateSetItems($m);
@@ -491,6 +499,8 @@ class EstimateService
 
   private function createSetItems($parent)
   {
+    $det = (new EstimateDetail)->getTable();
+
     $items = Item::getSetItems($parent->item_id);
     $data = [];
     foreach ($items as $item) {
@@ -528,21 +538,25 @@ class EstimateService
       'parent_id' => $parent->id,
       'parent_sales_tax_rate' => $parent->sales_tax_rate,
       'children_count' => count($data),
+      'table' => $det,
     ]);
 
-    DB::table('estimate_details')->insert($data);
+    DB::table($det)->insert($data);
   }
 
   private function updateSetItems($parent)
   {
-    $details = EstimateDetail::select([
-      'estimate_details.id',
-      't_set_item_details.set_price',
-      't_set_item_details.quantity',
-    ])
-      ->join('t_set_item_details', 't_set_item_details.id', '=', 'estimate_details.item_id')
-      ->where('parent_id', $parent->id)
-      ->where('set_item_id', $parent->item_id)
+    $det = (new EstimateDetail)->getTable();
+
+    $details = DB::table("{$det} as d")
+      ->select([
+        'd.id',
+        's.set_price',
+        's.quantity',
+      ])
+      ->join('t_set_item_details as s', 's.id', '=', 'd.item_id')
+      ->where('d.parent_id', $parent->id)
+      ->where('s.set_item_id', $parent->item_id)
       ->get();
 
     \Log::info('[EstimateService@updateSetItems] recalc children', [
@@ -550,6 +564,7 @@ class EstimateService
       'parent_id' => $parent->id,
       'parent_sales_tax_rate' => $parent->sales_tax_rate,
       'children_count' => $details->count(),
+      'table' => $det,
     ]);
 
     foreach ($details as $d) {
@@ -559,7 +574,7 @@ class EstimateService
       $quantity = $d->quantity * $parent->quantity;
       [$amount, $sales_tax] = calc_amount($unit_price, $quantity, $parent->sales_tax_rate, $parent->fraction);
 
-      DB::table('estimate_details')
+      DB::table($det)
         ->where('id', $d->id)
         ->update([
           'rate' => $rate,
@@ -567,13 +582,15 @@ class EstimateService
           'quantity' => $quantity,
           'discount' => 0,
           'amount' => $amount,
-          'sales_tax' => $sales_tax
+          'sales_tax' => $sales_tax,
         ]);
     }
   }
 
   private function deleteDetails(int $prev_estimate_id, $details)
   {
+    $det = (new EstimateDetail)->getTable();
+
     $prevIds = $this->getPrevDetailIds($prev_estimate_id);
     $currentIds = Arr::pluck($details, 'id');
 
@@ -586,20 +603,28 @@ class EstimateService
       'current_count' => count($currentIds),
       'delete_count' => count($deleteIds),
       'delete_ids' => array_values($deleteIds),
+      'table' => $det,
     ]);
 
-    DB::table('estimate_details')
+    if (empty($deleteIds)) {
+      return;
+    }
+
+    DB::table($det)
       ->whereIn('id', $deleteIds)
       ->delete();
   }
 
   private function getPrevDetailIds(int $estimate_id)
   {
-    $data = DB::table('estimate_details')
+    $det = (new EstimateDetail)->getTable();
+
+    $data = DB::table($det)
       ->where('estimate_id', $estimate_id)
       ->whereIn('item_kind', [1, 2])
       ->pluck('id')
       ->toArray();
+
     return $data;
   }
 }
