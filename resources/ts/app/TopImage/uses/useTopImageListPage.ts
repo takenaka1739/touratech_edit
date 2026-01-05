@@ -11,7 +11,6 @@ export type TopImageRow = BaseTopImage & {
   url?: string;
 };
 
-// プレビュー用の統一型
 type PreviewItem = {
   id?: number;
   image_id: number;
@@ -41,7 +40,7 @@ export const useTopImageListPage = () => {
       }));
       setSlideItems(rows);
 
-      // 初期ロード時だけ初期状態をセットするためのフラグをリセット
+      // 次のプレビュー再構築で初期状態をセットし直す
       setInitialized(false);
     } finally {
       setIsLoading(false);
@@ -93,8 +92,8 @@ export const useTopImageListPage = () => {
 
     setPreviewItemsState(next);
 
-    // 初期ロード時だけ initialState をセット
-    if (!initialized && slideItems.length > 0) {
+    // 件数 0 でも初期状態をセットする
+    if (!initialized) {
       setInitialState(
         next.map((p) => ({
           ...p,
@@ -106,7 +105,7 @@ export const useTopImageListPage = () => {
 
   }, [slideItems, stagedItems, markedForDelete]);
 
-  // 並び替え（sort_order を更新）
+  // 並び替え
   const move = (from: number, to: number) => {
     setPreviewItemsState((prev) => {
       if (to < 0 || to >= prev.length) return prev;
@@ -115,7 +114,6 @@ export const useTopImageListPage = () => {
       const [moved] = copy.splice(from, 1);
       copy.splice(to, 0, moved);
 
-      // 並び替え後に sort_order を更新
       return copy.map((item, index) => ({
         ...item,
         sort_order: index + 1,
@@ -141,11 +139,8 @@ export const useTopImageListPage = () => {
     );
   };
 
-  // 表示/非表示トグル
+  // 表示/非表示
   const togglePreviewEnabled = (idx: number) => {
-    const target = previewItemsState[idx];
-    if (!target) return;
-
     setPreviewItemsState((prev) =>
       prev.map((p, i) =>
         i === idx ? { ...p, is_published: !p.is_published } : p
@@ -153,17 +148,13 @@ export const useTopImageListPage = () => {
     );
   };
 
-  // 差分検知（dirty check）
+  // 差分検知
   const isDirty = useMemo(() => {
     if (!initialized) return false;
 
-    // 新規追加
     if (stagedItems.length > 0) return true;
-
-    // 削除待機
     if (markedForDelete.length > 0) return true;
 
-    // 登録済みアイテムの差分チェック
     const currentPersisted = previewItemsState.filter(
       (p) => p.persisted && !p.markedForDelete
     );
@@ -188,7 +179,7 @@ export const useTopImageListPage = () => {
     return false;
   }, [initialized, initialState, previewItemsState, stagedItems, markedForDelete]);
 
-  // 登録
+  // 保存
   const handleSave = async () => {
     if (!previewItemsState.length) return;
     setIsPublishing(true);
