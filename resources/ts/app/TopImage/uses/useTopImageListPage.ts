@@ -1,4 +1,3 @@
-// resources/ts/app/TopImage/uses/useTopImageListPage.ts
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { appAlert } from '@/components';
@@ -9,13 +8,28 @@ export type TopImageRow = BaseTopImage & {
   image_url?: string;
   sort_order: number;
   is_published?: boolean;
-  is_enabled?: boolean;
   url?: string;
+};
+
+// プレビュー用の統一型
+type PreviewItem = {
+  id?: number;
+  image_id: number;
+  src: string;
+  persisted: boolean;
+  markedForDelete: boolean;
+  is_published: boolean;
+  url: string;
+  localUrl: string;
+  sort_order: number | null;
 };
 
 export const useTopImageListPage = () => {
   const [slideItems, setSlideItems] = useState<TopImageRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 初期状態をセット済みかどうか
+  const [initialized, setInitialized] = useState(false);
 
   const fetchSlideItems = async () => {
     setIsLoading(true);
@@ -23,9 +37,12 @@ export const useTopImageListPage = () => {
       const res = await axios.get('/api/TopImage');
       const rows = (res.data as TopImageRow[]).map((row) => ({
         ...row,
-        is_enabled: row.is_published ?? false,
+        is_published: row.is_published ?? false,
       }));
       setSlideItems(rows);
+
+      // 初期ロード時だけ初期状態をセットするためのフラグをリセット
+      setInitialized(false);
     } finally {
       setIsLoading(false);
     }
@@ -34,51 +51,75 @@ export const useTopImageListPage = () => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [stagedItems, setStagedItems] = useState<any[]>([]);
   const [markedForDelete, setMarkedForDelete] = useState<number[]>([]);
-  const [previewItemsState, setPreviewItemsState] = useState<any[]>([]);
+  const [previewItemsState, setPreviewItemsState] = useState<PreviewItem[]>([]);
+  const [initialState, setInitialState] = useState<PreviewItem[]>([]);
   const [togglingIdx, setTogglingIdx] = useState<number | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
   // プレビュー再構築
   useEffect(() => {
-    setPreviewItemsState((prevState) => {
-      const existing = slideItems.map((it) => {
-        const prev = prevState.find((p) => p.image_id === it.image_id);
+    const next: PreviewItem[] = (() => {
+      const existing: PreviewItem[] = slideItems.map((it) => {
+        const prev = previewItemsState.find((p) => p.image_id === it.image_id);
         return {
           id: it.id,
           image_id: it.image_id,
           src: it.image_url || '',
           persisted: true,
           markedForDelete: markedForDelete.includes(it.id),
-          is_enabled: it.is_enabled ?? true,
+          is_published: it.is_published ?? false,
           url: it.url ?? '',
-          localUrl: prev?.localUrl ?? it.url ?? '', // ← IME 対応
+          localUrl: prev?.localUrl ?? it.url ?? '',
+          sort_order: it.sort_order,
         };
       });
 
-      const staged = stagedItems.map((s) => {
-        const prev = prevState.find((p) => p.image_id === s.image_id);
+      const staged: PreviewItem[] = stagedItems.map((s) => {
+        const prev = previewItemsState.find((p) => p.image_id === s.image_id);
         return {
           image_id: s.image_id,
           src: s.img_url,
           persisted: false,
-          is_enabled: true,
+          markedForDelete: false,
+          is_published: true,
           url: s.url ?? '',
-          localUrl: prev?.localUrl ?? s.url ?? '', // ← IME 対応
+          localUrl: prev?.localUrl ?? s.url ?? '',
+          sort_order: null,
         };
       });
 
       return [...existing, ...staged];
-    });
+    })();
+
+    setPreviewItemsState(next);
+
+    // 初期ロード時だけ initialState をセット
+    if (!initialized && slideItems.length > 0) {
+      setInitialState(
+        next.map((p) => ({
+          ...p,
+          url: p.localUrl,
+        }))
+      );
+      setInitialized(true);
+    }
+
   }, [slideItems, stagedItems, markedForDelete]);
 
-  // 並び替え
+  // 並び替え（sort_order を更新）
   const move = (from: number, to: number) => {
     setPreviewItemsState((prev) => {
       if (to < 0 || to >= prev.length) return prev;
+
       const copy = [...prev];
-      const [m] = copy.splice(from, 1);
-      copy.splice(to, 0, m);
-      return copy;
+      const [moved] = copy.splice(from, 1);
+      copy.splice(to, 0, moved);
+
+      // 並び替え後に sort_order を更新
+      return copy.map((item, index) => ({
+        ...item,
+        sort_order: index + 1,
+      }));
     });
   };
 
@@ -101,30 +142,51 @@ export const useTopImageListPage = () => {
   };
 
   // 表示/非表示トグル
-  const togglePreviewEnabled = async (idx: number) => {
+  const togglePreviewEnabled = (idx: number) => {
     const target = previewItemsState[idx];
     if (!target) return;
 
     setPreviewItemsState((prev) =>
       prev.map((p, i) =>
-        i === idx ? { ...p, is_enabled: !p.is_enabled } : p
+        i === idx ? { ...p, is_published: !p.is_published } : p
       )
     );
-
-    if (!target.persisted || !target.id) return;
-
-    let timer: NodeJS.Timeout | null = setTimeout(() => {
-      setTogglingIdx(idx);
-    }, 300);
-
-    try {
-      await axios.patch(`/api/TopImage/${target.id}/toggle`);
-      await fetchSlideItems();
-    } finally {
-      if (timer) clearTimeout(timer);
-      setTogglingIdx((cur) => (cur === idx ? null : cur));
-    }
   };
+
+  // 差分検知（dirty check）
+  const isDirty = useMemo(() => {
+    if (!initialized) return false;
+
+    // 新規追加
+    if (stagedItems.length > 0) return true;
+
+    // 削除待機
+    if (markedForDelete.length > 0) return true;
+
+    // 登録済みアイテムの差分チェック
+    const currentPersisted = previewItemsState.filter(
+      (p) => p.persisted && !p.markedForDelete
+    );
+
+    const initialPersisted = initialState.filter((p) => p.persisted);
+
+    if (currentPersisted.length !== initialPersisted.length) return true;
+
+    const sortedCurrent = [...currentPersisted].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+    const sortedInitial = [...initialPersisted].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+
+    for (let i = 0; i < sortedInitial.length; i++) {
+      const cur = sortedCurrent[i];
+      const ini = sortedInitial[i];
+
+      if (!cur || !ini) return true;
+      if (cur.localUrl !== ini.url) return true;
+      if (cur.is_published !== ini.is_published) return true;
+      if (cur.sort_order !== ini.sort_order) return true;
+    }
+
+    return false;
+  }, [initialized, initialState, previewItemsState, stagedItems, markedForDelete]);
 
   // 登録
   const handleSave = async () => {
@@ -137,13 +199,14 @@ export const useTopImageListPage = () => {
         .map((p, order) => ({
           id: p.persisted ? p.id : undefined,
           image_id: p.persisted ? undefined : p.image_id,
-          is_enabled: p.is_enabled ?? true,
-          url: p.localUrl.trim() || null,   // ← localUrl を使用
+          is_published: p.is_published ?? false,
+          url: p.localUrl.trim() || null,
           sort_order: order + 1,
         }));
 
       await axios.post('/api/TopImage/sync', { items });
       await fetchSlideItems();
+
       setStagedItems([]);
       setMarkedForDelete([]);
 
@@ -187,5 +250,6 @@ export const useTopImageListPage = () => {
     handleSave,
 
     sliderSettings,
+    isDirty,
   };
 };
