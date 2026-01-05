@@ -4,11 +4,7 @@ import toNumber from 'lodash/toNumber';
  * 外税計算
  * 掛率・割引後の金額に消費税をかける
  *
- * @param unitPrice 税抜単価
- * @param quantity 数量
- * @param discount 税抜割引額
- * @param taxRate 消費税率（%）
- * @param fraction 端数処理（1:切捨, 2:四捨五入, 3:切上）
+ * ※ 消費税は常に切り捨て
  */
 export const calcAmountExternalTax = (
   unitPrice: number | undefined,
@@ -27,18 +23,18 @@ export const calcAmountExternalTax = (
   // 割引後税抜（課税対象）
   const taxable = Math.max(subtotal - disc, 0);
 
-  // 消費税（外税）
+  // 消費税（外税・★常に切り捨て）
   const taxRaw = (taxable * taxRate) / 100;
+  const sales_tax = Math.floor(taxRaw);
 
-  const sales_tax =
+  // 税込金額（こちらは従来通り fraction に従う）
+  const amountRaw = taxable + sales_tax;
+  const amount =
     fraction === 1
-      ? Math.floor(taxRaw)
+      ? Math.floor(amountRaw)
       : fraction === 2
-      ? Math.round(taxRaw)
-      : Math.ceil(taxRaw);
-
-  // 税込金額
-  const amount = taxable + sales_tax;
+      ? Math.round(amountRaw)
+      : Math.ceil(amountRaw);
 
   return {
     amount,

@@ -68,7 +68,8 @@ class ReceiveOrder extends Model
       ])
       ->join('t_receive_order_details as rd', 'rd.receive_order_id', '=', 'r.id')
       ->leftJoin('t_link_r_order_sales_detail as l', 'l.receive_order_detail_id', '=', 'rd.id')
-      ->leftJoin('t_sales_details as sd', 'sd.id', '=', 'l.sales_detail_id')
+      // ★修正：売上明細テーブル名を SalesDetail に合わせる（t_sale_details）
+      ->leftJoin('t_sale_details as sd', 'sd.id', '=', 'l.sales_detail_id')
       ->where('r.id', '=', $receive_order_id)
       ->whereIn('rd.item_kind', [1, 2])
       ->get();
@@ -93,11 +94,10 @@ class ReceiveOrder extends Model
       ->join('t_receive_order_details as rd', 'rd.receive_order_id', '=', 'r.id')
       ->leftJoin('t_link_r_order_p_order_detail as l', 'l.receive_order_detail_id', '=', 'rd.id')
       ->leftJoin('t_place_order_details as pd', 'pd.id', '=', 'l.place_order_detail_id')
-      ->where('r.id', '=', $receive_order_id)
+      ->where('r.id', $receive_order_id)
       ->whereIn('rd.item_kind', [1, 2])
       ->get();
 
     return $rows->groupBy('receive_detail_id');
   }
-
 }

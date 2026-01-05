@@ -12,6 +12,53 @@ class SalesStoreRequest extends FormRequest
         return true;
     }
 
+    /**
+     * バリデーション前の正規化 + 事実確認ログ
+     *
+     * - sales_at が空で来ているため required に落ちている可能性が高い
+     * - controller より前で落ちるので、ここでログを出す
+     * - 暫定回避：sales_at が空なら今日を補完（保存を通しつつ原因を確定）
+     */
+    protected function prepareForValidation(): void
+    {
+        $rawSalesAt = $this->input('sales_at');
+        $rawDeliveryDate = $this->input('delivery_date');
+
+        // まず「実際に何が来ているか」をログ出し（controllerに届く前）
+        try {
+            \Log::warning('[SalesStoreRequest] prepareForValidation', [
+                'content_type' => $this->header('content-type'),
+                'sales_at_raw_type' => gettype($rawSalesAt),
+                'sales_at_raw' => is_scalar($rawSalesAt) ? (string)$rawSalesAt : $rawSalesAt,
+                'delivery_date_raw_type' => gettype($rawDeliveryDate),
+                'delivery_date_raw' => is_scalar($rawDeliveryDate) ? (string)$rawDeliveryDate : $rawDeliveryDate,
+                'payload_keys' => array_keys($this->all() ?? []),
+            ]);
+        } catch (\Throwable $e) {
+            // ログ失敗で落とさない
+        }
+
+        // sales_at の補正：空なら今日、入っていれば "/" を "-" に
+        $salesAt = $rawSalesAt;
+        if ($salesAt === null || $salesAt === '') {
+            // 暫定：空なら今日（required落ち回避）
+            $salesAt = now()->format('Y-m-d');
+        } elseif (is_string($salesAt)) {
+            $salesAt = str_replace('/', '-', $salesAt);
+        }
+
+        // delivery_date も同様に "/" → "-"（空は null のまま）
+        $deliveryDate = $rawDeliveryDate;
+        if (is_string($deliveryDate) && $deliveryDate !== '') {
+            $deliveryDate = str_replace('/', '-', $deliveryDate);
+        }
+
+        $this->merge([
+            'sales_at' => $salesAt,
+            'delivery_date' => ($deliveryDate === '' ? null : $deliveryDate),
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -44,6 +91,7 @@ class SalesStoreRequest extends FormRequest
 
             // 明細（1件以上必須）
             'details'                           => ['required', 'array', 'min:1'],
+            'details.*.id'                      => ['nullable', 'integer'],
             'details.*.no'                      => ['nullable', 'integer'],
             'details.*.item_kind'               => ['nullable', 'integer'],
             'details.*.item_id'                 => ['nullable', 'integer'],
@@ -51,7 +99,9 @@ class SalesStoreRequest extends FormRequest
             'details.*.rate'                    => ['nullable', 'integer'],
             'details.*.unit_price'              => ['nullable', 'numeric'],
             'details.*.quantity'                => ['required', 'integer', 'min:1'],
+            'details.*.discount'                => ['nullable', 'numeric', 'min:0'], // ★追加：明細割引
             'details.*.amount'                  => ['nullable', 'numeric'],
+            'details.*.sales_tax'               => ['nullable', 'numeric', 'min:0'], // （任意）送るなら
             'details.*.sales_tax_rate'          => ['nullable', 'integer'],
             'details.*.fraction'                => ['nullable', 'integer'],
         ];
@@ -71,6 +121,7 @@ class SalesStoreRequest extends FormRequest
             'details'                   => '明細',
             'details.*.quantity'        => '数量',
             'details.*.unit_price'      => '単価',
+            'details.*.discount'        => '割引',
         ];
     }
 

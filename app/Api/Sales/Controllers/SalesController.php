@@ -19,17 +19,11 @@ class SalesController extends BaseController
   /** @var \App\Api\Sales\Services\SalesService */
   protected $service;
 
-  /**
-   * @param \App\Api\Sales\Services\SalesService $service
-   */
   public function __construct(SalesService $service)
   {
     $this->service = $service;
   }
 
-  /**
-   * 検索画面
-   */
   public function dialog(Request $request)
   {
     $input = $request->all();
@@ -38,9 +32,6 @@ class SalesController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 一覧画面
-   */
   public function fetch(Request $request)
   {
     $input = $request->all();
@@ -49,11 +40,6 @@ class SalesController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 詳細画面
-   *
-   * @param mixed $id 売上ID
-   */
   public function edit($id = null)
   {
     if ($id) {
@@ -65,11 +51,6 @@ class SalesController extends BaseController
     return $this->success($data);
   }
 
-  /**
-   * 詳細画面（受注ID）
-   *
-   * @param mixed $id 受注ID
-   */
   public function edit_by_receive_id($id)
   {
     $data = $this->service->get_by_receive_id($id);
@@ -82,25 +63,55 @@ class SalesController extends BaseController
    */
   public function store(SalesStoreRequest $request)
   {
-      \Log::warning('[SalesController@store] called', [
-          'payload_keys' => array_keys($request->all()),
+    // ここに出なければ「Controller未到達」
+    \Log::warning('[SalesController@store] ENTER', [
+      'content_type' => $request->header('content-type'),
+      'origin'       => $request->header('origin'),
+      'referer'      => $request->header('referer'),
+      'payload_keys' => array_keys($request->all() ?? []),
+      'sales_at_raw' => $request->input('sales_at'),
+      'receive_order_id' => $request->input('receive_order_id'),
+      'details_count' => is_array($request->input('details')) ? count($request->input('details')) : null,
+    ]);
+
+    try {
+      $validated = $request->validated();
+
+      \Log::warning('[SalesController@store] VALIDATED', [
+        'keys' => array_keys($validated),
+        'sales_at' => $validated['sales_at'] ?? null,
+        'receive_order_id' => $validated['receive_order_id'] ?? null,
+        'details_count' => isset($validated['details']) && is_array($validated['details']) ? count($validated['details']) : null,
       ]);
 
-      $ret = $this->service->store($request->validated());
-      if (!$ret["success"]) {
-          return $this->error("", $ret["errors"]);
+      $ret = $this->service->store($validated);
+
+      \Log::warning('[SalesController@store] SERVICE_RETURN', $ret);
+
+      if (!($ret['success'] ?? false)) {
+        return $this->error('', $ret['errors'] ?? ['system' => '登録に失敗しました。']);
       }
 
       return $this->success([
-          'id' => $ret['id']
+        'id' => $ret['id'],
       ]);
+
+    } catch (\Throwable $e) {
+      \Log::error('[SalesController@store] EXCEPTION', [
+        'type'    => get_class($e),
+        'message' => $e->getMessage(),
+        'code'    => $e->getCode(),
+        'file'    => $e->getFile(),
+        'line'    => $e->getLine(),
+      ]);
+      // ここは「500で落ちた」ことを返す（フロント側確認用）
+      return response()->json([
+        'success' => false,
+        'message' => 'STORE_EXCEPTION',
+      ], 500);
+    }
   }
 
-  /**
-   * バリデーション（更新）
-   *
-   * @param int $id 売上ID
-   */
   public function validate_edit(SalesUpdateRequest $request, int $id)
   {
     $check = $this->service->validate_edit($id, $request->validated());
@@ -109,11 +120,6 @@ class SalesController extends BaseController
     ]);
   }
 
-  /**
-   * 更新
-   *
-   * @param int $id 売上ID
-   */
   public function update(SalesUpdateRequest $request, int $id)
   {
     if ($this->service->hasInvoice($id)) {
@@ -130,11 +136,6 @@ class SalesController extends BaseController
     return $this->success();
   }
 
-  /**
-   * 削除
-   *
-   * @param int $id 売上ID
-   */
   public function delete(int $id)
   {
     if ($this->service->hasInvoice($id)) {
@@ -148,17 +149,11 @@ class SalesController extends BaseController
     return $this->success();
   }
 
-  /**
-   * 明細（バリデーション）
-   */
   public function detail(SalesDetailRequest $request)
   {
     return $this->success();
   }
 
-  /**
-   * 納品書印刷
-   */
   public function output_delivery(SalesUpdateRequest $request)
   {
     $data = $this->service->getPdfData($request->validated());
@@ -171,9 +166,6 @@ class SalesController extends BaseController
     ]);
   }
 
-  /**
-   * 請求書印刷
-   */
   public function output_invoice(SalesUpdateRequest $request)
   {
     $data = $this->service->getPdfData($request->validated());
@@ -186,14 +178,10 @@ class SalesController extends BaseController
     ]);
   }
 
-  /**
-   * エクセル出力
-   */
   public function output_excel(Request $request)
   {
     $input = $request->all();
 
-    // 既存のサービスAPIに合わせる（元の設計に準拠）
     $rows = $this->service->getExcelData($input);
 
     $excel = new SalesExcelService();

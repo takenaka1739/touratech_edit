@@ -3,9 +3,7 @@
 namespace App\Base\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\Base\Models\Personnel;
 
 class Sales extends Model
 {
@@ -43,12 +41,10 @@ class Sales extends Model
         'deleted_at',
     ];
 
-
     public function details()
     {
         return $this->hasMany(SalesDetail::class, 'sale_id');
     }
-
 
     public function customer()
     {
@@ -59,7 +55,6 @@ class Sales extends Model
     {
         return $this->belongsTo(\App\Base\Models\Personnel::class, 'personnel_id');
     }
-
 
     public function payment()
     {
@@ -80,14 +75,19 @@ class Sales extends Model
     }
 
     /**
-     * 明細に登録されている商品番号を取得する
+     * 明細に登録されている商品番号（= m_items.code）を取得する
+     *
+     * 旧: sales_details.item_number を保持していたが、
+     * 新: t_sale_details は item_id 正規化なので m_items から取得する
      */
-    public function getItemNumbers()
+    public function getItemNumbers(): array
     {
-        return DB::table('t_sales_details')
-            ->where('sales_id', $this->id)
-            ->whereIn('item_kind', [1, 3])
-            ->pluck('item_number')
+        return DB::table('t_sale_details as d')
+            ->join('m_items as i', 'i.id', '=', 'd.item_id')
+            ->where('d.sale_id', $this->id)
+            ->whereIn('d.item_kind', [1, 3])
+            ->whereNull('d.deleted_at') // SalesDetail が SoftDeletes のため
+            ->pluck('i.code')
             ->all();
     }
 }

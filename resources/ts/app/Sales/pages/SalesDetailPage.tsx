@@ -1,6 +1,6 @@
 // resources/ts/app/Sales/pages/SalesDetailPage.tsx
 // [UPDATE] resources/ts/app/Sales/pages/SalesDetailPage.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
 import { CommonDataDetailDialog } from '@/app/App/components/CommonDataDetailDialog';
@@ -12,6 +12,7 @@ import { numberFormat, getItemKindName } from '@/utils';
 import { useComposing } from '@/uses';
 import classNames from 'classnames';
 import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
+import axios from 'axios';
 
 export type DetailPageProps = {
   from_receive: boolean;
@@ -19,9 +20,6 @@ export type DetailPageProps = {
 
 /**
  * 売上データ（詳細）画面 Component
- *
- * @param props
- * @param props.match.params.id - IDが設定されている場合は更新
  */
 export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) => {
   const title = '売上データ';
@@ -53,15 +51,126 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     onClickCreateCustomer,
   } = useSalesDetailPage(slug, from_receive);
 
-  // 郵便番号 → 住所検索用フック
   const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
 
-  // フィールドに値をセットするヘルパー
+  /**
+   * CSRF 対策 + Sales API 送信payloadログ（discountがどこで消えるか確定する）
+   */
+  useEffect(() => {
+    axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+    axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
+    axios.defaults.withCredentials = true;
+
+    const cookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('XSRF-TOKEN='));
+    if (cookie) {
+      const raw = cookie.split('=')[1] ?? '';
+      try {
+        const token = decodeURIComponent(raw);
+        axios.defaults.headers.common['X-XSRF-TOKEN'] = token;
+      } catch {
+        axios.defaults.headers.common['X-XSRF-TOKEN'] = raw;
+      }
+    }
+    axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+    // ===== 追加：Sales API への送信payloadを確定ログ =====
+    const interceptorId = axios.interceptors.request.use((config) => {
+      const url = config.url ?? '';
+      const method = (config.method ?? '').toLowerCase();
+
+      const isSalesApi =
+        url.includes('/api/sales/') ||
+        url.includes(`/api/${slug}/`);
+
+      const isTargetMethod = method === 'post' || method === 'put';
+
+      if (isSalesApi && isTargetMethod) {
+        const data: any = config.data;
+
+        const parsed = (() => {
+          if (!data) return undefined;
+          if (typeof data === 'string') {
+            try { return JSON.parse(data); } catch { return { __raw: data }; }
+          }
+          return data;
+        })();
+
+        const details = Array.isArray(parsed?.details) ? parsed.details : [];
+
+        console.log('[SalesDetailPage][axios request]', {
+          method,
+          url,
+          header: {
+            id: parsed?.id,
+            sales_at: parsed?.sales_at,
+            customer_id: parsed?.customer_id,
+            sales_tax_rate: parsed?.sales_tax_rate,
+          },
+          details_len: details.length,
+          details_preview: details.slice(0, 5).map((d: any) => ({
+            id: d?.id,
+            no: d?.no,
+            item_id: d?.item_id,
+            discount: d?.discount,
+            unit_price: d?.unit_price,
+            quantity: d?.quantity,
+            amount: d?.amount,
+            sales_tax: d?.sales_tax,
+            sales_tax_rate: d?.sales_tax_rate,
+          })),
+        });
+      }
+
+      return config;
+    });
+
+    return () => {
+      axios.interceptors.request.eject(interceptorId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * state snapshot ログ
+   */
+  useEffect(() => {
+    console.log('[SalesDetailPage] state snapshot', {
+      id,
+      from_receive,
+      isLoading,
+      sales_tax_rate: state?.sales_tax_rate,
+      fraction: state?.fraction,
+      corporate_class: state?.corporate_class,
+      payment_id: (state as any)?.payment_id,
+      details_len: Array.isArray((state as any)?.details) ? (state as any).details.length : 0,
+      details_discount_preview: Array.isArray((state as any)?.details)
+        ? (state as any).details.slice(0, 5).map((d: any) => ({
+            no: d?.no,
+            id: d?.id,
+            item_id: d?.item_id,
+            discount: d?.discount,
+          }))
+        : [],
+    });
+  }, [id, from_receive, isLoading, state?.sales_tax_rate, state?.fraction, (state as any)?.details]);
+
+  /**
+   * モーダルprops ログ
+   */
+  useEffect(() => {
+    console.log('[SalesDetailPage] props for CommonDataDetailDialog', {
+      fraction: state?.fraction,
+      salesTaxRateProp: state?.sales_tax_rate ?? 0,
+      detailDialogPropsKeys: detailDialogProps ? Object.keys(detailDialogProps as any) : [],
+    });
+  }, [state?.fraction, state?.sales_tax_rate, detailDialogProps]);
+
   const setFieldValue = (name: string, value: any) => {
     onChange(name, value);
   };
 
-  // 郵便番号から住所1を検索してセット
   const handleSearchAddressByZip = async () => {
     const address = await searchAddressByZip(state.zip_code ?? '');
     if (address) {
@@ -69,13 +178,140 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     }
   };
 
-  // ---------- 安全なデフォルト（壊れないための保険） ----------
   const details = useMemo(
     () => (Array.isArray(state?.details) ? state.details : []),
     [state?.details],
   );
   const safeNumber = (v: number | string | undefined, p: number = 0) =>
     numberFormat((v as number) ?? 0, p);
+
+  /**
+   * details監視ログ（discount確認用）
+   */
+  useEffect(() => {
+    console.log('[SalesDetailPage] details changed', {
+      len: details.length,
+      first: details[0]
+        ? {
+            no: (details[0] as any)?.no,
+            id: (details[0] as any)?.id,
+            item_id: (details[0] as any)?.item_id,
+            discount: (details[0] as any)?.discount,
+            amount: (details[0] as any)?.amount,
+          }
+        : null,
+      preview: details.slice(0, 10).map((d: any) => ({
+        no: d?.no,
+        id: d?.id,
+        item_id: d?.item_id,
+        discount: d?.discount,
+        unit_price: d?.unit_price,
+        quantity: d?.quantity,
+        amount: d?.amount,
+      })),
+    });
+  }, [details]);
+
+  /**
+   * detailDialogProps callback をラップ（onSelected/onDeletedでdiscountが入っているか確認）
+   */
+  const detailDialogPropsWithLog = useMemo(() => {
+    const p: any = detailDialogProps ?? {};
+
+    const wrapSelected = (orig?: (d: any) => void) => (d: any) => {
+      console.log('[SalesDetailPage] detailDialogProps.onSelected RECEIVED', {
+        no: d?.no,
+        id: d?.id,
+        item_id: d?.item_id,
+        discount: d?.discount,
+        amount: d?.amount,
+        sales_tax: d?.sales_tax,
+        sales_tax_rate: d?.sales_tax_rate,
+        keys: d ? Object.keys(d) : [],
+      });
+
+      const before = Array.isArray((state as any)?.details) ? (state as any).details : [];
+      console.log('[SalesDetailPage] BEFORE onSelected (state.details)', {
+        len: before.length,
+        preview: before.slice(0, 10).map((x: any) => ({
+          no: x?.no,
+          id: x?.id,
+          item_id: x?.item_id,
+          discount: x?.discount,
+          amount: x?.amount,
+        })),
+      });
+
+      orig?.(d);
+
+      setTimeout(() => {
+        const after = Array.isArray((state as any)?.details) ? (state as any).details : [];
+        console.log('[SalesDetailPage] AFTER onSelected (state.details)', {
+          len: after.length,
+          preview: after.slice(0, 10).map((x: any) => ({
+            no: x?.no,
+            id: x?.id,
+            item_id: x?.item_id,
+            discount: x?.discount,
+            amount: x?.amount,
+          })),
+        });
+      }, 0);
+    };
+
+    const wrapDeleted = (orig?: (no: number) => void) => (no: number) => {
+      console.log('[SalesDetailPage] detailDialogProps.onDeleted RECEIVED', { no });
+      orig?.(no);
+      setTimeout(() => {
+        const after = Array.isArray((state as any)?.details) ? (state as any).details : [];
+        console.log('[SalesDetailPage] AFTER onDeleted (state.details)', {
+          len: after.length,
+          preview: after.slice(0, 10).map((x: any) => ({
+            no: x?.no,
+            id: x?.id,
+            item_id: x?.item_id,
+            discount: x?.discount,
+            amount: x?.amount,
+          })),
+        });
+      }, 0);
+    };
+
+    return {
+      ...p,
+      onSelected: wrapSelected(p.onSelected),
+      onDeleted: wrapDeleted(p.onDeleted),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailDialogProps, state]);
+
+  /**
+   * 保存直前ログ + 元の保存処理
+   */
+  const onClickSaveWithLog = async () => {
+    console.log('[SalesDetailPage] BEFORE onClickSave payload snapshot', {
+      header: {
+        id,
+        sales_at: state?.sales_at,
+        customer_id: state?.customer_id,
+        sales_tax_rate: state?.sales_tax_rate,
+      },
+      details_len: details.length,
+      details_preview: details.slice(0, 5).map((d: any) => ({
+        id: d?.id,
+        no: d?.no,
+        item_id: d?.item_id,
+        discount: d?.discount,
+        unit_price: d?.unit_price,
+        quantity: d?.quantity,
+        amount: d?.amount,
+        sales_tax: d?.sales_tax,
+        sales_tax_rate: d?.sales_tax_rate,
+      })),
+    });
+
+    await onClickSave();
+  };
 
   return (
     <PageWrapper
@@ -194,7 +430,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           </div>
         </div>
 
-        {/* 郵便番号 + 住所検索ボタン */}
         <div className="flex items-end max-w-2xl">
           <div className="w-2/5">
             <Forms.FormGroupInputZipCode
@@ -345,6 +580,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                 <th className="w-16">掛率</th>
                 <th className="w-24">単価</th>
                 <th className="w-16">数量</th>
+                <th className="w-24">割引</th>
                 <th className="w-28">金額</th>
                 <th className="w-16">編集</th>
               </tr>
@@ -353,58 +589,38 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             <tbody>
               {details.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="text-center py-4 text-sm text-gray-500"
-                  >
+                  <td colSpan={9} className="text-center py-4 text-sm text-gray-500">
                     明細がありません。バーコード入力または「新規追加」から追加してください。
                   </td>
                 </tr>
               )}
 
               {details.map((r: any, idx: number) => {
-                // ユニークキー警告対策：id / no が無い場合にも固有化
                 const key = `${r?.id ?? 'tmp'}-${r?.no ?? idx}`;
                 return (
                   <tr key={key}>
-                    {/* 先頭列は id がなければ no を見せる */}
                     <td className="text-center">{r?.id ?? r?.no}</td>
                     <td>{getItemKindName(r?.item_kind)}</td>
                     <td>
                       <div className="text-xs">{r?.item_number}</div>
                       <div>{r?.item_name}</div>
-                      {/*<div>{r?.item_name_jp}</div>*/}
                       <div>{r?.item_name_note}</div>
                     </td>
-                    <td className="text-right">
-                      {safeNumber(r?.sales_unit_price, 2)}
-                    </td>
+                    <td className="text-right">{safeNumber(r?.sales_unit_price, 2)}</td>
                     <td className="text-right">{r?.rate ?? ''}</td>
-                    <td className="text-right">
-                      {safeNumber(r?.unit_price, 2)}
-                    </td>
+                    <td className="text-right">{safeNumber(r?.unit_price, 2)}</td>
                     <td
                       className={classNames(
                         'text-right',
-                        errors &&
-                          (`quantity_${r?.id ?? r?.no}` in errors)
-                          ? 'bg-red-200'
-                          : '',
+                        errors && (`quantity_${r?.id ?? r?.no}` in errors) ? 'bg-red-200' : '',
                       )}
                     >
                       {r?.quantity}
                     </td>
-                    <td className="text-right">
-                      {safeNumber(r?.amount, 0)}
-                    </td>
+                    <td className="text-right">{numberFormat((r as any).discount ?? 0, 0)}</td>
+                    <td className="text-right">{safeNumber(r?.amount, 0)}</td>
                     <td className="col-btn">
-                      {/* button にしてフォーカス可能＆data-noはr.noを優先 */}
-                      <button
-                        type="button"
-                        onClick={onClickEditDetail}
-                        data-no={r?.no}
-                        className="underline"
-                      >
+                      <button type="button" onClick={onClickEditDetail} data-no={r?.no} className="underline">
                         編集
                       </button>
                     </td>
@@ -414,17 +630,13 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             </tbody>
           </table>
 
-          {errors?.details && (
-            <div className="form-error ml-2">{errors.details}</div>
-          )}
-          {errors?.quantity && (
-            <div className="form-error ml-2">{errors.quantity}</div>
-          )}
+          {errors?.details && <div className="form-error ml-2">{errors.details}</div>}
+          {errors?.quantity && <div className="form-error ml-2">{errors.quantity}</div>}
 
           <CommonDataDetailDialog
             title={title}
             slug={slug}
-            {...detailDialogProps}
+            {...detailDialogPropsWithLog}
             fraction={state.fraction}
             salesTaxRate={state.sales_tax_rate ?? 0}
           />
@@ -498,8 +710,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>
-            {/* バリデーションはバックエンドに委譲し、フロント側はそのまま保存 */}
-            <button className="btn" onClick={onClickSave} disabled={state.has_invoice}>
+            <button className="btn" onClick={onClickSaveWithLog} disabled={state.has_invoice}>
               保存
             </button>
             <button className="btn ml-6" onClick={onClickPrintDelivery}>

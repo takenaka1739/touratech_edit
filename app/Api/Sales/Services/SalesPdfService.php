@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 納品書 & 請求書PDFサービス
@@ -88,6 +89,8 @@ class SalesPdfService
   {
     $this->doc_type = $doc_type;
     $this->pdf = new PdfWrapper($this->doc_type);
+    $this->debugLogPdfPayload('createPdf', $data);
+
 
     // 状態初期化（控/本紙で別）
     $this->discountPrintedCopy1 = false;
@@ -188,6 +191,7 @@ class SalesPdfService
   )
   {
     $data = new Collection($data);
+    $this->debugLogPdfPayload('writeParts copy=' . $copyNo, $data->toArray());
     $config = new Collection($data->get('config_data', []));
     $customer = new Collection($data->get('customer_data', []));
 
@@ -197,6 +201,27 @@ class SalesPdfService
     } else {
       $discountPrinted =& $this->discountPrintedCopy2;
     }
+
+    // -----------------------------
+    // 宛先（郵便番号・氏名・TEL/FAX）を確実に埋める
+    // - 旧実装ではヘッダ直下に入っていたが、現行は customer_data 側に入るケースがあるため吸収
+    // -----------------------------
+  // 郵便番号（ship_to_* 優先、旧キーも保険で吸収）
+  $zip = (string)($data->get('ship_to_zip_code', '') ?: $data->get('zip_code', ''));
+  $this->pdf->SetFontSize(13);
+  $this->pdf->Text(23, $base_y + 14.3, "〒" . $zip);
+
+  // 宛先
+  $toName = (string)($data->get('ship_to_name', '') ?: $data->get('name', ''));
+  $this->pdf->SetFontSize(13);
+  $this->pdf->Text(23, $base_y + 23.7, $toName . "　様");
+
+  // TEL / FAX
+  $tel = (string)($data->get('ship_to_tel', '') ?: $data->get('tel', ''));
+  $fax = (string)($data->get('fax', '') ?: ''); // ship_to_fax は無い
+  $this->pdf->SetFontSize(10);
+  $this->pdf->Text(23, $base_y + 34.1, 'TEL ' . $tel);
+  $this->pdf->Text(58.2, $base_y + 34.1, 'FAX ' . $fax);
 
     // タイトル
     $this->pdf->SetFontSize(18);
@@ -241,17 +266,6 @@ class SalesPdfService
     $this->pdf->SetFontSize(9);
     $this->pdf->Text(195.128, $base_y + 16.821, '日');
 
-    // 郵便番号
-    $this->pdf->SetFontSize(13);
-    $this->pdf->Text(23, $base_y + 14.3, "〒" . (string)$data->get('zip_code', ''));
-
-    // 宛先
-    $this->pdf->SetFontSize(13);
-    $this->pdf->Text(23, $base_y + 23.7, (string)$data->get('name', '') . "　様");
-
-    $this->pdf->SetFontSize(10);
-    $this->pdf->Text(23, $base_y + 34.1, 'TEL ' . (string)$data->get('tel', ''));
-    $this->pdf->Text(58.2, $base_y + 34.1, 'FAX ' . (string)$data->get('fax', ''));
     $this->pdf->Text(23, $base_y + 38.1, '支払方法：' . get_corporate_class_name($data->get('corporate_class', 1)));
 
     // 自社名
@@ -355,6 +369,14 @@ class SalesPdfService
     // -----------------------------
     $details = new Collection($data->get('details', []));
     $rows = $details->forPage($page, static::PER_PAGE);
+    if (config('app.debug')) {
+      $first = $rows->first();
+      Log::info('[SalesPdfService][DEBUG] first detail keys', [
+        'exists' => (bool)$first,
+        'keys'   => $first ? array_keys((array)$first) : [],
+        'row'    => $first ? (array)$first : null,
+      ]);
+    }
 
     $isLastPage = ($page === $max_page);
     $shipFeeRows = $isLastPage ? $this->getShippingFeeRowCount($data->toArray()) : 0;
@@ -379,9 +401,9 @@ class SalesPdfService
       $y = $this->rowY($base_y, $rowIndex);
 
       // 商品名（jpが無ければ通常名）
-      $name = (string)($row->get('item_name_jp', '') ?? '');
-      if ($name === '') {
-        $name = (string)($row->get('item_name', '') ?? '');
+      $itemName  = (string)($row->get('item_name_jp', '') ?? '');
+      if ($itemName  === '') {
+        $itemName  = (string)($row->get('item_name', '') ?? '');
       }
 
       // 掛率
@@ -399,7 +421,7 @@ class SalesPdfService
       // 商品名
       $this->pdf->SetFontSize(9);
       $this->pdf->SetXY(self::X_TBL_L, $y + 4.35);
-      $this->pdf->Cell(self::X_ITEM_R - self::X_TBL_L, 4.35, mb_strimwidth($name, 0, 38));
+      $this->pdf->Cell(self::X_ITEM_R - self::X_TBL_L, 4.35, mb_strimwidth($itemName , 0, 38));
 
       // 数量
       $this->pdf->SetFontSize(10);
@@ -521,17 +543,11 @@ class SalesPdfService
     }
 
     // -----------------------------
-    // 摘要
+    // 摘要（既存合わせ：空白運用）
     // -----------------------------
     $this->pdf->SetFontSize(9);
     $this->pdf->Text(23, $base_y + 137.9, "摘要：");
-
-    $remarks = (string)($data->get('remarks', '') ?? '');
-    if ($remarks !== '') {
-      $this->pdf->SetFontSize(8);
-      $this->pdf->SetXY(33, $base_y + 136.5);
-      $this->pdf->MultiCell(70, 4, $remarks);
-    }
+    // remarks は印字しない
 
     // -----------------------------
     // 合計欄（従来どおり）
@@ -567,5 +583,97 @@ class SalesPdfService
   private function getFileId(string $prefix)
   {
     return $prefix . "_" . Str::random(32);
+  }
+
+  /**
+   * Collection 配列の中から、指定キー群の「最初の非空値」を返す
+   */
+  private function pickFirstNonEmpty(array $sources, array $keys): string
+  {
+    foreach ($sources as $src) {
+      if (!$src instanceof Collection) continue;
+
+      foreach ($keys as $k) {
+        if (!$src->has($k)) continue;
+
+        $v = $src->get($k);
+
+        if (is_string($v)) {
+          $v = trim($v);
+          if ($v !== '') return $v;
+        } elseif (!is_null($v) && $v !== '') {
+          return (string)$v;
+        }
+      }
+    }
+    return '';
+  }
+
+  private function debugLogPdfPayload(string $label, array $data): void
+  {
+      try {
+          $mask = function ($v) {
+              if (!is_string($v)) return $v;
+              $v = trim($v);
+              if ($v === '') return $v;
+
+              // 電話っぽいものは末尾4桁以外マスク
+              if (preg_match('/^\d[\d\-]{7,}$/', $v)) {
+                  return preg_replace('/\d(?=\d{4})/', '*', $v);
+              }
+
+              // 文字列は長すぎるとログが荒れるので最大60文字
+              $short = mb_substr($v, 0, 60);
+              return $short . (mb_strlen($v) > 60 ? '…' : '');
+          };
+
+          // 主要キー候補（あなたのPDFが参照している/参照しがちなもの）
+          $keys = [
+              'id', 'sales_date', 'sales_at', 'order_no',
+              'zip_code', 'name', 'tel', 'fax',
+              'remarks',
+              'customer_data', 'config_data',
+          ];
+
+          $pick = [];
+          foreach ($keys as $k) {
+              if (array_key_exists($k, $data)) {
+                  $pick[$k] = $data[$k];
+              }
+          }
+
+          // customer_data の中身も見たい
+          $customer = $data['customer_data'] ?? null;
+          if (is_array($customer)) {
+              $pick['customer_data_keys'] = array_keys($customer);
+              foreach (['name', 'zip_code', 'tel', 'fax', 'address1', 'address2', 'zipcode', 'phone'] as $k) {
+                  if (array_key_exists($k, $customer)) {
+                      $pick["customer_data.$k"] = $customer[$k];
+                  }
+              }
+          } else {
+              $pick['customer_data_type'] = gettype($customer);
+          }
+
+          // remarks は中身をマスクして短く
+          if (isset($pick['remarks'])) {
+              $pick['remarks'] = $mask((string)$pick['remarks']);
+          }
+
+          // zip/name/tel/fax はマスク
+          foreach (['zip_code', 'name', 'tel', 'fax'] as $k) {
+              if (isset($pick[$k])) $pick[$k] = $mask((string)$pick[$k]);
+          }
+          foreach (['customer_data.name', 'customer_data.zip_code', 'customer_data.tel', 'customer_data.fax', 'customer_data.phone', 'customer_data.zipcode'] as $k) {
+              if (isset($pick[$k])) $pick[$k] = $mask((string)$pick[$k]);
+          }
+
+          // 上位キー一覧（どんな構造で来てるか把握用）
+          $pick['top_keys'] = array_keys($data);
+
+          Log::info('[SalesPdfService][DEBUG] ' . $label, $pick);
+      } catch (\Throwable $e) {
+          Log::warning('[SalesPdfService][DEBUG] failed to log payload: ' . $e->getMessage());
+      }
   }
 }

@@ -19,21 +19,27 @@ class SalesDetail extends Model
         'sales_unit_price',
         'rate',          //  掛率（今回追加）
         'unit_price',
+        'discount',
         'quantity',
         'amount',
         'sales_tax_rate',
         'sales_tax',
-        'fraction',      //  端数処理（あれば一緒に入れておく）
-        'parent_id',
     ];
 
-    // 🔗 商品情報（m_items）
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
+
+    // 商品情報（m_items）
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
 
-    // 🔗 親の売上情報（t_sales）を介して得意先情報を取得
+    // 親の売上情報（t_sales）を介して得意先情報を取得
     public function sales()
     {
         return $this->belongsTo(Sales::class, 'sale_id');

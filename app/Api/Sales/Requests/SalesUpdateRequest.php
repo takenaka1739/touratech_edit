@@ -52,17 +52,20 @@ class SalesUpdateRequest extends FormRequest
             'has_invoice'       => ['nullable', 'boolean'],
 
             // 明細
-            'details'           => ['nullable', 'array'],
-            'details.*.no'               => ['nullable', 'integer'],
-            'details.*.item_kind'        => ['nullable', 'integer'],
-            'details.*.item_id'          => ['nullable', 'integer'],
-            'details.*.sales_unit_price' => ['nullable', 'numeric'],
-            'details.*.rate'             => ['nullable', 'integer'],
-            'details.*.unit_price'       => ['nullable', 'numeric'],
-            'details.*.quantity'         => ['nullable', 'integer'],
-            'details.*.amount'           => ['nullable', 'numeric'],
-            'details.*.sales_tax_rate'   => ['nullable', 'integer'],
-            'details.*.fraction'         => ['nullable', 'integer'],
+            'details'                   => ['nullable', 'array'],
+            'details.*.id'              => ['nullable', 'integer'],
+            'details.*.no'              => ['nullable', 'integer'],
+            'details.*.item_kind'       => ['nullable', 'integer'],
+            'details.*.item_id'         => ['nullable', 'integer'],
+            'details.*.sales_unit_price'=> ['nullable', 'numeric'],
+            'details.*.rate'            => ['nullable', 'integer'],
+            'details.*.unit_price'      => ['nullable', 'numeric'],
+            'details.*.quantity'        => ['nullable', 'integer'],
+            'details.*.discount'        => ['nullable', 'numeric'], 
+            'details.*.amount'          => ['nullable', 'numeric'],
+            'details.*.sales_tax'       => ['nullable', 'numeric'], // （任意）送ってくる場合に備えて
+            'details.*.sales_tax_rate'  => ['nullable', 'integer'],
+            'details.*.fraction'        => ['nullable', 'integer'],
         ];
     }
 

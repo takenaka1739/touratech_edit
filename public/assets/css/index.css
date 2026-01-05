@@ -22142,23 +22142,35 @@ label {
 
 .item-classification-list-page {
   /* ------------------------------
-     テーブル行の背景色
+     テーブル行の背景色（公開・非公開）
   ------------------------------ */
+  /* 公開行 */
 }
 
 .item-classification-list-page .row-child {
   background: #fafafa;
 }
 
+.item-classification-list-page .row-child:hover {
+  background: #f0f0f0;
+}
+
+.item-classification-list-page {
+  /* 非公開行 */
+}
+
 .item-classification-list-page .row-hidden {
   background: #d5d7db;
+}
+
+.item-classification-list-page .row-hidden:hover {
+  background: #c7c9cc;
 }
 
 .item-classification-list-page {
   /* ------------------------------
      商品分類名セルの構造
   ------------------------------ */
-  /* td の中に置くラッパー（高さ揃えのため） */
 }
 
 .item-classification-list-page .name-cell-wrapper {
@@ -22168,25 +22180,13 @@ label {
   height: 100%;
 }
 
-.item-classification-list-page {
-  /* 実際の内容を横並びにする */
-}
-
 .item-classification-list-page .name-cell {
   display: flex;
   align-items: center;
 }
 
-.item-classification-list-page {
-  /* インデント（動的 px は inline-style で OK） */
-}
-
 .item-classification-list-page .indent {
   display: inline-block;
-}
-
-.item-classification-list-page {
-  /* 親アイコン */
 }
 
 .item-classification-list-page .icon-parent {
@@ -22203,18 +22203,10 @@ label {
   margin-right: 8px;
 }
 
-.item-classification-list-page {
-  /* 子アイコン */
-}
-
 .item-classification-list-page .icon-child {
   color: #6b7280;
   margin-right: 8px;
   font-size: 14px;
-}
-
-.item-classification-list-page {
-  /* 子階層のガイド線 */
 }
 
 .item-classification-list-page .child-guide {
@@ -22223,10 +22215,6 @@ label {
   top: 0;
   bottom: 0;
   border-left: 3px solid #e5e7eb;
-}
-
-.item-classification-list-page {
-  /* 親名・子名のフォント調整 */
 }
 
 .item-classification-list-page .name-parent {

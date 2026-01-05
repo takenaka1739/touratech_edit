@@ -28,11 +28,8 @@ class InfoServiceProvider extends ServiceProvider
         $path = base_path('app/Api/info/routes.php');
 
         if (file_exists($path)) {
-            Log::info('[InfoServiceProvider] loading routes', ['path' => $path]);
             require $path;
-            Log::info('[InfoServiceProvider] routes file included');
         } else {
-            Log::warning('[InfoServiceProvider] routes file not found', ['path' => $path]);
         }
     }
 }
