@@ -335,7 +335,7 @@ class InvoiceService
       $rows = Sales::where('customer_id', '=', $r['customer_id'])
         ->where('sales_at', '>=', $r['date_from'])
         ->where('sales_at', '<=', $r['date_to'])
-        ->where('corporate_class', '=', 2)
+        ->where('payment_id', '=', 2)
         ->get();
       $data = $data->merge($rows);
     }
@@ -546,13 +546,13 @@ class InvoiceService
    */
   private function getSalesDetails(int $salesId)
   {
-    $rows = SalesDetail::where('t_sales_details.sales_id', '=', $salesId)
-      ->leftJoin('t_sales_details as x', 'x.id', '=', 't_sales_details.parent_id')
+    $rows = SalesDetail::where('t_sale_details.sales_id', '=', $salesId)
+      ->leftJoin('t_sale_details as x', 'x.id', '=', 't_sale_details.parent_id')
       ->select([
-        't_sales_details.*',
+        't_sale_details.*',
         'x.item_name as parent_item_name'
       ])
-      ->where('t_sales_details.item_kind', '<>', 2)
+      ->where('t_sale_details.item_kind', '<>', 2)
       ->get();
 
     return $rows;

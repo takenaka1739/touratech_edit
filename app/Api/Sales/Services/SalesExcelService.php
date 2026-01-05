@@ -29,7 +29,7 @@ class SalesExcelService
         $customersTbl   = $this->firstExisting(['t_customers','m_customers','customers']);
         $usersTbl       = $this->firstExisting(['m_users','t_users','users']);
         $personnelsTbl  = $this->firstExisting(['m_personnels','t_personnels','personnels']);
-        $salesDetails   = Schema::hasTable('t_sales_details') ? 't_sales_details' : null;
+        $salesDetails   = Schema::hasTable('t_sale_details') ? 't_sale_details' : null;
 
         // 列存在
         $hasShipToName  = Schema::hasColumn($salesTbl, 'ship_to_name');

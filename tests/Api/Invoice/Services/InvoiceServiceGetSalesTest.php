@@ -25,7 +25,7 @@ class InvoiceServiceGetSalesTest extends TestCase
 
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    DB::table('t_sales_details')->delete();
+    DB::table('t_sale_details')->delete();
     DB::table('sales')->delete();
 
     DB::table('t_customers')->delete();
@@ -76,7 +76,7 @@ class InvoiceServiceGetSalesTest extends TestCase
         'total_amount' => 100,
       ]
     ]);
-    DB::table('t_sales_details')->insert([
+    DB::table('t_sale_details')->insert([
       [
         'sales_id' => 1,
         'no' => 1,
@@ -104,7 +104,7 @@ class InvoiceServiceGetSalesTest extends TestCase
         'total_amount' => 100,
       ]
     ]);
-    DB::table('t_sales_details')->insert([
+    DB::table('t_sale_details')->insert([
       [
         'sales_id' => 1,
         'no' => 1,
@@ -132,7 +132,7 @@ class InvoiceServiceGetSalesTest extends TestCase
         'total_amount' => 100,
       ]
     ]);
-    DB::table('t_sales_details')->insert([
+    DB::table('t_sale_details')->insert([
       [
         'sales_id' => 1,
         'no' => 1,
@@ -173,7 +173,7 @@ class InvoiceServiceGetSalesTest extends TestCase
         'total_amount' => 100,
       ],
     ]);
-    DB::table('t_sales_details')->insert([
+    DB::table('t_sale_details')->insert([
       [
         'sales_id' => 1,
         'no' => 1,
@@ -227,7 +227,7 @@ class InvoiceServiceGetSalesTest extends TestCase
         'total_amount' => 100,
       ],
     ]);
-    DB::table('t_sales_details')->insert([
+    DB::table('t_sale_details')->insert([
       [
         'sales_id' => 1,
         'no' => 1,
@@ -284,7 +284,7 @@ class InvoiceServiceGetSalesTest extends TestCase
         'total_amount' => 100,
       ],
     ]);
-    DB::table('t_sales_details')->insert([
+    DB::table('t_sale_details')->insert([
       [
         'sales_id' => 1,
         'no' => 1,

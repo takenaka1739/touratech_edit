@@ -29,7 +29,7 @@ class SalesServiceUpdateSalesCompletedTest extends TestCase
 
     DB::table('t_link_r_order_sales_detail')->delete();
     DB::table('t_receive_order_details')->delete();
-    DB::table('t_sales_details')->delete();
+    DB::table('t_sale_details')->delete();
 
     // DB::table('receive_order_details')->insert([[
     //   'id' => 1,
@@ -105,7 +105,7 @@ class SalesServiceUpdateSalesCompletedTest extends TestCase
     //   'parent_id' => 2,
     // ]]);
 
-    // DB::table('t_sales_details')->insert([[
+    // DB::table('t_sale_details')->insert([[
     //   'id' => 1,
     //   'sales_id' => 1,
     //   'no' => 1,
@@ -208,7 +208,7 @@ class SalesServiceUpdateSalesCompletedTest extends TestCase
   //     'parent_id' => null,
   //   ]]);
 
-  //   DB::table('t_sales_details')->insert([[
+  //   DB::table('t_sale_details')->insert([[
   //     'id' => 1,
   //     'sales_id' => 1,
   //     'no' => 1,
@@ -315,7 +315,7 @@ class SalesServiceUpdateSalesCompletedTest extends TestCase
       'parent_id' => 2,
     ]]);
 
-    DB::table('t_sales_details')->insert([[
+    DB::table('t_sale_details')->insert([[
       'id' => 1,
       'sales_id' => 1,
       'no' => 1,
