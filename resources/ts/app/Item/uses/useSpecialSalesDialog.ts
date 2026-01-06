@@ -19,7 +19,7 @@ type props = {
 /**
  * 検索画面共通 hooks
  */
-export const useSpecialSalesPage = <T extends props>(initialState: T) => {
+export const useSpecialSalesDialog = <T extends props>(initialState: T) => {
   const [state, setState] = useState(initialState);
   const [isShown, setIsShown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
