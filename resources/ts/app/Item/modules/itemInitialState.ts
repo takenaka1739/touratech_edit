@@ -14,7 +14,7 @@ export const itemInitialState: Item & { selected: number[] | undefined } ={
   explanation_details: '',
   name_note: '',
   name_label: '',
-  is_sell: false,
+  is_sell: true,
   purchase_price: undefined,
   sales_price: 0,
   special_sale_id: undefined,
@@ -55,7 +55,15 @@ export const itemInitialState: Item & { selected: number[] | undefined } ={
   special_sale_price: 0,
   refund_rate: 0,
   codeList: [],
-  categoryList: [],
+  categoryList: [
+    {
+      combId: undefined,
+      categoryId: null,
+      name: '',
+      status: 'new1',
+      initialcategoryId: undefined,
+    }
+  ],
   specialSalesList: [],
   specialSalesDelFlag: false,
   selected: undefined,

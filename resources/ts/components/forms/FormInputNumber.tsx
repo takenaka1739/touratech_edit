@@ -25,8 +25,8 @@ export const FormInputNumber: React.VFC<FormInputNumberProps> = ({
   const onChangeRaw: (e: ChangeEvent<HTMLInputElement>) => void = e => {
     if (onChange) {
       const val = e.currentTarget.value;
-      if (!val && !rest.required) {
-        onChange(name, val);
+      if (val === '') {
+        onChange(name, '');
         return;
       }
       if (toNumber(min) >= 0 && /[\-]/.test(val)) {
@@ -42,7 +42,9 @@ export const FormInputNumber: React.VFC<FormInputNumberProps> = ({
         }
       }
       const num = toNumber(val);
-      if ((min && num < min) || (max && max < num)) {
+      const minNum = min !== undefined ? Number(min) : undefined;
+      const maxNum = max !== undefined ? Number(max) : undefined;
+      if ((minNum !== undefined && num < minNum) || (maxNum !== undefined && maxNum < num)) {
         return;
       }
       onChange(name, num);

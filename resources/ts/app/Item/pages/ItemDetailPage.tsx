@@ -32,11 +32,10 @@ export const ItemDetailPage: React.FC = () => {
     errors,
     isDisabled,
     onChange,
+    setState,
 
     // カテゴリ
-    changeCategoryIndex,
     addNewCategory,
-    onChangeCategory,
     onDeleteCategory,
     itemClassSearchDialogProps,
 
@@ -76,6 +75,9 @@ export const ItemDetailPage: React.FC = () => {
     onClickPrint,
     onClickPrintNoPrice,
 
+    // ★ useItemSalesPrice から渡される
+    salesPriceChange,
+
     // 保存
     saveClick,
 
@@ -109,8 +111,7 @@ export const ItemDetailPage: React.FC = () => {
         {/* 商品分類 */}
         <ItemCategorySection
           state={state}
-          changeCategoryIndex={changeCategoryIndex}
-          onChangeCategory={onChangeCategory}
+          errors={errors}
           onDeleteCategory={onDeleteCategory}
           addNewCategory={addNewCategory}
           itemClassSearchDialogProps={itemClassSearchDialogProps}
@@ -180,7 +181,7 @@ export const ItemDetailPage: React.FC = () => {
             errors={errors}
             isVariationEditable={isVariationEditable}
             isDisabled={isDisabled}
-            handleCheck={() => {}}
+            handleCheck={(e) => onChange('isVariationEditable', e.target.checked)}
             onChangeValue={onChangeValue}
             addNewVari={addNewVari}
             delButton={delButton}
@@ -194,7 +195,7 @@ export const ItemDetailPage: React.FC = () => {
             state={state}
             errors={errors}
             onChange={onChange}
-            salesPriceChange={() => {}}
+            salesPriceChange={salesPriceChange}
             backColor={backColor}
           />
         </div>

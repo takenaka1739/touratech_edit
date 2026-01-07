@@ -3,6 +3,7 @@ import { Category } from '@/app/Item/modules/types/Category';
 type Props = {
   item: Category & { originalIndex: number };
   isDuplicate: boolean;
+  isEmptyError: boolean;
   onChangeCategory: (index: number) => void;
   onDeleteCategory: (index: number) => void;
   showDelete: boolean;
@@ -11,11 +12,12 @@ type Props = {
 export const ItemCategoryRow = ({
   item,
   isDuplicate,
+  isEmptyError,
   onChangeCategory,
   onDeleteCategory,
   showDelete,
 }: Props) => {
-  const borderColor = isDuplicate ? "red" : "#BCC7D4";
+  const borderColor = (isDuplicate || isEmptyError) ? "red" : "#BCC7D4";
 
   return (
     <div>

@@ -22,7 +22,7 @@ export const useItemVariation = ({ state, setState, onClickDelete }: UseItemVari
   const [variChangeItem, setVariChangeItem] = useState<string[][]>([]);
   const [variClickFlag, setvariClickFlag] = useState(false);
   const [onFocusItem, setonFocusItem] = useState<string[]>();
-  const [isVariationEditable, setIsVariationEditable] = useState<boolean>(true);
+  const isVariationEditable = state.isVariationEditable ?? false;
 
   // ==============================================================
   // バリエーション行追加
@@ -226,6 +226,5 @@ export const useItemVariation = ({ state, setState, onClickDelete }: UseItemVari
     handleFocus,
     outForcus,
     isVariationEditable,
-    setIsVariationEditable,
   };
 };

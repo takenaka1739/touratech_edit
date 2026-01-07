@@ -37,6 +37,22 @@ export const ItemVariationSection: React.VFC<Props> = ({
   handleFocus,
   outForcus,
 }) => {
+
+  // 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
+  let variItems: any[] = [];
+
+  if (Array.isArray(state.variItems) && state.variItems.length > 0) {
+    // 各行が 7 カラム未満なら補正する
+    variItems = state.variItems.map((row: any) => {
+      if (!Array.isArray(row)) return ['', '', '', '', '', '', ''];
+      if (row.length < 7) return ['', '', '', '', '', '', ''];
+      return row;
+    });
+  } else {
+    // 初期行（7 カラム）
+    variItems = [['', '', '', '', '', '', '']];
+  }
+
   return (
     <>
       {/* バリエーション追加チェック */}
@@ -46,6 +62,7 @@ export const ItemVariationSection: React.VFC<Props> = ({
         <input
           style={{ marginTop: '5px' }}
           type="checkbox"
+          checked={isVariationEditable}
           onChange={handleCheck}
         />
       </div>
@@ -55,29 +72,33 @@ export const ItemVariationSection: React.VFC<Props> = ({
         <ItemVariationHeader />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          {state.variItems.map((item: any, itemIndex: number) => (
+          {variItems.map((item: any, itemIndex: number) => (
             <ItemVariationRow
               key={itemIndex}
               item={item}
               itemIndex={itemIndex}
-              isEditable={isVariationEditable}
+              // チェックON かつ 全体が有効なときだけ編集可能
+              isEditable={isVariationEditable && !isDisabled}
+              isDisabled={isDisabled || !isVariationEditable}
               onChangeValue={onChangeValue}
               onAdd={addNewVari}
               onDelete={delButton}
               onFocus={handleFocus}
               onBlur={outForcus}
-              showDelete={state.variItems.length > 1}
-              isDisabled={isDisabled}
+              // チェックOFFのときは削除ボタンも非表示
+              showDelete={variItems.length > 1 && isVariationEditable && !isDisabled}
             />
           ))}
         </div>
 
-        {/* エラー表示 */}
-        {errors?.variation && (
-          <div style={{ color: 'red', marginTop: '5px' }}>
-            {errors.variation}
-          </div>
-        )}
+        {/* エラー表示（validateItemState の variation_◯ をすべて表示） */}
+        {Object.keys(errors || {})
+          .filter(key => key.startsWith('variation_'))
+          .map(key => (
+            <div key={key} className="form-error" style={{ marginTop: '5px' }}>
+              {errors[key]}
+            </div>
+          ))}
       </div>
     </>
   );

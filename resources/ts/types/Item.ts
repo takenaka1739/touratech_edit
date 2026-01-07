@@ -109,7 +109,7 @@ export interface Item {
   name_label?: string | undefined;
   is_sell?: boolean | undefined;
   purchase_price?: number | undefined;
-  sales_price: number | undefined;
+  sales_price: number | null;
   special_sale_id?: number | undefined;
   sales_unit_price?: number | undefined;
   purchase_unit_price?: number | undefined;

@@ -25,6 +25,7 @@ export const ItemCodeSection: React.VFC<Props> = ({
       error={errors?.code}
       onChange={onChange}
       className="max-w-lg"
+      required
       maxLength={50}
     />
   );

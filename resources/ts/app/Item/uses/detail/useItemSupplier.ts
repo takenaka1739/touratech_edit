@@ -5,6 +5,7 @@ import { Supplier } from '@/types';
 type UseItemSupplierArgs = {
   state: any;
   setState: React.Dispatch<React.SetStateAction<any>>;
+  setErrors: React.Dispatch<React.SetStateAction<any>>;
 };
 
 /**
@@ -13,8 +14,9 @@ type UseItemSupplierArgs = {
  * - 仕入先検索ダイアログの管理
  * - 仕入先選択時の state 更新
  * - supplierChangeFlag の管理
+ * - 仕入先選択時にエラーをクリア
  */
-export const useItemSupplier = ({ setState }: UseItemSupplierArgs) => {
+export const useItemSupplier = ({ setState, setErrors }: UseItemSupplierArgs) => {
   const [supplierChangeFlag, setSupplierChangeFlag] = useState(false);
 
   // ==============================================================
@@ -33,6 +35,12 @@ export const useItemSupplier = ({ setState }: UseItemSupplierArgs) => {
         ...prev,
         supplier_id: id ?? null,
         supplier_name: name ?? '',
+      }));
+
+      // 未入力メッセージのクリア
+      setErrors((prev: any) => ({
+        ...prev,
+        supplier_name: null,
       }));
 
       return true;

@@ -5,7 +5,7 @@ type Props = {
   state: any;
   errors: any;
   onChange: (name: string, value: any) => void;
-  salesPriceChange: (value: string) => void;
+  salesPriceChange: (value: string | number | boolean | undefined) => void;
   backColor: string;
 };
 
@@ -31,18 +31,20 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
     <>
       {/* 販売価格（税込） */}
       <div className="price-erea" style={{ marginLeft: '1px', marginTop: '10px' }}>
-        <label style={{ marginTop: '5px', marginLeft: '11px', display: "block", textAlign: "right" }}>
-          販売価格（税込）
-        </label>
-        <label style={{ marginTop: '5px' }} className="label-required">必須</label>
 
-        <input
-          type="number"
-          className="input w-full text-right max-w-8"
+        {/* input → FormGroupInputNumber に置き換え（precision=2） */}
+        <Forms.FormGroupInputNumber
+          labelText="販売価格（税込）"
+          name="sales_price"
           value={state.sales_price}
+          error={errors?.sales_price}
+          onChange={(_name, value) => salesPriceChange(value)}
+          precision={2}
+          className="max-w-8"
+          min={0}
           disabled={state.isVariationEditable}
           style={{ backgroundColor: backColor }}
-          onChange={(event) => salesPriceChange(event.target.value)}
+          required
         />
       </div>
 

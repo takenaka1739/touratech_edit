@@ -68,7 +68,7 @@ export const ItemVariationRow = ({
           className="btn-delete"
           style={{ height: '26px', padding: '0 5px', whiteSpace: 'nowrap' }}
           onClick={() => onDelete(itemIndex)}
-          disabled={isDisabled}
+          disabled={!isEditable}
         >
           削除
         </button>

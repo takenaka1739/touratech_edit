@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { itemInitialState } from '@/app/Item/modules/itemInitialState';
@@ -6,19 +7,18 @@ import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 
 // 分割した use 群
-import { useItemCategory } from './useItemCategory';
-import { useItemVariation } from './useItemVariation';
-import { useItemManual } from './useItemManual';
-import { useItemPrint } from './useItemPrint';
-import { useItemSave } from './useItemSave';
-import { useItemNavigation } from './useItemNavigation';
-import { useItemSupplier } from './useItemSupplier';
-import { useItemRefSearch } from './useItemRefSearch';
-import { useItemSpecialSales } from './useItemSpecialSales';
-import { useState, useEffect } from 'react';
+import { useItemCategory } from './useItemCategory';          // 商品分類
+import { useItemVariation } from './useItemVariation';        // バリエーション
+import { useItemManual } from './useItemManual';              // 取扱説明書
+import { useItemPrint } from './useItemPrint';                // 印刷・ラベル選択
+import { useItemSave } from './useItemSave';                  // 保存
+import { useItemNavigation } from './useItemNavigation';      // ページ遷移・location.state の復元
+import { useItemSupplier } from './useItemSupplier';          // 仕入先
+import { useItemRefSearch } from './useItemRefSearch';        // 他商品情報参照
+import { useItemSpecialSales } from './useItemSpecialSales';  // 特売設定
+import { useItemSalesPrice } from './useItemSalesPrice';      // 販売価格（税込）
 
 export const useItemDetailPage = () => {
-  console.log('[A] useItemDetailPage start');
   const title = '商品マスタ';
   const slug = 'item';
 
@@ -64,6 +64,7 @@ export const useItemDetailPage = () => {
   } = useItemCategory({
     state,
     setState,
+    setErrors,
   });
 
   // 仕入先
@@ -75,6 +76,7 @@ export const useItemDetailPage = () => {
   } = useItemSupplier({
     state,
     setState,
+    setErrors,
   });
 
   // 他商品情報参照
@@ -152,6 +154,14 @@ export const useItemDetailPage = () => {
     updateState,
   });
 
+  // 販売価格（税込）
+  const {
+    salesPriceChange,
+  } = useItemSalesPrice({
+    setState,
+    setErrors,
+  });
+
   // 保存処理
   const {
     saveClick,
@@ -208,6 +218,7 @@ export const useItemDetailPage = () => {
     errors,
     isDisabled,
     onChange,
+    setState,
 
     // カテゴリ
     changeCategoryIndex,
@@ -257,6 +268,9 @@ export const useItemDetailPage = () => {
     onClickPrint,
     onClickPrintNoPrice,
 
+    // 販売価格（税込）
+    salesPriceChange,
+    
     // 保存
     saveClick,
 

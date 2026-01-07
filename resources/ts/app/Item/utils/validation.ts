@@ -104,9 +104,6 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
     }
   }
 
-  console.log('errors');
-  console.log(errors);
-
   return errors;
 };
 
@@ -132,8 +129,13 @@ export const validateItemState = (state: Item): Record<string, string> => {
     errors.name_note = '商品名（納品書）を入力してください';
 
   // 商品分類
-  if (state.categoryList.length > 0 && state.categoryList.every((x: ItemCategory) => x.categoryId === null))
+  const validCategories = state.categoryList.filter((x: ItemCategory) => x.status !== 'del');
+  if (validCategories.length === 0 || validCategories.every(x => x.categoryId === null))
     errors.categoryList = '商品分類を入力してください';
+
+  // 仕入単価
+  if (state.purchase_unit_price === null || state.purchase_unit_price === undefined)
+    errors.purchase_unit_price = '仕入単価を入力してください';
 
   // 仕入先
   if (state.supplier_name === null || state.supplier_name === undefined || state.supplier_name === '')
@@ -146,6 +148,10 @@ export const validateItemState = (state: Item): Record<string, string> => {
   // 商品コード
   if (state.code === null || state.code === undefined || state.code === '')
     errors.code = '商品コードを入力してください';
+
+  // 販売価格（税込）
+  if (state.sales_price === null || state.sales_price === undefined)
+    errors.sales_price = '販売価格を入力してください';
 
   // 支払い方法適用（現金・掛売・宅配代引・クレジットカード・銀行振込）
   const paymentError = validatePaymentMethods(state);

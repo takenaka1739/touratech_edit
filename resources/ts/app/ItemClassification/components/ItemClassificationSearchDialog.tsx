@@ -8,6 +8,8 @@ type ItemClassificationSearchDialogProps = {
   isShown: boolean;
   onSelected: (props: ItemClassification) => void;
   onCancel: () => void;
+  excludeIds?: number[];
+  rowIndex?: number;
 };
 
 type ItemClassificationSearchDialogConditionsState = {
@@ -24,6 +26,7 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
   isShown,
   onSelected,
   onCancel,
+  excludeIds = [],
 }) => {
   const {
     state,
@@ -45,10 +48,18 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
     onSelected,
     onCancel
   );
+
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
+  // ------------------------------------------------------------
+  // 除外IDを使って一覧をフィルタリング
+  // ------------------------------------------------------------
+  const filteredRows = useMemo(() => {
+    return state.rows.filter((r: ItemClassification) => r.id != null && !excludeIds.includes(r.id));
+  }, [state.rows, excludeIds]);
+
   const tables = useMemo(() => {
-    const tbody = state.rows.map(r => (
+    const tbody = filteredRows.map(r => (
       <tr key={r.id}>
         <td>
           <span data-id={r.id} onClick={onClickSelect} className="link">
@@ -62,7 +73,7 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
         </td>
       </tr>
     ));
-    
+
     return (
       <table>
         <thead>
@@ -74,7 +85,7 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
         <tbody>{tbody}</tbody>
       </table>
     );
-  }, [state.rows]);
+  }, [filteredRows, onClickSelect]);
 
   return (
     <DialogWrapper

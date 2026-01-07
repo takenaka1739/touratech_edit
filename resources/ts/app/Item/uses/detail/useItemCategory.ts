@@ -6,6 +6,7 @@ import { ItemClassification } from '@/types';
 type UseItemCategoryArgs = {
   state: any;
   setState: React.Dispatch<React.SetStateAction<any>>;
+  setErrors: React.Dispatch<React.SetStateAction<any>>;
 };
 
 /**
@@ -20,10 +21,22 @@ type UseItemCategoryArgs = {
 export const useItemCategory = ({
   state,
   setState,
+  setErrors,
 }: UseItemCategoryArgs) => {
   const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
   const [categoryChangeFlag, setCategoryChangeFlag] = useState(false);
   const [supplierChangeFlag, setSupplierChangeFlag] = useState(false); // ★追加
+
+  // --------------------------------------------------------------
+  // ダイアログに渡す rowIndex / excludeIds を保持する state
+  // --------------------------------------------------------------
+  const [dialogState, setDialogState] = useState<{
+    rowIndex: number | null;
+    excludeIds: number[];
+  }>({
+    rowIndex: null,
+    excludeIds: [],
+  });
 
   // ==============================================================
   // カテゴリ検索ダイアログ
@@ -34,22 +47,46 @@ export const useItemCategory = ({
   } = useCommonSearchDialogProps<ItemClassification>(
     'item_classification',
     async ({ id, name }) => {
-      // 重複チェック
+      // キャンセル判定（id=null, id=0, name="", name=null）
+      const isCancel = id == null || id === 0 || !name;
+
+      if (isCancel) {
+        setChangeCategoryIndex(null);
+        return true;
+      }
+
+      // categoryId が入っているときだけ重複チェック
       const isDuplicate = state.categoryList.some(
         (item: any) =>
           item.status !== 'del' &&
+          item.categoryId != null &&
           item.categoryId === id &&
           item.originalIndex !== changeCategoryIndex
       );
 
-      // 重複が無ければ更新
       if (!isDuplicate) {
-        changeCategory({ id: id ?? 0, name: name ?? '' });
+        changeCategory({ id, name });
       }
 
+      setChangeCategoryIndex(null);
       return true;
     }
   );
+
+  // --------------------------------------------------------------
+  // rowIndex / excludeIds を保存してからダイアログを開く
+  // --------------------------------------------------------------
+  const openDialog = ({
+    rowIndex,
+    excludeIds,
+  }: {
+    rowIndex: number;
+    excludeIds: number[];
+  }) => {
+    setDialogState({ rowIndex, excludeIds });
+    setChangeCategoryIndex(rowIndex);
+    openItemClassDialog();
+  };
 
   // ==============================================================
   // カテゴリ行追加
@@ -87,6 +124,7 @@ export const useItemCategory = ({
   const changeCategory = ({ id, name }: { id: number; name: string }) => {
     if (changeCategoryIndex === null) return;
 
+    setErrors((prev: any) => ({ ...prev, categoryList: null }));
     setState((prev: any) => {
       const list = [...prev.categoryList];
       const target = list[changeCategoryIndex];
@@ -273,6 +311,12 @@ export const useItemCategory = ({
     onChangeCategory,
     onDeleteCategory,
     changeCategory,
-    itemClassSearchDialogProps,
+
+    itemClassSearchDialogProps: {
+      ...itemClassSearchDialogProps,
+      rowIndex: dialogState.rowIndex,
+      excludeIds: dialogState.excludeIds,
+      openDialog,
+    },
   };
 };
