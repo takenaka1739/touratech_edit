@@ -21,7 +21,6 @@ export const ItemVariationRow = ({
   onFocus,
   onBlur,
   showDelete,
-  isDisabled,
 }: VariationRowProps) => {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
@@ -32,7 +31,6 @@ export const ItemVariationRow = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              visibility: value === null ? 'hidden' : 'visible',
             }}
           >
             <input
@@ -41,9 +39,10 @@ export const ItemVariationRow = ({
                 borderRight: '1px solid #a0aec0',
                 backgroundColor: isEditable ? '#ffffff' : '#EDF2F7',
                 marginRight: '5px',
+                visibility: value === null ? 'hidden' : 'visible',
               }}
               disabled={!isEditable}
-              value={value}
+              value={value ?? ''}
               onChange={(e) => onChangeValue(e, itemIndex, index)}
               onFocus={() => onFocus(item)}
               onBlur={() => onBlur(item)}
@@ -52,7 +51,10 @@ export const ItemVariationRow = ({
             {index < 5 && (
               <button
                 disabled={!isEditable}
-                style={{ backgroundColor: isEditable ? '#ffffff' : '#EDF2F7' }}
+                style={{
+                  backgroundColor: isEditable ? '#ffffff' : '#EDF2F7',
+                  visibility: value === null ? 'hidden' : 'visible',
+                }}
                 className="plus-button"
                 onClick={() => onAdd(itemIndex, index)}
               >

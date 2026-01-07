@@ -4,10 +4,8 @@ import { ItemVariationHeader, ItemVariationRow } from '@/app/Item/components/var
 type Props = {
   state: any;
   errors: any;
-
   isVariationEditable: boolean;
   isDisabled: boolean;
-
   handleCheck: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onChangeValue: (e: React.ChangeEvent<HTMLInputElement>, row: number, col: number) => void;
   addNewVari: (row: number, col: number) => void;
@@ -38,18 +36,41 @@ export const ItemVariationSection: React.VFC<Props> = ({
   outForcus,
 }) => {
 
-  // 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
-  let variItems: any[] = [];
+// 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
+let variItems: any[] = [];
 
   if (Array.isArray(state.variItems) && state.variItems.length > 0) {
     // 各行が 7 カラム未満なら補正する
-    variItems = state.variItems.map((row: any) => {
+    variItems = state.variItems.map((row: any, rowIndex: number) => {
       if (!Array.isArray(row)) return ['', '', '', '', '', '', ''];
-      if (row.length < 7) return ['', '', '', '', '', '', ''];
-      return row;
+
+      // 7 カラムに揃えつつ、null/undefined を正しく扱う
+      const fixed = Array.from({ length: 7 }).map((_, i) => {
+        const v = row[i];
+
+        // 初期行（rowIndex === 0）は null → '' にする（全部表示）
+        if (rowIndex === 0){
+          return v === null || v === undefined ? '' : v;
+        }
+
+        // index 1〜4 → バリエーション1〜4
+        if (i >= 1 && i <= 4) {
+          return v === undefined ? null : v;
+        }
+
+        // 品番・価格（常に visible）
+        if (i === 5 || i === 6) {
+          return v === null || v === undefined ? '' : v;
+        }
+
+        // index 0 → id（null のままでも OK）
+        return v === undefined ? null : v;
+      });
+
+      return fixed;
     });
   } else {
-    // 初期行（7 カラム）
+    // 初期行（バリ1〜4は表示、品番・価格も表示）
     variItems = [['', '', '', '', '', '', '']];
   }
 
@@ -79,7 +100,7 @@ export const ItemVariationSection: React.VFC<Props> = ({
               itemIndex={itemIndex}
               // チェックON かつ 全体が有効なときだけ編集可能
               isEditable={isVariationEditable && !isDisabled}
-              isDisabled={isDisabled || !isVariationEditable}
+              isDisabled={isDisabled}
               onChangeValue={onChangeValue}
               onAdd={addNewVari}
               onDelete={delButton}

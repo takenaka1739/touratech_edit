@@ -192,9 +192,6 @@ class ItemService
     $dataBaceAllCodeList = Item::whereNull('deleted_at')->distinct()->pluck('code');
     $initialCode = $selectItems['code'];
 
-    \Log::debug('$dataBaceAllCodeList');
-    \Log::debug($dataBaceAllCodeList);
-
     $c = [];
     $c['special_sale_id'] = $selectItems['special_sale_id'];
     $c['special_sale_item_id'] = $selectItems['special_sale_item_id'];
@@ -489,8 +486,6 @@ foreach ($idList as $id) {
    */
   public function update(int $id, array $data)
   {
-    \Log::debug('更新：updateだよ');
-
     $data = new Collection($data);
     DB::transaction(function () use ($id, $data) {
       $m = Item::find($id);
@@ -793,7 +788,6 @@ foreach ($idList as $id) {
   {
     $beforeImages = Image::where('item_id', $item->id)->get();
 
-    \Log::debug('$data3-1');
     // 更新後のファイル名一覧（images[0]は item_id、images[1]以降がファイル名）
     $imageRow = $data['images'][$imageIndex] ?? [];
     $afterFileNamesRaw = array_slice($imageRow, 1);
@@ -817,7 +811,6 @@ foreach ($idList as $id) {
     foreach ($deletedImages as $deleteImage) {
         $deleteImage->delete();
     }
-    \Log::debug('$data3-2');
 
     // 更新／新規作成（order_by は 1 始まり）
     foreach ($afterFileNames as $order => $fileName) {
@@ -830,23 +823,27 @@ foreach ($idList as $id) {
         );
     }
 
-    \Log::debug('$data3-3');
-
     // 商品分類の更新／新規作成
     foreach ($data['categoryList'] ?? [] as $category) {
       // status が 'del' のものはスキップ（削除対象なので再生成しない）
       if (($category['status'] ?? null) === 'del') continue;
 
-      if (isset($category['categoryId'])) {
-        ItemCategoryCombination::updateOrCreate(
-          [
-            'item_id'     => $item->id,
-            'category_id' => $category['categoryId'],
-          ],[]
-        );
+      $combId     = $category['combId'] ?? null;       // 既存レコードのID
+      $categoryId = $category['categoryId'] ?? null;   // 変更後のカテゴリID
+
+      if ($combId) {
+        // ★ 既存レコードの更新（combId で検索）
+        ItemCategoryCombination::where('id', $combId)->update([
+          'category_id' => $categoryId,
+        ]);
+      } else {
+        // ★ 新規作成（combId が無い場合）
+        ItemCategoryCombination::create([
+          'item_id'     => $item->id,
+          'category_id' => $categoryId,
+        ]);
       }
     }
-    \Log::debug('$data3-4');
 
     // 取扱説明書の更新／新規作成（Itemごとに1件）
     if (!empty($data['type_status']) && $data['type_status'] !== 0) {
@@ -857,20 +854,16 @@ foreach ($idList as $id) {
     } else {
       Document::where('item_id', $item->id)->delete();
     }
-    \Log::debug('$data3-5');
 
     // 特売設定の更新／新規作成 (1つの Item に1件)
     if (!empty($data['start_at'])) {
-      \Log::debug('$data3-6-1');
       SpecialSale::updateOrCreate(
         ['item_id' => $item->id],
         $this->buildSpecialSaleAttributes($item->id, $data)
       );
     } else {
-      \Log::debug('$data3-6-2');
       SpecialSale::where('item_id', $item->id)->delete();
     }
-    \Log::debug('$data3-7');
   }
 
   /**
@@ -996,16 +989,12 @@ foreach ($idList as $id) {
       // 削除された商品分類処理
       $this->deleteRemovedCategory($data);
 
-      \Log::debug('$data2');
-      \Log::debug($data);
-
       // バリエーションなし or 1
       if (empty($data['variItems']) || count($data['variItems']) <= 1) {
         $item = Item::findOrFail($data['id']);
 
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
-          \Log::debug('$data1-1a');
           $item->update($base + [
             'variations1' => $data['variItems'][0][1] ?? null,
             'variations2' => $data['variItems'][0][2] ?? null,
@@ -1017,7 +1006,6 @@ foreach ($idList as $id) {
         }
         else
         {
-          \Log::debug('$data1-1b');
           $item->update($base + [
             'variations1' => null,
             'variations2' => null,
@@ -1030,18 +1018,14 @@ foreach ($idList as $id) {
 
         $ids[] = $item->id;
 
-        \Log::debug('$data1-2');
         // 商品画像・商品分類・取扱説明書・特売設定
         $this->updateItemRelations($item, $data, 0);
-        \Log::debug('$data1-3');
 
       // バリエーションあり
       } else {
-        \Log::debug('$data2-1');
         // variItems 前回値を保持する配列の初期化
         $prevVariations = $this->initPrevVariations();
 
-        \Log::debug('$data2-2');
         foreach ($data['variItems'] as $index => $variation) {
           // 新規判定: 'new'で始まる文字列、または null/空文字
           $key = $variation[0] ?? null;
@@ -1050,20 +1034,14 @@ foreach ($idList as $id) {
           // バリエーション情報の設定
           $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
 
-          \Log::debug('$data2-3');
-
           if ($isNew) {
-            \Log::debug('$data2-5-1');
             $item = Item::create($variationAttributes);
-            \Log::debug('$data2-5-2');
           } else {
             // 既存判定: 数値ID（int または 数字文字列）
             if (is_int($key) || (is_string($key) && ctype_digit($key))) {
-              \Log::debug('$data2-4-1');
               $itemId = (int) $key;
               $item = Item::findOrFail($itemId);
               $item->update($variationAttributes);
-              \Log::debug('$data2-4-2');
             } else {
               // 想定外キーは安全側で新規扱いに
               \Log::warning("Unexpected variation key; treating as new. key=" . var_export($key, true));
@@ -1073,11 +1051,9 @@ foreach ($idList as $id) {
 
           // バリエーションの前回値の更新
           $this->updatePrevVariations($prevVariations, $variation);
-          \Log::debug('$data2-6');
 
           // 商品画像・商品分類・取扱説明書・特売設定
           $this->updateItemRelations($item, $data, $index);
-          \Log::debug('$data2-7');
 
           $ids[] = $item->id;
         }

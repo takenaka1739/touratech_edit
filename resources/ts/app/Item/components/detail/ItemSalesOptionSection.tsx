@@ -7,6 +7,7 @@ type Props = {
   onChange: (name: string, value: any) => void;
   salesPriceChange: (value: string | number | boolean | undefined) => void;
   backColor: string;
+  onChangePayment: (name: string, value: boolean) => void;
 };
 
 /**
@@ -26,13 +27,12 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
   onChange,
   salesPriceChange,
   backColor,
+  onChangePayment,
 }) => {
   return (
     <>
       {/* 販売価格（税込） */}
       <div className="price-erea" style={{ marginLeft: '1px', marginTop: '10px' }}>
-
-        {/* input → FormGroupInputNumber に置き換え（precision=2） */}
         <Forms.FormGroupInputNumber
           labelText="販売価格（税込）"
           name="sales_price"
@@ -141,24 +141,48 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
       {/* 支払い方法 */}
       <Forms.FormGroup
         labelText="支払い方法"
-        groupClassName="items-center mt-4"
+        groupClassName="items-start mt-4"
         required={true}
+        error={errors?.payErrorMessage}
       >
         <div className="payment-kind" style={{ display: 'flex' }}>
-          <Forms.FormInputCheck id="is_payment_id1" name="is_payment_id1" labelText="現金" checked={state.is_payment_id1} onChange={onChange} />
-          <Forms.FormInputCheck id="is_payment_id2" name="is_payment_id2" labelText="売掛" checked={state.is_payment_id2} onChange={onChange} />
-          <Forms.FormInputCheck id="is_payment_id3" name="is_payment_id3" labelText="宅配代引" checked={state.is_payment_id3} onChange={onChange} />
-          <Forms.FormInputCheck id="is_payment_id4" name="is_payment_id4" labelText="銀行振込" checked={state.is_payment_id4} onChange={onChange} />
-          <Forms.FormInputCheck id="is_payment_id5" name="is_payment_id5" labelText="クレジットカード" checked={state.is_payment_id5} onChange={onChange} />
+          <Forms.FormInputCheck
+            id="is_payment_id1"
+            name="is_payment_id1"
+            labelText="現金"
+            checked={state.is_payment_id1}
+            onChange={(name, value) => onChangePayment(name, value === true || value === "true")}
+          />
+          <Forms.FormInputCheck
+            id="is_payment_id2"
+            name="is_payment_id2"
+            labelText="売掛"
+            checked={state.is_payment_id2}
+            onChange={(name, value) => onChangePayment(name, value === true)}
+          />
+          <Forms.FormInputCheck
+            id="is_payment_id3"
+            name="is_payment_id3"
+            labelText="宅配代引"
+            checked={state.is_payment_id3}
+            onChange={(name, value) => onChangePayment(name, value === true)}
+          />
+          <Forms.FormInputCheck
+            id="is_payment_id4"
+            name="is_payment_id4"
+            labelText="銀行振込"
+            checked={state.is_payment_id4}
+            onChange={(name, value) => onChangePayment(name, value === true)}
+          />
+          <Forms.FormInputCheck
+            id="is_payment_id5"
+            name="is_payment_id5"
+            labelText="クレジットカード"
+            checked={state.is_payment_id5}
+            onChange={(name, value) => onChangePayment(name, value === true)}
+          />
         </div>
       </Forms.FormGroup>
-
-      {/* 支払い方法エラー */}
-      {errors?.payErrorMessage && (
-        <div className="form-error ml-32">
-          {errors.payErrorMessage}
-        </div>
-      )}
     </>
   );
 };

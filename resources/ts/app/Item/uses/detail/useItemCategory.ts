@@ -25,7 +25,7 @@ export const useItemCategory = ({
 }: UseItemCategoryArgs) => {
   const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
   const [categoryChangeFlag, setCategoryChangeFlag] = useState(false);
-  const [supplierChangeFlag, setSupplierChangeFlag] = useState(false); // ★追加
+  const [supplierChangeFlag, setSupplierChangeFlag] = useState(false);
 
   // --------------------------------------------------------------
   // ダイアログに渡す rowIndex / excludeIds を保持する state

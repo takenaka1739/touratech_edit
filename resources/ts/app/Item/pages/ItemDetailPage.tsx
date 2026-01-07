@@ -32,7 +32,6 @@ export const ItemDetailPage: React.FC = () => {
     errors,
     isDisabled,
     onChange,
-    setState,
 
     // カテゴリ
     addNewCategory,
@@ -75,8 +74,11 @@ export const ItemDetailPage: React.FC = () => {
     onClickPrint,
     onClickPrintNoPrice,
 
-    // ★ useItemSalesPrice から渡される
+    // 販売価格
     salesPriceChange,
+
+    // 支払い方法
+    onChangePayment,
 
     // 保存
     saveClick,
@@ -197,6 +199,7 @@ export const ItemDetailPage: React.FC = () => {
             onChange={onChange}
             salesPriceChange={salesPriceChange}
             backColor={backColor}
+            onChangePayment={onChangePayment}
           />
         </div>
 

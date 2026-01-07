@@ -7,16 +7,17 @@ import { createUrl } from '@/app/Item/utils/createUrl';
 import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 
 // 分割した use 群
-import { useItemCategory } from './useItemCategory';          // 商品分類
-import { useItemVariation } from './useItemVariation';        // バリエーション
-import { useItemManual } from './useItemManual';              // 取扱説明書
-import { useItemPrint } from './useItemPrint';                // 印刷・ラベル選択
-import { useItemSave } from './useItemSave';                  // 保存
-import { useItemNavigation } from './useItemNavigation';      // ページ遷移・location.state の復元
-import { useItemSupplier } from './useItemSupplier';          // 仕入先
-import { useItemRefSearch } from './useItemRefSearch';        // 他商品情報参照
-import { useItemSpecialSales } from './useItemSpecialSales';  // 特売設定
-import { useItemSalesPrice } from './useItemSalesPrice';      // 販売価格（税込）
+import { useItemCategory } from './useItemCategory';            // 商品分類
+import { useItemVariation } from './useItemVariation';          // バリエーション
+import { useItemManual } from './useItemManual';                // 取扱説明書
+import { useItemPrint } from './useItemPrint';                  // 印刷・ラベル選択
+import { useItemSave } from './useItemSave';                    // 保存
+import { useItemNavigation } from './useItemNavigation';        // ページ遷移・location.state の復元
+import { useItemSupplier } from './useItemSupplier';            // 仕入先
+import { useItemRefSearch } from './useItemRefSearch';          // 他商品情報参照
+import { useItemSpecialSales } from './useItemSpecialSales';    // 特売設定
+import { useItemSalesPrice } from './useItemSalesPrice';        // 販売価格（税込）
+import { useItemPaymentMethod } from './useItemPaymentMethod';  // 支払い方法
 
 export const useItemDetailPage = () => {
   const title = '商品マスタ';
@@ -162,6 +163,14 @@ export const useItemDetailPage = () => {
     setErrors,
   });
 
+  // 追加：支払い方法
+  const {
+    onChangePayment,
+  } = useItemPaymentMethod({
+    setState,
+    setErrors,
+  });
+
   // 保存処理
   const {
     saveClick,
@@ -270,7 +279,10 @@ export const useItemDetailPage = () => {
 
     // 販売価格（税込）
     salesPriceChange,
-    
+
+    // 追加：支払い方法
+    onChangePayment,
+
     // 保存
     saveClick,
 
