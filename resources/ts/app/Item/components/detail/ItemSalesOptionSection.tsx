@@ -32,7 +32,7 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
   return (
     <>
       {/* 販売価格（税込） */}
-      <div className="price-erea" style={{ marginLeft: '1px', marginTop: '10px' }}>
+      <div className="price-erea sales-price-wrapper">
         <Forms.FormGroupInputNumber
           labelText="販売価格（税込）"
           name="sales_price"
@@ -145,7 +145,7 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
         required={true}
         error={errors?.payErrorMessage}
       >
-        <div className="payment-kind" style={{ display: 'flex' }}>
+        <div className="payment-kind payment-kind-row">
           <Forms.FormInputCheck
             id="is_payment_id1"
             name="is_payment_id1"

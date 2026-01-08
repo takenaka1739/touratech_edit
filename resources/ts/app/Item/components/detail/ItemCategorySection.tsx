@@ -50,10 +50,11 @@ export const ItemCategorySection: React.VFC<Props> = ({
     .filter((item: any) => item.status !== 'del');
 
   return (
-    <div style={{ display: 'flex', marginTop: '6px' }}>
-      <div style={{ width: '790px', display: 'flex' }}>
+    <div className="category-section">
+      <div className="category-inner">
+
         {/* ラベル */}
-        <div style={{ display: 'flex', marginTop: '8px', marginLeft: '60px' }}>
+        <div className="category-label">
           <label>商品分類</label>
           <label className="label-required">必須</label>
         </div>
@@ -82,7 +83,7 @@ export const ItemCategorySection: React.VFC<Props> = ({
 
           {/* エラー表示 */}
           {errors?.categoryList && (
-            <div className="form-error" style={{ marginTop: '4px' }}>
+            <div className="form-error category-error">
               {errors.categoryList}
             </div>
           )}
@@ -91,8 +92,7 @@ export const ItemCategorySection: React.VFC<Props> = ({
 
       {/* カテゴリ追加 */}
       <button
-        className="category-plus-button"
-        style={{ marginLeft: '10px' }}
+        className="category-plus-button category-add-button"
         onClick={addNewCategory}
       >
         ＋
@@ -101,10 +101,6 @@ export const ItemCategorySection: React.VFC<Props> = ({
       {/* 商品分類検索ダイアログ */}
       <ItemClassificationSearchDialog
         {...itemClassSearchDialogProps}
-
-        // ------------------------------------------------------------
-        // 追加：除外IDと行番号をダイアログに渡す
-        // ------------------------------------------------------------
         excludeIds={itemClassSearchDialogProps.excludeIds}
         rowIndex={itemClassSearchDialogProps.rowIndex}
       />

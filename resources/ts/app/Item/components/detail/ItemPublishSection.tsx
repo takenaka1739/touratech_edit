@@ -18,7 +18,7 @@ export const ItemPublishSection: React.VFC<Props> = ({
   onChange,
 }) => {
   return (
-    <div className="is-public" style={{ marginLeft: '1px' }}>
+    <div className="is-public publish-wrapper">
       <Forms.FormGroup
         labelText="ショップ公開"
         error={errors?.is_sell}

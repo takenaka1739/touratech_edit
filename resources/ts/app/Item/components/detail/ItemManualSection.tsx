@@ -35,9 +35,9 @@ export const ItemManualSection: React.VFC<Props> = ({
   handleFileChange,
 }) => {
   return (
-    <div style={{ alignItems: 'center', marginTop: '15px' }}>
+    <div className="manual-section">
       {/* 取扱説明書設定 + その他入力 */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', width: '627px' }}>
+      <div className="manual-type-row">
         <Forms.FormGroupInputRadio
           labelText="取扱説明書設定"
           name="type_status"
@@ -54,29 +54,17 @@ export const ItemManualSection: React.VFC<Props> = ({
         />
 
         <input
-          className="vari-row-input"
+          className="vari-row-input manual-type-input"
           disabled={state.type_status !== 3}
-          style={{
-            borderRight: '1px solid #a0aec0',
-            backgroundColor: typeNameBackColor,
-            width: '200px',
-          }}
           value={typeName}
           onChange={onChangeTypeName}
+          data-bgcolor={typeNameBackColor}
         />
       </div>
 
       {/* ファイル選択 */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          alignItems: 'center',
-          marginLeft: '160px',
-          marginTop: '10px',
-        }}
-      >
-        <label style={{ marginRight: '5px' }}>ファイル選択</label>
+      <div className="manual-file-row">
+        <label className="manual-file-label">ファイル選択</label>
 
         <Forms.FormInputText
           name="file_name"
@@ -93,7 +81,7 @@ export const ItemManualSection: React.VFC<Props> = ({
         <input
           type="file"
           ref={fileInputRef}
-          style={{ display: 'none' }}
+          className="manual-file-hidden"
           onChange={handleFileChange}
         />
       </div>

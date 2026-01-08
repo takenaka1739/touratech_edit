@@ -1,0 +1,37 @@
+@charset "utf-8";
+
+/* ============================
+   商品分類関連スタイル
+   ============================ */
+
+.item-detail-page {
+
+  /* 商品分類セクション全体 */
+  .category-section {
+    display: flex;
+    margin-top: 6px;
+  }
+
+  /* 左側の 790px の枠 */
+  .category-inner {
+    width: 790px;
+    display: flex;
+  }
+
+  /* ラベル部分 */
+  .category-label {
+    display: flex;
+    margin-top: 8px;
+    margin-left: 60px;
+  }
+
+  /* エラー表示 */
+  .category-error {
+    margin-top: 4px;
+  }
+
+  /* 追加ボタン（既存 category-plus-button を拡張） */
+  .category-add-button {
+    margin-left: 10px;
+  }
+}

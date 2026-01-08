@@ -12,6 +12,7 @@ type Props = {
   delButton: (row: number) => void;
   handleFocus: (item: string[]) => void;
   outForcus: (item: string[]) => void;
+  errorMap: boolean[][];
 };
 
 
@@ -34,6 +35,7 @@ export const ItemVariationSection: React.VFC<Props> = ({
   delButton,
   handleFocus,
   outForcus,
+  errorMap,
 }) => {
 
 // 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
@@ -77,11 +79,10 @@ let variItems: any[] = [];
   return (
     <>
       {/* バリエーション追加チェック */}
-      <div style={{ marginTop: '8px' }}>
+      <div className="variation-add-check">
         <label>バリエーション追加</label>
         <label className="label-optional">任意</label>
         <input
-          style={{ marginTop: '5px' }}
           type="checkbox"
           checked={isVariationEditable}
           onChange={handleCheck}
@@ -89,16 +90,15 @@ let variItems: any[] = [];
       </div>
 
       {/* バリエーション一覧 */}
-      <div style={{ marginLeft: '160px' }}>
+      <div className="variation-list-wrapper">
         <ItemVariationHeader />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        <div className="variation-rows">
           {variItems.map((item: any, itemIndex: number) => (
             <ItemVariationRow
               key={itemIndex}
               item={item}
               itemIndex={itemIndex}
-              // チェックON かつ 全体が有効なときだけ編集可能
               isEditable={isVariationEditable && !isDisabled}
               isDisabled={isDisabled}
               onChangeValue={onChangeValue}
@@ -106,8 +106,8 @@ let variItems: any[] = [];
               onDelete={delButton}
               onFocus={handleFocus}
               onBlur={outForcus}
-              // チェックOFFのときは削除ボタンも非表示
               showDelete={variItems.length > 1 && isVariationEditable && !isDisabled}
+              errorMap={errorMap}
             />
           ))}
         </div>
@@ -116,7 +116,7 @@ let variItems: any[] = [];
         {Object.keys(errors || {})
           .filter(key => key.startsWith('variation_'))
           .map(key => (
-            <div key={key} className="form-error" style={{ marginTop: '5px' }}>
+            <div key={key} className="form-error variation-error">
               {errors[key]}
             </div>
           ))}

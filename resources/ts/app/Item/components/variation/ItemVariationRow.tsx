@@ -9,6 +9,7 @@ type VariationRowProps = {
   onBlur: (item: string[]) => void;
   showDelete: boolean;
   isDisabled: boolean;
+  errorMap: boolean[][];
 };
 
 export const ItemVariationRow = ({
@@ -21,42 +22,37 @@ export const ItemVariationRow = ({
   onFocus,
   onBlur,
   showDelete,
+  errorMap,
 }: VariationRowProps) => {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+    <div className="variation-row">
       {item.map((value, index) =>
         index > 0 ? (
           <div
             key={index}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-            }}
+            className="variation-row-cell"
           >
             <input
-              className="vari-row-input"
-              style={{
-                borderRight: '1px solid #a0aec0',
-                backgroundColor: isEditable ? '#ffffff' : '#EDF2F7',
-                marginRight: '5px',
-                visibility: value === null ? 'hidden' : 'visible',
-              }}
+              className={`vari-row-input ${
+                errorMap?.[itemIndex]?.[index] ? 'error-input' : ''
+              } variation-row-input`}
               disabled={!isEditable}
               value={value ?? ''}
               onChange={(e) => onChangeValue(e, itemIndex, index)}
               onFocus={() => onFocus(item)}
               onBlur={() => onBlur(item)}
+              data-error={errorMap?.[itemIndex]?.[index] ? '1' : '0'}
+              data-visible={value === null ? '0' : '1'}
+              data-editable={isEditable ? '1' : '0'}
             />
 
             {index < 5 && (
               <button
                 disabled={!isEditable}
-                style={{
-                  backgroundColor: isEditable ? '#ffffff' : '#EDF2F7',
-                  visibility: value === null ? 'hidden' : 'visible',
-                }}
-                className="plus-button"
+                className="plus-button variation-plus-button"
                 onClick={() => onAdd(itemIndex, index)}
+                data-visible={value === null ? '0' : '1'}
+                data-editable={isEditable ? '1' : '0'}
               >
                 ＋
               </button>
@@ -67,8 +63,7 @@ export const ItemVariationRow = ({
 
       {showDelete && (
         <button
-          className="btn-delete"
-          style={{ height: '26px', padding: '0 5px', whiteSpace: 'nowrap' }}
+          className="btn-delete variation-delete-button"
           onClick={() => onDelete(itemIndex)}
           disabled={!isEditable}
         >

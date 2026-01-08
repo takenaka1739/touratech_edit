@@ -1,0 +1,180 @@
+@charset "utf-8";
+
+/* ============================
+   商品マスタ共通UI
+   ============================ */
+
+/* 既存：影響範囲が不明なためグローバルのまま */
+.plus-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  text-align: center;
+  height: 20px;
+  width: 20px;
+  margin-left: -2px;
+  margin-right: 8px;
+  border: 1px solid #a0aec0;
+  border-radius: 50%;
+}
+
+.category-plus-button{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  background-color: #FFFFFF;
+  text-align: center;
+  height: 25px;
+  width: 25px;
+  margin-top: 5px;
+  border: 1px solid #a0aec0;
+  border-radius: 50%;
+}
+
+.dele-button {
+  border: 1px solid #a0aec0;
+  color: #a0aec0;
+  padding: 1px;
+}
+
+label {
+  font-size: 12px;
+  margin-right: 2px;
+  color: #4a5568;
+  text-align: right;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.25;
+}
+
+.label-optional {
+  align-self: flex-start;
+  background-color: #a0aec0;
+  border: 1px solid #a0aec0;
+  color: #fff;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+  margin-right: 10px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.label-required {
+  align-self: flex-start;
+  background-color: #c53030;
+  border: 1px solid #c53030;
+  color: #fff;
+  white-space: nowrap;
+  margin-right: 10px;
+  margin-left: 0.5rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.input-text {
+  font-size: 13px;
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  width: 128px;
+  height: 29px;
+}
+
+.item-detail {
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+  width: 400px;
+  height: 150px;
+}
+
+.type_name{
+  width: 100px;
+  margin-right: 40px;
+}
+
+.file_name{
+  width: 435px;
+}
+
+.file_max-w-lg{
+  max-width: 32rem;
+}
+
+.file_btn {
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.file_btn:hover, .file_btn:focus {
+  background-color: transparent;
+  border-color: #f9dc06;
+}
+
+.file_btn:disabled {
+  background-color: #edf2f7;
+  border-color: #edf2f7;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* 新規：専用スコープ */
+.item-detail-page {
+  .button-erea {
+    display: flex;
+
+    .shop-image {
+      background-color: #f9dc06;
+      border: 1px solid transparent;
+      font-size: 0.75rem;
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      border-radius: 0.125rem;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    .ref-items {
+      margin-left: auto;
+      background-color: #f9dc06;
+      border: 1px solid transparent;
+      font-size: 0.75rem;
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      border-radius: 0.125rem;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+  }
+}

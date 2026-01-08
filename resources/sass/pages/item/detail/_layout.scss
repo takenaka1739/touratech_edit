@@ -1,0 +1,77 @@
+@charset "utf-8";
+
+/* ============================
+   商品マスタ詳細ページの全体レイアウト
+   ============================ */
+
+.is-public {
+  margin-left: 10px;
+  margin-top: 0.25rem;
+}
+
+.item-explanation {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 49px;
+}
+
+.item-explanation-detail {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 1px;
+}
+
+.vari-row {
+  display: flex;
+}
+
+.price-erea {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 57px;
+}
+
+.pre-order {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 45px;
+}
+
+.shipping-fee {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 57px;
+}
+
+.handling-fee {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 20px;
+}
+
+.special-sale {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 5px;
+}
+
+.point-reductive {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 30px;
+}
+
+.payment-how {
+  display: flex;
+  margin-top: 10px;
+  margin-left: 17px;
+}
+
+.payment-kind {
+  margin-right: 10px;
+}
+
+.item-row {
+  display: flex;
+  margin-top: 10px;
+}

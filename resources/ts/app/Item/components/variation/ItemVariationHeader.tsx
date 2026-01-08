@@ -1,12 +1,12 @@
 export const ItemVariationHeader = () => {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-      <label style={{ whiteSpace: "nowrap" }}>バリエーション1</label>
-      <label style={{ whiteSpace: "nowrap", marginLeft: '60px' }}>バリエーション2</label>
-      <label style={{ whiteSpace: "nowrap", marginLeft: '60px' }}>バリエーション3</label>
-      <label style={{ whiteSpace: "nowrap", marginLeft: '60px' }}>バリエーション4</label>
-      <label style={{ whiteSpace: "nowrap", marginLeft: '55px' }}>品番</label>
-      <label style={{ whiteSpace: "nowrap", marginLeft: '100px' }}>販売価格（税込）</label>
+    <div className="variation-header">
+      <label className="vh-col1">バリエーション1</label>
+      <label className="vh-col2">バリエーション2</label>
+      <label className="vh-col3">バリエーション3</label>
+      <label className="vh-col4">バリエーション4</label>
+      <label className="vh-col5">品番</label>
+      <label className="vh-col6">販売価格（税込）</label>
     </div>
   );
 };

@@ -132,9 +132,45 @@ export const useItemSave = ({
       // 画像アップロード
       await uploadImages(state.imageList, state.pdf);
 
+      // 保存前にバリエーションの null を埋める（variItems を加工）
+      let lastValid: any[] = [];
+      const filledVariItems = state.variItems.map((row: any[], rowIndex: number) => {
+        // バリ1〜4 の最後の有効値を保持する配列
+        if (rowIndex === 0) {
+          lastValid = row.slice(1, 5);
+          return row;
+        }
+
+        return row.map((col: any, colIndex: number) => {
+          if (colIndex >= 1 && colIndex <= 4) {
+            const idx = colIndex - 1;
+
+            // 値がある（null でも '' でもない）→ 保持値を更新
+            if (col !== null && col !== '') {
+              lastValid[idx] = col;
+              return col;
+            }
+
+            // null の場合は保持値を使う
+            if (col === null) return lastValid[idx];
+
+            return col;
+          }
+
+          return col;
+        });
+      });
+
       // payload 生成
       const images = buildImageInfo(state.imageList);
-      const payload: ItemPayload = { ...state, images };
+      const payload: ItemPayload = { 
+        ...state, 
+        images,
+        variItems: filledVariItems,
+      };
+
+      console.log("=== [useItemSave] payload（送信データ） mode:", mode, "===");
+      console.log(JSON.parse(JSON.stringify(payload)));
 
       // API 呼び出し
       const success = await requestItem({ mode, payload });

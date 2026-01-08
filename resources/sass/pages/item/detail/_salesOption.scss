@@ -1,0 +1,19 @@
+@charset "utf-8";
+
+/* ============================
+   販売オプション関連スタイル
+   ============================ */
+
+.item-detail-page {
+
+  /* 販売価格（税込） */
+  .sales-price-wrapper {
+    margin-left: 1px;
+    margin-top: 10px;
+  }
+
+  /* 支払い方法の横並び */
+  .payment-kind-row {
+    display: flex;
+  }
+}

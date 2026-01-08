@@ -1,0 +1,159 @@
+@charset "utf-8";
+
+/* ============================
+   バリエーション関連スタイル
+   ============================ */
+
+/* 既存（そのまま） */
+.vari-row-input {
+  border: 1px solid #a0aec0;
+  width: 120px;
+  display: block;
+  appearance: none;
+  margin-right: '150px';
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* ============================
+   専用スコープ
+   ============================ */
+
+.item-detail-page {
+
+  /* バリエーション追加チェック */
+  .variation-add-check {
+    margin-top: 8px;
+
+    input {
+      margin-top: 5px;
+    }
+  }
+
+  /* バリエーション一覧の外枠 */
+  .variation-list-wrapper {
+    margin-left: 160px;
+  }
+
+  /* バリエーション行コンテナ */
+  .variation-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  /* エラー表示 */
+  .variation-error {
+    margin-top: 5px;
+  }
+
+  /* ============================
+     バリエーションヘッダー
+     ============================ */
+  .variation-header {
+    display: flex;
+    justify-content: flex-start;
+
+    label {
+      white-space: nowrap;
+    }
+
+    .vh-col1 {
+      /* バリエーション1 → margin-left なし */
+    }
+
+    .vh-col2 {
+      margin-left: 60px;
+    }
+
+    .vh-col3 {
+      margin-left: 60px;
+    }
+
+    .vh-col4 {
+      margin-left: 60px;
+    }
+
+    .vh-col5 {
+      margin-left: 55px;
+    }
+
+    .vh-col6 {
+      margin-left: 100px;
+    }
+  }
+
+  /* ============================
+     バリエーション行（ItemVariationRow）
+     ============================ */
+
+  .variation-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .variation-row-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  /* input の動的スタイル */
+  .variation-row-input {
+    margin-right: 5px;
+
+    &[data-visible="0"] {
+      visibility: hidden;
+    }
+
+    &[data-visible="1"] {
+      visibility: visible;
+    }
+
+    &[data-editable="0"] {
+      background-color: #EDF2F7;
+    }
+
+    &[data-editable="1"] {
+      background-color: #ffffff;
+    }
+
+    &[data-error="1"] {
+      border: 1px solid red;
+    }
+
+    &[data-error="0"] {
+      border: 1px solid #a0aec0;
+    }
+  }
+
+  /* ＋ボタン（既存 plus-button を拡張） */
+  .variation-plus-button {
+    &[data-visible="0"] {
+      visibility: hidden;
+    }
+
+    &[data-visible="1"] {
+      visibility: visible;
+    }
+
+    &[data-editable="0"] {
+      background-color: #EDF2F7;
+    }
+
+    &[data-editable="1"] {
+      background-color: #ffffff;
+    }
+  }
+
+  /* 削除ボタン */
+  .variation-delete-button {
+    height: 26px;
+    padding: 0 5px;
+    white-space: nowrap;
+  }
+}

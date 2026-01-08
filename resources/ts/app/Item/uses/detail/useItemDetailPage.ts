@@ -114,10 +114,13 @@ export const useItemDetailPage = () => {
     handleFocus,
     outForcus,
     isVariationEditable,
+    errorMap,
   } = useItemVariation({
     state,
     setState,
     onClickDelete,
+    errors,
+    setErrors,
   });
 
   // isVariationEditable を受け取った後に useEffect（TS2448/2454 対策）
@@ -263,6 +266,7 @@ export const useItemDetailPage = () => {
     handleFocus,
     outForcus,
     isVariationEditable,
+    errorMap,
 
     // 取扱説明書
     typeName,

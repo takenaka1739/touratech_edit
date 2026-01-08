@@ -22,90 +22,83 @@ const validatePaymentMethods = (state: Item): string | null => {
 };
 
 /**
- * バリエーションの空データを判定するユーティリティ。
- * 
- * @param v - 判定対象の値（null, undefined, 空文字を想定）
- * @returns 値なし：true、値あり：false
- */
-const isEmpty = (v: unknown): boolean => v === null || v === undefined || v === '';
-
-/**
- * 同一インデックス同士の直前データとの一致判定。
- * 
- * @param value1 - 値1
- * @param value2 - 値2
- * @returns 一致：true、不一致：false
- */
-const isWildcardEqual = (value1: unknown, value2: unknown): boolean => {
-  if (value1 === null || value2 === null) return true;                        // null は何とでも一致扱い（ワイルドカード）
-  if (value1 === '' || value2 === '') return value1 === '' && value2 === '';  // 空は空同士のみ一致
-  return value1 === value2;                                                   // 文字列は完全一致
-};
-
-/**
  * バリエーションの未入力を検出し、入力不足時はエラーメッセージを返す。
  * 
  * @param variItems - バリエーション配列
  * @returns エラーあり：エラーメッセージ、エラーなし：null
  */
 const validateVariations = (variItems: unknown[][]): { row: number; message: string }[] => {
-  const errors: { row: number; message: string }[] = [];
-  // バリエーションが複数無い場合は判定不要
-  if (!variItems || variItems.length <= 1) return errors;
+  if (!variItems || variItems.length <= 1) return [];
 
-  for (let index = 0; index < variItems.length; index++) {
-    const v = variItems[index];
-    const variationValues = [v[1], v[2], v[3], v[4]];
-    const hasInput = variationValues.some(val => val !== null && val !== '');
+  for (let i = 0; i < variItems.length; i++) {
+    const row = variItems[i];
+    const v = [row[1], row[2], row[3], row[4]];
+    const sku = row[5];
+    const price = row[6];
 
-    // バリエーション必須
-    if (!hasInput) {
-      errors.push({ row: index, message: 'バリエーションを入力してください' });
+    // 品番・価格は必須
+    if (sku === '' || sku === null || price === '' || price === null) {
+      return [{ row: i, message: 'バリエーションを入力してください' }];
     }
 
-    // 品番必須
-    if (isEmpty(v[5])) {
-      errors.push({ row: index, message: '品番を入力してください' });
+    // null 以外の先頭は入力必須
+    const firstCol = [0, 1, 2, 3].find(col => v[col] !== null);
+    if (firstCol !== undefined && v[firstCol] === '') {
+      return [{ row: i, message: 'バリエーションを入力してください' }];
     }
 
-    // 販売価格必須
-    if (isEmpty(v[6])) {
-      errors.push({ row: index, message: '販売価格を入力してください' });
-    }
-
-    // 直前行との比較
-    if (index > 0) {
-      const prev = variItems[index - 1];
-      const prevValues = [prev[1], prev[2], prev[3], prev[4]];
-
-      // 一致判定（nullはワイルドカード）
-      const isSame = variationValues.every((val, i) =>
-        isWildcardEqual(val, prevValues[i])
-      );
-      if (isSame) {
-        errors.push({
-          row: index,
-          message: '直前の行と同一です。異なるバリエーションを入力してください',
-        });
-      }
-
-      // 初めて null 以外となった要素のインデックスを特定
-      const firstNonNullIndex = variationValues.findIndex(val => val !== null && val !== '');
-      if (firstNonNullIndex !== -1) {
-        const prevVal = prevValues[firstNonNullIndex];
-        // 直前行の同じインデックスが文字列でなければエラー
-        if (prevVal === '') {
-          errors.push({
-            row: index - 1,   // 未入力である直前行にエラーを付与
-            message: '分岐点にはバリエーションを入力してください',
-          });
+    // 同一行内の穴あき禁止
+    let seenValue = false;
+    for (let col = 0; col < 4; col++) {
+      if (v[col] !== null && v[col] !== '') {
+        seenValue = true;
+      } else if (v[col] === '') {
+        const hasValueLater = [col + 1, col + 2, col + 3]
+          .filter(c => c < 4)
+          .some(c => v[c] !== null && v[c] !== '');
+        if (seenValue && hasValueLater) {
+          return [{ row: i, message: 'バリエーションを入力してください' }];
         }
       }
     }
   }
 
-  return errors;
+  const getFirstInputCol = (row: any[]) => {
+    const col = [1, 2, 3, 4].find(c => row[c] !== null);
+    return col ?? 1;
+  };
+
+  for (let i = 0; i < variItems.length; i++) {
+    const firstInputCol_i = getFirstInputCol(variItems[i]);
+    const checkFlags = [false, false, false, false];
+
+    for (let j = i + 1; j < variItems.length; j++) {
+      const firstInputCol_j = getFirstInputCol(variItems[j]);
+
+      // 次の要素のチェックに進む
+      if (firstInputCol_j <= firstInputCol_i) break;
+
+      // チェック済、または紐づきのないインデックスはスキップ
+      const firstTrueIndex = checkFlags.indexOf(true);
+      const limitCol = firstTrueIndex === -1 ? 5 : firstTrueIndex + 1;
+      if (firstInputCol_j >= limitCol) continue;
+
+      // 未入力判定対象に追加
+      const idx = firstInputCol_j - 1;
+      if (!checkFlags[idx]) checkFlags[idx] = true;
+    }
+
+    // checkFlags が true の位置で i 行が空欄ならエラー
+    for (let col = 1; col <= 4; col++) {
+      if (checkFlags[col - 1] && variItems[i][col] === '') {
+        return [{ row: i, message: 'バリエーションを入力してください' }];
+      }
+    }
+  }
+
+  return [];
 };
+
 
 /**
  * 商品マスタの必須項目の未入力を検出し、入力不足時はエラーメッセージを返す。
