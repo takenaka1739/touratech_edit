@@ -38,8 +38,8 @@ export const ItemVariationSection: React.VFC<Props> = ({
   errorMap,
 }) => {
 
-// 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
-let variItems: any[] = [];
+  // 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
+  let variItems: any[] = [];
 
   if (Array.isArray(state.variItems) && state.variItems.length > 0) {
     // 各行が 7 カラム未満なら補正する
@@ -51,7 +51,7 @@ let variItems: any[] = [];
         const v = row[i];
 
         // 初期行（rowIndex === 0）は null → '' にする（全部表示）
-        if (rowIndex === 0){
+        if (rowIndex === 0) {
           return v === null || v === undefined ? '' : v;
         }
 

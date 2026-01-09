@@ -342,14 +342,34 @@ class ItemService
     if(count($sorted) > 1){
       $previous = ['', '', '', ''];
       $variItems = $sorted->map(function ($row) use (&$previous) {
-          for ($i = 1; $i <= 4; $i++) {
-            if ($row[$i] === $previous[$i - 1]) {
-              $row[$i] = null;
-            } else {
-              $previous[$i - 1] = $row[$i];
-            }
+        
+        // 前回行とのバリエーション1～4の完全一致確認
+        $allSame = true;
+        for ($i = 1; $i <= 4; $i++) {
+          if ($row[$i] !== $previous[$i - 1]) {
+            $allSame = false;
+            break;
           }
+        }
+
+        // 前回行と完全一致した場合はバリエーション4の値だけ保持
+        if ($allSame) {
+          for ($i = 1; $i <= 3; $i++) {
+            $row[$i] = null;
+          }
+
           return $row;
+        }
+
+        // 完全一致でない場合は、一致したバリエーションを null に設定
+        for ($i = 1; $i <= 4; $i++) {
+          if ($row[$i] === $previous[$i - 1]) {
+            $row[$i] = null;
+          } else {
+            $previous[$i - 1] = $row[$i];
+          }
+        }
+        return $row;
       })->all();
 
       $variItems = array_map(function ($row) {
