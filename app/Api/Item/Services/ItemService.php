@@ -80,6 +80,8 @@ class ItemService
       'variations4',
       'purchase_unit_price',
       'is_display',
+      'domestic_stocks',
+      'overseas_stocks',
     );
     $query = $this->setCondition($query, $cond);
     // 削除されていないレコードだけ取得
