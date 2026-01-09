@@ -29,14 +29,18 @@ class ItemService
       'code',
       'item_number',
       'name',
+      'name_note',
       'sales_unit_price',
       'purchase_unit_price',
+      'domestic_stocks',
+      'overseas_stocks',
+      'is_set_item',
       'is_display',
     );
-    //$query->orderBy('code', 'asc');
-    //return $query->paginate(config('const.paginate.per_page'))->toArray();
+
     $query = $this->setCondition($query, $cond);
     $query->orderBy('name', 'asc');
+
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
@@ -52,8 +56,12 @@ class ItemService
       'item_number',
       'code',
       'name',
+      'name_note',
       'sales_unit_price',
       'purchase_unit_price',
+      'domestic_stocks',
+      'overseas_stocks',
+      'is_set_item',
       'm_items.is_display',
     );
     $query->orderBy('code', 'asc');

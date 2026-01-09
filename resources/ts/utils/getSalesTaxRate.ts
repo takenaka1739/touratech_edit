@@ -27,19 +27,10 @@ export const getSalesTaxRate = (
   const currentDate = parseFlexibleDate(date);
   const changeDate = parseFlexibleDate(changeAt);
   if (!currentDate || !changeDate) {
-    debugLog('[getSalesTaxRate] parse failed → currentRate', {
-      currentRate,
-      preRate,
-    });
     return currentRate;
   }
 
   const result = currentDate >= changeDate ? currentRate : preRate;
-
-  debugLog('[getSalesTaxRate] result', {
-    result,
-    branch: currentDate >= changeDate ? 'currentRate' : 'preRate',
-  });
 
   return result;
 };
