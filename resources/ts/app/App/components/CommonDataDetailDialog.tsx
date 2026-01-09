@@ -1,4 +1,4 @@
-// resources/ts/app/App/components/CommonDataDetailDialog.tsx
+// 更新: resources/ts/app/App/components/CommonDataDetailDialog.tsx
 import React, { useEffect } from 'react';
 import toNumber from 'lodash/toNumber';
 import { Item, CommonDataDetail } from '@/types';
@@ -64,22 +64,38 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     useCommonSearchDialogProps<Item>(
       'item',
       async props => {
+        // ★選択時に渡ってくる props の実体を必ずログ出し（ここで item_number / 在庫キー名を確定する）
+        if (isDev()) {
+          console.log('[CommonDataDetailDialog] raw selected item props', props);
+          console.log('[CommonDataDetailDialog] selected item keys', Object.keys(props as any));
+        }
+
+        const p: any = props as any;
+
+        // ★キー揺れ吸収：品番
+        const itemNumber: string =
+          (p.item_number ?? p.itemNo ?? p.item_no ?? p.code ?? '') as string;
+
+        // ★キー揺れ吸収：在庫（domestic_stocks/overseas_stocks 以外で返ってくるケースを拾う）
+        const domesticStocks: number =
+          toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
+        const overseasStocks: number =
+          toNumber(p.overseas_stocks ?? p.overseas_stock ?? p.overseasStock ?? 0);
+
         const {
           id,
           name,
           name_note,
           sales_unit_price,
           is_set_item,
-          domestic_stocks,
-          overseas_stocks,
-        } = props;
+        } = p;
 
         const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
         const ret = recalc(unit_price, 1, state.discount ?? 0);
 
         let answer_date: string | undefined = undefined;
         if (showAnswerDate) {
-          answer_date = getAnswerDate(receiveOrderDate, domestic_stocks, overseas_stocks);
+          answer_date = getAnswerDate(receiveOrderDate, domesticStocks, overseasStocks);
         }
 
         if (isDev()) {
@@ -87,12 +103,21 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             slug,
             salesTaxRate,
             fraction,
-            picked: { id, name, sales_unit_price, is_set_item },
+            picked: {
+              id,
+              itemNumber,
+              name,
+              sales_unit_price,
+              is_set_item,
+              domesticStocks,
+              overseasStocks,
+            },
             before: {
               rate: state.rate,
               discount: state.discount,
               unit_price: state.unit_price,
               quantity: state.quantity,
+              item_number: (state as any)?.item_number,
             },
             computed: { unit_price, ret },
           });
@@ -101,6 +126,10 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         updateState({
           item_kind: is_set_item ? 2 : 1,
           item_id: id,
+
+          // ★これが無いと品番欄に絶対入らない
+          item_number: itemNumber,
+
           item_name: name,
           item_name_jp: name_note,
           sales_unit_price,
@@ -132,6 +161,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           stateSnapshot: {
             no: (state as any)?.no,
             item_id: state.item_id,
+            item_number: (state as any)?.item_number,
             item_name: state.item_name,
             rate: state.rate,
             unit_price: state.unit_price,
@@ -214,13 +244,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     updateState({ [name]: quantity, ...ret } as any);
   };
 
-  /**
-   * 割引：自動再計算あり
-   */
-  const onChangeDetailDiscount = (
-    name: string,
-    value: string | number | boolean | undefined
-  ) => {
+  const onChangeDetailDiscount = (name: string, value: string | number | boolean | undefined) => {
     const discount = value === '' || value === undefined ? 0 : toNumber(value);
     const ret = recalc(state.unit_price, state.quantity, discount);
 
@@ -239,7 +263,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   };
 
   const onClickSave = () => {
-    // 参照渡しだと親側での取り回しで「いつの state か」追いにくいのでスナップショットを渡す
     const snapshot = { ...(state as any) };
 
     if (isDev()) {
@@ -248,6 +271,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         snapshot: {
           no: snapshot.no,
           item_id: snapshot.item_id,
+          item_number: snapshot.item_number,
           unit_price: snapshot.unit_price,
           quantity: snapshot.quantity,
           discount: snapshot.discount,
@@ -263,31 +287,13 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         console.log('[CommonDataDetailDialog] save() result', { slug, ret });
       }
       if (ret) {
-        if (isDev()) {
-          console.log('[CommonDataDetailDialog] onSelected(snapshot)', {
-            slug,
-            snapshot: {
-              no: snapshot.no,
-              item_id: snapshot.item_id,
-              discount: snapshot.discount,
-              amount: snapshot.amount,
-              sales_tax: snapshot.sales_tax,
-              sales_tax_rate: snapshot.sales_tax_rate,
-            },
-          });
-        }
         onSelected(snapshot);
       }
     });
   };
 
   const onClickDelete = () => {
-    if (state.no) {
-      if (isDev()) {
-        console.log('[CommonDataDetailDialog] onClickDelete', { slug, no: state.no });
-      }
-      onDeleted(state.no);
-    }
+    if (state.no) onDeleted(state.no);
   };
 
   return (

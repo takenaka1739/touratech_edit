@@ -1,3 +1,4 @@
+// 更新: resources/ts/app/App/uses/useCommonSearchDialog.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import axios, { Canceler } from 'axios';
@@ -119,12 +120,42 @@ export const useCommonSearchDialog = <T extends DefaultCondition, U extends Defa
 
   const onClickSelect = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
     const id = toNumber(e.currentTarget.dataset.id);
+
+    // ここは find が number 比較なので id 型は OK（toNumber済み）
     const row = state.rows.find(x => x.id === id);
-    console.log(`id${id}`);
-    console.log(`row：${row}`);
+
+    // ★デバッグ：object を文字列連結しない（必ず [object Object] になるため）
+    console.log('[useCommonSearchDialog] selected id', id);
+    console.log('[useCommonSearchDialog] row found?', !!row);
+
     if (row) {
+      const r: any = row as any;
+      console.log('[useCommonSearchDialog] row raw', row);
+      console.log('[useCommonSearchDialog] row keys', Object.keys(r));
+
+      // ★品番・在庫のキー揺れ候補を出す（原因特定用）
+      console.log('[useCommonSearchDialog] item_number candidates', {
+        item_number: r.item_number,
+        itemNo: r.itemNo,
+        item_no: r.item_no,
+        code: r.code,
+      });
+      console.log('[useCommonSearchDialog] stock candidates', {
+        domestic_stocks: r.domestic_stocks,
+        domestic_stock: r.domestic_stock,
+        overseas_stocks: r.overseas_stocks,
+        overseas_stock: r.overseas_stock,
+      });
+
       onSelected(row);
+    } else {
+      console.warn('[useCommonSearchDialog] row not found', {
+        id,
+        rows_len: state.rows.length,
+        sample_ids: (state.rows as any[]).slice(0, 5).map(x => x?.id),
+      });
     }
+
     cleanup();
   };
 
