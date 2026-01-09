@@ -96,9 +96,9 @@ class ReceiveOrderStatusService
       $query->where('r.customer_name', 'like', '%' . escape_like($c_customer_name) . '%');
     }
 
-    $c_customer_name = $cond->get('c_user_name');
-    if ($c_customer_name) {
-      $query->where('usm_personnelsers.name', 'like', '%' . escape_like($c_customer_name) . '%');
+    $c_user_name = $cond->get('c_user_name');
+    if ($c_user_name) {
+      $query->where('m_personnels.name', 'like', '%' . escape_like($c_user_name) . '%');
     }
 
     $c_item_number = $cond->get('c_item_number');
