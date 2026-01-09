@@ -96,9 +96,28 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
     }
   }
 
+  // 品番（col=5）の重複チェック
+  const skuMap: Map<string, number[]> = new Map();
+
+  variItems.forEach((row, rowIndex) => {
+    const sku = row[5] as string | null;
+    if (sku && sku.trim() !== "") {
+      if (!skuMap.has(sku)) {
+        skuMap.set(sku, []);
+      }
+      skuMap.get(sku)!.push(rowIndex);
+    }
+  });
+
+  // 同じ品番が2行以上ある場合、最初の行をエラーとして返す
+  for (const rows of Array.from(skuMap.values()) as number[][]) {
+    if (rows.length >= 2) {
+      return [{ row: rows[0], message: '同じ品番が複数行に存在します' }];
+    }
+  }
+
   return [];
 };
-
 
 /**
  * 商品マスタの必須項目の未入力を検出し、入力不足時はエラーメッセージを返す。

@@ -119,16 +119,7 @@ export const ItemImagePickerDialog: React.VFC<ItemImagePickerDialogProps> = ({
           },
         });
 
-        console.log("ログ取得ポイント 1", res.data);
-
         const n = normalize(res.data);
-        console.log("📌 page:", page);
-        console.log("📌 rows:", n.rows);
-        console.log("📌 ids:", n.rows?.map(r => r.id));
-        console.log("📌 urls:", n.rows?.map(r => r.url));
-        console.log("📌 category_ids:", n.rows?.map(r => r.category_id));
-        console.log("📌 category_names:", n.rows?.map(r => r.category_name));
-        console.log("📌 category_codes:", n.rows?.map(r => r.category_code));
 
         setRows(n.rows ?? []);
         setPager(n.pager);

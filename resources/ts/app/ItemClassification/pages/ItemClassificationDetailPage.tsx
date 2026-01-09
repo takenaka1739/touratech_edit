@@ -93,7 +93,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
 
         setParentOptions(filtered.map((r: any) => ({ code: r.code, name: r.name, level: r.level ?? 0 })));
       } catch (e) {
-        console.error('❌ 親カテゴリ取得エラー', e);
         setParentOptions([]);
       }
     })();
@@ -397,15 +396,11 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           return false;
         }
         // ② 登録済サーバー画像（数値ID）
-        console.log('テスト確認0');
         const res = await axios.put(`/api/${slug}/image_edit_meta/${imgId}`, {
           name: imageName || state.image,
           category_id: targetCategoryId,
           order_by: state.sort_order,
         });
-
-        console.log('テスト確認1');
-        console.log("res:", res); console.log("res.data:", res.data); console.log("res.status:", res.status);
         
         if (res.status === 200 && res.data?.success) {
           setLoadedImageId(imgId);
@@ -413,18 +408,14 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           dispatch(AppActions.success());
           return true;
         }
-
-        console.log('テスト確認2');
         
         const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
         appAlert(msg);
         dispatch(AppActions.failed(msg));
-        console.log('テスト確認3');
+
         return false;
       }
     } catch (e: any) {
-      console.log('テスト確認：例外発生');
-      console.error('❌ 画像保存エラー', e);
       const vmsg = extractValidationError(e);
       if (vmsg) {
         appAlert(vmsg);

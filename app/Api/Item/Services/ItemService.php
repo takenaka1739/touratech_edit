@@ -832,12 +832,14 @@ foreach ($idList as $id) {
       $categoryId = $category['categoryId'] ?? null;   // 変更後のカテゴリID
 
       if ($combId) {
-        // ★ 既存レコードの更新（combId で検索）
-        ItemCategoryCombination::where('id', $combId)->update([
-          'category_id' => $categoryId,
+        // 既存レコードの更新（combId で検索）
+        ItemCategoryCombination::where('category_id', $category['initialcategoryId'])
+          ->whereIn('item_id', $this->getAllVariationIds($data))
+          ->update([
+            'category_id' => $categoryId,
         ]);
       } else {
-        // ★ 新規作成（combId が無い場合）
+        // 新規作成（combId が無い場合）
         ItemCategoryCombination::create([
           'item_id'     => $item->id,
           'category_id' => $categoryId,
@@ -864,6 +866,13 @@ foreach ($idList as $id) {
     } else {
       SpecialSale::where('item_id', $item->id)->delete();
     }
+  }
+
+  private function getAllVariationIds(array $data): array
+  {
+    return array_values(array_filter(array_map(function($row) {
+      return is_numeric($row[0]) ? (int)$row[0] : null;
+    }, $data['variItems'])));
   }
 
   /**
@@ -1035,7 +1044,12 @@ foreach ($idList as $id) {
           $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
 
           if ($isNew) {
+            // 新規バリエーション：新規 Item 作成 + 関連も「新規登録」として扱う
             $item = Item::create($variationAttributes);
+
+            // 商品画像・商品分類・取扱説明書・特売設定（新規）
+            $this->storeItemRelations($item, $data, $index);
+
           } else {
             // 既存判定: 数値ID（int または 数字文字列）
             if (is_int($key) || (is_string($key) && ctype_digit($key))) {
@@ -1046,14 +1060,19 @@ foreach ($idList as $id) {
               // 想定外キーは安全側で新規扱いに
               \Log::warning("Unexpected variation key; treating as new. key=" . var_export($key, true));
               $item = Item::create($variationAttributes);
+
+              // 想定外キーだが、新規として扱う以上は関連も新規登録
+              $this->storeItemRelations($item, $data, $index);
+            }
+
+            // 既存バリエーション（正常系）は関連を「更新」として扱う
+            if (!($isNew)) {
+              $this->updateItemRelations($item, $data, $index);
             }
           }
 
           // バリエーションの前回値の更新
           $this->updatePrevVariations($prevVariations, $variation);
-
-          // 商品画像・商品分類・取扱説明書・特売設定
-          $this->updateItemRelations($item, $data, $index);
 
           $ids[] = $item->id;
         }

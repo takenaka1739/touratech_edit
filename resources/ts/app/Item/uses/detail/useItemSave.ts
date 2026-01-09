@@ -169,9 +169,6 @@ export const useItemSave = ({
         variItems: filledVariItems,
       };
 
-      console.log("=== [useItemSave] payload（送信データ） mode:", mode, "===");
-      console.log(JSON.parse(JSON.stringify(payload)));
-
       // API 呼び出し
       const success = await requestItem({ mode, payload });
 

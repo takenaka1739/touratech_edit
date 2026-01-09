@@ -201,6 +201,28 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
       }
     }
 
+    // 品番（col=5）の重複チェック
+    const skuMap = new Map<string, number[]>();
+
+    variItems.forEach((row, rowIndex) => {
+      const sku = row[5] as string | null;
+      if (sku && sku.trim() !== "") {
+        if (!skuMap.has(sku)) {
+          skuMap.set(sku, []);
+        }
+        skuMap.get(sku)!.push(rowIndex);
+      }
+    });
+
+    // 同じ品番が2行以上ある場合、全ての該当行にエラーを付ける
+    for (const rows of Array.from(skuMap.values()) as number[][]) {
+      if (rows.length >= 2) {
+        rows.forEach(r => {
+          newErrorMap[r][5] = true;
+        });
+      }
+    }
+
     setErrorMap(newErrorMap);
   }, [errors, variItems, hasNoVariation]);
 
