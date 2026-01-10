@@ -15,6 +15,66 @@ type Props = {
   errorMap: boolean[][];
 };
 
+/**
+ * 縦線の位置を計算する
+ * 上半分：up, 下半分：bottom, フル：full, 縦線なし：none
+ */
+const calcVerticalLines = (variItems: any[]) => {
+  const verticalLines: string[][] = [];
+
+  // 描画判定対象ループ
+  for (let i = 0; i < variItems.length; i++) {
+    const itemI = variItems[i].slice(1, 5);
+    const firstFilledIndexI = itemI.findIndex((v: string | null) => v !== null);
+
+    const lineStates = ['none', 'none', 'none'];
+
+    // 上の行と繋げる縦線（└）の描画判定
+    if ((i !== 0) && (firstFilledIndexI > 0)) {
+      lineStates[firstFilledIndexI - 1] = 'up';
+    }
+
+    // 比較対象ループ（下の行と繋げる縦線（┬）の描画位置算出）
+    let lastBottomIndex = 4;
+    for (let j = i + 1; j < variItems.length; j++) {
+      const itemJ = variItems[j].slice(1, 5);
+      const firstFilledIndexJ = itemJ.findIndex((v: string | null) => v !== null);
+
+      // 判定対象より null 以外の開始位置が手前の行がきたら break
+      if (firstFilledIndexI >= firstFilledIndexJ) break;
+
+      if (lastBottomIndex > firstFilledIndexJ) {
+        lineStates[firstFilledIndexJ - 1] = 'bottom';
+        lastBottomIndex = firstFilledIndexJ;
+      }
+    }
+
+    verticalLines.push(lineStates);
+  }
+
+  // 下の行と繋げる縦線（┬）と上の行と繋げる縦線（└）の間を補完する線（｜）の描画
+  const filledFlags = [false, false, false, false];
+  for (let i = verticalLines.length - 1; i > 0; i--)
+  {
+    for (let j = 0; j < 4; j++)
+    {
+      if (verticalLines[i][j] === 'bottom')
+      {
+        filledFlags[j] = false;
+      }
+      else if (!filledFlags[j] && verticalLines[i][j] === 'up')
+      {
+        filledFlags[j] = true;
+      }
+      else if (filledFlags[j])
+      {
+        verticalLines[i][j] = 'full';
+      }
+    }
+  }
+
+  return verticalLines;
+};
 
 /**
  * 商品マスタの「バリエーション」セクション。
@@ -42,39 +102,35 @@ export const ItemVariationSection: React.VFC<Props> = ({
   let variItems: any[] = [];
 
   if (Array.isArray(state.variItems) && state.variItems.length > 0) {
-    // 各行が 7 カラム未満なら補正する
     variItems = state.variItems.map((row: any, rowIndex: number) => {
       if (!Array.isArray(row)) return ['', '', '', '', '', '', ''];
 
-      // 7 カラムに揃えつつ、null/undefined を正しく扱う
       const fixed = Array.from({ length: 7 }).map((_, i) => {
         const v = row[i];
 
-        // 初期行（rowIndex === 0）は null → '' にする（全部表示）
         if (rowIndex === 0) {
           return v === null || v === undefined ? '' : v;
         }
 
-        // index 1〜4 → バリエーション1〜4
         if (i >= 1 && i <= 4) {
           return v === undefined ? null : v;
         }
 
-        // 品番・価格（常に visible）
         if (i === 5 || i === 6) {
           return v === null || v === undefined ? '' : v;
         }
 
-        // index 0 → id（null のままでも OK）
         return v === undefined ? null : v;
       });
 
       return fixed;
     });
   } else {
-    // 初期行（バリ1〜4は表示、品番・価格も表示）
     variItems = [['', '', '', '', '', '', '']];
   }
+
+  // バリエーションツリー縦線の描画位置の計算
+  const verticalLines = calcVerticalLines(variItems);
 
   return (
     <>
@@ -108,11 +164,12 @@ export const ItemVariationSection: React.VFC<Props> = ({
               onBlur={outForcus}
               showDelete={variItems.length > 1 && isVariationEditable && !isDisabled}
               errorMap={errorMap}
+              verticalLines={verticalLines[itemIndex]}
             />
           ))}
         </div>
 
-        {/* エラー表示（validateItemState の variation_◯ をすべて表示） */}
+        {/* エラー表示 */}
         {Object.keys(errors || {})
           .filter(key => key.startsWith('variation_'))
           .map(key => (
@@ -124,3 +181,4 @@ export const ItemVariationSection: React.VFC<Props> = ({
     </>
   );
 };
+
