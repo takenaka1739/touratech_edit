@@ -1,4 +1,4 @@
-// resources/ts/app/Sales/pages/SalesDetailPage.tsx
+// 更新ファイル: resources/ts/app/Sales/pages/SalesDetailPage.tsx
 import React, { useMemo } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
@@ -69,6 +69,36 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
 
   const safeNumber = (v: number | string | undefined, p: number = 0) =>
     numberFormat((v as number) ?? 0, p);
+
+  /**
+   * 送付フラグ（新: is_send / 旧: send_flg）互換
+   * - 初期表示・必須制御は旧 send_flg でも成立させる
+   */
+  const sendFlag = useMemo(() => {
+    const raw = (state as any)?.is_send ?? (state as any)?.send_flg ?? 0;
+    return Number(raw) === 1;
+  }, [(state as any)?.is_send, (state as any)?.send_flg]);
+
+  /**
+   * FormInputCheck の onChange が
+   * - (event) で呼ばれる
+   * - (name, value) で呼ばれる
+   * どちらでも正しく is_send を 1/0 更新できるように吸収する
+   */
+  const handleIsSendChange = (...args: any[]) => {
+    // 形式A: onChange(name, value)
+    if (args.length >= 2 && typeof args[0] === 'string') {
+      const name = args[0];
+      const value = args[1];
+      onChange(name, value);
+      return;
+    }
+
+    // 形式B: onChange(event)
+    const e = args[0];
+    const checked = !!e?.target?.checked;
+    onChange('is_send', checked ? 1 : 0);
+  };
 
   return (
     <PageWrapper
@@ -159,19 +189,30 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               error={errors?.name}
               onChange={onChange}
               className="max-w-lg"
-              required={state.send_flg}
+              required={sendFlag}
             />
           </div>
+
           <div className="w-1/6 mt-4 ml-4">
             <Forms.FormInputCheck
               labelText="発送"
-              id="send_flg"
-              name="send_flg"
+              id="is_send"
+              name="is_send"
               value={1}
-              checked={!!state.send_flg}
-              onChange={onChange}
+              checked={sendFlag}
+              onChange={handleIsSendChange as any}
             />
+            {/*
+              重要:
+              保存処理が FormData/フォームシリアライズ方式の場合、
+              checkbox は「未チェックだと送信されない」ため DB で 1/0 が欠けます。
+              hidden を併設して、常に 0/1 を送れるようにします。
+              併せて旧キー send_flg も送って互換性を確保します。
+            */}
+            <input type="hidden" name="is_send" value={sendFlag ? 1 : 0} />
+            <input type="hidden" name="send_flg" value={sendFlag ? 1 : 0} />
           </div>
+
           <div className="w-1/6 mt-4">
             <button className="btn" onClick={onClickCreateCustomer}>
               得意先追加
@@ -187,7 +228,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               value={state.zip_code ?? ''}
               error={errors?.zip_code}
               onChange={onChange}
-              required={state.send_flg}
+              required={sendFlag}
             />
           </div>
           <div className="ml-2" style={{ position: 'relative', top: '1px' }}>
@@ -209,7 +250,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           error={errors?.address1}
           onChange={onChange}
           className="max-w-lg"
-          required={state.send_flg}
+          required={sendFlag}
           maxLength={30}
         />
         <Forms.FormGroupInputText

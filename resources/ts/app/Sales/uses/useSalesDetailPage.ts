@@ -1,5 +1,4 @@
-// resources/ts/app/Sales/uses/useSalesDetailPage.ts
-// [UPDATE] アンマウント後の setState / dispatch / setIsLoading を抑止して Warning を解消
+// 更新: resources/ts/app/Sales/uses/useSalesDetailPage.ts
 import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
@@ -11,12 +10,15 @@ import { useCommonDataDetailPage } from '@/app/App/uses/useCommonDataDetailPage'
 import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
 
 type SalesDetailPageState = Sales & {
-  // 既存
   details_amount: number;
   barcode: string | undefined;
   prev_title: string | undefined;
   prev_url: string;
+  is_send?: number;
 };
+
+const to01 = (v: any): 0 | 1 => (Number(v) === 1 || v === true ? 1 : 0);
+const toBool = (v: any): boolean => to01(v) === 1;
 
 /**
  * 売上データ（詳細）画面用 hooks
@@ -25,7 +27,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   const dispatch = useDispatch();
   const initCustomer = useInitCustomer();
 
-  // ★追加：アンマウント判定（非同期完了後に setState しない）
+  // アンマウント判定
   const mountedRef = useRef(true);
 
   const safeDispatch = useCallback(
@@ -47,8 +49,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     toState,
     getRate,
     backPage,
-    store,
-    // edit,
+    store: commonStore,
     ...rest
   } = useCommonDataDetailPage<SalesDetailPageState>(
     slug,
@@ -59,6 +60,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       customer_id: undefined,
       customer_name: initCustomer?.name,
       send_flg: false,
+      is_send: 0,
       name: '',
       zip_code: '',
       address1: '',
@@ -76,9 +78,8 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       remarks: undefined,
       rate: 100,
       sales_tax_rate: undefined,
-      // ★売上画面は「切捨て」運用に寄せる（必要ならここを 1 固定に）
       fraction: 1,
-      details: [], // ← 新規は必ず空配列
+      details: [],
       details_amount: 0,
       barcode: undefined,
       prev_title: from_receive ? '受注状況一覧' : undefined,
@@ -86,6 +87,98 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     },
     from_receive ? '/receive_order_status' : `/${slug}`,
   );
+
+  /**
+   * 422(Laravel validation) を拾って errors を state に流す
+   * - true: 422 を処理した（failed を出さない）
+   * - false: 422 ではない
+   */
+  const handleValidationError = useCallback(
+    (e: unknown): boolean => {
+      const err = e as any;
+      const status = err?.response?.status;
+      if (status !== 422) return false;
+
+      const errs = err?.response?.data?.errors;
+      if (!mountedRef.current) return true;
+
+      setErrors(errs ?? undefined);
+      safeDispatch(AppActions.success());
+      return true;
+    },
+    [safeDispatch, setErrors],
+  );
+
+  /**
+   * Sales API の「200 + success:false + errors」を拾う
+   * - true: errors を処理した
+   * - false: その形式ではない
+   */
+  const handleApiErrors200 = useCallback(
+    (res: any): boolean => {
+      // Estimate流儀: status=200 & success=false & errors
+      if (!res || res.status !== 200) return false;
+      if (res.data?.success !== false) return false;
+
+      if (!mountedRef.current) return true;
+      setErrors(res.data?.errors ?? undefined);
+      return true;
+    },
+    [setErrors],
+  );
+
+  const buildPayload = useCallback(() => {
+    const isSend01 = to01((state as any)?.is_send ?? (state as any)?.send_flg ?? 0);
+
+    return {
+      ...state,
+      is_send: isSend01,
+      // API互換（0/1として送る）
+      send_flg: isSend01,
+    } as any;
+  }, [state]);
+
+  /**
+   * create の戻り値仕様
+   * - >0: 新規ID
+   * - 0 : 422以外の失敗 or success=false（※commonStore fallback の対象）
+   * - -1: 422(バリデーション) を処理済み（※commonStore は呼ばない）
+   */
+  const create: () => Promise<number> = useCallback(async () => {
+    safeDispatch(AppActions.request());
+    try {
+      const res = await axios.post(`/api/${slug}/store`, buildPayload());
+
+      // 200 success=false で errors が返る設計にも対応
+      if (handleApiErrors200(res)) {
+        safeDispatch(AppActions.success());
+        return 0;
+      }
+
+      safeDispatch(AppActions.success());
+
+      if (res.status === 200 && res.data?.success) {
+        const newId =
+          Number(res.data?.data?.id) ||
+          Number(res.data?.data) ||
+          Number(res.data?.id) ||
+          0;
+
+        if (!mountedRef.current) return 0;
+        setErrors(undefined);
+        return newId;
+      }
+
+      if (!mountedRef.current) return 0;
+      setErrors(res.data?.errors);
+      return 0;
+    } catch (e) {
+      if (handleValidationError(e)) return -1;
+
+      safeDispatch(AppActions.failed('データの保存に失敗しました。'));
+      return 0;
+    }
+  }, [slug, buildPayload, safeDispatch, setErrors, handleValidationError, handleApiErrors200]);
 
   // ===== 受注検索ダイアログ =====
   const {
@@ -123,18 +216,22 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       if (has_sales == 1) {
         await appAlert('既に売上が完了しているため、選択できません。');
       } else {
-        // 税率は getRate(sales_at) を優先しつつ、受注由来があるなら保険で採用
         const resolvedSalesTaxRate =
           getRate(state.sales_at) || sales_tax_rate || getRate(undefined as any) || 0;
 
-        // ★アンマウント後に updateState しない
         if (!mountedRef.current) return true;
+
+        const isSend01 = to01(send_flg);
+        const isSendBool = toBool(send_flg);
 
         updateState({
           delivery_date,
           customer_id,
           customer_name: customer_name ?? '上様',
-          send_flg, // 受注からの取り込み時は明示的に反映
+
+          send_flg: isSendBool,
+          is_send: isSend01,
+
           name,
           zip_code,
           address1,
@@ -150,7 +247,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           order_no,
           remarks,
           rate,
-          // ★売上は切捨て運用に寄せる（受注の fraction を尊重したいならここを fraction に戻す）
           fraction: 1,
           sales_tax_rate: resolvedSalesTaxRate,
           details_amount: Number(details_amount ?? 0),
@@ -167,26 +263,25 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   );
 
   // ===== 得意先検索ダイアログ =====
-  const {
-    open: openCustomerDialog,
-    searchDialogProps: customerSearchDialogProps,
-  } = useCommonSearchDialogProps<any>(
-    'customer',
-    async (c) => {
+  const { open: openCustomerDialog, searchDialogProps: customerSearchDialogProps } =
+    useCommonSearchDialogProps<any>('customer', async (c) => {
       if (!mountedRef.current) return true;
 
       setState((prev) => {
         const nextAddress1FromCustomer = `${c?.prefectures ?? ''}${c?.municipality ?? ''}`.trim();
 
+        const isSend01 = to01((prev as any)?.is_send ?? (prev as any)?.send_flg ?? 0);
+        const isSendBool = toBool((prev as any)?.is_send ?? (prev as any)?.send_flg ?? 0);
+
         const next: SalesDetailPageState = {
           ...prev,
           customer_id: c?.id ?? prev.customer_id,
           customer_name: (c?.name as string) ?? prev.customer_name ?? '上様',
-          send_flg: prev.send_flg,
+          send_flg: isSendBool,
+          is_send: isSend01,
           corporate_class:
             typeof c?.corporate_class === 'number' ? c.corporate_class : prev.corporate_class,
           rate: typeof c?.rate === 'number' ? c.rate : prev.rate,
-          // ★売上は切捨て運用に寄せる（ここも 1 固定）
           fraction: 1,
           name: prev.name,
           zip_code: prev.zip_code,
@@ -208,13 +303,11 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       if (!mountedRef.current) return true;
       setErrors(undefined);
       return true;
-    },
-  );
+    });
 
   // ===== 担当者検索ダイアログ =====
-  const { open: openUserDialog, searchDialogProps: userSearchDialogProps } = useCommonSearchDialogProps<any>(
-    'user',
-    async (u) => {
+  const { open: openUserDialog, searchDialogProps: userSearchDialogProps } =
+    useCommonSearchDialogProps<any>('user', async (u) => {
       if (!mountedRef.current) return true;
 
       setState((prev) => ({
@@ -226,29 +319,23 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       if (!mountedRef.current) return true;
       setErrors(undefined);
       return true;
-    },
-  );
+    });
 
-  /**
-   * ★新規作成（idなし）でも「新規初期値」を API から取得して state に反映する
-   * - このプロジェクトの routes は GET /api/sales/edit/ が「新規（IDなし）」のエンドポイント
-   * - sales_tax_rate をここで必ず入れる（モーダルの税計算が 0 にならないように）
-   */
   const getNewData: () => Promise<boolean> = async () => {
     safeDispatch(AppActions.request());
     try {
-      // ★重要：routes.php では new は存在せず、新規は edit/（IDなし）
       const res = await axios.get(`/api/${slug}/edit/`);
 
       if (res.status === 200) {
-        const st = toState(res.data?.data ?? { details: [] });
-
+        const st = toState(res.data?.data ?? { details: [] }) as any;
         st.details = Array.isArray(st.details) ? st.details : [];
 
-        // ★税率は「日付基準」を優先（旧仕様）
-        // sales_at が未設定なら edit/ の返却値に依存するので、st 側を参照
-        const baseDate = st.sales_at || (st as any).sales_date || state.sales_at;
-        const resolvedSalesTaxRate = getRate(baseDate) || (st as any).sales_tax_rate || 0;
+        const isSend01 = to01(st.is_send ?? st.send_flg ?? 0);
+        st.is_send = isSend01;
+        st.send_flg = toBool(isSend01);
+
+        const baseDate = st.sales_at || st.sales_date || state.sales_at;
+        const resolvedSalesTaxRate = getRate(baseDate) || st.sales_tax_rate || 0;
 
         if (!mountedRef.current) return true;
 
@@ -256,7 +343,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           ...prev,
           ...st,
           sales_tax_rate: resolvedSalesTaxRate,
-          // ★売上は切捨て固定（UI要件）
           fraction: 1,
         }));
 
@@ -268,15 +354,13 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
 
       safeDispatch(AppActions.success());
       return false;
-    } catch {
+    } catch (e) {
       safeDispatch(AppActions.failed('新規データの取得に失敗しました。'));
       return false;
     }
   };
 
-  // 新規(id 未指定)のときも getNewData() で初期値を取りに行く
   const get: (id: number | undefined) => Promise<boolean> = async (idArg) => {
-    // 新規（通常遷移）: edit/（IDなし）で初期値を取得
     if (!from_receive && (idArg === undefined || idArg === null)) {
       return await getNewData();
     }
@@ -299,12 +383,14 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     try {
       const res = await axios.get(url);
       if (res.status === 200) {
-        const st = toState(res.data?.data ?? { details: [] });
-
+        const st = toState(res.data?.data ?? { details: [] }) as any;
         st.details = Array.isArray(st.details) ? st.details : [];
 
-        // 税率・請求済フラグ
-        const sales_tax_rate = getRate(st.sales_at) || (st as any).sales_tax_rate || 0;
+        const isSend01 = to01(st.is_send ?? st.send_flg ?? 0);
+        st.is_send = isSend01;
+        st.send_flg = toBool(isSend01);
+
+        const sales_tax_rate = getRate(st.sales_at) || st.sales_tax_rate || 0;
         const has_invoice = st.has_invoice == 1;
 
         const delivery = res.data?.data?.delivery;
@@ -323,7 +409,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           ...prev,
           ...st,
           sales_tax_rate,
-          // ★売上は切捨て固定（UI要件）
           fraction: 1,
           has_invoice,
           ...(from_receive ? { receive_order_id } : {}),
@@ -337,7 +422,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
         safeDispatch(AppActions.success());
         history.push('/404');
       }
-    } catch {
+    } catch (e) {
       safeDispatch(AppActions.failed('データの取得に失敗しました。'));
     }
 
@@ -347,7 +432,14 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   const validate: () => Promise<boolean> = async () => {
     safeDispatch(AppActions.request());
     try {
-      const res = await axios.post(`/api/${slug}/validate_edit/${id}`, state);
+      const res = await axios.post(`/api/${slug}/validate_edit/${id}`, buildPayload());
+
+      // 200 success=false で errors が返る設計にも対応
+      if (handleApiErrors200(res)) {
+        safeDispatch(AppActions.success());
+        return false;
+      }
+
       if (res.status === 200) {
         safeDispatch(AppActions.success());
         if (res.data.success) {
@@ -364,7 +456,8 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       } else {
         safeDispatch(AppActions.failed('取込に失敗しました。'));
       }
-    } catch {
+    } catch (e) {
+      if (handleValidationError(e)) return false;
       safeDispatch(AppActions.failed('検証に失敗しました。'));
     }
     return false;
@@ -373,7 +466,14 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   const edit: (id: number) => Promise<boolean> = async (idArg) => {
     safeDispatch(AppActions.request());
     try {
-      const res = await axios.put(`/api/${slug}/edit/${idArg}`, state);
+      const res = await axios.put(`/api/${slug}/edit/${idArg}`, buildPayload());
+
+      // 200 success=false で errors が返る設計にも対応
+      if (handleApiErrors200(res)) {
+        safeDispatch(AppActions.success());
+        return false;
+      }
+
       if (res.status === 200) {
         safeDispatch(AppActions.success());
         if (res.data.success) {
@@ -387,7 +487,8 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       } else {
         safeDispatch(AppActions.failed('データの保存に失敗しました。'));
       }
-    } catch {
+    } catch (e) {
+      if (handleValidationError(e)) return false;
       safeDispatch(AppActions.failed('データの保存に失敗しました。'));
     }
     return false;
@@ -396,7 +497,14 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   const output: (doc_type: string) => Promise<boolean> = async (doc_type) => {
     safeDispatch(AppActions.request());
     try {
-      const res = await axios.post(`/api/${slug}/output/${doc_type}`, state);
+      const res = await axios.post(`/api/${slug}/output/${doc_type}`, buildPayload());
+
+      // 200 success=false で errors が返る設計にも対応
+      if (handleApiErrors200(res)) {
+        safeDispatch(AppActions.success());
+        return false;
+      }
+
       if (res.status === 200) {
         safeDispatch(AppActions.success());
         if (res.data.success) {
@@ -417,13 +525,13 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       } else {
         safeDispatch(AppActions.failed('印刷に失敗しました。'));
       }
-    } catch {
+    } catch (e) {
+      if (handleValidationError(e)) return false;
       safeDispatch(AppActions.failed('印刷に失敗しました。'));
     }
     return false;
   };
 
-  // ★修正：アンマウント後に setIsLoading(false) しない（Warning対策）
   useEffect(() => {
     mountedRef.current = true;
 
@@ -453,8 +561,21 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     }
 
     // 新規作成
-    const newId = await store();
-    if (newId && Number(newId) > 0) {
+    const newId = await create();
+
+    // ★422(バリデーション) の場合は fallback しない（errors 表示を優先）
+    if (newId === -1) {
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    // createが通らない旧経路フォールバック
+    let finalId = newId;
+    if (!finalId || Number(finalId) <= 0) {
+      finalId = await commonStore();
+    }
+
+    if (finalId && Number(finalId) > 0) {
       await appAlert('保存しました。');
       backPage();
     } else {
@@ -474,8 +595,18 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           }
         }
       } else {
-        const newId = await store();
-        if (newId > 0) {
+        const newId = await create();
+        if (newId === -1) {
+          window.scrollTo(0, 0);
+          return;
+        }
+
+        let finalId = newId;
+        if (!finalId || Number(finalId) <= 0) {
+          finalId = await commonStore();
+        }
+
+        if (finalId > 0) {
           await output('delivery');
           backPage();
         } else {
@@ -499,8 +630,18 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           }
         }
       } else {
-        const newId = await store();
-        if (newId > 0) {
+        const newId = await create();
+        if (newId === -1) {
+          window.scrollTo(0, 0);
+          return;
+        }
+
+        let finalId = newId;
+        if (!finalId || Number(finalId) <= 0) {
+          finalId = await commonStore();
+        }
+
+        if (finalId > 0) {
           await output('invoice');
           backPage();
         } else {

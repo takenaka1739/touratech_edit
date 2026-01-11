@@ -122,32 +122,10 @@ class SalesController extends BaseController
    */
   public function store(SalesStoreRequest $request)
   {
-    // ここに出なければ「Controller未到達」
-    \Log::warning('[SalesController@store] ENTER', [
-      'content_type' => $request->header('content-type'),
-      'origin'       => $request->header('origin'),
-      'referer'      => $request->header('referer'),
-      'payload_keys' => array_keys($request->all() ?? []),
-      'sales_at_raw' => $request->input('sales_at'),
-      'receive_order_id' => $request->input('receive_order_id'),
-      'details_count' => is_array($request->input('details')) ? count($request->input('details')) : null,
-    ]);
-
     try {
       // FormRequest のバリデーション結果のみを使用する（未定義キー混入防止）
       $validated = $request->validated();
-
-      \Log::warning('[SalesController@store] VALIDATED', [
-        'keys' => array_keys($validated),
-        'sales_at' => $validated['sales_at'] ?? null,
-        'receive_order_id' => $validated['receive_order_id'] ?? null,
-        'details_count' => isset($validated['details']) && is_array($validated['details']) ? count($validated['details']) : null,
-      ]);
-
-      // 実処理（DB登録、明細作成、税計算など）は Service 側に集約
       $ret = $this->service->store($validated);
-
-      \Log::warning('[SalesController@store] SERVICE_RETURN', $ret);
 
       // Service の統一返却形式に従い、失敗時は errors を返す
       if (!($ret['success'] ?? false)) {
@@ -160,15 +138,6 @@ class SalesController extends BaseController
       ]);
 
     } catch (\Throwable $e) {
-      // 予期しない例外は 500 として返却し、ログに落とす（フロント側の切り分け用）
-      \Log::error('[SalesController@store] EXCEPTION', [
-        'type'    => get_class($e),
-        'message' => $e->getMessage(),
-        'code'    => $e->getCode(),
-        'file'    => $e->getFile(),
-        'line'    => $e->getLine(),
-      ]);
-
       // ここは「500で落ちた」ことを返す（フロント側確認用）
       return response()->json([
         'success' => false,
@@ -189,7 +158,8 @@ class SalesController extends BaseController
    */
   public function validate_edit(SalesUpdateRequest $request, int $id)
   {
-    $check = $this->service->validate_edit($id, $request->validated());
+    $validated = $request->validated();
+    $check = $this->service->validate_edit($id, $validated);
     return $this->success([
       "check" => $check,
     ]);
@@ -211,7 +181,9 @@ class SalesController extends BaseController
       ]);
     }
 
-    $ret = $this->service->update($id, $request->validated());
+    $validated = $request->validated();
+    $ret = $this->service->update($id, $validated);
+
     if (!$ret["success"]) {
       return $this->error("", $ret["errors"]);
     }
@@ -264,7 +236,8 @@ class SalesController extends BaseController
    */
   public function output_delivery(SalesUpdateRequest $request)
   {
-    $data = $this->service->getPdfData($request->validated());
+    $validated = $request->validated();
+    $data = $this->service->getPdfData($validated);
 
     $pdf = new SalesPdfService();
     $file_id = $pdf->createPdf($data, "納品書");
@@ -281,7 +254,8 @@ class SalesController extends BaseController
    */
   public function output_invoice(SalesUpdateRequest $request)
   {
-    $data = $this->service->getPdfData($request->validated());
+    $validated = $request->validated();
+    $data = $this->service->getPdfData($validated);
 
     $pdf = new SalesPdfService();
     $file_id = $pdf->createPdf($data, "請求書");
@@ -316,3 +290,4 @@ class SalesController extends BaseController
     ]);
   }
 }
+

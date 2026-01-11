@@ -3,87 +3,120 @@
 namespace App\Api\Sales\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
-/**
- * SalesUpdateRequest
- * - 元コントローラーの型宣言に合わせた最低限の FormRequest
- * - 納品書/請求書のPDF発行（output_delivery / output_invoice）で
- *   id もしくは data を受け取れるようにしておく。
- * - 更新系でも使われるため、主要フィールドは「nullable」で許容。
- */
 class SalesUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // ルート側で auth ミドルウェアが掛かっている前提
         return true;
+    }
+
+    /**
+     * ★新規と同じ正規化
+     * send_flg を 0/1 に統一して required_if を確実に効かせる
+     */
+    protected function prepareForValidation(): void
+    {
+        $rawSendFlg = $this->input('send_flg');
+
+        $sendFlg = (int)(
+            $rawSendFlg === 1 ||
+            $rawSendFlg === '1' ||
+            $rawSendFlg === true
+        );
+
+        $salesAt = $this->input('sales_at');
+        if (is_string($salesAt)) {
+            $salesAt = str_replace('/', '-', $salesAt);
+        }
+
+        $deliveryDate = $this->input('delivery_date');
+        if (is_string($deliveryDate)) {
+            $deliveryDate = str_replace('/', '-', $deliveryDate);
+        }
+
+        $this->merge([
+            'send_flg' => $sendFlg,
+            'sales_at' => $salesAt,
+            'delivery_date' => $deliveryDate ?: null,
+        ]);
     }
 
     public function rules(): array
     {
         return [
-            // PDF発行用（どちらか片方が来れば十分）
-            'id'                => ['nullable', 'integer'],
-            'data'              => ['nullable', 'array'],
+            // ===== 新規と同じ必須 =====
+            'sales_at'        => ['required', 'string'],
+            'corporate_class' => ['required', 'integer'],
+            'tel'             => ['required', 'string'],
 
-            // 更新時に送られうる主要フィールド（緩めに許容）
-            'sales_at'          => ['nullable', 'string'],
-            'delivery_date'     => ['nullable', 'string'],
-            'customer_id'       => ['nullable', 'integer'],
-            'send_flg'          => ['nullable', 'boolean'],
-            'name'              => ['nullable', 'string'],
-            'zip_code'          => ['nullable', 'string'],
-            'address1'          => ['nullable', 'string'],
-            'address2'          => ['nullable', 'string'],
-            'tel'               => ['nullable', 'string'],
-            'fax'               => ['nullable', 'string'],
-            'corporate_class'   => ['nullable', 'integer'],
-            'user_id'           => ['nullable', 'integer'],
-            'shipping_amount'   => ['nullable', 'numeric'],
-            'fee'               => ['nullable', 'numeric'],
-            'discount'          => ['nullable', 'numeric'],
-            'total_amount'      => ['nullable', 'numeric'],
-            'order_no'          => ['nullable', 'string'],
-            'remarks'           => ['nullable', 'string'],
-            'rate'              => ['nullable', 'integer'],
-            'sales_tax_rate'    => ['nullable', 'integer'],
-            'fraction'          => ['nullable', 'integer'],
-            'receive_order_id'  => ['nullable', 'integer'],
-            'has_invoice'       => ['nullable', 'boolean'],
+            'send_flg' => ['required', 'integer', 'in:0,1'],
 
-            // 明細
-            'details'                   => ['nullable', 'array'],
-            'details.*.id'              => ['nullable', 'integer'],
-            'details.*.no'              => ['nullable', 'integer'],
-            'details.*.item_kind'       => ['nullable', 'integer'],
-            'details.*.item_id'         => ['nullable', 'integer'],
-            'details.*.sales_unit_price'=> ['nullable', 'numeric'],
-            'details.*.rate'            => ['nullable', 'integer'],
-            'details.*.unit_price'      => ['nullable', 'numeric'],
-            'details.*.quantity'        => ['nullable', 'integer'],
-            'details.*.discount'        => ['nullable', 'numeric'], 
-            'details.*.amount'          => ['nullable', 'numeric'],
-            'details.*.sales_tax'       => ['nullable', 'numeric'], // （任意）送ってくる場合に備えて
-            'details.*.sales_tax_rate'  => ['nullable', 'integer'],
-            'details.*.fraction'        => ['nullable', 'integer'],
+            // ★発送あり(send_flg=1)で必須
+            'name'     => ['required_if:send_flg,1', 'string'],
+            'zip_code' => ['required_if:send_flg,1', 'string'],
+            'address1' => ['required_if:send_flg,1', 'string'],
+            'address2' => ['nullable', 'string'],
+
+            // ===== それ以外は従来通り =====
+            'customer_id'     => ['nullable', 'integer'],
+            'user_id'         => ['nullable', 'integer'],
+            'shipping_amount' => ['nullable', 'numeric'],
+            'fee'             => ['nullable', 'numeric'],
+            'discount'        => ['nullable', 'numeric'],
+            'total_amount'    => ['nullable', 'numeric'],
+            'order_no'        => ['nullable', 'string'],
+            'remarks'         => ['nullable', 'string'],
+            'rate'            => ['nullable', 'integer'],
+            'sales_tax_rate'  => ['nullable', 'integer'],
+            'fraction'        => ['nullable', 'integer'],
+            'receive_order_id'=> ['nullable', 'integer'],
+            'has_invoice'     => ['nullable', 'boolean'],
+
+            // 明細（更新でも必須）
+            'details'            => ['required', 'array', 'min:1'],
+            'details.*.quantity' => ['required', 'integer', 'min:1'],
+            'details.*.discount' => ['nullable', 'numeric', 'min:0'],
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'sales_at'   => '売上日',
+            'corporate_class' => '支払方法',
+            'tel'        => 'TEL',
+            'name'       => '届け先名',
+            'zip_code'   => '郵便番号',
+            'address1'   => '住所1',
+            'details'    => '明細',
+            'details.*.quantity' => '数量',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required_if'     => '発送ありの場合は:attributeを入力してください。',
+            'zip_code.required_if' => '発送ありの場合は:attributeを入力してください。',
+            'address1.required_if' => '発送ありの場合は:attributeを入力してください。',
+            'details.required'     => ':attributeを1件以上追加してください。',
         ];
     }
 
     /**
-     * validated() の戻り値に id / data が必ず含まれるよう、必要なら補完。
+     * ★Estimate と同じ挙動
+     * validation エラーを 422 にせず、errors を返す
      */
-    public function validated($key = null, $default = null)
+    protected function failedValidation(Validator $validator)
     {
-        $v = parent::validated($key, $default);
-
-        // id / data が rules にマッチしないと空配列になることを避けるため保険
-        if (!array_key_exists('id', $v) && $this->has('id')) {
-            $v['id'] = (int) $this->input('id');
-        }
-        if (!array_key_exists('data', $v) && $this->has('data')) {
-            $v['data'] = $this->input('data');
-        }
-
-        return $v;
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'errors'  => $validator->errors(),
+            ], 200)
+        );
     }
 }

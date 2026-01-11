@@ -61,7 +61,6 @@ export const ItemSearchDialog: React.VFC<ItemSearchDialogProps> = ({
           <span data-id={r.id} onClick={onClickSelect} className="link">
             <div className="text-xs">{r.item_number}</div>
             <div>{r.name}</div>
-            <div>{r.name_note}</div>
           </span>
         </td>
         <td className="text-right">{numberFormat(r.sales_unit_price)}</td>

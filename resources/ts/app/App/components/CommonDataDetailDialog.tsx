@@ -30,8 +30,6 @@ type DataDetailDialog = <T extends CommonDataDetail>(
   props: CommonDetailDialogProps<T>
 ) => React.ReactElement<CommonDetailDialogProps<T>>;
 
-const isDev = () => process.env.NODE_ENV !== 'production';
-
 export const CommonDataDetailDialog: DataDetailDialog = ({
   title,
   slug,
@@ -64,19 +62,9 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     useCommonSearchDialogProps<Item>(
       'item',
       async props => {
-        // ★選択時に渡ってくる props の実体を必ずログ出し（ここで item_number / 在庫キー名を確定する）
-        if (isDev()) {
-          console.log('[CommonDataDetailDialog] raw selected item props', props);
-          console.log('[CommonDataDetailDialog] selected item keys', Object.keys(props as any));
-        }
-
         const p: any = props as any;
-
-        // ★キー揺れ吸収：品番
         const itemNumber: string =
           (p.item_number ?? p.itemNo ?? p.item_no ?? p.code ?? '') as string;
-
-        // ★キー揺れ吸収：在庫（domestic_stocks/overseas_stocks 以外で返ってくるケースを拾う）
         const domesticStocks: number =
           toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
         const overseasStocks: number =
@@ -96,31 +84,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         let answer_date: string | undefined = undefined;
         if (showAnswerDate) {
           answer_date = getAnswerDate(receiveOrderDate, domesticStocks, overseasStocks);
-        }
-
-        if (isDev()) {
-          console.log('[CommonDataDetailDialog] onSelect item -> updateState', {
-            slug,
-            salesTaxRate,
-            fraction,
-            picked: {
-              id,
-              itemNumber,
-              name,
-              sales_unit_price,
-              is_set_item,
-              domesticStocks,
-              overseasStocks,
-            },
-            before: {
-              rate: state.rate,
-              discount: state.discount,
-              unit_price: state.unit_price,
-              quantity: state.quantity,
-              item_number: (state as any)?.item_number,
-            },
-            computed: { unit_price, ret },
-          });
         }
 
         updateState({
@@ -150,29 +113,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   useEffect(() => {
     if (isShown) {
       setErrors(undefined);
-
-      if (isDev()) {
-        console.log('[CommonDataDetailDialog] opened', {
-          slug,
-          title,
-          isShown,
-          fraction,
-          salesTaxRate,
-          stateSnapshot: {
-            no: (state as any)?.no,
-            item_id: state.item_id,
-            item_number: (state as any)?.item_number,
-            item_name: state.item_name,
-            rate: state.rate,
-            unit_price: state.unit_price,
-            quantity: state.quantity,
-            discount: (state as any)?.discount,
-            amount: state.amount,
-            sales_tax: state.sales_tax,
-            sales_tax_rate: (state as any)?.sales_tax_rate,
-          },
-        });
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isShown]);
@@ -195,34 +135,12 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const rate = value ? toNumber(value) : undefined;
     const unit_price = calcUnitPrice(state.sales_unit_price ?? 0, rate ?? 0, fraction);
     const ret = recalc(unit_price, state.quantity, state.discount);
-
-    if (isDev()) {
-      console.log('[CommonDataDetailDialog] onChangeRate', {
-        slug,
-        input: value,
-        rate,
-        before: { sales_unit_price: state.sales_unit_price, quantity: state.quantity, discount: state.discount },
-        computed: { unit_price, ret },
-      });
-    }
-
     updateState({ [name]: rate, unit_price, ...ret } as any);
   };
 
   const onChangeUnitPrice = (name: string, value: string | number | boolean | undefined) => {
     const unitPrice = value ? toNumber(value) : undefined;
     const ret = recalc(unitPrice, state.quantity, state.discount);
-
-    if (isDev()) {
-      console.log('[CommonDataDetailDialog] onChangeUnitPrice', {
-        slug,
-        input: value,
-        unitPrice,
-        before: { quantity: state.quantity, discount: state.discount },
-        computed: { ret },
-      });
-    }
-
     updateState({ [name]: unitPrice, ...ret } as any);
     setErrors({ ...errors, [name]: '' });
   };
@@ -230,17 +148,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   const onChangeQuantity = (name: string, value: string | number | boolean | undefined) => {
     const quantity = value ? toNumber(value) : undefined;
     const ret = recalc(state.unit_price, quantity, state.discount);
-
-    if (isDev()) {
-      console.log('[CommonDataDetailDialog] onChangeQuantity', {
-        slug,
-        input: value,
-        quantity,
-        before: { unit_price: state.unit_price, discount: state.discount },
-        computed: { ret },
-      });
-    }
-
     updateState({ [name]: quantity, ...ret } as any);
   };
 
@@ -248,44 +155,13 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const discount = value === '' || value === undefined ? 0 : toNumber(value);
     const ret = recalc(state.unit_price, state.quantity, discount);
 
-    if (isDev()) {
-      console.log('[CommonDataDetailDialog] onChangeDiscount', {
-        slug,
-        input: value,
-        normalizedDiscount: discount,
-        before: { unit_price: state.unit_price, quantity: state.quantity, prev_discount: state.discount },
-        computed: { ret },
-      });
-    }
-
     updateState({ [name]: discount, ...ret } as any);
     setErrors({ ...errors, [name]: '' });
   };
 
   const onClickSave = () => {
     const snapshot = { ...(state as any) };
-
-    if (isDev()) {
-      console.log('[CommonDataDetailDialog] onClickSave BEFORE save()', {
-        slug,
-        snapshot: {
-          no: snapshot.no,
-          item_id: snapshot.item_id,
-          item_number: snapshot.item_number,
-          unit_price: snapshot.unit_price,
-          quantity: snapshot.quantity,
-          discount: snapshot.discount,
-          amount: snapshot.amount,
-          sales_tax: snapshot.sales_tax,
-          sales_tax_rate: snapshot.sales_tax_rate,
-        },
-      });
-    }
-
     save(snapshot).then(ret => {
-      if (isDev()) {
-        console.log('[CommonDataDetailDialog] save() result', { slug, ret });
-      }
       if (ret) {
         onSelected(snapshot);
       }
