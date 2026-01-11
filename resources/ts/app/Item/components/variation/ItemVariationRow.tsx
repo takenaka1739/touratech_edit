@@ -10,6 +10,7 @@ type VariationRowProps = {
   showDelete: boolean;
   isDisabled: boolean;
   errorMap: boolean[][];
+  verticalLines: string[];
 };
 
 export const ItemVariationRow = ({
@@ -23,7 +24,12 @@ export const ItemVariationRow = ({
   onBlur,
   showDelete,
   errorMap,
+  verticalLines,
 }: VariationRowProps) => {
+
+  // 行で最初の非 null の index（バリエーションは index=1 から）
+  const firstNonNullIndex = item.findIndex((v, i) => i > 0 && v !== null) - 1;
+
   return (
     <div className="variation-row">
       {item.map((value, index) =>
@@ -59,19 +65,64 @@ export const ItemVariationRow = ({
               )}
             </div>
 
-            {/* 横線テンプレート */}
+            {/* 横線（半分 or 全線） */}
             {index < item.length - 1 && (
               <div className="variation-tree-cell">
-                <svg className="tree-svg" width="33" height="32">
-                  {value !== null && (
+                <svg className="tree-svg">
+
+                  {/* 縦線（種類別） */}
+                  {verticalLines[index - 1] === 'full' && (
                     <line
-                      x1="0"
-                      y1="16"
-                      x2="33"
-                      y2="16"
-                      className="tree-line-horizontal"
+                      x1="16"
+                      y1="0"
+                      x2="16"
+                      y2="38"
+                      className="tree-line-vertical"
                     />
                   )}
+
+                  {verticalLines[index - 1] === 'up' && (
+                    <line
+                      x1="16"
+                      y1="0"
+                      x2="16"
+                      y2="19"
+                      className="tree-line-vertical"
+                    />
+                  )}
+
+                  {verticalLines[index - 1] === 'bottom' && (
+                    <line
+                      x1="16"
+                      y1="19"
+                      x2="16"
+                      y2="38"
+                      className="tree-line-vertical"
+                    />
+                  )}
+
+                  {/* 半分線：最初の非 null の直前（index=2 以上） */}
+                  {index === firstNonNullIndex && index > 0 ? (
+                    <line
+                      x1="16"
+                      y1="19"
+                      x2="33"
+                      y2="19"
+                      className="tree-line-horizontal"
+                    />
+                  ) : (
+                    /* 通常線：value が null でなければ描画 */
+                    value !== null && (
+                      <line
+                        x1="0"
+                        y1="19"
+                        x2="33"
+                        y2="19"
+                        className="tree-line-horizontal"
+                      />
+                    )
+                  )}
+
                 </svg>
               </div>
             )}

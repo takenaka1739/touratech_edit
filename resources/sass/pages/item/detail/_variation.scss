@@ -43,7 +43,6 @@
   .variation-rows {
     display: flex;
     flex-direction: column;
-    gap: 5px;
   }
 
   /* エラー表示 */
@@ -189,8 +188,9 @@
      ============================ */
 
   .variation-tree-cell {
-    width: 33px;   /* 入力欄同士の間隔と一致させる */
-    height: 32px;  /* input の高さに合わせる */
+    width: 33px;
+    min-width: 33px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -198,7 +198,12 @@
 
   .tree-svg {
     width: 33px;
-    height: 32px;
+    height: 38px;
+  }
+
+  .tree-line-vertical {
+    stroke: #7599cc;
+    stroke-width: 0.8;
   }
 
   .tree-line-horizontal {
