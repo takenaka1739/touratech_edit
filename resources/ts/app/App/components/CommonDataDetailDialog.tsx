@@ -63,20 +63,11 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       'item',
       async props => {
         const p: any = props as any;
-        const itemNumber: string =
-          (p.item_number ?? p.itemNo ?? p.item_no ?? p.code ?? '') as string;
-        const domesticStocks: number =
-          toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
-        const overseasStocks: number =
-          toNumber(p.overseas_stocks ?? p.overseas_stock ?? p.overseasStock ?? 0);
+        const itemNumber: string = (p.item_number ?? p.itemNo ?? p.item_no ?? p.code ?? '') as string;
+        const domesticStocks: number = toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
+        const overseasStocks: number = toNumber(p.overseas_stocks ?? p.overseas_stock ?? p.overseasStock ?? 0);
 
-        const {
-          id,
-          name,
-          name_note,
-          sales_unit_price,
-          is_set_item,
-        } = p;
+        const { id, name, name_note, sales_unit_price, is_set_item } = p;
 
         const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
         const ret = recalc(unit_price, 1, state.discount ?? 0);
@@ -120,7 +111,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   const onChange = (name: string, value: string | number | boolean | undefined) => {
     if (name === 'answer_date' && (typeof value === 'string' || typeof value === 'undefined')) {
       updateState({ [name]: value } as any);
-      setErrors({ ...errors, [name]: '' });
+      setErrors({ ...(errors as any), [name]: '' });
       return;
     }
     if (
@@ -128,6 +119,8 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       (typeof value === 'string' || typeof value === 'undefined')
     ) {
       updateState({ [name]: value } as any);
+      // 入力系は即時にエラークリア（存在する場合のみ）
+      if (errors && (errors as any)[name]) setErrors({ ...(errors as any), [name]: '' });
     }
   };
 
@@ -136,19 +129,23 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const unit_price = calcUnitPrice(state.sales_unit_price ?? 0, rate ?? 0, fraction);
     const ret = recalc(unit_price, state.quantity, state.discount);
     updateState({ [name]: rate, unit_price, ...ret } as any);
+    // 掛率自体は必須でないが、表示済みエラーがあれば消す
+    if (errors && (errors as any)[name]) setErrors({ ...(errors as any), [name]: '' });
   };
 
   const onChangeUnitPrice = (name: string, value: string | number | boolean | undefined) => {
-    const unitPrice = value ? toNumber(value) : undefined;
+    const unitPrice = value === '' || value === undefined ? undefined : toNumber(value);
     const ret = recalc(unitPrice, state.quantity, state.discount);
     updateState({ [name]: unitPrice, ...ret } as any);
-    setErrors({ ...errors, [name]: '' });
+    setErrors({ ...(errors as any), unit_price: '' });
   };
 
   const onChangeQuantity = (name: string, value: string | number | boolean | undefined) => {
-    const quantity = value ? toNumber(value) : undefined;
+    const quantity = value === '' || value === undefined ? undefined : toNumber(value);
     const ret = recalc(state.unit_price, quantity, state.discount);
     updateState({ [name]: quantity, ...ret } as any);
+    // quantity は必須なので入力時にクリア
+    setErrors({ ...(errors as any), quantity: '' });
   };
 
   const onChangeDetailDiscount = (name: string, value: string | number | boolean | undefined) => {
@@ -156,10 +153,57 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const ret = recalc(state.unit_price, state.quantity, discount);
 
     updateState({ [name]: discount, ...ret } as any);
-    setErrors({ ...errors, [name]: '' });
+    setErrors({ ...(errors as any), discount: '' });
   };
 
+  /**
+   * 保存前の必須チェック（このコンポーネント内で完結）
+   * 必須: 品番(item_id) / 単価(unit_price) / 数量(quantity)
+   */
+  const validateBeforeSave = (): boolean => {
+  const nextErrors: Record<string, string> = {};
+
+  // === 品番（必須）===
+  if (!state.item_id) {
+    nextErrors.item_id = '品番を選択してください。';
+  }
+
+  // === 単価（必須・数値・0以上）===
+  const unitPriceNum =
+    state.unit_price === undefined || state.unit_price === null
+      ? NaN
+      : toNumber(state.unit_price);
+
+  if (Number.isNaN(unitPriceNum)) {
+    nextErrors.unit_price = '単価を入力してください。';
+  } else if (unitPriceNum < 0) {
+    nextErrors.unit_price = '単価は0以上で入力してください。';
+  }
+
+  // === 数量（必須・数値・1以上）===
+  const qtyNum =
+    state.quantity === undefined || state.quantity === null
+      ? NaN
+      : toNumber(state.quantity);
+
+  if (Number.isNaN(qtyNum)) {
+    nextErrors.quantity = '数量を入力してください。';
+  } else if (qtyNum < 1) {
+    nextErrors.quantity = '数量は1以上で入力してください。';
+  }
+
+  if (Object.keys(nextErrors).length > 0) {
+    setErrors(nextErrors);
+    return false;
+  }
+
+  return true;
+};
+
   const onClickSave = () => {
+    // ★必須チェックで止める（APIに依存しない）
+    if (!validateBeforeSave()) return;
+
     const snapshot = { ...(state as any) };
     save(snapshot).then(ret => {
       if (ret) {
