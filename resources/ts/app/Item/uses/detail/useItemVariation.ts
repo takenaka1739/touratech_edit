@@ -145,7 +145,8 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
 
       // 品番・価格は必須
       if (row[5] === '' || row[5] === null) rowErrors[5] = true;
-      if (row[6] === '' || row[6] === null) rowErrors[6] = true;
+      const price = Number(row[6]);
+      if (row[6] === '' || row[6] === null || Number.isNaN(price) || price >= 100000000) rowErrors[6] = true;
 
       // null 以外の先頭は入力必須
       const firstCol = [1, 2, 3, 4].find(col => row[col] !== null);
@@ -284,17 +285,41 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
       return;
     }
 
-    setState((prev: any) => ({
-      ...prev,
-      variItems: prev.variItems.filter((_: any, index: number) => index !== selectIndex),
-      imageList: prev.imageList.filter((_: any, index: number) => index !== selectIndex),
-    }));
+    setState((prev: any) => {
+      const newItems = [...prev.variItems];
+      const parent = newItems[selectIndex];
 
+      // 行削除
+      newItems.splice(selectIndex, 1);
+
+      // 削除後の行が存在する場合、継承処理を行う
+      if (newItems[selectIndex]) {
+        const child = [...newItems[selectIndex]];
+
+        // col=1〜4 の null を親の値で埋める
+        for (let col = 1; col <= 4; col++) {
+          if (child[col] === null && parent[col] !== null) {
+            child[col] = parent[col];
+          }
+        }
+
+        newItems[selectIndex] = child;
+      }
+
+      return {
+        ...prev,
+        variItems: newItems,
+        imageList: prev.imageList.filter((_: any, index: number) => index !== selectIndex),
+      };
+    });
+
+    // 削除行を削除リストに追加
     const target = String(state.variItems?.[selectIndex]);
     if (typeof target === 'string' && !target.includes('new')) {
       setVariDelItem([...variDelItem, state.variItems[selectIndex]]);
     }
 
+    // 変更リストから削除行を除外
     const updatedItems = variChangeItem.filter(
       item => item[0] !== variItems[selectIndex][0]
     );

@@ -476,40 +476,47 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       isLoading={isLoading}
     >
       <div className="form-group-wrapper">
-        {/* 表示フラグ */}
-        <Forms.FormGroup
-          labelText="ショップへの公開"
-          error={errors?.is_display}
-          groupClassName="items-center mt-4"
-          >
-          <Forms.FormInputCheck id="is_display" name="is_display" checked={state.is_display} onChange={onChange} />
-        </Forms.FormGroup>
+        <div style={{ padding: '0 16px' }}>
+          {/* 表示フラグ */}
+          <Forms.FormGroup
+            labelText="ショップへの公開"
+            error={errors?.is_display}
+            groupClassName="items-center mt-4"
+            required
+            >
+            <Forms.FormInputCheck id="is_display" name="is_display" checked={state.is_display} onChange={onChange} />
+          </Forms.FormGroup>
 
-        {/* 親/子の切替 */}
-        <Forms.FormGroup labelText="階層" groupClassName="mt-2 items-center w-[300px]">
-          <div className="flex gap-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="mode"
-                className="mr-1"
-                checked={mode === 'parent'}
-                onChange={() => { setMode('parent'); setModeFixed(true); }}
-              />
-              親カテゴリ
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="mode"
-                className="mr-1"
-                checked={mode === 'child'}
-                onChange={() => { setMode('child'); setModeFixed(true); }}
-              />
-              子カテゴリ
-            </label>
-          </div>
-        </Forms.FormGroup>
+          {/* 親/子の切替 */}
+          <Forms.FormGroup
+            labelText="階層"
+            groupClassName="mt-2 items-center w-[300px]"
+            required
+          >
+            <div className="flex gap-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="mode"
+                  className="mr-1"
+                  checked={mode === 'parent'}
+                  onChange={() => { setMode('parent'); setModeFixed(true); }}
+                />
+                親カテゴリ
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="mode"
+                  className="mr-1"
+                  checked={mode === 'child'}
+                  onChange={() => { setMode('child'); setModeFixed(true); }}
+                />
+                子カテゴリ
+              </label>
+            </div>
+          </Forms.FormGroup>
+        </div>
 
         <div style={{ display: 'flex' }}>
           {/* 左：フォーム */}

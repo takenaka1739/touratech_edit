@@ -116,6 +116,17 @@ const validateVariations = (variItems: unknown[][]): { row: number; message: str
     }
   }
 
+  // 価格の上限チェック（1億まで）
+  for (let i = 0; i < variItems.length; i++) {
+    const price = variItems[i][6];
+
+    // 数値に変換できない or 上限超え
+    const num = Number(price);
+    if (Number.isNaN(num) || num >= 100000000) {
+      return [{ row: i, message: '価格は1億未満で入力してください' }];
+    }
+  }
+
   return [];
 };
 

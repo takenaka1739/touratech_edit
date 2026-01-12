@@ -41,7 +41,7 @@ export const ItemVariationRow = ({
               <input
                 className={`vari-row-input ${
                   errorMap?.[itemIndex]?.[index] ? 'error-input' : ''
-                } variation-row-input`}
+                } variation-row-input ${index < 5 ? 'variation-row-input-padding' : ''}`}
                 disabled={!isEditable}
                 value={value ?? ''}
                 onChange={(e) => onChangeValue(e, itemIndex, index)}
