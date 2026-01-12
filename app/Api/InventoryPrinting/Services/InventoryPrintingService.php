@@ -2,11 +2,9 @@
 
 namespace App\Api\InventoryPrinting\Services;
 
-use App\Base\Models\Inventory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 /**
  * 在庫表印刷サービス
@@ -14,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 class InventoryPrintingService
 {
   /**
-   * PDF用のデータを取得する
+   * PDF/Excel用のデータを取得する
    *
    * @param array $cond 条件
    * @return array
@@ -35,8 +33,7 @@ class InventoryPrintingService
     $pre_inventory_groups = $pre_inventories->groupBy('item_number')->toArray();
 
     $data = [];
-    foreach ($item_numbers as $item_number)
-    {
+    foreach ($item_numbers as $item_number) {
       $inventory = null;
       if (isset($inventory_groups[$item_number])) {
         $inventory = $inventory_groups[$item_number][0];
@@ -50,25 +47,26 @@ class InventoryPrintingService
       $item_name = "";
       $unit_price = 0;
       if ($inventory) {
-        $item_name = $inventory['name'];
-        $unit_price = $inventory['purchase_unit_price'];
-      } else if ($pre_inventory) {
-        $item_name = $pre_inventory['name'];
-        $unit_price = $pre_inventory['purchase_unit_price'];
+        $item_name = $inventory['name'] ?? '';
+        $unit_price = (float)($inventory['purchase_unit_price'] ?? 0);
+      } elseif ($pre_inventory) {
+        $item_name = $pre_inventory['name'] ?? '';
+        $unit_price = (float)($pre_inventory['purchase_unit_price'] ?? 0);
       }
 
       $pre_quantity = 0;
       if ($pre_inventory) {
-        $pre_quantity = $pre_inventory['quantity'];
+        $pre_quantity = (int)($pre_inventory['quantity'] ?? 0);
       }
 
       $in = 0;
       $out = 0;
       if ($move) {
-        $in = $move["in"];
-        $out = $move["out"];
+        $in = (int)($move["in"] ?? 0);
+        $out = (int)($move["out"] ?? 0);
       }
 
+      // 現行仕様：前月棚卸 + 今月入出庫 で “今月在庫” を算出（当月棚卸 quantity は使わない）
       $quantity = $pre_quantity + $in - $out;
 
       $data[] = [
@@ -79,40 +77,42 @@ class InventoryPrintingService
         'out' => $out,
         'quantity' => $quantity,
         'unit_price' => $unit_price,
-        'amount' =>$quantity * $unit_price,
+        'amount' => $quantity * $unit_price,
       ];
     }
 
     return [
       'import_month' => $import_month,
-      'data' => $data
+      'data' => $data,
     ];
   }
 
   /**
-   * 棚卸取込データを取得する
+   * 棚卸取込データ（t_inventories）を取得する
    *
-   * @param string $import_month 対象年月
-   * @return Collection
+   * @param string $import_month 対象年月（YYYY/MM）
+   * @return \Illuminate\Support\Collection
    */
   private function getInventories($import_month)
   {
-    return Inventory::select([
-      't_inventories.item_number',
-      't_inventories.quantity',
-      '.name',
-      'm_items.purchase_unit_price',
-    ])
-    ->where('import_month', $import_month)
-    ->leftJoin('m_items', 'm_items.item_number', "=", 't_inventories.item_number')
-    ->get();
+    return DB::table('t_inventories')
+      ->select([
+        't_inventories.item_number',
+        't_inventories.quantity',
+        // ここは “在庫表” 側で参照しているキーが 'name' のため AS name に揃える
+        DB::raw('COALESCE(m_items.name_jp, "") AS name'),
+        'm_items.purchase_unit_price',
+      ])
+      ->where('t_inventories.import_month', '=', $import_month)
+      ->leftJoin('m_items', 'm_items.item_number', '=', 't_inventories.item_number')
+      ->get();
   }
 
   /**
-   * 前月の棚卸取込データを取得する
+   * 前月の棚卸データを取得する
    *
-   * @param string $import_month 対象年月
-   * @return Collection
+   * @param string $import_month 対象年月（YYYY/MM）
+   * @return \Illuminate\Support\Collection
    */
   private function getPreInventories($import_month)
   {
@@ -123,32 +123,33 @@ class InventoryPrintingService
   }
 
   /**
-   * 入出庫データを取得する
+   * 入出庫データを取得する（t_inventory_moves）
    *
-   * @param string $import_month 対象年月
+   * @param string $import_month 対象年月（YYYY/MM）
+   * @return \Illuminate\Support\Collection
    */
   private function getMoves($import_month)
   {
-		$date_from = $import_month . "/01";
+    $date_from = $import_month . "/01";
 
-		$dt = new Carbon($date_from);
-		$date_to = $dt->addMonth()->format("Y/m/d");
+    $dt = new Carbon($date_from);
+    $date_to = $dt->addMonth()->format("Y/m/d");
 
-		$rows = DB::table('t_inventory_moves')
+    $rows = DB::table('t_inventory_moves')
       ->select([
         'item_number',
         'detail_kind',
-        DB::raw('SUM(quantity) AS quantity')
+        DB::raw('SUM(quantity) AS quantity'),
       ])
-			->where('job_date', '>=', $date_from)
-			->where('job_date', '<', $date_to)
+      ->where('job_date', '>=', $date_from)
+      ->where('job_date', '<', $date_to)
       ->groupBy('item_number', 'detail_kind')
-			->get();
+      ->get();
 
-    return $rows->groupBy('item_number')->map(function($item) {
+    return $rows->groupBy('item_number')->map(function ($item) {
       return [
-        'in' => $item->where('detail_kind', 1)->sum('quantity'),
-        'out' => $item->where('detail_kind', 2)->sum('quantity'),
+        'in' => (int)$item->where('detail_kind', 1)->sum('quantity'),
+        'out' => (int)$item->where('detail_kind', 2)->sum('quantity'),
       ];
     });
   }
@@ -156,10 +157,10 @@ class InventoryPrintingService
   /**
    * 棚卸データ、前月の棚卸データ、入出庫データから商品IDを取得する
    *
-   * @param Collection $inventories 棚卸データ
-   * @param Collection $pre_inventories 前月の棚卸データ
-   * @param Collection $moves 入出庫データ
-   * @return Collection
+   * @param \Illuminate\Support\Collection $inventories
+   * @param \Illuminate\Support\Collection $pre_inventories
+   * @param \Illuminate\Support\Collection $moves
+   * @return \Illuminate\Support\Collection
    */
   private function getItemNumbers($inventories, $pre_inventories, $moves)
   {

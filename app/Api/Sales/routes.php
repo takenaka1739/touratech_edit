@@ -12,8 +12,10 @@ Route::group([
   // 一覧
   Route::post('fetch', [SalesListController::class, 'fetch']);
 
+  Route::post('dialog', [SalesController::class, 'dialog']);
+  Route::post('detail', [SalesController::class, 'detail']);
+
   // 詳細（新規/既存/受注起点）
-  Route::post('detail', [SalesController::class, 'dialog']);
   Route::get('edit/', [SalesController::class, 'edit']);        // 新規
   Route::get('edit/{id}', [SalesController::class, 'edit']);    // 既存
   Route::get('edit_by_receive_id/{id}', [SalesController::class, 'edit_by_receive_id']);
