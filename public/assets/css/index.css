@@ -21857,21 +21857,21 @@ label {
 }
 
 #shop-image #input-area #item-info #item-name {
-  border: 1px solid white;
+  border: 1px solid #ffffffff;
   border-radius: 5px;
   width: 550px;
   height: 70px;
   font-size: 30px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
 }
 
 #shop-image #input-area #item-info #item-name:hover {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-name:focus {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
@@ -21893,18 +21893,18 @@ label {
 }
 
 #shop-image #input-area #item-info #price-col #input-price {
-  border: 1px solid white;
+  border: 1px solid #ffffffff;
   border-radius: 5px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
 }
 
 #shop-image #input-area #item-info #price-col #input-price:hover {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #price-col #input-price:focus {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
@@ -21938,24 +21938,26 @@ label {
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail {
-  word-wrap: break-word; /* 長い単語を折り返す */
-  white-space: normal; /* テキストを通常の折り返しにする */
+  word-wrap: break-word;
+  /* 長い単語を折り返す */
+  white-space: normal;
+  /* テキストを通常の折り返しにする */
   font-size: 20px;
-  border: 1px solid white;
+  border: 1px solid #ffffffff;
   border-radius: 5px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
   margin-top: 20px;
   width: 450px;
   height: 300px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:hover {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
 #shop-image #input-area #item-info #item-detail-erea #item-detail:focus {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 5px;
 }
 
@@ -21985,18 +21987,18 @@ label {
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-name-row .input-text {
-  color: rgba(201, 215, 232, 0.9725490196);
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
+  border: 1px solid #c9d7e8f8;
   height: 25px;
   width: 350px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-name-row .plus-button {
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
   height: 30px;
   width: 30px;
   margin-left: 5px;
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   border-radius: 100px;
 }
 
@@ -22006,21 +22008,21 @@ label {
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind {
-  border: 1px solid rgba(201, 215, 232, 0.9725490196);
+  border: 1px solid #c9d7e8f8;
   display: flex;
   margin-right: 10px;
   margin-left: 10px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .vari-row-input {
-  color: rgba(201, 215, 232, 0.9725490196);
-  border: white;
+  color: #c9d7e8f8;
+  border: #FFFFFFFF;
   width: 50px;
 }
 
 #shop-image #input-area #vari-info .vari-item .vari-kind-list .vari-kind .dele-button {
-  color: rgba(201, 215, 232, 0.9725490196);
-  border-left: 1px solid rgba(201, 215, 232, 0.9725490196);
+  color: #c9d7e8f8;
+  border-left: 1px solid #c9d7e8f8;
   padding: 2px 5px 2px 5px;
 }
 
@@ -22030,6 +22032,10 @@ label {
 
 .item-detail-page {
   /* 商品分類セクション全体 */
+  /* 左側の 790px の枠 */
+  /* ラベル部分 */
+  /* エラー表示 */
+  /* 追加ボタン（既存 category-plus-button を拡張） */
 }
 
 .item-detail-page .category-section {
@@ -22037,17 +22043,9 @@ label {
   margin-top: 6px;
 }
 
-.item-detail-page {
-  /* 左側の 790px の枠 */
-}
-
 .item-detail-page .category-inner {
   width: 790px;
   display: flex;
-}
-
-.item-detail-page {
-  /* ラベル部分 */
 }
 
 .item-detail-page .category-label {
@@ -22056,16 +22054,8 @@ label {
   margin-left: 60px;
 }
 
-.item-detail-page {
-  /* エラー表示 */
-}
-
 .item-detail-page .category-error {
   margin-top: 4px;
-}
-
-.item-detail-page {
-  /* 追加ボタン（既存 category-plus-button を拡張） */
 }
 
 .item-detail-page .category-add-button {
@@ -22154,6 +22144,10 @@ label {
 
 .item-detail-page {
   /* セクション全体 */
+  /* ラジオ + その他入力欄 */
+  /* その他入力欄（typeName） */
+  /* ファイル選択行 */
+  /* 非表示の file input */
 }
 
 .item-detail-page .manual-section {
@@ -22161,18 +22155,10 @@ label {
   margin-top: 15px;
 }
 
-.item-detail-page {
-  /* ラジオ + その他入力欄 */
-}
-
 .item-detail-page .manual-type-row {
   display: flex;
   justify-content: flex-start;
   width: 627px;
-}
-
-.item-detail-page {
-  /* その他入力欄（typeName） */
 }
 
 .item-detail-page .manual-type-input {
@@ -22185,10 +22171,6 @@ label {
   background-color: attr(data-bgcolor color);
 }
 
-.item-detail-page {
-  /* ファイル選択行 */
-}
-
 .item-detail-page .manual-file-row {
   display: flex;
   justify-content: flex-start;
@@ -22199,10 +22181,6 @@ label {
 
 .item-detail-page .manual-file-label {
   margin-right: 5px;
-}
-
-.item-detail-page {
-  /* 非表示の file input */
 }
 
 .item-detail-page .manual-file-hidden {
@@ -22227,15 +22205,12 @@ label {
 
 .item-detail-page {
   /* 販売価格（税込） */
+  /* 支払い方法の横並び */
 }
 
 .item-detail-page .sales-price-wrapper {
   margin-left: 1px;
   margin-top: 10px;
-}
-
-.item-detail-page {
-  /* 支払い方法の横並び */
 }
 
 .item-detail-page .payment-kind-row {
@@ -22268,6 +22243,24 @@ label {
 
 .item-detail-page {
   /* バリエーション追加チェック */
+  /* バリエーション一覧の外枠 */
+  /* バリエーション行コンテナ */
+  /* エラー表示 */
+  /* ============================
+     バリエーションヘッダー
+     ============================ */
+  /* ============================
+     バリエーション行（ItemVariationRow）
+     ============================ */
+  /* input の動的スタイル */
+  /* ＋ボタン（既存 plus-button を拡張） */
+  /* 入力欄＋ボタンのラッパー */
+  /* input の右側にボタン分の余白を確保 */
+  /* ＋ボタンを input の右端に重ねる */
+  /* 削除ボタン */
+  /* ============================
+     ツリー線
+     ============================ */
 }
 
 .item-detail-page .variation-add-check {
@@ -22278,36 +22271,17 @@ label {
   margin-top: 5px;
 }
 
-.item-detail-page {
-  /* バリエーション一覧の外枠 */
-}
-
 .item-detail-page .variation-list-wrapper {
   margin-left: 160px;
-}
-
-.item-detail-page {
-  /* バリエーション行コンテナ */
 }
 
 .item-detail-page .variation-rows {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-}
-
-.item-detail-page {
-  /* エラー表示 */
 }
 
 .item-detail-page .variation-error {
   margin-top: 5px;
-}
-
-.item-detail-page {
-  /* ============================
-     バリエーションヘッダー
-     ============================ */
 }
 
 .item-detail-page .variation-header {
@@ -22343,12 +22317,6 @@ label {
   margin-left: 126px;
 }
 
-.item-detail-page {
-  /* ============================
-     バリエーション行（ItemVariationRow）
-     ============================ */
-}
-
 .item-detail-page .variation-row {
   display: flex;
   justify-content: flex-start;
@@ -22358,10 +22326,6 @@ label {
 .item-detail-page .variation-row-cell {
   display: flex;
   align-items: center;
-}
-
-.item-detail-page {
-  /* input の動的スタイル */
 }
 
 .item-detail-page .variation-row-input[data-visible="0"] {
@@ -22388,10 +22352,6 @@ label {
   border: 1px solid #a0aec0;
 }
 
-.item-detail-page {
-  /* ＋ボタン（既存 plus-button を拡張） */
-}
-
 .item-detail-page .variation-plus-button[data-visible="0"] {
   visibility: hidden;
 }
@@ -22408,25 +22368,14 @@ label {
   background-color: #ffffff;
 }
 
-.item-detail-page {
-  /* 入力欄＋ボタンのラッパー */
-}
-
 .item-detail-page .variation-input-wrapper {
   position: relative;
   display: inline-block;
 }
 
-.item-detail-page {
-  /* input の右側にボタン分の余白を確保 */
-}
-
 .item-detail-page .variation-row-input {
-  padding-right: 28px; /* ＋ボタンの幅＋余白 */
-}
-
-.item-detail-page {
-  /* ＋ボタンを input の右端に重ねる */
+  padding-right: 28px;
+  /* ＋ボタンの幅＋余白 */
 }
 
 .item-detail-page .variation-plus-inside {
@@ -22445,10 +22394,6 @@ label {
   cursor: pointer;
 }
 
-.item-detail-page {
-  /* 削除ボタン */
-}
-
 .item-detail-page .variation-delete-button {
   height: 26px;
   margin-left: 10px;
@@ -22456,15 +22401,10 @@ label {
   white-space: nowrap;
 }
 
-.item-detail-page {
-  /* ============================
-     ツリー線
-     ============================ */
-}
-
 .item-detail-page .variation-tree-cell {
-  width: 33px; /* 入力欄同士の間隔と一致させる */
-  height: 32px; /* input の高さに合わせる */
+  width: 33px;
+  min-width: 33px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22472,12 +22412,28 @@ label {
 
 .item-detail-page .tree-svg {
   width: 33px;
-  height: 32px;
+  height: 38px;
+}
+
+.item-detail-page .tree-line-vertical {
+  stroke: #7599cc;
+  stroke-width: 0.8;
 }
 
 .item-detail-page .tree-line-horizontal {
   stroke: #7599cc;
   stroke-width: 0.8;
+}
+
+.item-classification-list-page {
+  /* ------------------------------
+     テーブル行の背景色（公開・非公開）
+  ------------------------------ */
+  /* 公開行 */
+  /* 非公開行 */
+  /* ------------------------------
+     商品分類名セルの構造
+  ------------------------------ */
 }
 
 .item-classification-list-page__legend {
@@ -22500,13 +22456,6 @@ label {
   border: 1px solid #bbb;
 }
 
-.item-classification-list-page {
-  /* ------------------------------
-     テーブル行の背景色（公開・非公開）
-  ------------------------------ */
-  /* 公開行 */
-}
-
 .item-classification-list-page .row-child {
   background: #fafafa;
 }
@@ -22515,22 +22464,12 @@ label {
   background: #f0f0f0;
 }
 
-.item-classification-list-page {
-  /* 非公開行 */
-}
-
 .item-classification-list-page .row-hidden {
   background: #d5d7db;
 }
 
 .item-classification-list-page .row-hidden:hover {
   background: #c7c9cc;
-}
-
-.item-classification-list-page {
-  /* ------------------------------
-     商品分類名セルの構造
-  ------------------------------ */
 }
 
 .item-classification-list-page .name-cell-wrapper {

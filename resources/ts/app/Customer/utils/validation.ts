@@ -16,5 +16,36 @@ export const validateItemState = (state: Customer): Record<string, string> => {
     errors.address1 = '住所1を入力してください';
   }
 
+  if (state.name == null || state.name === ''){
+    errors.name = '得意先を入力してください';
+  }
+
+  if (state.kana == null || state.kana === ''){
+    errors.kana = 'カナを入力してください';
+  }
+
+  if (state.zip_code == null || state.zip_code === ''){
+    errors.zip_code = '郵便番号を入力してください';
+  }
+
+  if (state.tel == null || state.tel === ''){
+    errors.tel = '電話番号を入力してください';
+  }
+
+  if (state.email_main == null || state.email_main === ''){
+    errors.email_main = 'EMAIL(MAIN)を入力してください';
+  }
+
+  console.log('typeof(state.cutoff_date)');
+  console.log(typeof(state.cutoff_date));
+
+  if (state.cutoff_date == null || String(state.cutoff_date) === ''){
+    errors.cutoff_date = '締日を入力してください';
+  }
+
+  if (state.rate == null || String(state.rate) === ''){
+    errors.rate = '掛率を入力してください';
+  }
+
   return errors;
 };
