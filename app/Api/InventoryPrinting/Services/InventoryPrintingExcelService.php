@@ -5,13 +5,13 @@ namespace App\Api\InventoryPrinting\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx As XlsxWriter;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 use Carbon\Carbon;
 use Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 /**
- * 
+ * 在庫表（Excel）出力サービス
  */
 class InventoryPrintingExcelService
 {
@@ -30,7 +30,7 @@ class InventoryPrintingExcelService
   {
     return $this->base_path;
   }
-  
+
   /**
    * Excelを作成する
    *
@@ -42,9 +42,8 @@ class InventoryPrintingExcelService
     $data = new Collection($data);
     $rows = $data->get('data');
     $rows = new Collection($rows);
-    
-    $spreadsheet = new Spreadsheet();
 
+    $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
     $sheet->setCellValue('A1', '品番');
@@ -57,25 +56,26 @@ class InventoryPrintingExcelService
     $sheet->setCellValue('H1', '金額');
 
     $y = 2;
-    foreach ($rows as $row)
-    {
+    foreach ($rows as $row) {
       $row = new Collection($row);
 
-      $sheet->setCellValue('A'.$y, $row->get("item_number"));
-      $sheet->setCellValue('B'.$y, $row->get("item_name", ''));
-      $sheet->setCellValue('C'.$y, number_format($row->get('pre_quantity'), 0));
-      $sheet->setCellValue('D'.$y, number_format($row->get('in'), 0));
-      $sheet->setCellValue('E'.$y, number_format($row->get('out'), 0));
-      $sheet->setCellValue('F'.$y, number_format($row->get('quantity'), 0));
-      $sheet->setCellValue('G'.$y, number_format($row->get('unit_price'), 2));
-      $sheet->setCellValue('H'.$y, number_format($row->get('amount'), 0));
+      $sheet->setCellValue('A' . $y, $row->get('item_number'));
+      $sheet->setCellValue('B' . $y, $row->get('item_name', ''));
+      $sheet->setCellValue('C' . $y, number_format($row->get('pre_quantity'), 0));
+      $sheet->setCellValue('D' . $y, number_format($row->get('in'), 0));
+      $sheet->setCellValue('E' . $y, number_format($row->get('out'), 0));
+      $sheet->setCellValue('F' . $y, number_format($row->get('quantity'), 0));
+      $sheet->setCellValue('G' . $y, number_format($row->get('unit_price'), 2));
+      $sheet->setCellValue('H' . $y, number_format($row->get('amount'), 0));
 
       $y++;
     }
 
-    $sheet->setCellValue('A'.$y, "合計");
+    $sheet->setCellValue('A' . $y, '合計');
     $sum_amount = $rows->sum('amount');
-    $sheet->setCellValue('H'.$y, number_format($sum_amount, 0), 0);
+
+    // setCellValue の第3引数は IValueBinder（または null）専用のため、0 を渡さない
+    $sheet->setCellValue('H' . $y, number_format($sum_amount, 0));
 
     $writer = new XlsxWriter($spreadsheet);
 
@@ -96,17 +96,17 @@ class InventoryPrintingExcelService
   public function getStoragePath(string $file_id)
   {
     if (!strpos($file_id, '_')) {
-      throw new Exception("Failed get path.");
+      throw new Exception('Failed get path.');
     }
 
-    list($ymd, $file_name) = explode('_', $file_id);
+    [$ymd, $file_name] = explode('_', $file_id);
     $path = $this->base_path . $ymd . DIRECTORY_SEPARATOR;
 
     Storage::makeDirectory($path);
 
     return $path . $file_name;
   }
-  
+
   /**
    * ファイルIDを取得する
    *
@@ -115,6 +115,6 @@ class InventoryPrintingExcelService
    */
   private function getFileId(string $prefix)
   {
-    return $prefix . "_" . Str::random(32);
+    return $prefix . '_' . Str::random(32);
   }
 }

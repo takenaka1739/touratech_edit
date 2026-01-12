@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\DB;
 
 class Inventory extends Model
 {
+  /**
+   * 注意:
+   * Laravel の規約では Inventory -> inventories テーブルを参照するため、
+   * 実テーブル t_inventories を明示する。
+   */
+  protected $table = 't_inventories';
+
   public $timestamps = false;
 
   protected $fillable = [
@@ -15,12 +22,11 @@ class Inventory extends Model
     'quantity',
   ];
 
-
   /**
    * 商品の最新の在庫を取得する
    *
    * @param array $item_numbers
-   * @return Collection
+   * @return \Illuminate\Support\Collection
    */
   public static function getLatestInventories(array $item_numbers)
   {
