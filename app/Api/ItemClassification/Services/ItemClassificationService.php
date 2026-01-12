@@ -3,7 +3,6 @@
 namespace App\Api\ItemClassification\Services;
 
 use App\Base\Models\ItemClassification;
-use App\Base\Models\Image;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -61,20 +60,20 @@ class ItemClassificationService
       'm_images.id AS image_id',
       'm_images.name AS image'
     )
-    ->leftJoin('m_images', 'm_categories.id', '=', 'm_images.category_id')
-    ->where('m_categories.id', '=', $id)
-    ->first()
-    ->toArray();
+      ->leftJoin('m_images', 'm_categories.id', '=', 'm_images.category_id')
+      ->where('m_categories.id', '=', $id)
+      ->first()
+      ->toArray();
 
-    $parentName = (($selectItems['parent_code'] ?? '') !== '' )
+    $parentName = (($selectItems['parent_code'] ?? '') !== '')
       ? ItemClassification::where('code', $selectItems['parent_code'])->value('name')
       : $selectItems['name'];
 
-    $parentCode = (($selectItems['parent_code'] ?? '') !== '' )
+    $parentCode = (($selectItems['parent_code'] ?? '') !== '')
       ? $selectItems['parent_code']
       : $selectItems['code'];
 
-    $code = (($selectItems['parent_code'] ?? '') !== '' )
+    $code = (($selectItems['parent_code'] ?? '') !== '')
       ? $selectItems['code']
       : '';
 
@@ -108,7 +107,7 @@ class ItemClassificationService
 
       if ($existing) {
         if ($existing->trashed()) {
-          //  ソフトデリート済み → 復活＆上書き更新として扱う
+          // ソフトデリート済み → 復活＆上書き更新
           Log::info('ItemClassificationService@store:restore deleted classification', [
             'code' => $code,
             'id'   => $existing->id,
@@ -123,12 +122,10 @@ class ItemClassificationService
             'remarks'     => $collection->get('remarks'),
           ]);
 
-          // restore() は deleted_at を null にして save() まで行う
           $existing->restore();
-
           $newId = (int) $existing->id;
         } else {
-          // 既に生きているコード → バリデーションエラーとして扱う
+          // 生存レコードとコード重複
           Log::warning('ItemClassificationService@store: duplicate active code', [
             'code' => $code,
             'id'   => $existing->id,
@@ -139,7 +136,6 @@ class ItemClassificationService
           ]);
         }
       } else {
-        // 完全新規作成
         $model = ItemClassification::create($data);
         $newId = (int) $model->id;
 
@@ -178,15 +174,106 @@ class ItemClassificationService
   }
 
   /**
-   * 削除
+   * 削除（ソフトデリート）
+   * - 指定IDの分類 + 子孫（parent_code=親code を辿る）を全て削除
+   * - t_category_item_combinations も category_id が一致するものを全て削除（ソフトデリート）
    *
    * @param int $id 商品分類ID
    */
   public function delete(int $id)
   {
     DB::transaction(function () use ($id) {
-      ItemClassification::destroy($id);
+      $now = now();
+
+      /** @var ItemClassification $root */
+      $root = ItemClassification::query()->findOrFail($id);
+
+      // code を起点に parent_code を辿って子孫を全取得（id一覧）
+      $cascadeIds = $this->collectCascadeIdsByParentCode($root->code, (int) $root->id);
+
+      Log::info('ItemClassificationService@delete:cascade', [
+        'root_id'   => (int) $root->id,
+        'root_code' => (string) $root->code,
+        'ids'       => $cascadeIds,
+      ]);
+
+      // 1) m_categories（ItemClassification）をソフトデリート
+      ItemClassification::query()
+        ->whereIn('id', $cascadeIds)
+        ->get()
+        ->each(function (ItemClassification $m) {
+          $m->delete();
+        });
+
+      // 2) t_category_item_combinations をソフトデリート（deleted_at がある前提）
+      $affected = DB::table('t_category_item_combinations')
+        ->whereIn('category_id', $cascadeIds)
+        ->whereNull('deleted_at')
+        ->update([
+          'deleted_at' => $now,
+          'updated_at' => $now,
+        ]);
+
+      Log::info('ItemClassificationService@delete:combinations_soft_deleted', [
+        'count' => (int) $affected,
+      ]);
     });
+  }
+
+  /**
+   * 親code を起点に、parent_code=親code の子を辿って子孫IDを全て集める
+   *
+   * 想定データ:
+   * - ルート: parent_code=0（またはNULL/''でも可）
+   * - 子    : parent_code=親のcode
+   * - 孫    : parent_code=子のcode
+   *
+   * @param string $rootCode
+   * @param int    $rootId
+   * @return array<int>
+   */
+  private function collectCascadeIdsByParentCode(string $rootCode, int $rootId): array
+  {
+    $ids = [$rootId];
+
+    // 次に探す「親code」群
+    $queueCodes = [$rootCode];
+
+    // 既に探索済みcode（無限ループ防止）
+    $seenCodes = [$rootCode => true];
+
+    while (!empty($queueCodes)) {
+      $parentCodes = $queueCodes;
+      $queueCodes = [];
+
+      $children = ItemClassification::query()
+        ->select(['id', 'code', 'parent_code'])
+        ->whereIn('parent_code', $parentCodes)
+        ->get();
+
+      Log::debug('ItemClassificationService@collectCascade:step', [
+        'parent_codes' => $parentCodes,
+        'children_cnt' => $children->count(),
+        'children'     => $children->map(fn($c) => ['id' => (int)$c->id, 'code' => (string)$c->code, 'parent_code' => (string)$c->parent_code])->toArray(),
+      ]);
+
+      foreach ($children as $child) {
+        $childId   = (int) $child->id;
+        $childCode = (string) $child->code;
+
+        if (!in_array($childId, $ids, true)) {
+          $ids[] = $childId;
+        }
+
+        // 次の探索対象は「子のcode」
+        if (!isset($seenCodes[$childCode])) {
+          $seenCodes[$childCode] = true;
+          $queueCodes[] = $childCode;
+        }
+      }
+    }
+
+    return $ids;
   }
 
   /**
@@ -203,7 +290,7 @@ class ItemClassificationService
     if ($c_keyword !== null && $c_keyword !== '') {
       $keywords = explode(' ', $c_keyword);
       foreach ($keywords as $key) {
-        $query->where(function($query) use ($key) {
+        $query->where(function ($query) use ($key) {
           $query->where('name', 'like', '%' . escape_like($key) . '%');
         });
       }
