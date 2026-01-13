@@ -131,7 +131,6 @@ export const ItemVariationSection: React.VFC<Props> = ({
 
   // バリエーションツリー縦線の描画位置の計算
   const verticalLines = calcVerticalLines(variItems);
-  console.log("【ItemVariationSection】variItems:", variItems);
 
   return (
     <>

@@ -709,11 +709,37 @@ foreach ($idList as $id) {
    */
   private function buildVariationAttributes(array $variation, array $prevVariations, array $base): array
   {
+    // 最初に null 以外が出てくる index を取得
+    $firstNonNullIndex = null;
+    for ($i = 1; $i <= 4; $i++) {
+      if ($variation[$i] !== null) {
+        $firstNonNullIndex = $i;
+        break;
+      }
+    }
+
+    // variations1〜4 を決定
+    $resolved = [];
+    for ($i = 1; $i <= 4; $i++) {
+
+      if (
+        $variation[$i] === null &&
+        $firstNonNullIndex !== null &&
+        $i < $firstNonNullIndex
+      ) {
+        // null かつ「最初の非nullより前」→ 前回値を継承
+        $resolved[$i] = $prevVariations["variations{$i}"];
+      } else {
+        // 空文字はそのまま空文字、値があればそのまま
+        $resolved[$i] = $variation[$i];
+      }
+    }
+
     return $base + [
-      'variations1' => $variation[1] ?? $prevVariations['variations1'],
-      'variations2' => $variation[2] ?? $prevVariations['variations2'],
-      'variations3' => $variation[3] ?? $prevVariations['variations3'],
-      'variations4' => $variation[4] ?? $prevVariations['variations4'],
+      'variations1' => $resolved[1],
+      'variations2' => $resolved[2],
+      'variations3' => $resolved[3],
+      'variations4' => $resolved[4],
       'item_number' => $variation[5] ?? null,
       'sales_price' => $variation[6] ?? 0,
     ];
