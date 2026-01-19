@@ -74,11 +74,8 @@ class ItemClassificationController extends BaseController
             'remarks'     => '備考',
         ]);
 
-        Log::info('ItemClassificationController@store:start', ['input' => $valid]);
-
         $newId = $this->service->store($valid);
 
-        Log::info('ItemClassificationController@store:done', ['id' => $newId]);
         return $this->success(['id' => $newId]);
     }
 
@@ -100,8 +97,6 @@ class ItemClassificationController extends BaseController
             'sort_order'  => '表示順',
             'remarks'     => '備考',
         ]);
-
-        Log::debug('デバッグ：ItemClassification.update', $valid);
 
         $this->service->update($id, $valid);
 

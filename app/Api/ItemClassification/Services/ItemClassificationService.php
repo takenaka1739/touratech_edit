@@ -35,10 +35,30 @@ class ItemClassificationService
    */
   public function fetch(array $cond)
   {
-    $query = ItemClassification::select('id', 'name', 'code', 'parent_code', 'is_display', 'sort_order');
-    $query = $this->setCondition($query, $cond);
-    $query->orderBy('name', 'asc');
-    return $query->paginate(config('const.paginate.per_page'))->toArray();
+      $query = ItemClassification::select(
+          'id',
+          'name',
+          'code',
+          'parent_code',
+          'is_display',
+          'sort_order'
+      );
+
+      // 検索条件
+      $query = $this->setCondition($query, $cond);
+
+      // 並び順：sort_order → name
+      $query->orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc');
+
+      $rows = $query->get()->toArray();
+
+      return [
+          'rows'  => $rows,
+          'pager' => [
+              'total' => count($rows),
+          ],
+      ];
   }
 
   /**

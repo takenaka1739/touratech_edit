@@ -28,8 +28,36 @@ export const ItemClassificationListPage: React.VFC = () => {
   // 親から子の順でフラット化（多層構造）
   const flatRows = useFlatItemClassification(state.rows);
 
+  // 1ページの最大表示件数
+  const PER_PAGE = 20;
+
+  const pagedRows = useMemo(() => {
+    const start = (conditions.page - 1) * PER_PAGE;
+    return flatRows.slice(start, start + PER_PAGE);
+  }, [flatRows, conditions.page]);
+
+  // pager をフロント側で再構築（Pager 型に完全対応）
+  const pager = useMemo(() => {
+    const total = flatRows.length;
+    const perPage = PER_PAGE;
+    const currentPage = conditions.page;
+
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const from = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+    const to = Math.min(total, currentPage * perPage);
+
+    return {
+      total,
+      perPage,
+      currentPage,
+      lastPage,
+      from,
+      to,
+    };
+  }, [flatRows.length, conditions.page]);
+
   const tables = useMemo(() => {
-    const tbody = flatRows.map(r => {
+    const tbody = pagedRows.map(r => {
       const isDisplay = Number(r.is_display) === 1;
       const isTop = r.level === 0;
       const isChild = r.level >= 1;
@@ -87,7 +115,7 @@ export const ItemClassificationListPage: React.VFC = () => {
         <tbody>{tbody}</tbody>
       </table>
     );
-  }, [flatRows]);
+  }, [pagedRows]);
 
   return (
     <PageWrapper
@@ -125,7 +153,7 @@ export const ItemClassificationListPage: React.VFC = () => {
       </div>
 
       <TableWrapper
-        pager={state.pager}
+        pager={pager}
         onChangePage={onChangePage}
         isLoading={isLoading}
       >
