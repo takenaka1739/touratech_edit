@@ -18,28 +18,28 @@ use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 class InventoryImportService
 {
   /**
-   * 
+   *
    */
   public function fetch(array $data)
   {
-    $query = DB::table('inventory_imports')
+    $query = DB::table('t_inventory_imports')
       ->select([
-        'inventory_imports.import_month',
-        'inventory_imports.item_number',
-        'inventory_imports.quantity',
-        'inventory_imports.stocks',
-        'inventory_imports.unmatch',
-        'm_items.name_jp AS item_name',
+        't_inventory_imports.import_month',
+        't_inventory_imports.item_number',
+        't_inventory_imports.quantity',
+        't_inventory_imports.stocks',
+        't_inventory_imports.unmatch',
+        'm_items.name_note AS item_name',
       ])
-      ->leftJoin('m_items', 'm_items.item_number', '=', 'inventory_imports.item_number');
-      $query = $this->setCondition($query, $data);
-      $query->orderBy('item_number');
+      ->leftJoin('m_items', 'm_items.item_number', '=', 't_inventory_imports.item_number');
+    $query = $this->setCondition($query, $data);
+    $query->orderBy('item_number');
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
   /**
    * 棚卸データが存在する場合true
-   * 
+   *
    * @param array $data
    * @return bool
    */
@@ -52,7 +52,7 @@ class InventoryImportService
 
   /**
    * 棚卸取込データが存在する場合true
-   * 
+   *
    * @param array $data
    * @return bool
    */
@@ -60,7 +60,7 @@ class InventoryImportService
   {
     $data = new Collection($data);
     $inventory_month = $data->get('c_inventory_month');
-    return DB::table('inventory_imports')->where('import_month', $inventory_month)->exists();
+    return DB::table('t_inventory_imports')->where('import_month', $inventory_month)->exists();
   }
 
   /**
@@ -81,8 +81,8 @@ class InventoryImportService
 
     set_time_limit(600);
 
-    DB::transaction(function() use ($inventory_month, $rows) {
-      DB::table('inventory_imports')->where('import_month', "=", $inventory_month)->delete();
+    DB::transaction(function () use ($inventory_month, $rows) {
+      DB::table('t_inventory_imports')->where('import_month', "=", $inventory_month)->delete();
 
       $imports = [];
       foreach ($rows as $key => $val) {
@@ -101,7 +101,7 @@ class InventoryImportService
       // 取り込んだデータと在庫をマージする
       $data = $this->mergeImportsStocks($inventory_month, $imports, $stocks);
 
-      DB::table('inventory_imports')->insert($data);
+      DB::table('t_inventory_imports')->insert($data);
     });
   }
 
@@ -109,9 +109,9 @@ class InventoryImportService
   {
     $data = new Collection($data);
     DB::transaction(function () use ($data) {
-      DB::table('inventory_imports')
-      ->where('import_month', '=', $data->get('import_month'))
-      ->where('item_number', '=', $data->get('item_number'))
+      DB::table('t_inventory_imports')
+        ->where('import_month', '=', $data->get('import_month'))
+        ->where('item_number', '=', $data->get('item_number'))
         ->update([
           'quantity' => $data->get('quantity'),
           'unmatch' => $data->get('unmatch')
@@ -127,15 +127,15 @@ class InventoryImportService
    */
   public function getPdfData(array $cond)
   {
-    $query = DB::table('inventory_imports')
-    ->select([
-      'inventory_imports.import_month',
-      'inventory_imports.item_number',
-      'inventory_imports.quantity',
-      'inventory_imports.stocks',
-      'm_items.name_jp AS item_name',
-    ])
-    ->leftJoin('m_items', 'm_items.item_number', '=', 'inventory_imports.item_number');
+    $query = DB::table('t_inventory_imports')
+      ->select([
+        't_inventory_imports.import_month',
+        't_inventory_imports.item_number',
+        't_inventory_imports.quantity',
+        't_inventory_imports.stocks',
+        'm_items.name_note AS item_name',
+      ])
+      ->leftJoin('m_items', 'm_items.item_number', '=', 't_inventory_imports.item_number');
     $query = $this->setCondition($query, $cond);
     $query->orderBy('item_number');
     $data = $query->get()->toArray();
@@ -157,24 +157,34 @@ class InventoryImportService
     $data = new Collection($data);
     $inventory_month = $data->get('c_inventory_month');
 
-    DB::transaction(function() use ($inventory_month) {
+    /**
+     * ★重要:
+     * DB::transaction() の中で Schema::create / Schema::drop 等の DDL を実行すると、
+     * MySQL の暗黙コミットにより「There is no active transaction」が発生することがある。
+     *
+     * そのため、
+     * - t_inventories への確定（INSERT ... SELECT）は transaction 内
+     * - domestic_stocks の更新（テンポラリテーブル等を含む）は transaction 外
+     * に分離する。
+     */
+    DB::transaction(function () use ($inventory_month) {
       DB::table('t_inventories')->insertUsing([
         'import_month',
         'item_number',
         'quantity'
-      ], function($query) use ($inventory_month) {
+      ], function ($query) use ($inventory_month) {
         $query->select([
           'import_month',
           'item_number',
           'quantity'
         ])
-          ->from('inventory_imports')
+          ->from('t_inventory_imports')
           ->where('import_month', '=', $inventory_month);
       });
-
-      // 現在在庫を更新する
-      $this->updateDomesticStock($inventory_month);
     });
+
+    // ★ transaction 外で実行（DDLを含むため）
+    $this->updateDomesticStock($inventory_month);
   }
 
   /**
@@ -188,11 +198,11 @@ class InventoryImportService
   {
     $cond = new Collection($cond);
     $import_month = $cond->get('c_inventory_month');
-    $query->where('inventory_imports.import_month', '=', $import_month);
+    $query->where('t_inventory_imports.import_month', '=', $import_month);
 
     $c_unmatch = $cond->get('c_unmatch');
     if ($c_unmatch == 1) {
-      $query->where('inventory_imports.unmatch', '=', 1);
+      $query->where('t_inventory_imports.unmatch', '=', 1);
     }
 
     return $query;
@@ -296,7 +306,7 @@ class InventoryImportService
       ];
     });
 
-    return $data->groupBy('item_number')->map(function($item) {
+    return $data->groupBy('item_number')->map(function ($item) {
       return ['stocks' => $item->sum('stocks')];
     });
   }
@@ -320,8 +330,7 @@ class InventoryImportService
     $moves_groups = $moves->toArray();
 
     $data = [];
-    foreach ($item_numbers as $item_number)
-    {
+    foreach ($item_numbers as $item_number) {
       $quantity_latest = 0;
       if (isset($latest_groups[$item_number])) {
         $quantity_latest = $latest_groups[$item_number][0]->quantity;
@@ -340,7 +349,7 @@ class InventoryImportService
         'quantity' => 0,
         'stocks' => $stocks,
         'unmatch' => $stocks === 0 ? 0 : 1,
-      ];  
+      ];
     }
     return new Collection($data);
   }
@@ -375,8 +384,7 @@ class InventoryImportService
     $stocks_groups = $stocks->groupBy('item_number')->toArray();
 
     $duplicates = $imports->whereIn('item_number', $item_number_duplicates);
-    foreach ($duplicates as $row)
-    {
+    foreach ($duplicates as $row) {
       $item_number = $row['item_number'];
       $quantity = $row['quantity'];
 
@@ -403,35 +411,56 @@ class InventoryImportService
 
   /**
    * 現在在庫を更新する
-   * 
+   *
    * @param string $inventory_month
    */
   private function updateDomesticStock($inventory_month)
   {
     $stocks = $this->getLatestStocks($inventory_month);
 
-    Schema::create('temp_inventory', function (Blueprint $table) {
-      $table->temporary();
-      $table->string('item_number');
-      $table->integer('stocks');
-    });
+    /**
+     * ★重要:
+     * m_items.item_number の collation が utf8mb4_unicode_ci の環境で、
+     * TEMPORARY TABLE 側が utf8mb4_0900_ai_ci だと JOIN で "Illegal mix of collations" になる。
+     * ここで temp_inventory の文字コード/照合順序を明示して合わせる。
+     */
+    DB::statement("DROP TEMPORARY TABLE IF EXISTS temp_inventory");
+    DB::statement("
+      CREATE TEMPORARY TABLE temp_inventory (
+        item_number VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        stocks INT NOT NULL,
+        PRIMARY KEY (item_number)
+      ) ENGINE=MEMORY
+      DEFAULT CHARSET=utf8mb4
+      COLLATE=utf8mb4_unicode_ci
+    ");
 
-    DB::table('temp_inventory')->insert($stocks);
+    if (!empty($stocks)) {
+      DB::table('temp_inventory')->insert($stocks);
+    }
 
-    DB::update("UPDATE m_items a
+    DB::update("
+      UPDATE m_items a
       INNER JOIN temp_inventory b ON b.item_number = a.item_number
-      SET a.domestic_stocks = b.stocks;");
+      SET a.domestic_stocks = b.stocks
+    ");
 
-    DB::update("UPDATE m_items 
-      SET domestic_stocks = 0 
-      WHERE NOT EXISTS (SELECT * FROM temp_inventory WHERE temp_inventory.item_number = m_items.item_number);");
+    DB::update("
+      UPDATE m_items
+      SET domestic_stocks = 0
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM temp_inventory
+        WHERE temp_inventory.item_number = m_items.item_number
+      )
+    ");
 
-    Schema::drop('temp_inventory');
+    DB::statement("DROP TEMPORARY TABLE IF EXISTS temp_inventory");
   }
 
   /**
    * 最新の在庫を取得する
-   * 
+   *
    * @param string $inventory_month
    * @return array
    */
@@ -454,7 +483,7 @@ class InventoryImportService
 
   /**
    * 最新の入出庫データを取得する
-   * 
+   *
    * @param string $inventory_month
    * @return Collection
    */
@@ -486,14 +515,14 @@ class InventoryImportService
       ];
     });
 
-    return $data->groupBy('item_number')->map(function($item) {
+    return $data->groupBy('item_number')->map(function ($item) {
       return ['stocks' => $item->sum('stocks')];
     });
   }
 
   /**
    * 棚卸データと最新の入出庫データをマージする
-   * 
+   *
    * @param Collection $inventories
    * @param Collection $moves
    * @return array
@@ -501,10 +530,9 @@ class InventoryImportService
   private function mergeInventoriesMoves($inventories, $moves)
   {
     $moves_groups = $moves->toArray();
-    
+
     $data = [];
-    foreach ($inventories as $inventory)
-    {
+    foreach ($inventories as $inventory) {
       $item_number = $inventory->item_number;
 
       $quantity_moves = 0;

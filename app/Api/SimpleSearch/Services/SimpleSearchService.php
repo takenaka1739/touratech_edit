@@ -14,7 +14,7 @@ class SimpleSearchService
 
     return Item::select([
       'item_number',
-      'name_jp',
+      'name_note',
       'sales_unit_price',
       'domestic_stocks',
       'overseas_stocks',

@@ -227,11 +227,11 @@ class ShipmentPlanService
       $item_id = $row->get('item_id');
       $item_number = '';
       $item_name = '';
-      $item_name_jp = '';
+      $item_name_note = '';
       if (array_key_exists($item_id, $items)) {
         $item_number = $items[$item_id][0]->item_number;
         $item_name = $items[$item_id][0]->name;
-        $item_name_jp = $items[$item_id][0]->name_jp;
+        $item_name_note = $items[$item_id][0]->name_note;
       } else {
         throw new Exception('商品データが存在しません。');
       }
@@ -247,7 +247,7 @@ class ShipmentPlanService
         'item_id' => $item_id,
         'item_number' => $item_number,
         'item_name' => $item_name,
-        'item_name_jp' => $item_name_jp,
+        'item_name_note' => $item_name_note,
         'unit_price' => $row->get('unit_price'),
         'quantity' => $row->get('quantity'),
         'amount' => $row->get('amount'),

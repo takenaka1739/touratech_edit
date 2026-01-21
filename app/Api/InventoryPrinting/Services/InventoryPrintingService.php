@@ -100,7 +100,7 @@ class InventoryPrintingService
         't_inventories.item_number',
         't_inventories.quantity',
         // ここは “在庫表” 側で参照しているキーが 'name' のため AS name に揃える
-        DB::raw('COALESCE(m_items.name_jp, "") AS name'),
+        DB::raw('COALESCE(m_items.name_note, "") AS name'),
         'm_items.purchase_unit_price',
       ])
       ->where('t_inventories.import_month', '=', $import_month)

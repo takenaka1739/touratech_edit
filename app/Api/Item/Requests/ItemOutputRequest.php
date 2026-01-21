@@ -28,7 +28,7 @@ class ItemOutputRequest extends BaseRequest
   {
     return [
       'item_number' => '品番',
-      'name_jp' => '商品名（ラベル用）',
+      'name_note' => '商品名（ラベル用）',
       'sales_unit_price' => '売上単価',
       'selected' => 'ラベル位置',
     ];

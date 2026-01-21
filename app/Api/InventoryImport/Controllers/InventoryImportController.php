@@ -10,7 +10,8 @@ use App\Api\InventoryImport\Requests\InventoryImportUploadRequest;
 use App\Api\InventoryImport\Requests\InventoryImportDetailRequest;
 use App\Api\InventoryImport\Requests\InventoryImportOutputRequest;
 use App\Api\InventoryImport\Requests\InventoryImportConfirmRequest;
-use Exception;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * 棚卸処理コントローラー
@@ -33,10 +34,21 @@ class InventoryImportController extends BaseController
    */
   public function fetch(InventoryImportFetchRequest $request)
   {
-    $data = $this->service->fetch($request->validated());
-    $data["hasInventory"] = $this->service->hasInventory($request->validated());
-    $data["hasInventoryImport"] = $this->service->hasInventoryImport($request->validated());
-    return $this->success($data);
+    $validated = $request->validated();
+
+    try {
+      $data = $this->service->fetch($validated);
+      $data["hasInventory"] = $this->service->hasInventory($validated);
+      $data["hasInventoryImport"] = $this->service->hasInventoryImport($validated);
+      return $this->success($data);
+    } catch (Throwable $e) {
+      Log::error('[InventoryImportController][fetch] failed', [
+        'validated' => $validated,
+        'exception' => get_class($e),
+        'message' => $e->getMessage(),
+      ]);
+      return $this->error('棚卸データの取得に失敗しました。');
+    }
   }
 
   /**
@@ -44,7 +56,9 @@ class InventoryImportController extends BaseController
    */
   public function validate_upload(InventoryImportUploadRequest $request)
   {
-    if ($this->service->hasInventory($request->validated())) {
+    $validated = $request->validated();
+
+    if ($this->service->hasInventory($validated)) {
       return $this->error("", [
         'has_inventory' => '既に棚卸確定済の年月のため、取込を行うことができません。',
       ]);
@@ -58,14 +72,35 @@ class InventoryImportController extends BaseController
    */
   public function upload(InventoryImportUploadRequest $request)
   {
-    if ($this->service->hasInventory($request->validated())) {
-      throw new Exception();
+    $validated = $request->validated();
+
+    // 既に確定済みなら、例外ではなく「意味のあるエラー」を返す
+    if ($this->service->hasInventory($validated)) {
+      return $this->error("", [
+        'has_inventory' => '既に棚卸確定済の年月のため、取込を行うことができません。',
+      ]);
     }
 
-    $this->service->upload($request->file('file')->path(), $request->validated());
+    try {
+      $this->service->upload($request->file('file')->path(), $validated);
 
-    $data = $this->service->fetch($request->validated());
-    return $this->success($data);
+      $data = $this->service->fetch($validated);
+      $data["hasInventory"] = $this->service->hasInventory($validated);
+      $data["hasInventoryImport"] = $this->service->hasInventoryImport($validated);
+
+      return $this->success($data);
+    } catch (Throwable $e) {
+      Log::error('[InventoryImportController][upload] failed', [
+        'validated' => $validated,
+        'exception' => get_class($e),
+        'message' => $e->getMessage(),
+      ]);
+
+      // フロント側が errors を見ている想定で返す（必要ならキー名は画面側に合わせて）
+      return $this->error('棚卸取込に失敗しました。', [
+        'upload' => $e->getMessage() ?: '不明なエラー',
+      ]);
+    }
   }
 
   /**
@@ -73,24 +108,49 @@ class InventoryImportController extends BaseController
    */
   public function detail(InventoryImportDetailRequest $request)
   {
-    $this->service->update($request->validated());
+    $validated = $request->validated();
 
-    return $this->success();
+    try {
+      $this->service->update($validated);
+      return $this->success();
+    } catch (Throwable $e) {
+      Log::error('[InventoryImportController][detail] failed', [
+        'validated' => $validated,
+        'exception' => get_class($e),
+        'message' => $e->getMessage(),
+      ]);
+      return $this->error('明細更新に失敗しました。', [
+        'detail' => $e->getMessage() ?: '不明なエラー',
+      ]);
+    }
   }
-  
+
   /**
    * 一覧出力
    */
   public function output(InventoryImportOutputRequest $request)
   {
-    $data = $this->service->getPdfData($request->validated());
+    $validated = $request->validated();
 
-    $pdf = new InventoryImportPdfService();
-    $file_id = $pdf->createPdf($data);
+    try {
+      $data = $this->service->getPdfData($validated);
 
-    return $this->success([
-      'file_id' => $file_id,
-    ]);
+      $pdf = new InventoryImportPdfService();
+      $file_id = $pdf->createPdf($data);
+
+      return $this->success([
+        'file_id' => $file_id,
+      ]);
+    } catch (Throwable $e) {
+      Log::error('[InventoryImportController][output] failed', [
+        'validated' => $validated,
+        'exception' => get_class($e),
+        'message' => $e->getMessage(),
+      ]);
+      return $this->error('PDF出力に失敗しました。', [
+        'output' => $e->getMessage() ?: '不明なエラー',
+      ]);
+    }
   }
 
   /**
@@ -98,13 +158,28 @@ class InventoryImportController extends BaseController
    */
   public function confirm(InventoryImportConfirmRequest $request)
   {
-    if ($this->service->hasInventory($request->validated())) {
-      throw new Exception();
+    $validated = $request->validated();
+
+    // 既に確定済みなら、例外ではなく「意味のあるエラー」を返す
+    if ($this->service->hasInventory($validated)) {
+      return $this->error("", [
+        'has_inventory' => '既に棚卸確定済の年月のため、確定を行うことができません。',
+      ]);
     }
 
-    $this->service->confirm($request->validated());
+    try {
+      $this->service->confirm($validated);
+      return $this->success();
+    } catch (Throwable $e) {
+      Log::error('[InventoryImportController][confirm] failed', [
+        'validated' => $validated,
+        'exception' => get_class($e),
+        'message' => $e->getMessage(),
+      ]);
 
-    return $this->success();
+      return $this->error('在庫確定に失敗しました。', [
+        'confirm' => $e->getMessage() ?: '不明なエラー',
+      ]);
+    }
   }
-
 }

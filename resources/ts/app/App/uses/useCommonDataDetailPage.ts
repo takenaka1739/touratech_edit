@@ -288,7 +288,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
-        const { id, item_number, name, name_jp, sales_unit_price, is_set_item } = res.data.data;
+        const { id, item_number, name, name_note, sales_unit_price, is_set_item } = res.data.data;
         const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, state.fraction);
         const ret = calcAmount(unit_price, 1, state.sales_tax_rate ?? 0, state.fraction);
 
@@ -299,7 +299,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
             item_id: id,
             item_number,
             item_name: name,
-            item_name_jp: name_jp,
+            item_name_jp: name_note,
             sales_unit_price,
             rate: state.rate,
             unit_price,

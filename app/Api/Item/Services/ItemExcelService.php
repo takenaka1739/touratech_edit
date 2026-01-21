@@ -58,7 +58,7 @@ class ItemExcelService
 
       $sheet->setCellValue('A'.$y, $row->get("item_number"));
       $sheet->setCellValue('B'.$y, $row->get("name", ''));
-      $sheet->setCellValue('C'.$y, $row->get("name_jp", ''));
+      $sheet->setCellValue('C'.$y, $row->get("name_note", ''));
       $sheet->setCellValue('D'.$y, $row->get('sales_unit_price'));
       $sheet->setCellValue('E'.$y, $row->get('purchase_unit_price'));
       $sheet->setCellValue('F'.$y, $row->get('domestic_stocks'));

@@ -40,7 +40,7 @@ const Template: Story<ItemDetailPageProps> = args => {
         item_number: 'A0001',
         code: '',
         name: '商品名01',
-        name_jp: '商品名JP01',
+        name_note: '商品名JP01',
         name_label: '商品label名01',
         category_id: 2,
         sales_unit_price: 1001,

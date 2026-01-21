@@ -53,7 +53,7 @@ export const SimpleSearchDetailPage: React.VFC = () => {
             <tbody>
               <tr>
                 <th>商品名</th>
-                <td>{state.name_jp}</td>
+                <td>{state.name_note}</td>
               </tr>
               <tr>
                 <th>定価</th>

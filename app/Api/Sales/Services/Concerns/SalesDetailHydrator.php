@@ -223,10 +223,10 @@ trait SalesDetailHydrator
         // -----------------------------
         if ($hasItems) {
             $jpCol = null;
-            if ($this->hasColumnSafe($itemTable, 'name_jp')) {
-                $jpCol = 'i.name_jp';
-            } elseif ($this->hasColumnSafe($itemTable, 'name_ja')) {
-                $jpCol = 'i.name_ja';
+            if ($this->hasColumnSafe($itemTable, 'name_note')) {
+                $jpCol = 'i.name_note';
+            } elseif ($this->hasColumnSafe($itemTable, 'name_note')) {
+                $jpCol = 'i.name_note';
             }
 
             if ($jpCol) {

@@ -6,7 +6,7 @@ import { AppActions } from '@/app/App/modules/appModule';
 
 type SimpleSearchDetailPageState = {
   item_number: string | undefined;
-  name_jp: string | undefined;
+  name_note: string | undefined;
   sales_unit_price: number | undefined;
   domestic_stocks: number | undefined;
   overseas_stocks: number | undefined;
@@ -14,7 +14,7 @@ type SimpleSearchDetailPageState = {
 
 const initialState: SimpleSearchDetailPageState = {
   item_number: '',
-  name_jp: '',
+  name_note: '',
   sales_unit_price: undefined,
   domestic_stocks: undefined,
   overseas_stocks: undefined,

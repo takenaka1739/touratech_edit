@@ -369,7 +369,18 @@ class SalesService
             DB::commit();
             return ['success' => true, 'id' => $sales->id];
         } catch (\Throwable $e) {
-            DB::rollBack();
+            // ★ 修正: beginTransaction 前に例外が発生した等で transaction が無い場合でも落ちないようガードする
+            $lvl = DB::transactionLevel();
+            \Log::error('[SalesService][store] exception', [
+                'transactionLevel' => $lvl,
+                'message' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
+
+            if ($lvl > 0) {
+                DB::rollBack();
+            }
+
             throw $e;
         }
     }
@@ -404,7 +415,19 @@ class SalesService
             DB::commit();
             return ['success' => true];
         } catch (\Throwable $e) {
-            DB::rollBack();
+            // ★ 修正: beginTransaction 前に例外が発生した等で transaction が無い場合でも落ちないようガードする
+            $lvl = DB::transactionLevel();
+            \Log::error('[SalesService][update] exception', [
+                'sales_id' => $sales_id,
+                'transactionLevel' => $lvl,
+                'message' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
+
+            if ($lvl > 0) {
+                DB::rollBack();
+            }
+
             throw $e;
         }
     }
