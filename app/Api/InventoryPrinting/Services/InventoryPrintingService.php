@@ -2,6 +2,7 @@
 
 namespace App\Api\InventoryPrinting\Services;
 
+use App\Base\Models\Inventory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,8 @@ class InventoryPrintingService
 
       $item_name = "";
       $unit_price = 0;
+
+      // 旧版互換：Eloquent(Model) を前提に配列アクセスを維持
       if ($inventory) {
         $item_name = $inventory['name'] ?? '';
         $unit_price = (float)($inventory['purchase_unit_price'] ?? 0);
@@ -90,16 +93,21 @@ class InventoryPrintingService
   /**
    * 棚卸取込データ（t_inventories）を取得する
    *
+   * 旧版互換方針：
+   * - DB::table() は stdClass を返し、配列アクセス($row['name'])で落ちるため、
+   *   Eloquent(Inventory) で取得して Model(ArrayAccess) を維持する。
+   * - 在庫表で参照しているキー 'name' に合わせて AS name を付与する。
+   *
    * @param string $import_month 対象年月（YYYY/MM）
    * @return \Illuminate\Support\Collection
    */
   private function getInventories($import_month)
   {
-    return DB::table('t_inventories')
+    return Inventory::query()
       ->select([
         't_inventories.item_number',
         't_inventories.quantity',
-        // ここは “在庫表” 側で参照しているキーが 'name' のため AS name に揃える
+        // 在庫表側の参照キーは 'name' のため AS name に揃える（現行仕様）
         DB::raw('COALESCE(m_items.name_note, "") AS name'),
         'm_items.purchase_unit_price',
       ])
