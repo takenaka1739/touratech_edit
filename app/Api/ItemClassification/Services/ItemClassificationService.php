@@ -114,6 +114,7 @@ class ItemClassificationService
   {
     Log::info('ItemClassificationService@store:start', ['data' => $data]);
 
+    // ※ store の挙動は現状維持（削除済み code があれば復活＆上書き）
     $newId = 0;
 
     DB::transaction(function () use ($data, &$newId) {
@@ -152,7 +153,7 @@ class ItemClassificationService
           ]);
 
           throw ValidationException::withMessages([
-            'code' => ['このコードは既に使用されています。'],
+            'code' => [$this->buildCodeInUseMessage((string)$code, $existing)],
           ]);
         }
       } else {
@@ -181,8 +182,39 @@ class ItemClassificationService
     Log::debug('デバッグ：ItemClassificationService.update', $data);
 
     $data = new Collection($data);
+
     DB::transaction(function () use ($id, $data) {
-      $m = ItemClassification::find($id);
+      $m = ItemClassification::findOrFail($id);
+
+      $oldCode = (string) $m->code;
+      $newCode = (string) ($data->get('code') ?? '');
+
+      // code が変更された場合
+      if ($newCode !== '' && $newCode !== $oldCode) {
+        // ★修正：同一 code が存在する場合
+        // - 生存レコードなら NG（エラー）
+        // - 削除済み(trashed)なら OK（削除済み側の code を退避して空ける）
+        $dup = ItemClassification::withTrashed()
+          ->where('code', $newCode)
+          ->where('id', '<>', $id)
+          ->first();
+
+        if ($dup) {
+          if ($dup->trashed()) {
+            // 削除済みなら code を一時退避して再利用できるようにする
+            $this->vacateDeletedCode($dup);
+          } else {
+            // 生存レコードと重複 → エラー
+            throw ValidationException::withMessages([
+              'code' => [$this->buildCodeInUseMessage($newCode, $dup)],
+            ]);
+          }
+        }
+
+        // ★既存：code が変更された場合、配下の子孫の code / parent_code も追従変更
+        $this->cascadeRenameCodes((int) $m->id, $oldCode, $newCode);
+      }
+
       $m->name        = $data->get('name');
       $m->is_display  = $data->get('is_display');
       $m->code        = $data->get('code');
@@ -191,6 +223,59 @@ class ItemClassificationService
       $m->remarks     = $data->get('remarks');
       $m->save();
     });
+  }
+
+  /**
+   * 重複時の表示文言（最小）
+   * 例：
+   * 分類コード「1」は既に使用されています。
+   * カテゴリ区分：親カテゴリ
+   * 商品分類名：親１
+   *
+   * ※ 改行は "\n"。表示側(appAlert)で white-space: pre-line 等が必要。
+   */
+  private function buildCodeInUseMessage(string $code, ItemClassification $existing): string
+  {
+    $selfCode   = (string) ($existing->code ?? '');
+    $parentCode = (string) ($existing->parent_code ?? '');
+    $name       = (string) ($existing->name ?? '');
+
+    // 親判定：親は parent_code === code（このプロジェクト定義）
+    $isParent = ($parentCode !== '' && $parentCode === $selfCode);
+    $kind = $isParent ? '親カテゴリ' : '子カテゴリ';
+
+    return implode("\n", [
+      "分類コード「{$code}」は既に使用されています。",
+      "カテゴリ区分：{$kind}",
+      "商品分類名：{$name}",
+    ]);
+  }
+
+  /**
+   * 削除済み(soft delete)レコードが保持している code を退避して、同一 code を再利用できるようにする。
+   * - 削除済みのまま維持（restore はしない）
+   * - code をユニークな一時値へ変更する（MySQL の UNIQUE 制約対策）
+   */
+  private function vacateDeletedCode(ItemClassification $deleted): void
+  {
+    $id = (int) $deleted->id;
+    $old = (string) ($deleted->code ?? '');
+
+    // 可能な限り衝突しない一時コード
+    $tmp = '__DELETED__' . $id . '__' . now()->format('YmdHis') . '__';
+
+    Log::info('ItemClassificationService@vacateDeletedCode', [
+      'id' => $id,
+      'from' => $old,
+      'to' => $tmp,
+    ]);
+
+    DB::table('m_categories')
+      ->where('id', $id)
+      ->update([
+        'code' => $tmp,
+        'updated_at' => now(),
+      ]);
   }
 
   /**
@@ -241,12 +326,84 @@ class ItemClassificationService
   }
 
   /**
-   * 親code を起点に、parent_code=親code の子を辿って子孫IDを全て集める
+   * 親code変更を子孫へ伝播（code / parent_code を追従変更）
+   * - ユニーク制約衝突回避のため一旦 tmp code に退避してから最終反映
    *
-   * 想定データ:
-   * - ルート: parent_code=0（またはNULL/''でも可）
-   * - 子    : parent_code=親のcode
-   * - 孫    : parent_code=子のcode
+   * @param int    $rootId
+   * @param string $oldRootCode
+   * @param string $newRootCode
+   */
+  private function cascadeRenameCodes(int $rootId, string $oldRootCode, string $newRootCode): void
+  {
+    // 変更対象（自分＋子孫）
+    $ids = $this->collectCascadeIdsByParentCode($oldRootCode, $rootId);
+
+    $rows = ItemClassification::query()
+      ->select(['id', 'code', 'parent_code'])
+      ->whereIn('id', $ids)
+      ->get();
+
+    // old_code => new_code マップ作成（prefix置換）
+    $codeMap = [];
+    foreach ($rows as $r) {
+      $oldCode = (string) $r->code;
+
+      if ((int) $r->id === $rootId) {
+        $codeMap[$oldCode] = $newRootCode;
+        continue;
+      }
+
+      $prefix = $oldRootCode . '-';
+      if (str_starts_with($oldCode, $prefix)) {
+        $codeMap[$oldCode] = $newRootCode . substr($oldCode, strlen($oldRootCode));
+      } else {
+        // 想定外（命名規則が崩れている等）は触らずログだけ残す
+        Log::warning('ItemClassificationService@cascadeRenameCodes:code_not_prefixed', [
+          'root_id' => $rootId,
+          'old_root_code' => $oldRootCode,
+          'row_id' => (int) $r->id,
+          'row_code' => $oldCode,
+        ]);
+      }
+    }
+
+    // 1) tmp code に退避（ユニーク衝突回避）
+    foreach ($rows as $r) {
+      DB::table('m_categories')
+        ->where('id', (int) $r->id)
+        ->update([
+          'code' => '__TMP__' . (int) $r->id . '__',
+          'updated_at' => now(),
+        ]);
+    }
+
+    // 2) 最終 code / parent_code を反映
+    foreach ($rows as $r) {
+      $oldCode = (string) $r->code;
+      $oldParent = (string) $r->parent_code;
+
+      $finalCode = $codeMap[$oldCode] ?? $oldCode;
+      $finalParent = isset($codeMap[$oldParent]) ? $codeMap[$oldParent] : $oldParent;
+
+      DB::table('m_categories')
+        ->where('id', (int) $r->id)
+        ->update([
+          'code' => $finalCode,
+          'parent_code' => $finalParent,
+          'updated_at' => now(),
+        ]);
+    }
+
+    Log::info('ItemClassificationService@cascadeRenameCodes:done', [
+      'root_id' => $rootId,
+      'old_root_code' => $oldRootCode,
+      'new_root_code' => $newRootCode,
+      'count' => count($ids),
+    ]);
+  }
+
+  /**
+   * 親code を起点に、parent_code=親code の子を辿って子孫IDを全て集める
    *
    * @param string $rootCode
    * @param int    $rootId

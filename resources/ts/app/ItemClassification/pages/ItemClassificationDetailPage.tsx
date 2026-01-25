@@ -18,8 +18,8 @@ type Mode = 'parent' | 'child';
 
 /**
  * 商品分類マスタ詳細ページ
- * 
- * @returns 
+ *
+ * @returns
  */
 export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPageProps> = () => {
   const title = '商品分類マスタ';
@@ -65,24 +65,48 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       return;
     }
 
-    const c  = (state?.code ?? '').toString();
+    const c = (state?.code ?? '').toString();
     const pc = (state?.parent_code ?? '').toString();
     if (!c && !pc) return; // ローディング初期値を回避
 
-    const isParent = (pc === c) || (!!c && !pc);
+    const isParent = pc === c || (!!c && !pc);
     setMode(isParent ? 'parent' : 'child');
     setModeFixed(true);
   }, [id, state?.code, state?.parent_code, modeFixed]);
 
-  /** 親カテゴリ候補（最上位＝ parent_code が空 or parent_code===code） */
-  const [parentOptions, setParentOptions] = useState<{ code: string; name: string; level: number }[]>([]);
+  /**
+   * 親カテゴリ候補
+   *
+   * - 自分自身の除外は id 基準
+   * - 選択中の parent_code は必ず候補に残す
+   */
+  const [parentOptions, setParentOptions] = useState<{ id: number; code: string; name: string; level: number }[]>(
+    []
+  );
   useEffect(() => {
     (async () => {
       try {
         const res = await axios.post(`/api/${slug}/fetch`, { c_keyword: '' });
         const raw = (res.data?.data?.rows ?? res.data?.rows ?? res.data) as any[];
 
-        const filtered = (raw || []).filter(r => r.code !== state.code);
+        let filtered = (raw || []).filter((r: any) => {
+          if (state.id == null) return true;
+          const rid = Number(r?.id ?? 0);
+          return rid !== Number(state.id);
+        });
+
+        const selectedPc = (state.parent_code ?? '').toString().trim();
+        if (selectedPc) {
+          const exists = filtered.some((r: any) => String(r?.code ?? '') === selectedPc);
+          if (!exists) {
+            const hit = (raw || []).find((r: any) => String(r?.code ?? '') === selectedPc);
+            if (hit) {
+              filtered = [hit, ...filtered];
+            } else {
+              filtered = [{ id: -1, code: selectedPc, name: '（選択中）', level: 0 }, ...filtered];
+            }
+          }
+        }
 
         filtered.sort((a: any, b: any) => {
           const sa = a.sort_order ?? 0;
@@ -91,12 +115,19 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
           return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'ja');
         });
 
-        setParentOptions(filtered.map((r: any) => ({ code: r.code, name: r.name, level: r.level ?? 0 })));
+        setParentOptions(
+          filtered.map((r: any) => ({
+            id: Number(r?.id ?? 0),
+            code: String(r?.code ?? ''),
+            name: String(r?.name ?? ''),
+            level: Number(r?.level ?? 0),
+          }))
+        );
       } catch (e) {
         setParentOptions([]);
       }
     })();
-  }, [slug, state.code]);
+  }, [slug, state.id, state.parent_code]);
 
   /** 画像（アップロード or 既存選択） */
   const [profileImage, setProfileImage] = useState('');
@@ -115,12 +146,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     }
   }, [id, state.image_id, state.image, loadedImageId]);
 
-  /**
-   * 画像選択ボタンクリック時のイベントハンドラ
-   * 
-   * @param e ファイル選択イベント
-   * @returns void ファイルが選択されなかった場合は何もせず終了
-   */
   const onClickImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
@@ -135,12 +160,12 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       if (res.data.exists) {
         setInputKey(Date.now());
 
-        const ok = await appConfirm('同名のファイルがサーバー上に存在します。\n差し替えますか？')
+        const ok = await appConfirm('同名のファイルがサーバー上に存在します。\n差し替えますか？');
         if (!ok) return;
       }
     } catch (err) {
-      appAlert("サーバーとの通信に失敗しました。時間をおいて再度お試しください。");
-      e.target.value = "";
+      appAlert('サーバーとの通信に失敗しました。時間をおいて再度お試しください。');
+      e.target.value = '';
       return;
     }
 
@@ -157,7 +182,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   const getVal = (v: any): string => (typeof v === 'string' ? v : v?.target?.value ?? '');
   const setParentCode = (code: string | undefined) => updateState({ parent_code: code ?? undefined });
 
-  /** バリデーション */
+  /** バリデーション（事前チェックは appAlert を使う） */
   const validateForSave = (): string | null => {
     if (!state.name || state.name.trim() === '') return '商品分類名を入力してください。';
     if (mode === 'parent') {
@@ -188,39 +213,18 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       : { ...base, code: state.code ?? '', parent_code: state.parent_code ?? '' };
   };
 
-  /**
-   * 商品分類情報のデータベース登録
-   * @returns 
-   */
-  const saveCore = async (): Promise<{ ok: boolean; newId?: number }> => {
-    const msg = validateForSave();
-    if (msg) { appAlert(msg); return { ok: false }; }
+  // ==============================================================
+  //  エラーメッセージ抽出 / 使用箇所（どこで使われているか）
+  // ==============================================================
 
-    const payload = buildPayload();
-    dispatch(AppActions.request());
-    try {
-      if (state.id === undefined) {
-        const res = await axios.post(`/api/${slug}/store`, payload);
-        if (res.status === 200 && res.data?.success) {
-          const newId = Number(res.data?.data?.id ?? 0) || undefined;
-          dispatch(AppActions.success());
-          return { ok: true, newId };
-        }
-      } else {
-        const res = await axios.put(`/api/${slug}/edit/${state.id}`, payload);
-        if (res.status === 200 && res.data?.success) {
-          dispatch(AppActions.success());
-          return { ok: true };
-        }
-      }
-    } catch (e) {
-      console.error('❌ 保存エラー', e);
-    }
-    dispatch(AppActions.failed('データの保存に失敗しました。'));
-    return { ok: false };
+  const extractValidationErrorsMap = (err: any): Record<string, string[]> | undefined => {
+    const res = err?.response;
+    if (res?.status !== 422) return undefined;
+    const errorsMap = res?.data?.errors;
+    if (errorsMap && typeof errorsMap === 'object') return errorsMap as Record<string, string[]>;
+    return undefined;
   };
 
-  /** 422の最初のメッセージを抽出 */
   const extractValidationError = (err: any): string | undefined => {
     const res = err?.response;
     if (res?.status === 422) {
@@ -237,7 +241,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     return undefined;
   };
 
-  /** 200系（success:false）からメッセージ抽出 */
   const extractApiMessage = (res: any): string | undefined => {
     if (!res) return undefined;
     const data = res.data ?? {};
@@ -252,11 +255,115 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     return undefined;
   };
 
+  const isDuplicateCodeError = (err: any): boolean => {
+    const errorsMap = extractValidationErrorsMap(err);
+    const codeMsgs = errorsMap?.code ?? [];
+    const joined = codeMsgs.join(' ').toLowerCase();
+
+    if (joined.includes('already') && (joined.includes('taken') || joined.includes('exists'))) return true;
+    if (joined.includes('既に') || joined.includes('使用') || joined.includes('重複')) return true;
+
+    const msg = String(err?.response?.data?.message ?? '').toLowerCase();
+    if (msg.includes('already') && (msg.includes('taken') || msg.includes('exists'))) return true;
+    if (msg.includes('既に') || msg.includes('使用') || msg.includes('重複')) return true;
+
+    return false;
+  };
+
+  const buildDuplicateCodeUsageMessage = async (codeRaw: string): Promise<string> => {
+    const code = (codeRaw ?? '').toString().trim();
+    if (!code) return '分類コードが空です。';
+
+    try {
+      const res = await axios.post(`/api/${slug}/fetch`, { c_keyword: code });
+      const rows = (res.data?.data?.rows ?? res.data?.rows ?? res.data) as any[];
+
+      const hits = (rows || []).filter((r: any) => String(r?.code ?? '') === code);
+
+      if (hits.length === 0) {
+        return `分類コード「${code}」は既に使用されています。`;
+      }
+
+      const lines = hits.slice(0, 20).map((r: any) => {
+        const rid = r?.id != null ? `ID:${r.id}` : 'ID:不明';
+        const name = String(r?.name ?? '');
+        const pc = String(r?.parent_code ?? '');
+        const c = String(r?.code ?? '');
+        const kind = pc === c ? '親' : '子';
+        const parentInfo = pc ? `parent_code:${pc}` : 'parent_code:なし';
+        return `- ${rid} / ${kind} / ${name}（code:${c}, ${parentInfo}）`;
+      });
+
+      const head = `分類コード「${code}」は既に使用されています。\n使用箇所：\n`;
+      const tail = hits.length > 20 ? `\n※ 表示は先頭20件のみ（該当:${hits.length}件）` : '';
+      return head + lines.join('\n') + tail;
+    } catch (e) {
+      return `分類コード「${code}」は既に使用されています。（使用箇所の取得に失敗しました）`;
+    }
+  };
+
+  /**
+   * 商品分類情報のデータベース登録
+   * 注意: ここでは appAlert を極力使わず、AppActions.failed に統一する（アラート二重発火防止）
+   */
+  const saveCore = async (): Promise<{ ok: boolean; newId?: number }> => {
+    const msg = validateForSave();
+    if (msg) {
+      appAlert(msg); // 事前チェックだけは従来通り
+      return { ok: false };
+    }
+
+    const payload = buildPayload();
+    dispatch(AppActions.request());
+    try {
+      if (state.id === undefined) {
+        const res = await axios.post(`/api/${slug}/store`, payload);
+        if (res.status === 200 && res.data?.success) {
+          const newId = Number(res.data?.data?.id ?? 0) || undefined;
+          dispatch(AppActions.success());
+          return { ok: true, newId };
+        }
+
+        const apiMsg = extractApiMessage(res) ?? 'データの保存に失敗しました。';
+        dispatch(AppActions.failed(apiMsg));
+        return { ok: false };
+      } else {
+        const res = await axios.put(`/api/${slug}/edit/${state.id}`, payload);
+        if (res.status === 200 && res.data?.success) {
+          dispatch(AppActions.success());
+          return { ok: true };
+        }
+
+        const apiMsg = extractApiMessage(res) ?? 'データの保存に失敗しました。';
+        dispatch(AppActions.failed(apiMsg));
+        return { ok: false };
+      }
+    } catch (e: any) {
+      console.error('❌ 保存エラー', e);
+
+      // 422（ValidationException）
+      if (e?.response?.status === 422) {
+        if (isDuplicateCodeError(e)) {
+          const usageMsg = await buildDuplicateCodeUsageMessage(state.code ?? '');
+          dispatch(AppActions.failed(usageMsg));
+          return { ok: false };
+        }
+
+        const vmsg = extractValidationError(e) ?? '入力内容を確認してください。';
+        dispatch(AppActions.failed(vmsg));
+        return { ok: false };
+      }
+
+      dispatch(AppActions.failed('データの保存に失敗しました。'));
+      return { ok: false };
+    }
+  };
+
   /**
    * ローカルから商品分類の画像を選択してアップロード、データベース登録のリクエストを行う。
-   * 
-   * @param targetCategoryId 
-   * @returns 
+   *
+   * @param targetCategoryId
+   * @returns
    */
   const uploadNewImage = async (targetCategoryId?: number): Promise<boolean> => {
     try {
@@ -298,9 +405,9 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
 
   /**
    * ローカルから商品分類の画像の変更によるアップロード、データベース更新のリクエストを行う。
-   * 
-   * @param targetCategoryId 
-   * @returns 
+   *
+   * @param targetCategoryId
+   * @returns
    */
   const replaceImageFile = async (targetCategoryId?: number): Promise<boolean> => {
     try {
@@ -345,7 +452,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   /**
    * 商品分類に用いる「画像」を保存する。
    * public/imagesディレクトリへの画像アップロード、m_imagesテーブルの更新を責務とする。
-   * 
+   *
    * @param categoryId 新規作成直後のIDなど、明示的に保存先カテゴリIDを指定したい場合に利用
    */
   const saveImage = async (categoryId?: number): Promise<boolean> => {
@@ -356,59 +463,50 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     try {
       // ローカル画像の選択
       if (selectedFile) {
-        // 商品分類にはじめて画像の紐づけ（新規追加・編集は問わない）
         if (!state.image_id) {
           return await uploadNewImage(targetCategoryId);
-
-        // 既に画像紐づけのある商品分類の画像差し替え
         } else {
           return await replaceImageFile(targetCategoryId);
         }
-
-      // サーバーアップロード済画像の選択
       } else {
-        // サーバー画像（selectedFile がない）
         const imgId = state.image_id;
-        
-        // 何も選ばれていない → 変更なし
+
         if (!imgId) return true;
-        
-        // ① 未登録サーバー画像（file_xxx）
+
         if (typeof imgId === 'string' && imgId.startsWith('file_')) {
-          // m_images に新規登録（アップロード不要）
           const res = await axios.post(`/api/${slug}/image_store_meta`, {
             name: imageName || state.image,
             category_id: targetCategoryId,
             order_by: state.sort_order,
-            temp_id: imgId, // file_xxx を識別するため
+            temp_id: imgId,
           });
-          
+
           if (res.status === 200 && res.data?.success) {
             setLoadedImageId(res.data.id);
             setLoadedImageName(imageName || state.image);
             dispatch(AppActions.success());
             return true;
           }
-          
+
           const msg = extractApiMessage(res) ?? '画像の登録に失敗しました。';
           appAlert(msg);
           dispatch(AppActions.failed(msg));
           return false;
         }
-        // ② 登録済サーバー画像（数値ID）
+
         const res = await axios.put(`/api/${slug}/image_edit_meta/${imgId}`, {
           name: imageName || state.image,
           category_id: targetCategoryId,
           order_by: state.sort_order,
         });
-        
+
         if (res.status === 200 && res.data?.success) {
           setLoadedImageId(imgId);
           setLoadedImageName(imageName || state.image);
           dispatch(AppActions.success());
           return true;
         }
-        
+
         const msg = extractApiMessage(res) ?? '画像の保存に失敗しました。';
         appAlert(msg);
         dispatch(AppActions.failed(msg));
@@ -430,7 +528,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
   // ==============================================================
   // Handlers: UI イベント
   // ==============================================================
-  // 保存ボタンクリックイベント
   const handleSave = async () => {
     const resCore = await saveCore();
     if (!resCore.ok) return;
@@ -445,24 +542,19 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     if (!okImg) return;
 
     appAlert('保存しました。');
-
-    //  新規・編集問わず、保存成功後は一覧へ
     history.push(`/${slug}`);
   };
 
-  // 削除ボタンクリックイベント（削除成功後は一覧へ戻る）
   const handleDelete = async () => {
     if (!id) return;
-    // onClickDelete が true/false を返す前提で見ておく（void でも undefined なので true扱い）
     const result: any = await onClickDelete();
     if (result !== false) {
       history.push(`/${slug}`);
     }
   };
 
-  /** 親セレクト */
   const parentSelectOptions = useMemo(() => {
-    return parentOptions.map(opt => ({
+    return parentOptions.map((opt) => ({
       value: opt.code,
       label: `${'— '.repeat(opt.level)}${opt.name}（${opt.code}）`,
     }));
@@ -477,22 +569,16 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
     >
       <div className="form-group-wrapper">
         <div style={{ padding: '0 16px' }}>
-          {/* 表示フラグ */}
           <Forms.FormGroup
             labelText="ショップへの公開"
             error={errors?.is_display}
             groupClassName="items-center mt-4"
             required
-            >
+          >
             <Forms.FormInputCheck id="is_display" name="is_display" checked={state.is_display} onChange={onChange} />
           </Forms.FormGroup>
 
-          {/* 親/子の切替 */}
-          <Forms.FormGroup
-            labelText="階層"
-            groupClassName="mt-2 items-center w-[300px]"
-            required
-          >
+          <Forms.FormGroup labelText="階層" groupClassName="mt-2 items-center w-[300px]" required>
             <div className="flex gap-4">
               <label className="inline-flex items-center">
                 <input
@@ -500,7 +586,10 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
                   name="mode"
                   className="mr-1"
                   checked={mode === 'parent'}
-                  onChange={() => { setMode('parent'); setModeFixed(true); }}
+                  onChange={() => {
+                    setMode('parent');
+                    setModeFixed(true);
+                  }}
                 />
                 親カテゴリ
               </label>
@@ -510,7 +599,10 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
                   name="mode"
                   className="mr-1"
                   checked={mode === 'child'}
-                  onChange={() => { setMode('child'); setModeFixed(true); }}
+                  onChange={() => {
+                    setMode('child');
+                    setModeFixed(true);
+                  }}
                 />
                 子カテゴリ
               </label>
@@ -519,25 +611,23 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
         </div>
 
         <div style={{ display: 'flex' }}>
-          {/* 左：フォーム */}
           <div className="py-2 px-4" style={{ width: '60%' }}>
-            {/* 親カテゴリ（子モード時は必須） */}
             {mode === 'child' && (
               <Forms.FormGroup
                 labelText="親カテゴリ"
                 groupClassName="mb-2"
                 error={errors?.parent_code}
                 required={mode === 'child'}
-                >
+              >
                 <select
                   className="max-w-lg border border-gray-500 rounded-sm px-2 py-1"
                   disabled={mode !== 'child'}
                   required={mode === 'child'}
                   value={state.parent_code ?? ''}
-                  onChange={e => setParentCode(e.target.value || undefined)}
+                  onChange={(e) => setParentCode(e.target.value || undefined)}
                 >
                   <option value="">（未選択）</option>
-                  {parentSelectOptions.map(opt => (
+                  {parentSelectOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -546,7 +636,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               </Forms.FormGroup>
             )}
 
-            {/* 分類名 */}
             <Forms.FormGroupInputText
               labelText={mode === 'parent' ? '商品分類名（親）' : '商品分類名（子）'}
               name="name"
@@ -559,7 +648,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               maxLength={30}
             />
 
-            {/* 分類コード */}
             <Forms.FormGroupInputText
               labelText={mode === 'parent' ? '分類コード（親）' : '分類コード（子）'}
               name="code"
@@ -572,7 +660,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               maxLength={30}
             />
 
-            {/* 表示順 */}
             <Forms.FormGroupInputText
               labelText="表示順"
               name="sort_order"
@@ -583,7 +670,6 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               maxLength={6}
             />
 
-            {/* 備考 */}
             <Forms.FormGroupTextarea
               labelText="備考"
               name="remarks"
@@ -595,13 +681,19 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
             />
           </div>
 
-          {/* 右：画像 */}
           <div className="mt-5">
             <div className="flex items-center gap-2">
               <button className="btn py-7 w-28" onClick={() => document.getElementById('fileInput')?.click()}>
                 画像選択
               </button>
-              <input className="w-1" id="fileInput" key={inputKey} type="file" onChange={onClickImageSelect} style={{ visibility: 'hidden' }} />
+              <input
+                className="w-1"
+                id="fileInput"
+                key={inputKey}
+                type="file"
+                onChange={onClickImageSelect}
+                style={{ visibility: 'hidden' }}
+              />
               <button className="btn py-7 w-28" onClick={() => setPickerOpen(true)}>
                 既存画像選択
               </button>
@@ -613,16 +705,20 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
       </div>
 
       <div className="flex justify-between">
-        <button className="btn" onClick={handleSave} disabled={isDisabled}>保存</button>
-        {id && <button className="btn-delete" onClick={handleDelete} disabled={isDisabled}>削除</button>}
+        <button className="btn" onClick={handleSave} disabled={isDisabled}>
+          保存
+        </button>
+        {id && (
+          <button className="btn-delete" onClick={handleDelete} disabled={isDisabled}>
+            削除
+          </button>
+        )}
       </div>
 
-      {/* 既存画像ピッカー（ 現在カテゴリIDを渡す） */}
       <ItemImagePickerDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onSelect={(img) => {
-          // ここではフロント状態だけ更新（保存時にサーバへ反映）
           updateState({ image_id: img.id, image: img.name });
           setImageName(img.name);
           setSelectedFile(null);
