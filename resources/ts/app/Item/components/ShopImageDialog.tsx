@@ -104,42 +104,51 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     return row ?? [v[0]];
   });
   const [edtImageItems, setEdtImageItems] = useState<any[][]>(sortedMatrix);
-
+  
   // ダイアログオープン時に最新の値を反映する
   useEffect(() => {
-    if (isShown) {
-      const idx = variItems.findIndex(v => v[0] === preState.id);
-      const isVariationEnabled = (variItems.length > 1) || (variItems.length === 1 && variItems[0][1] !== "" && variItems[0][1] !== null);
+    if (!isShown) return;
 
-      // 販売価格の初期値
-      let initialPrice: number | null = null;
-      if (isVariationEnabled && idx !== -1) {
-        initialPrice = Number(variItems[idx][6]);
-      } else {
-        initialPrice = preState.sales_price != null ? Number(preState.sales_price) : null;
-      }
+    const idx = variItems.findIndex(v => v[0] === preState.id);
+    const isVariationEnabled =
+      (variItems.length > 1) ||
+      (variItems.length === 1 && variItems[0][1] !== "" && variItems[0][1] !== null);
 
-      setItemNameInput(preState.name ?? "");                                                  // 商品名
-      setSalesPriceInput(initialPrice !== null ? String(initialPrice) : "");                  // 販売価格（税込み）
-      if (isShown && initialPrice != null) setPoint(String(Math.floor(initialPrice / 100)));  // ポイント
-      setExDetailsInput(preState.explanation_details ?? "");                                  // 商品説明（詳細）
-      setVariKindItem(fillNulls(variItems ?? []));                                            // バリエーション
-      if (idx !== -1) {
-        // バリエーションの更新対象の設定
-        setSelectIndex(idx);
-        setSelectId(variItems[idx][0]);
+    // 販売価格の初期値
+    let initialPrice: number | null = null;
+    if (isVariationEnabled && idx !== -1) {
+      initialPrice = Number(variItems[idx][6]);
+    } else {
+      initialPrice = preState.sales_price != null ? Number(preState.sales_price) : null;
+    }
 
-        // サムネイルの設定
-        const row = initialMatrix[idx];
-        setFiles(row.slice(1));
+    setItemNameInput(preState.name ?? "");
+    setSalesPriceInput(initialPrice !== null ? String(initialPrice) : "");
+    if (initialPrice != null) setPoint(String(Math.floor(initialPrice / 100)));
+    setExDetailsInput(preState.explanation_details ?? "");
 
-        setTimeout(() => {
-          clickVariItem(idx);
-        }, 0);
-      }
+    setVariKindItem(fillNulls(variItems ?? []));
+
+    setSelectIndex(idx);
+    setSelectId(idx !== -1 ? variItems[idx][0] : null);
+
+    // サムネイル初期化（clickVariItem はまだ呼ばない）
+    if (idx !== -1) {
+      const row = initialMatrix[idx];
+      setFiles(row.slice(1));
     }
   }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details]);
-  
+
+  useEffect(() => {
+    if (!isShown) return;
+    if (variKindItem.length === 0) return;
+
+    // selectIndex が有効なら clickVariItem を呼ぶ
+    if (selectIndex !== null && selectIndex !== -1) {
+      clickVariItem(selectIndex);
+    }
+  }, [isShown, variKindItem]);
+
   useEffect(() => {
     if (Array.isArray(variItems) && variItems.length > 0) {
       const initial = variItems.map((v, i) => initialMatrix[i]);
@@ -453,6 +462,8 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   };
 
   const clickVariItem = (index: number) => {
+    console.log("【clickVariItem 呼び出し】 index:", index, "variKindItem:", variKindItem);
+
     setSelectIndex(index);
     setSalesPriceInput(variKindItem[index][6]);
     setSelectId(variKindItem[index][0]);
