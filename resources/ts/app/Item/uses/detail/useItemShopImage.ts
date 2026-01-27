@@ -26,7 +26,6 @@ export const useItemShopImage = ({ state, setState }: UseItemShopImageArgs) => {
   const closeShopImageDialog = () => {
     setState((prev: any) => ({
       ...prev,
-      //★ preImageList: prev.edtImageItems,
       imageList: prev.edtImageItems,
     }));
     setIsShown(false);
