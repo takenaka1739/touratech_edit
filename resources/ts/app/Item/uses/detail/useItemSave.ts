@@ -23,23 +23,37 @@ export const useItemSave = ({
   // ==============================================================
   // 商品画像・動画・YouTubeリンクの配列を生成
   // ==============================================================
-  const buildImageInfo = (imageList: (File | string)[][]): string[][] => {
-    return imageList.map(value => {
-      const itemId = String(value[0]);
-      const files = value.slice(1);
+  const buildImageInfo = (
+    imageList: (File | string)[][],
+    variItems: any[]
+  ): string[][] => {
 
-      const fileNames = files
-        .map(file => {
-          if (file instanceof File) {
-            return file.name;
-          } else if (typeof file === 'string' && file.trim() !== '') {
-            return file;
-          }
-          return '';
-        })
-        .filter((name): name is string => !!name);
+    return variItems.map((v, index) => {
+      const variId = String(v[0]); // ← item_id（絶対に必要）
 
-      return [itemId, ...fileNames];
+      // imageList[index] が存在しない場合は空配列扱い
+      const row = imageList[index] ?? [];
+
+      // row の中から「画像・動画・URL だけ」を抽出
+      const files = row.filter(item => {
+        if (item instanceof File) return true;
+        if (typeof item === 'string' && item.trim() !== '') {
+          // item_id が紛れ込んでいるケースを除外
+          if (/^\d+$/.test(item)) return false;
+          return true;
+        }
+        return false;
+      });
+
+      // File → file.name に変換
+      const fileNames = files.map(file => {
+        if (file instanceof File) {
+          return file.name;
+        }
+        return file; // string の場合はそのまま
+      });
+
+      return [variId, ...fileNames];
     });
   };
 
@@ -162,13 +176,14 @@ export const useItemSave = ({
       });
 
       // payload 生成
-      const images = buildImageInfo(state.imageList);
+      const images = buildImageInfo(state.imageList, state.variItems);
       const payload: ItemPayload = { 
         ...state, 
         images,
         variItems: filledVariItems,
       };
 
+      console.log('=== PAYLOAD SENT TO BACKEND ===', JSON.stringify(payload, null, 2));
       // API 呼び出し
       const success = await requestItem({ mode, payload });
 

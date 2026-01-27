@@ -11,16 +11,13 @@ import {
   Droppable,
 } from "react-beautiful-dnd";
 import { DialogWrapper } from "@/components/DialogWrapper";
+import { ShopImageForm } from "@/app/Item/components/shopImage";
 
 export type ShopImageDialogProps = {
   isShown: boolean;
   onClickCancel: () => void;
   onChangeShopImage: (updated: any) => void;
-  // ItemDetailPage から渡される props（location.state の置き換え）
-  itemName: string | undefined;
-  itemPrice: number | null;
   preState: any;
-  exDetail: string | undefined;
   preImageItem: any[][];
   imageItem: any[][];
   variItems: any[][];
@@ -36,10 +33,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   isShown,
   onClickCancel,
   onChangeShopImage,
-  itemName,
-  itemPrice,
   preState,
-  exDetail,
   preImageItem,
   imageItem,
   variItems,
@@ -50,16 +44,39 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   supplierChangeFlag,
   delimageItem,
 }) => {
-  // ★ props 全体のログ（既存ロジックに影響なし）
-  console.log("【ShopImageDialog props】", { isShown, itemName, preState, exDetail, preImageItem, imageItem, variItems, preVariItem, variChangeItem, backVariItems, categoryChangeFlag, supplierChangeFlag, delimageItem, });
-  // ★ preState の中身だけ個別にログ
-  console.log("【preState の中身】", preState);
   type Props = {
     file: File;
   };
 
-  const attachRef = useRef<HTMLInputElement>(null);
+  // 画像・動画一覧をUI表示用の形式に変換
+  const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) => {
+    return variItems.map((vari) => {
+      const variId = vari[0];
 
+      // このバリエーションに紐づく画像だけ抽出
+      const related = preImageList
+        .filter((row) => row[1] === variId)
+        .sort((a, b) => {
+          const sa = a[3];
+          const sb = b[3];
+          if (sa == null && sb == null) return 0;
+          if (sa == null) return 1;
+          if (sb == null) return -1;
+          return sa - sb;
+        });
+
+      // UI 用の形式：[variId, file1, file2, ...]
+      if (related.length > 0) {
+        const paths = related.map((r) => `/images/${r[2]}`);
+        return [variId, ...paths];
+      }
+
+      // 画像がない場合は ID だけ
+      return [variId];
+    });
+  };
+
+  const attachRef = useRef<HTMLInputElement>(null);
   const [itemNameInput, setItemNameInput] = useState("");         // 商品名
   const [salesPriceInput, setSalesPriceInput] = useState("");     // 販売価格（税込み）
   const [point, setPoint] = useState("");                         // ポイント
@@ -68,55 +85,59 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   const [variKindItem, setVariKindItem] = useState(variItems);
   const [variChangeItemState, setVariChangeItemState] = useState(variChangeItem);
   const [dropErea, setDropErea] = useState("");
-  const [selectImageSrc, setImageSrc] = useState("");
-  const [selectImageType, setImageType] = useState(-1);
+  const [selectImageSrc, setSelectImageSrc] = useState("");
+  const [selectImageType, setSelectImageType] = useState(-1);
   const [files, setFiles] = useState<any[]>(Array.isArray(imageItem) ? imageItem[0] : [""]);
   const [clicked, setClicked] = useState(false);
   const [SelectImage, setSelectImage] = useState("");
   const [selectId, setSelectId] = useState(Array.isArray(imageItem) && imageItem.length > 0 ? imageItem[0][0] : null);
   const [selectIndex, setSelectIndex] = useState(0);
-  const initialMatrix = variItems.map((variItem: any) => {
-    let imageRow: any = [[]];
-    const hasSameValue = imageItem.some(
-      (arr: any) => arr[0] === variItem[0]
-    );
-    if (hasSameValue) {
-      const matchedItems = imageItem.filter(
-        (row: any) => row[0] === variItem[0]
-      );
-      imageRow = [...matchedItems[0]];
-    } else {
-      const item = [variItem[0], ""];
-      imageRow = [...item];
-    }
-    return Array.isArray(imageRow) ? imageRow : [""];
+  const initialMatrix = buildInitialImageMatrix(variItems, preState.preImageList);
+  const sortedMatrix = variItems.map(v => {
+    const row = initialMatrix.find(r => r[0] === v[0]);
+    return row ?? [v[0]];
   });
+  const [edtImageItems, setEdtImageItems] = useState<any[][]>(sortedMatrix);
 
-  const [edtImageItems, setEdtImageItems] = useState<any[][]>(initialMatrix);
-
+  console.log("【preImageItem（サムネイル関連）】", preImageItem);
+  console.log("【edtImageItems（サムネイル関連）】", edtImageItems);
   // ダイアログオープン時に最新の値を反映する
   useEffect(() => {
     if (isShown) {
-      setItemNameInput(itemName ?? "");                                                   // 商品名
-      setSalesPriceInput(itemPrice !== null ? String(itemPrice) : "");                    // 販売価格（税込み）
-      if (isShown && itemPrice != null) setPoint(String(Math.floor(itemPrice / 100)));    // ポイント
-      setExDetailsInput(exDetail ?? "");                                                  // 商品説明（詳細）
-      setVariKindItem(fillNulls(variItems ?? []));                                        // バリエーション
-    }
-  }, [isShown, itemName, itemPrice, variItems]);
-  
-  useEffect(() => {
-    if (!Array.isArray(imageItem)) {
-      if (Array.isArray(variItems) && variItems.length > 0) {
-        const initial = variItems.map((value: any) => [
-          value[0],
-          "",
-        ]);
-        setEdtImageItems(initial);
-        setSelectId(initial[0][0]);
+      const idx = variItems.findIndex(v => v[0] === preState.id);
+      const isVariationEnabled = (variItems.length > 1) || (variItems.length === 1 && variItems[0][1] !== "" && variItems[0][1] !== null);
+
+      // 販売価格の初期値
+      let initialPrice: number | null = null;
+      if (isVariationEnabled && idx !== -1) {
+        initialPrice = Number(variItems[idx][6]);
+      } else {
+        initialPrice = preState.sales_price != null ? Number(preState.sales_price) : null;
+      }
+
+      setItemNameInput(preState.name ?? "");                                                  // 商品名
+      setSalesPriceInput(initialPrice !== null ? String(initialPrice) : "");                  // 販売価格（税込み）
+      if (isShown && initialPrice != null) setPoint(String(Math.floor(initialPrice / 100)));  // ポイント
+      setExDetailsInput(preState.explanation_details ?? "");                                  // 商品説明（詳細）
+      setVariKindItem(fillNulls(variItems ?? []));                                            // バリエーション
+      if (idx !== -1) {
+        // バリエーションの更新対象の設定
+        setSelectIndex(idx);
+        setSelectId(variItems[idx][0]);
+
+        // サムネイルの設定
+        const row = initialMatrix[idx];
+        setFiles(row.slice(1));
       }
     }
-  }, []);
+  }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details]);
+  
+  useEffect(() => {
+    if (Array.isArray(variItems) && variItems.length > 0) {
+      const initial = variItems.map((v, i) => initialMatrix[i]);
+      setEdtImageItems(initial);
+    }
+  }, [variItems]);
 
   const [delimageItemState, setDelImageItem] = useState<string[][]>([]);
 
@@ -241,6 +262,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
             const withoutFirst = edtImageItems.slice(1);
             const addItem = [a, ...withoutFirst];
             setEdtImageItems(addItem);
+            onChangeShopImage({ edtImageItems: addItem, });
           } else {
             const addItem = [
               ...updatedMatrix.slice(0, selectIndex),
@@ -248,6 +270,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
               ...updatedMatrix.slice(selectIndex),
             ];
             setEdtImageItems(addItem);
+            onChangeShopImage({ edtImageItems: addItem, });
           }
         } else {
           const a = [selectId, ...addFiles];
@@ -260,6 +283,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
             ...withoutFirst.slice(selectIndex),
           ];
           setEdtImageItems(addItem);
+          onChangeShopImage({ edtImageItems: addItem, });
         }
       }
 
@@ -276,8 +300,22 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   }, []);
 
   const onDragEnd = (result: any) => {
-    const remove = files.splice(result.source.index, 1);
-    files.splice(result.destination.index, 0, remove[0]);
+    const newFiles = [...files];
+    const [removed] = newFiles.splice(result.source.index, 1);
+    newFiles.splice(result.destination.index, 0, removed);
+
+    setFiles(newFiles);
+
+    // edtImageItems の該当行も更新
+    const updated = edtImageItems.map((row, idx) =>
+      idx === selectIndex ? [row[0], ...newFiles] : row
+    );
+
+    setEdtImageItems(updated);
+
+    onChangeShopImage({
+      edtImageItems: updated,
+    });
   };
 
   const handleClick = (src: string, type: number, fileName: string) => {
@@ -286,16 +324,19 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
         setSelectImage(fileName);
       }
     }
-    setImageSrc(src);
-    setImageType(type);
+    setSelectImageSrc(src);
+    setSelectImageType(type);
     setClicked(true);
   };
 
   // ダイアログを閉じるときの処理
   const handleClose = () => {
+    // バリエーションが1つだけなら sales_price を更新する
+    const updatedSalesPrice = variItems.length === 1 ? Number(salesPriceInput) : preState.sales_price;
+
     onChangeShopImage({
       name: itemNameInput,
-      sales_price: Number(salesPriceInput),
+      sales_price: updatedSalesPrice,
       point: Number(point),
       explanation_details: exDetailsInput,
     });
@@ -303,9 +344,45 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     onClickCancel();
   };
 
+  // YouTubeのURLを埋め込み動画に変換
+  const toEmbedUrl = (url: string): string => {
+    // iframe タグが貼られた場合
+    const iframeMatch = url.match(/src="([^"]+)"/);
+    if (iframeMatch) {
+      return iframeMatch[1];
+    }
+
+    // すでに embed URL の場合
+    if (url.includes("youtube.com/embed/")) return url;
+
+    // watch?v= の通常 URL
+    const watchMatch = url.match(/v=([^&]+)/);
+    if (watchMatch) {
+      const videoId = watchMatch[1];
+      const listMatch = url.match(/list=([^&]+)/);
+      return listMatch
+        ? `https://www.youtube.com/embed/${videoId}?list=${listMatch[1]}`
+        : `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    // youtu.be の短縮 URL
+    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+    if (shortMatch) {
+      const videoId = shortMatch[1];
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    // どれにも当てはまらない場合はそのまま返す
+    return url;
+  };
+
+  // 商品イメージに YouTube の追加
   const addMovie = () => {
     if (movieUrl.trim() === "") return;
-    setFiles((current) => current.concat(movieUrl));
+
+    const embedUrl = toEmbedUrl(movieUrl);
+
+    setFiles((current) => current.concat(embedUrl));
     setMovieUrl("");
 
     if (Array.isArray(edtImageItems)) {
@@ -317,19 +394,20 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
         const updatedItem = [
           originalItem[0],
           ...originalItem.slice(1),
-          movieUrl,
+          embedUrl,
         ];
         const updatedMatrix = edtImageItems.map(
           (item: any, idx: number) =>
             idx === index ? updatedItem : item
         );
         setEdtImageItems(updatedMatrix);
+        onChangeShopImage({ edtImageItems: updatedMatrix, });
       } else {
-        const newItem = [selectId, movieUrl];
+        const newItem = [selectId, embedUrl];
         setEdtImageItems([...edtImageItems, newItem]);
       }
     } else {
-      const newItem = [selectId, movieUrl];
+      const newItem = [selectId, embedUrl];
       setEdtImageItems([newItem]);
     }
   };
@@ -361,9 +439,10 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
         fileItem.push(item[0], targetName.replace("/images/", ""));
         setEdtImageItems(addItem);
+        onChangeShopImage({ edtImageItems: addItem, });
         setFiles(delFile);
         setDelImageItem((prev) => [...prev, fileItem]);
-        setImageSrc("");
+        setSelectImageSrc("");
       }
     });
   };
@@ -373,15 +452,37 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     setSalesPriceInput(variKindItem[index][6]);
     setSelectId(variKindItem[index][0]);
 
-    if (Array.isArray(edtImageItems[index])) {
-      setFiles(edtImageItems[index]);
+    // ポイントの算出
+    const price = variKindItem[index][6];
+    if (price !== "")
+      setPoint(String(Math.floor(Number(price) / 100)));
+    else setPoint("0");
+
+    // プレビューの初期化
+    setSelectImageSrc("");
+    setSelectImageType(-1);
+
+    // サムネイルの差し替え
+    const variId = variKindItem[index][0];
+    const row = edtImageItems.find(r => r[0] === variId);
+    
+    if (Array.isArray(row)) {
+      const newFiles = row.slice(1).map((fileName: any) => {
+        if (fileName instanceof File) return fileName;
+        
+        if (typeof fileName === "string") {
+          if (fileName.includes("youtube.com/embed")) return fileName;
+          if (fileName.startsWith("/images/")) return fileName;
+          return `/images/${fileName}`;
+        }
+
+        return fileName;
+      });
+      
+      setFiles(newFiles);
     } else {
       setFiles([]);
     }
-
-    if (Number(variKindItem[index][6]) >= 100)
-      setPoint(String(Number(variKindItem[index][6]) / 100));
-    else setPoint("0");
   };
 
   const Image = ({ file }: Props) => {
@@ -401,7 +502,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
       } else {
         return (
           <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-            <video onClick={() => handleClick(src, 3, file.name)} muted>
+            <video onClick={() => handleClick(src, 1, file.name)} muted>
               <source src={src} type="video/mp4" />
             </video>
           </div>
@@ -421,14 +522,14 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
         } else if (isVideo) {
           return (
             <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <video style={{marginTop: '10px'}} onClick={() => handleClick(src, 3, '')}>
+              <video style={{marginTop: '10px'}} onClick={() => handleClick(src, 1, '')}>
                 <source src={src} type="video/mp4" />
               </video>
             </div>
           );
         } else {
           return (
-            <div style={{ margin: '10px', position: 'relative' }}> {/*onClick={() => handleClick(src, 2)}*/}
+            <div style={{ margin: '10px', position: 'relative' }}>
               <iframe
                 width="80px"
                 height="80px"
@@ -478,36 +579,51 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
                     onClick={() => removeFileByName(selectImageSrc)}>
               削除
             </button>
-            <div>
-              {selectImageType === -1 ? (
-                <img
-                  key={selectImageType}
-                  className="image-size"
-                  src={selectImageSrc}
-                />
-              ) : selectImageType === 2 && clicked ? (
-                <iframe
-                  key={selectImageType}
-                  className="image-size"
-                  src={selectImageSrc}
-                  title="YouTube video player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
-              ) : selectImageSrc ? (
-                <video className="image-size" controls muted>
-                  <source src={selectImageSrc} type="video/mp4" />
-                </video>
+
+            <div className="image-size">
+              {/* 画像がまだ選択されていない場合 */}
+              {!selectImageSrc ? (
+                <div className="no-image-message">
+                  画像を選択してください
+                </div>
               ) : (
-                <img className="image-size"/>
+                <>
+                  {/* 画像 */}
+                  {selectImageType === -1 && (
+                    <img
+                      key={selectImageType}
+                      className="preview-content"
+                      src={selectImageSrc}
+                    />
+                  )}
+
+                  {/* YouTube */}
+                  {selectImageType === 2 && clicked && (
+                    <iframe
+                      key={selectImageType}
+                      className="preview-content"
+                      src={selectImageSrc}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  )}
+
+                  {/* mp4 動画 */}
+                  {selectImageType === 1 && (
+                    <video className="preview-content" controls muted>
+                      <source src={selectImageSrc} type="video/mp4" />
+                    </video>
+                  )}
+                </>
               )}
             </div>
 
             <div className="image-input-erea">
               <input type="file" style={{ display: 'none' }} ref={attachRef} multiple onChange={handleInpuFileChange}/>
               <div 
-                style={{ height: '115px', width: '450px'}}
+                style={{ height: '115px', width: '550px'}}
                 tabIndex={0}
                 onDragEnter={onDragEnter}
                 onDragLeave={onDragLeave}
@@ -520,77 +636,62 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
                   <Droppable key={'droppable'} droppableId="droppable" direction="horizontal">
                     {(provided) => (
                       <div key={'scllowDiv'} className="scllowDiv" {...provided.droppableProps} ref={provided.innerRef}>
-                        {files.map((f, index) => {
-                          if (index > 0) {
-                            return (
-                              <Draggable key={String(index)} draggableId={String(index)} index={index}>
-                                {(provided) => (
-                                  <div key={index} style={{display: 'flex'}} {...provided.draggableProps} ref={provided.innerRef}>
-                                    <div key={index + index} {...provided.dragHandleProps}>
-                                      <Image file={f}/>
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
-                          );}
-                        return null;
-                      })}
+                        {files.map((f, index) => (
+                          <Draggable key={String(index)} draggableId={String(index)} index={index}>
+                            {(provided) => (
+                              <div
+                                key={index}
+                                style={{ display: "flex" }}
+                                {...provided.draggableProps}
+                                ref={provided.innerRef}
+                              >
+                                <div {...provided.dragHandleProps}>
+                                  <Image file={f} />
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
                       {provided.placeholder}
                       </div>
                     )}
                   </Droppable>
                 </DragDropContext>
-
-                <div className="a" style={{display: 'flex', padding: '0px'}}>
-                  <input value={movieUrl} onChange={(event) => setMovieUrl(event.target.value)} style={{width: '370px', backgroundColor: 'transparent'}}/>
-                  <button style={{width: '80px'}} onClick={() => addMovie()}>追加</button>
-                </div>
               </div>
             </div>
           </div>
 
           <div id="item-info">
-            <input
-              id="item-name"
-              value={itemNameInput}
-              placeholder="商品名を入力して下さい"
-              onChange={(event) => setItemNameInput(event.target.value)}
+            <ShopImageForm
+              itemNameInput={itemNameInput}
+              setItemNameInput={setItemNameInput}
+              salesPriceInput={salesPriceInput}
+              setSalesPriceInput={setSalesPriceInput}
+              point={point}
+              preState={preState}
+              exDetailsInput={exDetailsInput}
+              setExDetailsInput={setExDetailsInput}
+              inputPriceFocusOut={inputPriceFocusOut}
             />
-            <hr/>
-            <div id="price-col">
-              <label className="label-basic">￥</label>
-              <input
-                id="input-price"
-                value={salesPriceInput}
-                placeholder="金額を入力して下さい"
-                onChange={(event) => setSalesPriceInput(event.target.value)}
-                onBlur={() => inputPriceFocusOut()}
-              />
-              <label className="label-basic">（税込み）</label>
-            </div>
-            <label className="point-label">ポイント：{point}pt</label>
 
-            {/* location.state.items → preState に置き換え */}
-            {preState.type_status !== 0 && preState.type_status !== undefined && (
-              <div style={{display: 'flex', alignItems: 'baseline', padding: '0', marginTop: '5px', marginBottom: '5px' }}>
-                <a className="document_url" href={preState.document_url}>{preState.type_name}</a>
+            <div className="movie-add-wrapper" style={{ marginTop: "20px", marginLeft: "20px" }}>
+              <div className="movie-label" style={{ marginBottom: "5px", fontSize: "18px", color: "#3d3d2b" }}>
+                YouTubeリンク
               </div>
-            )}
-
-            <hr/>
-            <div id="item-detail-erea">
-              <label className="label-basic">この商品について</label>
-              <textarea
-                id="item-detail"
-                value={exDetailsInput}
-                placeholder="説明文を入力して下さい"
-                onChange={(event) => setExDetailsInput(event.target.value)}/>
+              <div className="movie-add-area" style={{ display: "flex", gap: "10px" }}>
+                <input value={movieUrl} onChange={(event) => setMovieUrl(event.target.value)}
+                  style={{ width: "450px", backgroundColor: 'transparent', border: '1px solid #c9d7e8f8', paddingLeft: '8px', paddingRight: '8px' }}
+                />
+                <button style={{ width: "80px", backgroundColor: "#c9d7e8f8", border: "1px solid #a0aec0", }} onClick={addMovie}>
+                  追加
+                </button>
+              </div>
             </div>
           </div>
 
           <div style={{ marginLeft: '60px', marginTop: '10px' }}>
             {variKindItem.map((item: any, index: number) => {
-              if (!item[1] && !item[2] && !item[3] && !item[4]) return null; // null または空文字なら表示しない
+              if (!item[1] && !item[2] && !item[3] && !item[4]) return null;
               const varis =
                 item[1] +
                 (item[2] !== '' && item[2] !== null ? ' / ' + item[2] : '') +
@@ -598,7 +699,14 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
                 (item[4] !== '' && item[4] !== null ? ' / ' + item[4] : '');
               return (
                 <div key={'vari-area-key' + index}>
-                  <button id="vari-area" onClick={() => clickVariItem(index)}>
+                  <button
+                    id="vari-area"
+                    onClick={() => clickVariItem(index)}
+                    style={{
+                      backgroundColor: index === selectIndex ? "#a6a014" : "",
+                      color: index === selectIndex ? "#ffffff" : "#c2c2c2",
+                    }}
+                  >
                     {varis}
                   </button>
                 </div>

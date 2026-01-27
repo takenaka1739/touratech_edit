@@ -24,6 +24,11 @@ export const useItemShopImage = ({ state, setState }: UseItemShopImageArgs) => {
 
   // ダイアログを閉じる
   const closeShopImageDialog = () => {
+    setState((prev: any) => ({
+      ...prev,
+      //★ preImageList: prev.edtImageItems,
+      imageList: prev.edtImageItems,
+    }));
     setIsShown(false);
   };
 

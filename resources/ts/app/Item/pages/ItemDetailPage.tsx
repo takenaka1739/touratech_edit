@@ -162,10 +162,7 @@ export const ItemDetailPage: React.FC = () => {
                 isShown={isShopImageShown}
                 onClickCancel={closeShopImageDialog}
                 onChangeShopImage={onChangeShopImage}
-                itemName={state.name}
-                itemPrice={state.sales_price}
                 preState={state}
-                exDetail={state.explanation_details}
                 preImageItem={state.preImageList}
                 imageItem={state.imageList}
                 variItems={variItems}

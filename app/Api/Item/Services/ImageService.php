@@ -19,9 +19,7 @@ class ImageService
    */
   public function store(array $data)
   {
-    \Log::info('Image store called', $data);
     DB::transaction(function () use ($data) {
-      \Log::info('Image::create start');
       Image::create([
               //'id' => $imageMaxId,
               'category_id' => null,
@@ -29,7 +27,6 @@ class ImageService
               'name' => $data['name'],
               'order_by' =>$data['order_by']
           ]);
-      \Log::info('Image::create end');
     });
   }
 
