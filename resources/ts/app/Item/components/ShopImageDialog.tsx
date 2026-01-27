@@ -53,7 +53,6 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     return variItems.map((vari) => {
       const variId = vari[0];
 
-      // このバリエーションに紐づく画像だけ抽出
       const related = preImageList
         .filter((row) => row[1] === variId)
         .sort((a, b) => {
@@ -65,13 +64,20 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
           return sa - sb;
         });
 
-      // UI 用の形式：[variId, file1, file2, ...]
       if (related.length > 0) {
-        const paths = related.map((r) => `/images/${r[2]}`);
+        const paths = related.map((r) => {
+          const fileName = r[2];
+
+          if (typeof fileName === "string" && fileName.includes("youtube.com/embed")) {
+            return fileName;
+          }
+
+          return `/images/${fileName}`;
+        });
+
         return [variId, ...paths];
       }
 
-      // 画像がない場合は ID だけ
       return [variId];
     });
   };
@@ -99,8 +105,6 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   });
   const [edtImageItems, setEdtImageItems] = useState<any[][]>(sortedMatrix);
 
-  console.log("【preImageItem（サムネイル関連）】", preImageItem);
-  console.log("【edtImageItems（サムネイル関連）】", edtImageItems);
   // ダイアログオープン時に最新の値を反映する
   useEffect(() => {
     if (isShown) {
@@ -128,6 +132,10 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
         // サムネイルの設定
         const row = initialMatrix[idx];
         setFiles(row.slice(1));
+
+        setTimeout(() => {
+          clickVariItem(idx);
+        }, 0);
       }
     }
   }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details]);
@@ -413,35 +421,32 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   };
 
   const removeFileByName = (targetName: string) => {
+    // 現在選択中のバリエーションID
+    const variId = selectId;
+
     edtImageItems.map((item: any, index: number) => {
-      let fileItem: string[] = [];
-      if (item[0] === files[0]) {
+      if (item[0] === variId) {
         let delFile = [];
 
         if (targetName.includes("blob:")) {
-          delFile = edtImageItems[index].filter(
-            (file: File) => file.name !== SelectImage
-          );
+          delFile = item.filter((file: any) => {
+            if (file instanceof File) {
+              const blobUrl = URL.createObjectURL(file);
+              return blobUrl !== targetName;
+            }
+            return true;
+          });
         } else {
-          delFile = edtImageItems[index].filter(
-            (file: string) => file !== targetName
-          );
+          delFile = item.filter((file: any) => file !== targetName);
         }
 
-        const updatedMatrix = edtImageItems.filter(
-          (_: any, idx: number) => idx !== index
+        const updatedMatrix = edtImageItems.map((row, idx) =>
+          idx === index ? delFile : row
         );
-        const addItem = [
-          ...updatedMatrix.slice(0, index),
-          delFile,
-          ...updatedMatrix.slice(index),
-        ];
 
-        fileItem.push(item[0], targetName.replace("/images/", ""));
-        setEdtImageItems(addItem);
-        onChangeShopImage({ edtImageItems: addItem, });
-        setFiles(delFile);
-        setDelImageItem((prev) => [...prev, fileItem]);
+        setEdtImageItems(updatedMatrix);
+        onChangeShopImage({ edtImageItems: updatedMatrix });
+        setFiles(delFile.slice(1));
         setSelectImageSrc("");
       }
     });
