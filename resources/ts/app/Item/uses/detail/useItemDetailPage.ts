@@ -14,6 +14,7 @@ import { useItemPrint } from './useItemPrint';                  // 印刷・ラ�
 import { useItemSave } from './useItemSave';                    // 保存
 import { useItemNavigation } from './useItemNavigation';        // ページ遷移・location.state の復元
 import { useItemSupplier } from './useItemSupplier';            // 仕入先
+import { useItemShopImage } from './useItemShopImage';          // ショップイメージ
 import { useItemRefSearch } from './useItemRefSearch';          // 他商品情報参照
 import { useItemSpecialSales } from './useItemSpecialSales';    // 特売設定
 import { useItemSalesPrice } from './useItemSalesPrice';        // 販売価格（税込）
@@ -78,6 +79,17 @@ export const useItemDetailPage = () => {
     state,
     setState,
     setErrors,
+  });
+
+  // ショップイメージ
+  const {
+    isShown: isShopImageShown,
+    openShopImageDialog,
+    closeShopImageDialog,
+    onChangeShopImage,
+  } = useItemShopImage({
+    state,
+    setState,
   });
 
   // 他商品情報参照
@@ -166,7 +178,7 @@ export const useItemDetailPage = () => {
     setErrors,
   });
 
-  // 追加：支払い方法
+  // 支払い方法
   const {
     onChangePayment,
   } = useItemPaymentMethod({
@@ -238,10 +250,18 @@ export const useItemDetailPage = () => {
     onChangeCategory,
     onDeleteCategory,
     itemClassSearchDialogProps,
+    categoryChangeFlag,
 
     // 仕入先
     openSupplierDialog,
     supplierSearchDialogProps,
+    supplierChangeFlag,
+
+    // ショップイメージ
+    isShopImageShown,
+    openShopImageDialog,
+    closeShopImageDialog,
+    onChangeShopImage,
 
     // 他商品情報参照
     openItemRefDialog,
@@ -284,7 +304,7 @@ export const useItemDetailPage = () => {
     // 販売価格（税込）
     salesPriceChange,
 
-    // 追加：支払い方法
+    // 支払い方法
     onChangePayment,
 
     // 保存

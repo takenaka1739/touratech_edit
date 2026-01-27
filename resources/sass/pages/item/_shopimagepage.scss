@@ -1,8 +1,7 @@
 @charset "utf-8";
 
 #shop-image {
-  margin-right: calc(40% - 40vw);
-  margin-left: calc(40% - 40vw);
+  margin: 0 auto;
 
   #button-area {
     display: flex;
@@ -34,13 +33,30 @@
         border: 1px solid #333;
         width: 550px;
         height: 550px;
+        position: relative;
+        overflow: hidden;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .no-image-message {
+        color: #ccc;
+        font-size: 20px;
+      }
+
+      .preview-content {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
 
       .image-input-erea {
         margin-top: 20px;
         margin-left: auto;
         margin-right: auto;
-        width: 450px;
+        width: 550px;
         height: 100px;
 
         .b {
@@ -52,25 +68,6 @@
           width: 10px;
           height: 10px;
           }
-        }
-
-        .a {
-          margin-top: 10px;
-          height: 40px;
-          width: 448px;
-          position: absolute;
-          background-color:transparent;
-          color: transparent;
-        }
-
-        .a:hover {
-          margin-top: 10px;
-          height: 40px;
-          width: 448px;
-          visibility:visible;
-          opacity: 0.5;
-          color: #000000;
-          background-color: #C9C9C9;
         }
 
         .b {
@@ -88,7 +85,7 @@
           display: flex;
           position: absolute;
           height: 115px;
-          width: 450px;
+          width: 550px;
           border: 1px solid #333;
         }
       }
@@ -108,18 +105,18 @@
       display: flex;
       /*コレ*/flex-direction: column;
       height: 100%;
-      margin-left: 40px;
-      margin-right: 20px;
-      margin-top: 20px;
-      margin-bottom: 10px;
+      margin: 20px;
 
       #item-name {
         border:1px solid #ffffffff;
         border-radius: 5px;
         width: 550px;
-        height: 70px;
-        font-size: 30px;
-        color: #c9d7e8f8;
+        font-size: 24px;
+        color: #3d3d2b;
+        margin-top: 31px;
+        margin-bottom: 5px;
+        padding-left: 10px;
+        padding-right: 10px;
       }
 
       #item-name:hover {
@@ -135,7 +132,6 @@
       hr {
         border: none;
         border-bottom: 1px solid #333;
-        margin-top: 20px;
       }
 
       label {
@@ -145,13 +141,20 @@
       #price-col {
         margin-top: 30px;
         display: flex;
-        vertical-align: middle;   //縦方向に中央寄せ
+        vertical-align: center;   //縦方向に中央寄せ
         text-align:center;        //横方向に中央寄せ
+
+        label {
+          margin-top: 5px;
+        }
 
         #input-price {
           border:1px solid #ffffffff;
           border-radius: 5px;
-          color: #c9d7e8f8;
+          color: #3d3d2b;
+          font-size: 20px;
+          padding-left: 10px;
+          padding-right: 10px;
         }
 
         #input-price:hover {
@@ -175,6 +178,8 @@
         font-size: 20px;
         text-align: left;
         background-color: #E4E8ED;
+        margin-bottom: 5px;
+        padding-left: 10px;
       }
 
       .document_url{
@@ -199,10 +204,12 @@
           font-size: 20px;
           border:1px solid #ffffffff;
           border-radius: 5px;
-          color: #c9d7e8f8;
+          color: #3d3d2b;
           margin-top: 20px;
-          width: 450px;
+          width: 550px;
           height: 300px;
+          padding-left: 10px;
+          padding-right: 10px;
         }
 
         #item-detail:hover {
@@ -222,13 +229,15 @@
       }
     }
 
-    #vari-erea {
+    #vari-area {
       padding: 5px;
       border-radius: 5px;
       margin-top: 20px;
       color: #a0aec0;
       border: 1px solid #a0aec0;
-      font-size: 30px;
+      font-size: 18px;
+      width: 240px;
+      text-align: center;
     }
 
     #vari-info {

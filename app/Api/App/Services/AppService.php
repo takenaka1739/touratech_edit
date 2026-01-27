@@ -31,12 +31,6 @@ class AppService
   {
     $rows = ConfigCurrency::orderBy('id')->get()->toArray();
 
-    // ✅ 取得できているかログ（最初の数件だけ）
-    Log::info('[AppService] getConfigCurrency', [
-      'count' => count($rows),
-      'head'  => array_slice($rows, 0, 3),
-    ]);
-
     return $rows;
   }
 
@@ -48,11 +42,6 @@ class AppService
   public function getConfigCod()
   {
     $rows = ConfigCod::orderBy('id')->get()->toArray();
-
-    Log::info('[AppService] getConfigCod', [
-      'count' => count($rows),
-      'head'  => array_slice($rows, 0, 3),
-    ]);
 
     return $rows;
   }

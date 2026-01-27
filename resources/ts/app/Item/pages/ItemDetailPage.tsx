@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageWrapper } from '@/components';
+import { ShopImageDialog } from '@/app/Item/components/ShopImageDialog';
 import { ItemRefSearchDialog } from '@/app/Item/components/ItemRefSearchDialog';
 import { SpecialSalesDialog } from '@/app/Item/components/SpecialSalesDialog';
 import { useItemDetailPage } from '@/app/Item/uses/detail/useItemDetailPage';
@@ -37,10 +38,18 @@ export const ItemDetailPage: React.FC = () => {
     addNewCategory,
     onDeleteCategory,
     itemClassSearchDialogProps,
+    categoryChangeFlag,
 
     // 仕入先
     openSupplierDialog,
     supplierSearchDialogProps,
+    supplierChangeFlag,
+
+    // ショップイメージ
+    isShopImageShown,
+    openShopImageDialog,
+    closeShopImageDialog,
+    onChangeShopImage,
 
     // 他商品情報参照
     openItemRefDialog,
@@ -54,6 +63,8 @@ export const ItemDetailPage: React.FC = () => {
     onSpecialSalesValueChange,
 
     // バリエーション
+    variItems,
+    variChangeItem,
     addNewVari,
     delButton,
     onChangeValue,
@@ -142,7 +153,27 @@ export const ItemDetailPage: React.FC = () => {
           <div>
             <hr className="border-dashed border-gray-400 mt-4 mb-4" />
             <div className="button-erea">
+
               <button onClick={useMovePage} className="btn ml-5">ショップイメージ</button>
+              <button onClick={openShopImageDialog} className="btn ml-5">
+                ショップイメージ
+              </button>
+              <ShopImageDialog
+                isShown={isShopImageShown}
+                onClickCancel={closeShopImageDialog}
+                onChangeShopImage={onChangeShopImage}
+                preState={state}
+                preImageItem={state.preImageList}
+                imageItem={state.imageList}
+                variItems={variItems}
+                preVariItem={state.variItems}
+                variChangeItem={variChangeItem}
+                backVariItems={state.backVariItems}
+                categoryChangeFlag={categoryChangeFlag}
+                supplierChangeFlag={supplierChangeFlag}
+                delimageItem={[]}
+              />
+
               <button className="btn ml-5" onClick={openItemRefDialog}>
                 他商品情報参照
               </button>
@@ -151,6 +182,7 @@ export const ItemDetailPage: React.FC = () => {
                 onChangeState={onChangeRefState}
                 {...itemRefSearchDialogProps}
               />
+
               <button className="btn ml-5" onClick={openSpecialSalesDialog}>
                 特売設定
               </button>
