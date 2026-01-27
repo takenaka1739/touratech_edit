@@ -10,8 +10,8 @@ type Props = {
 /**
  * 商品マスタの「商品説明」入力セクション。
  *
- * - 商品説明（description）
- * - 商品説明（詳細）（description_detail）
+ * - 商品説明（explanation）
+ * - 商品説明（詳細）（explanation_details）
  */
 export const ItemDescriptionSection: React.VFC<Props> = ({
   state,
@@ -22,9 +22,9 @@ export const ItemDescriptionSection: React.VFC<Props> = ({
     <>
       <Forms.FormGroupTextarea
         labelText="商品説明"
-        name="description"
-        value={state.description ?? ''}
-        error={errors?.description}
+        name="explanation"
+        value={state.explanation ?? ''}
+        error={errors?.explanation}
         className="max-w-lg"
         onChange={onChange}
         maxLength={2000}
@@ -32,9 +32,9 @@ export const ItemDescriptionSection: React.VFC<Props> = ({
 
       <Forms.FormGroupTextarea
         labelText="商品説明（詳細）"
-        name="description_detail"
-        value={state.description_detail ?? ''}
-        error={errors?.description_detail}
+        name="explanation_details"
+        value={state.explanation_details ?? ''}
+        error={errors?.explanation_details}
         className="max-w-lg"
         onChange={onChange}
         maxLength={5000}

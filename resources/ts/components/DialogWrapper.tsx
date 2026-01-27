@@ -13,6 +13,7 @@ type DialogWrapperProps = {
   title: string;
   isLoading?: boolean;
   children?: React.ReactNode;
+  width?: string;
   onClickCancel?: () => void;
 };
 
@@ -26,13 +27,19 @@ export const DialogWrapper: React.VFC<DialogWrapperProps> = ({
   title,
   isLoading,
   children,
+  width,
   onClickCancel,
 }) => {
   return (
     <CSSTransition in={isShown} classNames="fade" timeout={400}>
       <ReactModal isOpen={isShown} className="react-modal" overlayClassName="react-modal-overlay">
         <div className="dialog-body">
-          <div className="dialog-body__inner">
+          <div
+            className="dialog-body__inner"
+            style={{
+              width: width ?? 'auto',
+              maxWidth: width ?? undefined,
+            }}>
             <div className="dialog-title">
               <div>{title}</div>
               <button className="dialog-btn-cancel" onClick={onClickCancel}>
