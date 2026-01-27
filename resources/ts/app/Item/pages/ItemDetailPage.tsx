@@ -154,7 +154,6 @@ export const ItemDetailPage: React.FC = () => {
             <hr className="border-dashed border-gray-400 mt-4 mb-4" />
             <div className="button-erea">
 
-              <button onClick={useMovePage} className="btn ml-5">ショップイメージ</button>
               <button onClick={openShopImageDialog} className="btn ml-5">
                 ショップイメージ
               </button>
