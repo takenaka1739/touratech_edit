@@ -23,6 +23,14 @@ type PreviewItem = {
   sort_order: number | null;
 };
 
+// 差分比較専用の初期状態型
+type InitialItem = {
+  id: number;
+  is_published: boolean;
+  sort_order: number | null;
+  url: string;
+};
+
 export const useTopImageListPage = () => {
   const [slideItems, setSlideItems] = useState<TopImageRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +59,10 @@ export const useTopImageListPage = () => {
   const [stagedItems, setStagedItems] = useState<any[]>([]);
   const [markedForDelete, setMarkedForDelete] = useState<number[]>([]);
   const [previewItemsState, setPreviewItemsState] = useState<PreviewItem[]>([]);
-  const [initialState, setInitialState] = useState<PreviewItem[]>([]);
+
+  // 初期状態は比較専用の型で保持
+  const [initialState, setInitialState] = useState<InitialItem[]>([]);
+
   const [togglingIdx, setTogglingIdx] = useState<number | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -92,13 +103,17 @@ export const useTopImageListPage = () => {
 
     setPreviewItemsState(next);
 
-    // 件数 0 でも初期状態をセットする
+    // 初期状態のセットは「initialized が false のときだけ」
     if (!initialized) {
       setInitialState(
-        next.map((p) => ({
-          ...p,
-          url: p.localUrl,
-        }))
+        next
+          .filter((p) => p.persisted)
+          .map((p) => ({
+            id: p.id!,
+            is_published: p.is_published,
+            sort_order: p.sort_order,
+            url: p.localUrl,
+          }))
       );
       setInitialized(true);
     }
@@ -148,33 +163,47 @@ export const useTopImageListPage = () => {
     );
   };
 
+  // URL 入力変更
+  const handleUrlChange = (i: number, v: string, p: any) => {
+    setPreviewItemsState((prev) =>
+      prev.map((item, idx2) =>
+        idx2 === i ? { ...item, localUrl: v } : item
+      )
+    );
+
+    if (!p.persisted) {
+      setStagedItems((prev) =>
+        prev.map((s) =>
+          s.image_id === p.image_id ? { ...s, url: v } : s
+        )
+      );
+    }
+  };
+
   // 差分検知
   const isDirty = useMemo(() => {
     if (!initialized) return false;
 
-    if (stagedItems.length > 0) return true;
-    if (markedForDelete.length > 0) return true;
-
-    const currentPersisted = previewItemsState.filter(
+    const current = previewItemsState.filter(
       (p) => p.persisted && !p.markedForDelete
     );
 
-    const initialPersisted = initialState.filter((p) => p.persisted);
+    if (current.length !== initialState.length) return true;
 
-    if (currentPersisted.length !== initialPersisted.length) return true;
-
-    const sortedCurrent = [...currentPersisted].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-    const sortedInitial = [...initialPersisted].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+    const sortedCurrent = [...current].sort((a, b) => a.id! - b.id!);
+    const sortedInitial = [...initialState].sort((a, b) => a.id - b.id);
 
     for (let i = 0; i < sortedInitial.length; i++) {
       const cur = sortedCurrent[i];
       const ini = sortedInitial[i];
 
-      if (!cur || !ini) return true;
       if (cur.localUrl !== ini.url) return true;
       if (cur.is_published !== ini.is_published) return true;
       if (cur.sort_order !== ini.sort_order) return true;
     }
+
+    if (stagedItems.length > 0) return true;
+    if (markedForDelete.length > 0) return true;
 
     return false;
   }, [initialized, initialState, previewItemsState, stagedItems, markedForDelete]);
@@ -197,6 +226,9 @@ export const useTopImageListPage = () => {
 
       await axios.post('/api/TopImage/sync', { items });
       await fetchSlideItems();
+
+      // 保存後に初期化モードへ戻す
+      setInitialized(false);
 
       setStagedItems([]);
       setMarkedForDelete([]);
@@ -238,6 +270,7 @@ export const useTopImageListPage = () => {
     removeAt,
     toggleMarkDelete,
     togglePreviewEnabled,
+    handleUrlChange,
     handleSave,
 
     sliderSettings,

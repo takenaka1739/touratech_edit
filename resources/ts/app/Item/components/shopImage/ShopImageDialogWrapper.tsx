@@ -21,15 +21,15 @@ export const ShopImageDialogWrapper: React.VFC<DialogWrapperProps> = ({
 }) => {
   return (
     <ReactModal
-      isOpen={true} // ★ 常にマウント（state を保持するため）
+      isOpen={true}
       className="react-modal"
       overlayClassName="react-modal-overlay fade"
     >
       <CSSTransition
         in={isShown}
-        timeout={0}          // ★ アニメーションなし（他のダイアログと同じ）
+        timeout={0}
         classNames="fade"
-        unmountOnExit={false} // ★ アンマウントしない
+        unmountOnExit={false}
       >
         <div className="dialog-body">
           <div
