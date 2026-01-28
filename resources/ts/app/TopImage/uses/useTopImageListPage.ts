@@ -66,11 +66,14 @@ export const useTopImageListPage = () => {
   const [togglingIdx, setTogglingIdx] = useState<number | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // プレビュー再構築
+  // previewItemsState を構築する useEffect
   useEffect(() => {
     const next: PreviewItem[] = (() => {
       const existing: PreviewItem[] = slideItems.map((it) => {
-        const prev = previewItemsState.find((p) => p.image_id === it.image_id);
+        const prev = initialized
+          ? previewItemsState.find((p) => p.image_id === it.image_id)
+          : null;
+
         return {
           id: it.id,
           image_id: it.image_id,
@@ -85,7 +88,10 @@ export const useTopImageListPage = () => {
       });
 
       const staged: PreviewItem[] = stagedItems.map((s) => {
-        const prev = previewItemsState.find((p) => p.image_id === s.image_id);
+        const prev = initialized
+          ? previewItemsState.find((p) => p.image_id === s.image_id)
+          : null;
+
         return {
           image_id: s.image_id,
           src: s.img_url,
@@ -103,10 +109,13 @@ export const useTopImageListPage = () => {
 
     setPreviewItemsState(next);
 
-    // 初期状態のセットは「initialized が false のときだけ」
-    if (!initialized) {
+  }, [slideItems, stagedItems, markedForDelete]);
+
+  // previewItemsState が更新された後に初期状態をセットする useEffect
+  useEffect(() => {
+    if (!initialized && previewItemsState.length > 0) {
       setInitialState(
-        next
+        previewItemsState
           .filter((p) => p.persisted)
           .map((p) => ({
             id: p.id!,
@@ -117,8 +126,7 @@ export const useTopImageListPage = () => {
       );
       setInitialized(true);
     }
-
-  }, [slideItems, stagedItems, markedForDelete]);
+  }, [initialized, previewItemsState]);
 
   // 並び替え
   const move = (from: number, to: number) => {

@@ -168,8 +168,20 @@ const TopImageListPage: React.FC = () => {
 
                       {/* 操作ボタン */}
                       <div className="mt-2 flex gap-2">
-                        <button className="btn btn-sm" onClick={() => move(i, i - 1)}>↑</button>
-                        <button className="btn btn-sm" onClick={() => move(i, i + 1)}>↓</button>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => move(i, i - 1)}
+                          disabled={i === 0}
+                        >
+                          ＜
+                        </button>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => move(i, i + 1)}
+                          disabled={i === previewItemsState.length - 1}
+                        >
+                          ＞
+                        </button>
 
                         {isNew ? (
                           <button className="btn btn-danger btn-sm" onClick={() => removeAt(i)}>
