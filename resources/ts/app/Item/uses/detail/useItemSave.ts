@@ -23,39 +23,42 @@ export const useItemSave = ({
   // ==============================================================
   // 商品画像・動画・YouTubeリンクの配列を生成
   // ==============================================================
-  const buildImageInfo = (
-    imageList: (File | string)[][],
-    variItems: any[]
-  ): string[][] => {
+const buildImageInfo = (
+  imageList: (File | string | Record<string, any>)[][],
+  variItems: any[]
+): string[][] => {
 
-    return variItems.map((v, index) => {
-      const variId = String(v[0]); // ← item_id（絶対に必要）
+  // imageList を variId → row の辞書に変換
+  const map: Record<string, (File | string | Record<string, any>)[]> = {};
 
-      // imageList[index] が存在しない場合は空配列扱い
-      const row = imageList[index] ?? [];
+  for (const row of imageList) {
+    const variId = String(row[0]);
+    map[variId] = row;
+  }
 
-      // row の中から「画像・動画・URL だけ」を抽出
-      const files = row.filter(item => {
-        if (item instanceof File) return true;
-        if (typeof item === 'string' && item.trim() !== '') {
-          // item_id が紛れ込んでいるケースを除外
-          if (/^\d+$/.test(item)) return false;
-          return true;
-        }
-        return false;
-      });
+  // variItems の順番に従って imageList を再構築
+  return variItems.map(v => {
+    const variId = String(v[0]);
+    const row = map[variId] ?? [variId];
 
-      // File → file.name に変換
-      const fileNames = files.map(file => {
-        if (file instanceof File) {
-          return file.name;
-        }
-        return file; // string の場合はそのまま
-      });
-
-      return [variId, ...fileNames];
+    // row.slice(1) の型を string | File のみに絞る
+    const files = row.slice(1).filter((item): item is File | string => {
+      if (item instanceof File) return true;
+      if (typeof item === 'string' && item.trim() !== '') {
+        if (/^\d+$/.test(item)) return false;
+        return true;
+      }
+      return false;
     });
-  };
+
+    const fileNames = files.map(file =>
+      file instanceof File ? file.name : file
+    );
+
+    return [variId, ...fileNames];
+  });
+};
+
 
   // ==============================================================
   // ファイルアップロード
@@ -183,7 +186,6 @@ export const useItemSave = ({
         variItems: filledVariItems,
       };
 
-      console.log('=== PAYLOAD SENT TO BACKEND ===', JSON.stringify(payload, null, 2));
       // API 呼び出し
       const success = await requestItem({ mode, payload });
 

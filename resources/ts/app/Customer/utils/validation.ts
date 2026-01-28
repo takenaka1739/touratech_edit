@@ -36,9 +36,6 @@ export const validateItemState = (state: Customer): Record<string, string> => {
     errors.email_main = 'EMAIL(MAIN)を入力してください';
   }
 
-  console.log('typeof(state.cutoff_date)');
-  console.log(typeof(state.cutoff_date));
-
   if (state.cutoff_date == null || String(state.cutoff_date) === ''){
     errors.cutoff_date = '締日を入力してください';
   }

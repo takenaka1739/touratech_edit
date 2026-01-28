@@ -104,17 +104,20 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     return row ?? [v[0]];
   });
   const [edtImageItems, setEdtImageItems] = useState<any[][]>(sortedMatrix);
+  const [isImageEdited, setIsImageEdited] = useState(false);
   
   // ダイアログオープン時に最新の値を反映する
   useEffect(() => {
     if (!isShown) return;
-
+    if (variItems.length === 0) return;
+    if (initialMatrix.length === 0) return;
+    
     const idx = variItems.findIndex(v => v[0] === preState.id);
+
     const isVariationEnabled =
       (variItems.length > 1) ||
       (variItems.length === 1 && variItems[0][1] !== "" && variItems[0][1] !== null);
 
-    // 販売価格の初期値
     let initialPrice: number | null = null;
     if (isVariationEnabled && idx !== -1) {
       initialPrice = Number(variItems[idx][6]);
@@ -132,8 +135,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     setSelectIndex(idx);
     setSelectId(idx !== -1 ? variItems[idx][0] : null);
 
-    // サムネイル初期化（clickVariItem はまだ呼ばない）
-    if (idx !== -1) {
+    if (idx !== -1 && initialMatrix[idx]) {
       const row = initialMatrix[idx];
       setFiles(row.slice(1));
     }
@@ -141,20 +143,10 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
   useEffect(() => {
     if (!isShown) return;
-    if (variKindItem.length === 0) return;
 
-    // selectIndex が有効なら clickVariItem を呼ぶ
-    if (selectIndex !== null && selectIndex !== -1) {
-      clickVariItem(selectIndex);
-    }
-  }, [isShown, variKindItem]);
-
-  useEffect(() => {
-    if (Array.isArray(variItems) && variItems.length > 0) {
-      const initial = variItems.map((v, i) => initialMatrix[i]);
-      setEdtImageItems(initial);
-    }
-  }, [variItems]);
+    const initial = variItems.map((v, i) => initialMatrix[i]);
+    setEdtImageItems(initial);
+  }, [isShown]);
 
   const [delimageItemState, setDelImageItem] = useState<string[][]>([]);
 
@@ -232,6 +224,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     const newFiles = Array.from(e.target.files);
     setFiles((current) => current.concat(newFiles));
     if (attachRef.current) attachRef.current.value = "";
+    setIsImageEdited(true);
   }, []);
 
   const onDragEnter = useCallback((e: any) => {
@@ -305,6 +298,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
       }
 
       setDropErea("");
+      setIsImageEdited(true);
     },
     [edtImageItems, selectId]
   );
@@ -333,6 +327,8 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     onChangeShopImage({
       edtImageItems: updated,
     });
+
+    setIsImageEdited(true);
   };
 
   const handleClick = (src: string, type: number, fileName: string) => {
@@ -356,6 +352,8 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
       sales_price: updatedSalesPrice,
       point: Number(point),
       explanation_details: exDetailsInput,
+      isImageEdited,
+      edtImageItems,
     });
 
     onClickCancel();
@@ -427,6 +425,8 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
       const newItem = [selectId, embedUrl];
       setEdtImageItems([newItem]);
     }
+
+    setIsImageEdited(true);
   };
 
   const removeFileByName = (targetName: string) => {
@@ -457,12 +457,12 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
         onChangeShopImage({ edtImageItems: updatedMatrix });
         setFiles(delFile.slice(1));
         setSelectImageSrc("");
+        setIsImageEdited(true);
       }
     });
   };
 
   const clickVariItem = (index: number) => {
-    console.log("【clickVariItem 呼び出し】 index:", index, "variKindItem:", variKindItem);
 
     setSelectIndex(index);
     setSalesPriceInput(variKindItem[index][6]);
@@ -503,80 +503,153 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
   const Image = ({ file }: Props) => {
     const fileType = typeof file;
-    // File/Blob 判定
     const isBlobLike = file instanceof Blob;
+
+    // Blob（アップロードファイル）の場合
     if (fileType === 'object' && isBlobLike && typeof file !== 'string') {
       const isVideo = typeof file.type === 'string' && file.type.indexOf('video') !== -1;
       const src = useMemo(() => URL.createObjectURL(file), [file]);
-    
+
+      // 画像
       if (!isVideo) {
         return (
           <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <img key={src} src={src} onClick={() => handleClick(src, -1, file.name)} alt={file.name} />
           </div>
         );
-      } else {
+      }
+
+      // 動画
+      return (
+        <div
+          style={{
+            height: '80px',
+            width: '80px',
+            margin: '10px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            position: 'relative'
+          }}
+        >
+          {/* クリック検知用オーバーレイ（動画の上に透明で重ねる） */}
+          <div
+            onClick={() => handleClick(src, 1, file.name)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+              zIndex: 2
+            }}
+          />
+
+          {/* 動画本体（pointerEvents: none を付ける） */}
+          <video
+            muted
+            style={{
+              pointerEvents: 'none',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          >
+            <source src={src} type="video/mp4" />
+          </video>
+        </div>
+      );
+    }
+
+    // 文字列パス（/images/... や YouTube）
+    const src = String(file);
+    const isImage = ['jpg', 'gif', 'png'].some(ext => src.includes(ext));
+    const isVideo = ['mp4', 'mov'].some(ext => src.includes(ext));
+
+    if (src !== '') {
+      // 画像
+      if (isImage) {
         return (
-          <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-            <video onClick={() => handleClick(src, 1, file.name)} muted>
+          <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <img key={src} src={src} onClick={() => handleClick(src, -1, '')} />
+          </div>
+        );
+      }
+
+      // 動画
+      if (isVideo) {
+        return (
+          <div
+            style={{
+              height: '80px',
+              width: '80px',
+              margin: '10px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              position: 'relative'
+            }}
+          >
+            {/* クリック検知用オーバーレイ */}
+            <div
+              onClick={() => handleClick(src, 1, '')}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+            />
+
+            {/* 動画本体 */}
+            <video
+              muted
+              style={{
+                pointerEvents: 'none',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            >
               <source src={src} type="video/mp4" />
             </video>
           </div>
         );
       }
-    } else {
-      const src = String(file);
-      const isImage = ['jpg', 'gif', 'png'].some(ext => src.includes(ext));
-      const isVideo = ['mp4', 'mov'].some(ext => src.includes(ext));
-      if(src !== ''){
-        if (isImage) {
-          return (
-            <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <img key={src} src={src} onClick={() => handleClick(src, -1, '')} />
-            </div>
-          );
-        } else if (isVideo) {
-          return (
-            <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <video style={{marginTop: '10px'}} onClick={() => handleClick(src, 1, '')}>
-                <source src={src} type="video/mp4" />
-              </video>
-            </div>
-          );
-        } else {
-          return (
-            <div style={{ margin: '10px', position: 'relative' }}>
-              <iframe
-                width="80px"
-                height="80px"
-                src={src}
-                style={{ pointerEvents: 'none' }}
-                title="YouTube video player"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-              {/* クリック検知用オーバーレイ */}
-              {(
-                <div
-                  //onClick={() => youtubeClick(src, 2)}
-                  onClick={() => handleClick(src, 2, '')}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    cursor: 'pointer',
-                    zIndex: 10,
-                  }}
-                />
-              )}
-            </div>
-          );
-        }
-      }
+
+      // YouTube
+      return (
+        <div style={{ margin: '10px', position: 'relative' }}>
+          <iframe
+            width="80px"
+            height="80px"
+            src={src}
+            style={{ pointerEvents: 'none' }}
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+          <div
+            onClick={() => handleClick(src, 2, '')}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+          />
+        </div>
+      );
     }
+
     return null;
   };
 

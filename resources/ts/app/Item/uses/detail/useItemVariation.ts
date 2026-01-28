@@ -234,16 +234,17 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
     setvariClickFlag(true);
 
     let variArr = [null, null, null, null, null, '', ''];
-    let imgArr = [''];
+    let imgArr = ['', {}];
 
     for (let i = selectIndex; i <= 4; i++) variArr[i] = '';
 
     const baseVariItems = Array.isArray(state.variItems) ? state.variItems : [];
-    const newCount =
-      baseVariItems.filter((value: any) => typeof value[0] === 'string' && value[0].includes('new')).length + 1;
+    const newCount = baseVariItems.filter((value: any) => typeof value[0] === 'string' && value[0].includes('new')).length + 1;
 
-    variArr[0] = 'new' + newCount;
-    imgArr[0] = 'new' + newCount;
+    const newId = 'new' + newCount;
+    variArr[0] = newId;
+    imgArr[0] = newId;
+    const backArr = [newId, null, null, null, null, '', ''];
 
     const items = Array.isArray(state.variItems) ? state.variItems : [];
     let insertIndex = selectRow + 1;
@@ -254,74 +255,115 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
       insertIndex++;
     }
 
-    setState((prev: any) => ({
-      ...prev,
-      variItems: [
-        ...prev.variItems.slice(0, insertIndex),
-        variArr,
-        ...prev.variItems.slice(insertIndex),
-      ],
-      backVariItems: [
-        ...prev.backVariItems.slice(0, insertIndex),
-        variArr,
-        ...prev.backVariItems.slice(insertIndex),
-      ],
-      imageList: [
-        ...prev.imageList.slice(0, insertIndex),
-        imgArr,
-        ...prev.imageList.slice(insertIndex),
-      ],
-    }));
+    setState((prev: any) => {
+      const prevVariItems = Array.isArray(prev.variItems) ? prev.variItems : [];
+      const prevBackVariItems = Array.isArray(prev.backVariItems) ? prev.backVariItems : prevVariItems;
+      const prevImageList = Array.isArray(prev.imageList)
+        ? prev.imageList
+        : prevVariItems.map(() => ['']);
+
+      return {
+        ...prev,
+        variItems: [
+          ...prevVariItems.slice(0, insertIndex),
+          variArr,
+          ...prevVariItems.slice(insertIndex),
+        ],
+        backVariItems: [
+          ...prevBackVariItems.slice(0, insertIndex),
+          backArr,
+          ...prevBackVariItems.slice(insertIndex),
+        ],
+        imageList: [
+          ...prevImageList.slice(0, insertIndex),
+          imgArr,
+          ...prevImageList.slice(insertIndex),
+        ],
+      };
+    });
   };
 
   // ==============================================================
   // バリエーション削除
   // ==============================================================
-  const delButton = (selectIndex: number) => {
+  const delButton = (deleteIndex: number) => {
     setvariClickFlag(true);
 
-    if (selectIndex === -1) {
+    if (deleteIndex === -1) {
       onClickDelete();
       return;
     }
 
     setState((prev: any) => {
-      const newItems = [...prev.variItems];
-      const parent = newItems[selectIndex];
+      const prevVariItems = Array.isArray(prev.variItems) ? prev.variItems : [];
+      const prevBackVariItems = Array.isArray(prev.backVariItems) ? prev.backVariItems : prevVariItems;
+      const prevImageList = Array.isArray(prev.imageList)
+        ? prev.imageList
+        : prevVariItems.map(() => ['']);
 
-      // 行削除
-      newItems.splice(selectIndex, 1);
+      // 削除対象の variId
+      const deleteVariId = prevVariItems[deleteIndex][0];
 
-      // 削除後の行が存在する場合、継承処理を行う
-      if (newItems[selectIndex]) {
-        const child = [...newItems[selectIndex]];
+      // 削除処理
+      const newVariItems = [...prevVariItems];
+      const parent = newVariItems[deleteIndex];
+      newVariItems.splice(deleteIndex, 1);
 
-        // col=1〜4 の null を親の値で埋める
+      // 継承処理
+      if (newVariItems[deleteIndex]) {
+        const child = [...newVariItems[deleteIndex]];
         for (let col = 1; col <= 4; col++) {
           if (child[col] === null && parent[col] !== null) {
             child[col] = parent[col];
           }
         }
-
-        newItems[selectIndex] = child;
+        newVariItems[deleteIndex] = child;
       }
+
+      // selectIndex 補正
+      let newIndex = prev.selectIndex;
+
+      if (deleteIndex === prev.selectIndex) {
+        newIndex = Math.max(0, deleteIndex - 1);
+      } else if (deleteIndex < prev.selectIndex) {
+        newIndex = prev.selectIndex - 1;
+      }
+
+      const newSelectId = newVariItems[newIndex]?.[0] ?? null;
+
+      // state.id の補正
+      const newStateId =
+        prev.id === deleteVariId
+          ? newVariItems[0]?.[0] ?? null
+          : prev.id;
 
       return {
         ...prev,
-        variItems: newItems,
-        imageList: prev.imageList.filter((_: any, index: number) => index !== selectIndex),
+
+        id: newStateId,
+
+        variItems: newVariItems,
+
+        backVariItems: prevBackVariItems.filter((row: any[]) => row[0] !== deleteVariId),
+        imageList: prevImageList.filter((row: any[]) => row[0] !== deleteVariId),
+        codeList: prev.codeList?.filter((row: any) => row.id !== deleteVariId),
+        categoryListAll: prev.categoryListAll?.filter((obj: any) => !obj[deleteVariId]),
+        combIdList: prev.combIdList?.filter((row: any) => row.item_id !== deleteVariId),
+
+        selectIndex: newIndex,
+        selectId: newSelectId,
       };
     });
 
-    // 削除行を削除リストに追加
-    const target = String(state.variItems?.[selectIndex]);
+    // 削除リストへの追加
+    const target = String(state.variItems?.[deleteIndex]);
     if (typeof target === 'string' && !target.includes('new')) {
-      setVariDelItem([...variDelItem, state.variItems[selectIndex]]);
+      setVariDelItem([...variDelItem, state.variItems[deleteIndex]]);
     }
 
     // 変更リストから削除行を除外
     const updatedItems = variChangeItem.filter(
-      item => item[0] !== variItems[selectIndex][0]
+      (item: any[]) => item[0] !== variItems[deleteIndex][0]
     );
     setVariChangeItem(updatedItems);
   };
