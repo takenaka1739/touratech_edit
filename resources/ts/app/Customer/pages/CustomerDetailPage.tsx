@@ -76,8 +76,6 @@ export const CustomerDetailPage: React.VFC<CustomerDetailPageProps> = ({}) => {
     }
   }
 
-  console.log(state);
-
   return (
     <PageWrapper
       prefix={`${slug}-detail`}
