@@ -1,8 +1,7 @@
 // 更新: resources/ts/app/PickupRanking/components/ItemSelectModal.tsx
 // 変更点:
-// - MultipleSelectModal を廃止
-// - 画像のように「選択」リンクで 1 件のみ選択するモーダルに変更
-// - 単価/国内国外在庫は表示しない（品番・商品名のみ）
+// - モーダルが画面からはみ出ないように高さ制御
+// - 一覧（table部分）だけスクロールし、Pager は常に見えるようにした
 
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
@@ -146,11 +145,15 @@ export const ItemSelectModal: React.VFC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded shadow-lg w-11/12 max-w-5xl mt-10"
+        className="bg-white rounded shadow-lg w-11/12 max-w-5xl mt-10 flex flex-col"
+        style={{
+          // 画面からはみ出さない（上の余白分を考慮）
+          maxHeight: 'calc(100vh - 80px)',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 border-b flex items-center">
+        <div className="p-4 border-b flex items-center flex-none">
           <div className="font-bold">商品検索</div>
           <button className="btn ml-auto" type="button" onClick={onClose}>
             ×
@@ -158,7 +161,7 @@ export const ItemSelectModal: React.VFC<Props> = ({
         </div>
 
         {/* Search Area */}
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex-none">
           <div className="flex items-end">
             <div className="flex-grow">
               <div className="form-group py-2">
@@ -194,52 +197,61 @@ export const ItemSelectModal: React.VFC<Props> = ({
           {error && <div className="bg-red-200 py-2 px-4 text-sm mt-2">{error}</div>}
         </div>
 
-        {/* List */}
-        <div className="p-4">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>品番・商品名</th>
-                <th className="w-24">選択</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 && (
+        {/* List + Pager */}
+        <div className="p-4 flex flex-col min-h-0">
+          {/* ★テーブル部分だけスクロール */}
+          <div
+            className="min-h-0 overflow-y-auto border"
+            style={{
+              // searchエリアやpager分を差し引いて、一覧が伸びすぎないようにする
+              maxHeight: '60vh',
+            }}
+          >
+            <table className="table w-full">
+              <thead>
                 <tr>
-                  <td colSpan={2} className="text-center py-6 text-sm text-gray-500">
-                    該当データがありません。
-                  </td>
+                  <th>品番・商品名</th>
+                  <th className="w-24">選択</th>
                 </tr>
-              )}
-
-              {rows.map(r => {
-                const n = r.item_number ?? r.code ?? '';
-                const name = r.name ?? '';
-                const selected = selectedItemId !== null && Number(selectedItemId) === Number(r.id);
-
-                return (
-                  <tr key={r.id} className={selected ? 'bg-yellow-50' : ''}>
-                    <td>
-                      <div className="text-xs text-gray-600">{n}</div>
-                      <div>{name}</div>
-                    </td>
-                    <td className="col-btn">
-                      <button
-                        type="button"
-                        className="underline text-blue-600"
-                        onClick={() => handlePick(Number(r.id))}
-                      >
-                        選択
-                      </button>
+              </thead>
+              <tbody>
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="text-center py-6 text-sm text-gray-500">
+                      該当データがありません。
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                )}
 
-          {/* Pager */}
-          <div className="flex items-center mt-3">
+                {rows.map(r => {
+                  const n = r.item_number ?? r.code ?? '';
+                  const name = r.name ?? '';
+                  const selected = selectedItemId !== null && Number(selectedItemId) === Number(r.id);
+
+                  return (
+                    <tr key={r.id} className={selected ? 'bg-yellow-50' : ''}>
+                      <td>
+                        <div className="text-xs text-gray-600">{n}</div>
+                        <div>{name}</div>
+                      </td>
+                      <td className="col-btn">
+                        <button
+                          type="button"
+                          className="underline text-blue-600"
+                          onClick={() => handlePick(Number(r.id))}
+                        >
+                          選択
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pager（常に見える） */}
+          <div className="flex items-center mt-3 flex-none">
             <div className="flex items-center">
               <button className="btn px-2 py-1" type="button" onClick={() => goPage(1)} disabled={cur <= 1 || loading}>
                 «
