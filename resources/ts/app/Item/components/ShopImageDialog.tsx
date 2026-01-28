@@ -49,38 +49,46 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   };
 
   // 画像・動画一覧をUI表示用の形式に変換
-  const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) => {
-    return variItems.map((vari) => {
-      const variId = vari[0];
+const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) => {
+  return variItems.map((vari) => {
+    const variId = vari[0];
 
-      const related = preImageList
-        .filter((row) => row[1] === variId)
-        .sort((a, b) => {
-          const sa = a[3];
-          const sb = b[3];
-          if (sa == null && sb == null) return 0;
-          if (sa == null) return 1;
-          if (sb == null) return -1;
-          return sa - sb;
-        });
+    const related = preImageList
+      .filter((row) => row[1] === variId)
+      .sort((a, b) => {
+        const sa = a[3];
+        const sb = b[3];
+        if (sa == null && sb == null) return 0;
+        if (sa == null) return 1;
+        if (sb == null) return -1;
+        return sa - sb;
+      });
 
-      if (related.length > 0) {
-        const paths = related.map((r) => {
-          const fileName = r[2];
+    if (related.length > 0) {
+      const paths = related.map((r) => {
+        const fileName = r[2];
 
-          if (typeof fileName === "string" && fileName.includes("youtube.com/embed")) {
-            return fileName;
-          }
+        // YouTube はそのまま
+        if (typeof fileName === "string" && fileName.includes("youtube.com/embed")) {
+          return fileName;
+        }
 
-          return `/images/${fileName}`;
-        });
+        // File はそのまま返す（URL に変換しない）
+        if (fileName instanceof File) {
+          return fileName;
+        }
 
-        return [variId, ...paths];
-      }
+        // 通常のファイル名
+        return `/images/${fileName}`;
+      });
 
-      return [variId];
-    });
-  };
+      return [variId, ...paths];
+    }
+
+    return [variId];
+  });
+};
+
 
   const attachRef = useRef<HTMLInputElement>(null);
   const [itemNameInput, setItemNameInput] = useState("");         // 商品名
@@ -112,6 +120,10 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     if (variItems.length === 0) return;
     if (initialMatrix.length === 0) return;
     
+    console.log("=== 画像初期化開始 ===");
+    console.log("variItems:", JSON.parse(JSON.stringify(variItems)));
+    console.log("initialMatrix:", JSON.parse(JSON.stringify(initialMatrix)));
+
     const idx = variItems.findIndex(v => v[0] === preState.id);
 
     const isVariationEnabled =
@@ -145,6 +157,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     if (!isShown) return;
 
     const initial = variItems.map((v, i) => initialMatrix[i]);
+    console.log("edtImageItems 初期化:", initial);
     setEdtImageItems(initial);
   }, [isShown]);
 

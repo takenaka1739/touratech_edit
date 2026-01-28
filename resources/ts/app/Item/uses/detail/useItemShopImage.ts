@@ -5,6 +5,40 @@ type UseItemShopImageArgs = {
   setState: React.Dispatch<React.SetStateAction<any>>;
 };
 
+// ShopImageDialog が扱う edtImageItems → preImageList への変換
+const convertToPreImageList = (edtImageItems: any[][]) => {
+  const result: any[] = [];
+
+  edtImageItems.forEach(row => {
+    const variId = row[0];
+    const paths = row.slice(1);
+
+    paths.forEach((path, index) => {
+      // YouTube はそのまま
+      if (typeof path === "string" && path.includes("youtube.com/embed")) {
+        result.push([null, variId, path, index]);
+        return;
+      }
+
+      // File はそのまま preImageList に入れる
+      if (path instanceof File) {
+        result.push([null, variId, path, index]);
+        return;
+      }
+
+      // /images/xxx.png → xxx.png
+      let fileName = path;
+      if (typeof path === "string" && path.startsWith("/images/")) {
+        fileName = path.replace("/images/", "");
+      }
+
+      result.push([null, variId, fileName, index]);
+    });
+  });
+
+  return result;
+};
+
 /**
  * 商品マスタの「ショップイメージ」用フックス。
  *
@@ -39,6 +73,7 @@ export const useItemShopImage = ({ state, setState }: UseItemShopImageArgs) => {
     setState((prev: any) => ({
       ...prev,
       ...updated,
+      preImageList: convertToPreImageList(updated.edtImageItems),
     }));
   };
 
