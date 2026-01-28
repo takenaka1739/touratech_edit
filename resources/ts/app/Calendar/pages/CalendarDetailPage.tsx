@@ -277,7 +277,7 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
             />
           </div>
         </div>
-        <div style={{ display: 'flex', marginLeft: '45px', marginTop: '15px' }}>
+        <div style={{ display: 'flex', marginLeft: '31px', marginTop: '15px' }}>
           <p style={{ fontSize: '13px', color: '#4a5568'}}>文字色を選択</p>
           <span style={{alignSelf: 'flex-start', backgroundColor: '#c53030', marginTop: '3px', border: '1px solid #c53030', color: '#fff', 
                         marginLeft: '0.5rem', fontSize: '0.75rem', borderRadius: '0.125rem', paddingLeft: '0.25rem', paddingRight: '0.25rem'}}>
@@ -287,10 +287,10 @@ export const CalendarDetailPage: React.VFC<CalendarDetailPageProps> = () => {
             type="color"
             value={state.font_color == '' ? state.font_color = '#000000' : state.font_color}
             onChange={(e) => changeColor(1, e.target.value)}
-            style={{ marginLeft: '10px' }}
+            style={{ marginLeft: '9px' }}
           />
         </div>
-        <div style={{ display: 'flex', marginLeft: '45px', marginTop: '15px' }}>
+        <div style={{ display: 'flex', marginLeft: '31px', marginTop: '10px' }}>
           <p style={{ fontSize: '13px', color: '#4a5568'}}>背景色を選択</p>
           <span style={{alignSelf: 'flex-start', backgroundColor: '#c53030', marginTop: '3px', border: '1px solid #c53030', color: '#fff', 
                         marginLeft: '0.5rem', fontSize: '0.75rem', borderRadius: '0.125rem', paddingLeft: '0.25rem', paddingRight: '0.25rem'}}>
