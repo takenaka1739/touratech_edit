@@ -36,10 +36,7 @@ export const DialogWrapper: React.VFC<DialogWrapperProps> = ({
         <div className="dialog-body">
           <div
             className="dialog-body__inner"
-            style={{
-              width: width ?? 'auto',
-              maxWidth: width ?? undefined,
-            }}>
+            style={width ? { width, maxWidth: width } : undefined}>
             <div className="dialog-title">
               <div>{title}</div>
               <button className="dialog-btn-cancel" onClick={onClickCancel}>

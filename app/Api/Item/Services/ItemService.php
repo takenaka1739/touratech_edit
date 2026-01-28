@@ -585,7 +585,7 @@ foreach ($idList as $id) {
    */
   public function getIdFromItemNumber(string $code)
   {
-    $item = Item::where('code', $code)->first();
+    $item = Item::where('item_number', $code)->first();
     return $item ? $item->id : null;
   }
 
