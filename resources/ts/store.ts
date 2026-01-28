@@ -58,6 +58,10 @@ import {
   CouponListPageState,
   CouponListPageReducer,
 } from '@/app/Coupon/modules/couponListPageModule';
+import {
+  PickupRankingListPageState,
+  PickupRankingListPageReducer,
+} from '@/app/PickupRanking/modules/pickupRankingListPageModule';
 
 
 export const useAppDispatch: () => typeof store.dispatch = useDispatch;
@@ -82,6 +86,7 @@ export type RootState = {
   invoiceListPage: InvoiceListPageState;
   receiptListPage: ReceiptListPageState;
   couponListPage: CouponListPageState;
+  pickupRankingListPage: PickupRankingListPageState;
 };
 
 const store = createStore(
@@ -104,6 +109,7 @@ const store = createStore(
     invoiceListPage: InvoiceListPageReducer,
     receiptListPage: ReceiptListPageReducer,
     couponListPage: CouponListPageReducer,
+    pickupRankingListPage: PickupRankingListPageReducer,
   }),
   storeEnhancers(applyMiddleware(thunk))
 );

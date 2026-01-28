@@ -889,6 +889,180 @@ div[aria-disabled=true]::after {
   text-decoration: none;
 }
 
+/* ============================
+   商品マスタ共通UI
+   ============================ */
+/* 既存：影響範囲が不明なためグローバルのまま */
+.category-plus-button {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  color: #a0aec0;
+  background-color: #FFFFFF;
+  text-align: center;
+  height: 25px;
+  width: 25px;
+  margin-top: 5px;
+  border: 1px solid #a0aec0;
+  border-radius: 50%;
+}
+
+.dele-button {
+  border: 1px solid #a0aec0;
+  color: #a0aec0;
+  padding: 1px;
+}
+
+label {
+  font-size: 12px;
+  margin-right: 2px;
+  color: #4a5568;
+  text-align: right;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.25;
+}
+
+.label-optional {
+  -ms-flex-item-align: start;
+      align-self: flex-start;
+  background-color: #a0aec0;
+  border: 1px solid #a0aec0;
+  color: #fff;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+  margin-right: 10px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.label-required {
+  -ms-flex-item-align: start;
+      align-self: flex-start;
+  background-color: #c53030;
+  border: 1px solid #c53030;
+  color: #fff;
+  white-space: nowrap;
+  margin-right: 10px;
+  margin-left: 0.5rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.input-text {
+  font-size: 13px;
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  width: 128px;
+  height: 29px;
+}
+
+.item-detail {
+  display: block;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+  width: 400px;
+  height: 150px;
+}
+
+.type_name {
+  width: 100px;
+  margin-right: 40px;
+}
+
+.file_name {
+  width: 435px;
+}
+
+.file_max-w-lg {
+  max-width: 32rem;
+}
+
+.file_btn {
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.file_btn:hover, .file_btn:focus {
+  background-color: transparent;
+  border-color: #f9dc06;
+}
+
+.file_btn:disabled {
+  background-color: #edf2f7;
+  border-color: #edf2f7;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* 新規：専用スコープ */
+.item-detail-page .button-erea {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+.item-detail-page .button-erea .shop-image {
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.item-detail-page .button-erea .ref-items {
+  margin-left: auto;
+  background-color: #f9dc06;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.125rem;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
 #shop-image {
   margin-right: calc(40% - 40vw);
   margin-left: calc(40% - 40vw);
@@ -1158,49 +1332,48 @@ div[aria-disabled=true]::after {
   padding: 2px 5px 2px 5px;
 }
 
+/* ============================
+   商品分類関連スタイル
+   ============================ */
+.item-detail-page {
+  /* 商品分類セクション全体 */
+  /* 左側の 790px の枠 */
+  /* ラベル部分 */
+  /* エラー表示 */
+  /* 追加ボタン（既存 category-plus-button を拡張） */
+}
+.item-detail-page .category-section {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  margin-top: 6px;
+}
+.item-detail-page .category-inner {
+  width: 790px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+.item-detail-page .category-label {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  margin-top: 8px;
+  margin-left: 60px;
+}
+.item-detail-page .category-error {
+  margin-top: 4px;
+}
+.item-detail-page .category-add-button {
+  margin-left: 10px;
+}
+
+/* ============================
+   商品マスタ詳細ページの全体レイアウト
+   ============================ */
 .is-public {
   margin-left: 10px;
   margin-top: 0.25rem;
-}
-
-.plus-button {
-  display: -webkit-inline-box;
-  display: -ms-inline-flexbox;
-  display: inline-flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  color: #a0aec0;
-  text-align: center;
-  height: 20px;
-  width: 20px;
-  margin-left: -2px;
-  margin-right: 8px;
-  border: 1px solid #a0aec0;
-  border-radius: 50%;
-}
-
-.category-plus-button {
-  display: -webkit-inline-box;
-  display: -ms-inline-flexbox;
-  display: inline-flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  color: #a0aec0;
-  background-color: #FFFFFF;
-  text-align: center;
-  height: 25px;
-  width: 25px;
-  margin-top: 5px;
-  border: 1px solid #a0aec0;
-  border-radius: 50%;
 }
 
 .item-explanation {
@@ -1223,28 +1396,6 @@ div[aria-disabled=true]::after {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
-}
-
-.vari-row-input {
-  border: 1px solid #a0aec0;
-  width: 120px;
-  display: block;
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  margin-right: "150px";
-  outline-offset: 2px;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  font-size: 0.75rem;
-}
-
-.dele-button {
-  border: 1px solid #a0aec0;
-  color: #a0aec0;
-  padding: 1px;
 }
 
 .price-erea {
@@ -1307,98 +1458,6 @@ div[aria-disabled=true]::after {
   margin-right: 10px;
 }
 
-.button-erea {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-}
-.button-erea .shop-image {
-  background-color: #f9dc06;
-  border: 1px solid transparent;
-  font-size: 0.75rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  border-radius: 0.125rem;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-.button-erea .ref-items {
-  margin-left: auto;
-  background-color: #f9dc06;
-  border: 1px solid transparent;
-  font-size: 0.75rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  border-radius: 0.125rem;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-
-label {
-  font-size: 12px;
-  margin-right: 2px;
-  color: #4a5568;
-  text-align: right;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.25;
-}
-
-.label-optional {
-  -ms-flex-item-align: start;
-      align-self: flex-start;
-  background-color: #a0aec0;
-  border: 1px solid #a0aec0;
-  color: #fff;
-  white-space: nowrap;
-  margin-left: 0.5rem;
-  margin-right: 10px;
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
-  font-size: 0.75rem;
-  border-radius: 0.125rem;
-}
-
-.label-required {
-  -ms-flex-item-align: start;
-      align-self: flex-start;
-  background-color: #c53030;
-  border: 1px solid #c53030;
-  color: #fff;
-  white-space: nowrap;
-  margin-right: 10px;
-  margin-left: 0.5rem;
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
-  font-size: 0.75rem;
-  border-radius: 0.125rem;
-}
-
-.input-text {
-  font-size: 13px;
-  display: block;
-  background-color: #fff;
-  border: 1px solid #a0aec0;
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  border-radius: 0.125rem;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  width: 128px;
-  height: 29px;
-}
-
-.vari-row {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-}
-
 .item-row {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -1406,77 +1465,294 @@ label {
   margin-top: 10px;
 }
 
-.item-detail {
-  display: block;
-  background-color: #fff;
+/* ============================
+   取扱説明書関連スタイル
+   ============================ */
+.item-detail-page {
+  /* セクション全体 */
+  /* ラジオ + その他入力欄 */
+  /* その他入力欄（typeName） */
+  /* ファイル選択行 */
+  /* 非表示の file input */
+}
+.item-detail-page .manual-section {
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  margin-top: 15px;
+}
+.item-detail-page .manual-type-row {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  width: 627px;
+}
+.item-detail-page .manual-type-input {
+  border-right: 1px solid #a0aec0;
+  width: 200px;
+  /* 背景色は動的に変更 */
+}
+.item-detail-page .manual-type-input[data-bgcolor] {
+  background-color: attr(data-bgcolor color);
+}
+.item-detail-page .manual-file-row {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  margin-left: 160px;
+  margin-top: 10px;
+}
+.item-detail-page .manual-file-label {
+  margin-right: 5px;
+}
+.item-detail-page .manual-file-hidden {
+  display: none;
+}
+
+/* ============================
+   ショップ公開関連スタイル
+   ============================ */
+.item-detail-page {
+  /* ショップ公開セクション */
+}
+.item-detail-page .publish-wrapper {
+  margin-left: 1px;
+}
+
+/* ============================
+   販売オプション関連スタイル
+   ============================ */
+.item-detail-page {
+  /* 販売価格（税込） */
+  /* 支払い方法の横並び */
+}
+.item-detail-page .sales-price-wrapper {
+  margin-left: 1px;
+  margin-top: 10px;
+}
+.item-detail-page .payment-kind-row {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+/* ============================
+   バリエーション関連スタイル
+   ============================ */
+/* 既存（そのまま） */
+.vari-row-input {
   border: 1px solid #a0aec0;
+  width: 120px;
+  display: block;
   -webkit-appearance: none;
      -moz-appearance: none;
           appearance: none;
-  border-radius: 0.125rem;
-  outline: 2px solid transparent;
+  margin-right: "150px";
   outline-offset: 2px;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   font-size: 0.75rem;
-  width: 400px;
-  height: 150px;
 }
 
-.type_name {
-  width: 100px;
-  margin-right: 40px;
+/* ============================
+   専用スコープ
+   ============================ */
+.item-detail-page {
+  /* バリエーション追加チェック */
+  /* バリエーション一覧の外枠 */
+  /* バリエーション行コンテナ */
+  /* エラー表示 */
+  /* ============================
+     バリエーションヘッダー
+     ============================ */
+  /* ============================
+     バリエーション行（ItemVariationRow）
+     ============================ */
+  /* input の動的スタイル */
+  /* ＋ボタン（既存 plus-button を拡張） */
+  /* 入力欄＋ボタンのラッパー */
+  /* input の右側にボタン分の余白を確保 */
+  /* ＋ボタンを input の右端に重ねる */
+  /* 削除ボタン */
+  /* ============================
+     ツリー線
+     ============================ */
 }
-
-.file_name {
-  width: 435px;
+.item-detail-page .variation-add-check {
+  margin-top: 8px;
 }
-
-.file_max-w-lg {
-  max-width: 32rem;
+.item-detail-page .variation-add-check input {
+  margin-top: 5px;
 }
-
-.file_btn {
-  background-color: #f9dc06;
-  border: 1px solid transparent;
-  font-size: 0.75rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  border-radius: 0.125rem;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
+.item-detail-page .variation-list-wrapper {
+  margin-left: 160px;
 }
-
-.file_btn:hover, .file_btn:focus {
-  background-color: transparent;
-  border-color: #f9dc06;
+.item-detail-page .variation-rows {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
 }
-
-.file_btn:disabled {
-  background-color: #edf2f7;
-  border-color: #edf2f7;
-  color: #a0aec0;
-  cursor: not-allowed;
+.item-detail-page .variation-error {
+  margin-top: 5px;
+}
+.item-detail-page .variation-header {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+}
+.item-detail-page .variation-header label {
+  white-space: nowrap;
+}
+.item-detail-page .variation-header .vh-col1 {
+  /* バリエーション1 → margin-left なし */
+}
+.item-detail-page .variation-header .vh-col2 {
+  margin-left: 60px;
+}
+.item-detail-page .variation-header .vh-col3 {
+  margin-left: 60px;
+}
+.item-detail-page .variation-header .vh-col4 {
+  margin-left: 60px;
+}
+.item-detail-page .variation-header .vh-col5 {
+  margin-left: 60px;
+}
+.item-detail-page .variation-header .vh-col6 {
+  margin-left: 126px;
+}
+.item-detail-page .variation-row {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+.item-detail-page .variation-row-cell {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+.item-detail-page .variation-row-input[data-visible="0"] {
+  visibility: hidden;
+}
+.item-detail-page .variation-row-input[data-visible="1"] {
+  visibility: visible;
+}
+.item-detail-page .variation-row-input[data-editable="0"] {
+  background-color: #EDF2F7;
+}
+.item-detail-page .variation-row-input[data-editable="1"] {
+  background-color: #ffffff;
+}
+.item-detail-page .variation-row-input[data-error="1"] {
+  border: 1px solid red;
+}
+.item-detail-page .variation-row-input[data-error="0"] {
+  border: 1px solid #a0aec0;
+}
+.item-detail-page .variation-plus-button[data-visible="0"] {
+  visibility: hidden;
+}
+.item-detail-page .variation-plus-button[data-visible="1"] {
+  visibility: visible;
+}
+.item-detail-page .variation-plus-button[data-editable="0"] {
+  background-color: #EDF2F7;
+}
+.item-detail-page .variation-plus-button[data-editable="1"] {
+  background-color: #ffffff;
+}
+.item-detail-page .variation-input-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.item-detail-page .variation-row-input-padding {
+  padding-right: 28px; /* ＋ボタンの幅＋余白 */
+}
+.item-detail-page .variation-plus-inside {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+          transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 20px;
+  color: #4A5568;
+  background: #E2E8F0;
+  border: 1px solid #CBD5E0;
+  background: transparent;
+  cursor: pointer;
+}
+.item-detail-page .variation-delete-button {
+  height: 26px;
+  margin-left: 10px;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.item-detail-page .variation-tree-cell {
+  width: 33px;
+  min-width: 33px;
+  height: 38px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+.item-detail-page .tree-svg {
+  width: 33px;
+  height: 38px;
+}
+.item-detail-page .tree-line-vertical {
+  stroke: #7599cc;
+  stroke-width: 0.8;
+}
+.item-detail-page .tree-line-horizontal {
+  stroke: #7599cc;
+  stroke-width: 0.8;
 }
 
 .item-classification-list-page {
   /* ------------------------------
-     テーブル行の背景色
+     テーブル行の背景色（公開・非公開）
   ------------------------------ */
+  /* 公開行 */
+  /* 非公開行 */
   /* ------------------------------
      商品分類名セルの構造
   ------------------------------ */
-  /* td の中に置くラッパー（高さ揃えのため） */
-  /* 実際の内容を横並びにする */
-  /* インデント（動的 px は inline-style で OK） */
-  /* 親アイコン */
-  /* 子アイコン */
-  /* 子階層のガイド線 */
-  /* 親名・子名のフォント調整 */
 }
 .item-classification-list-page__legend {
   display: -webkit-box;
@@ -1504,8 +1780,14 @@ label {
 .item-classification-list-page .row-child {
   background: #fafafa;
 }
+.item-classification-list-page .row-child:hover {
+  background: #f0f0f0;
+}
 .item-classification-list-page .row-hidden {
   background: #d5d7db;
+}
+.item-classification-list-page .row-hidden:hover {
+  background: #c7c9cc;
 }
 .item-classification-list-page .name-cell-wrapper {
   position: relative;

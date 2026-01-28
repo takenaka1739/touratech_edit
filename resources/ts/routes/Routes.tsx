@@ -31,6 +31,7 @@ const RouteUser = React.lazy(() => import('./RouteUser'));
 const RouteCoupon = React.lazy(() => import('./RouteCoupon'));
 const RouteTopimage = React.lazy(() => import('./RouteTopimage'));
 const RouteInfoManagement = React.lazy(() => import('./RouteInfoManagement'));
+const RoutePickupRanking = React.lazy(() => import('./RoutePickupRanking'));
 
 const Routes: React.VFC = () => {
   const isOther = useIsOther();
@@ -70,6 +71,7 @@ const Routes: React.VFC = () => {
         <Route path="/TopImage" component={RouteTopimage} />
         <Route path="/user" component={RouteUser} />
         <Route path="/info_management" component={RouteInfoManagement} />
+        <Route path="/pickup_ranking" component={RoutePickupRanking} />
         <Route component={NotFound} />
       </Switch>
     </React.Suspense>
