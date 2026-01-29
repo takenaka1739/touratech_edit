@@ -110,13 +110,53 @@ export const CouponListPage: React.VFC = () => {
       <table>
         <thead>
           <tr>
-            <th>コード</th>
-            <th>名称</th>
-            <th>内容</th>
-            <th className="col-date">開始日時</th>
-            <th className="col-date">終了日時</th>
-            <th className="col-btn">有効/無効</th>
-            <th className="col-btn">編集</th>
+            <th>
+              <div
+                className="tooltip"
+                data-tooltip="クーポン利用時に入力する文字列"
+              >
+                  コード
+              </div>
+            </th>
+            <th>
+              <div
+                className="tooltip"
+                data-tooltip="クーポンの種類を判別するための管理者用名称
+                              ※ ショップには表示されません"
+              >
+                名称
+              </div>
+            </th>
+            <th>
+              <div
+                className="tooltip"
+                data-tooltip="クーポン利用時に適用されるサービス内容"
+              >
+                クーポンルール
+              </div>
+            </th>
+            <th className="col-date">
+              <div
+                className="tooltip"
+                data-tooltip="クーポンが利用可能となる日付"
+              >
+                開始日
+              </div>
+            </th>
+            <th className="col-date">
+              <div
+                className="tooltip"
+                data-tooltip="クーポンが利用終了となる日付"
+              >
+                終了日
+              </div>
+            </th>
+            <th className="col-btn">
+              有効状態
+            </th>
+            <th className="col-btn">
+              編集
+            </th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>

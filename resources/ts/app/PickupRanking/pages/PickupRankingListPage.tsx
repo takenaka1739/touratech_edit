@@ -317,12 +317,47 @@ export const PickupRankingListPage: React.VFC = () => {
       <table>
         <thead>
           <tr>
-            <th className="col-num">No</th>
-            <th>商品コード</th>
-            <th>商品名</th>
-            <th className="col-num">PV数</th>
-            <th className="col-num">表示順</th>
-            <th className="col-btn">有効/無効</th>
+            <th className="col-num">
+              <div
+                className="tooltip"
+                data-tooltip="ショップで表示する順序"
+              >
+                No
+              </div>
+            </th>
+            <th>
+              <div
+                className="tooltip"
+                data-tooltip="対象商品の商品コード"
+              >
+                商品コード
+              </div>
+            </th>
+            <th>
+              <div
+                className="tooltip"
+                data-tooltip="対象商品の商品名"
+              >
+                商品名
+              </div>
+            </th>
+            <th className="col-num">
+              <div
+                className="tooltip"
+                data-tooltip="ショップでの商品詳細ページの閲覧数"
+              >
+                PV数
+              </div>
+            </th>
+            <th className="col-num">
+              <div
+                className="tooltip"
+                data-tooltip="手動入力した注目ラインキングの並び順"
+              >
+                表示順
+              </div>
+            </th>
+            <th className="col-btn">有効状態</th>
             <th className="col-btn">並替</th>
             <th className="col-btn">編集</th>
             <th className="col-btn">削除</th>
@@ -367,7 +402,7 @@ export const PickupRankingListPage: React.VFC = () => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '20px', height: '20px', backgroundColor: '#ffd4d4', border: '1px solid #ccc' }} />
-          <span>PV由来</span>
+          <span>自動（閲覧数順）</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '20px', height: '20px', backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />

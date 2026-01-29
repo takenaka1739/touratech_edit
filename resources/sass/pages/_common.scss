@@ -102,3 +102,37 @@ div[aria-disabled='true'] {
     background: rgba($white, 0.4);
   }
 }
+
+/*------------------------------------------------------*/
+/* ツールチップ（補足説明）
+/*------------------------------------------------------*/
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+  white-space: pre-line;
+  display: block;
+  width: max-content;
+  max-width: 900px;
+  text-align: left;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}

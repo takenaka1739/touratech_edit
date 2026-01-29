@@ -779,7 +779,13 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
             />
 
             <div className="movie-add-wrapper" style={{ marginTop: "20px", marginLeft: "20px" }}>
-              <div className="movie-label" style={{ marginBottom: "5px", fontSize: "18px", color: "#3d3d2b" }}>
+              <div
+                className="movie-label tooltip"
+                style={{ marginBottom: "5px", fontSize: "18px", color: "#3d3d2b" }}
+                data-tooltip="YouTube リンクは、以下のいずれかの方法で URL を取得して追加してください。
+                              取得方法１：動画再生ページの URL（https://www.youtube.com/watch～）
+                              取得方法２：動画上でマウス右クリック > 埋め込みコードをコピー > メモ帳に張り付け > srcの部分（https://www.youtube.com/embed/～）"
+              >
                 YouTubeリンク
               </div>
               <div className="movie-add-area" style={{ display: "flex", gap: "10px" }}>
