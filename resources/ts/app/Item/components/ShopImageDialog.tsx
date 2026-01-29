@@ -577,8 +577,9 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
 
     // 文字列パス（/images/... や YouTube）
     const src = String(file);
-    const isImage = ['jpg', 'gif', 'png'].some(ext => src.includes(ext));
-    const isVideo = ['mp4', 'mov'].some(ext => src.includes(ext));
+    const lower = src.toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].some(ext => lower.includes(ext));
+    const isVideo = ['mp4', 'mov'].some(ext => lower.includes(ext));
 
     if (src !== '') {
       // 画像
@@ -675,6 +676,7 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
     >
       <div id="shop-image">
         <div id="input-area">
+          
           <div id="image-area">
             <button className="btn-delete"
                     style={{ marginLeft:'495px', marginBottom:'5px', height: '26px', paddingTop: '0px', paddingBottom: '0px', whiteSpace: "nowrap"}}
@@ -682,7 +684,7 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
               削除
             </button>
 
-            <div className="image-size">
+            <div id="main-img">
               {/* 画像がまだ選択されていない場合 */}
               {!selectImageSrc ? (
                 <div className="no-image-message">

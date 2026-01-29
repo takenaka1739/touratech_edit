@@ -24,21 +24,23 @@
     margin-top: 10px;
 
     #image-area {
+      width: 100%;
+      max-width: 540px;
       margin-top: 20px;
       margin-left: 30px;
       margin-right: 20px;
       margin-bottom: 20px;
 
-      .image-size {
-        border: 1px solid #333;
-        width: 550px;
-        height: 550px;
-        position: relative;
+      #main-img {
+        border: 1px solid #555;
+        border-radius: 10px;
+        width: 100%;
+        aspect-ratio: 1 / 1;
         overflow: hidden;
-
+        text-align: center;
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
       }
 
       .no-image-message {
