@@ -56,6 +56,28 @@ trait SalesPersistence
     }
 
     /**
+     * ★rate の入力揺れ/NULL を吸収して正規化（整数化）する
+     *
+     * 目的:
+     * - t_sale_details.rate に NULL が入ってしまう経路を潰す
+     * - バリデーション（rateは整数）で 500 になるのを防ぐ
+     *
+     * 仕様:
+     * - null / '' / 0 以下 は 100 扱い
+     */
+    private function resolveDetailRate(Collection $detail): int
+    {
+        $v = $detail->get('rate');
+
+        if ($v === null || $v === '') {
+            return 100;
+        }
+
+        $n = (int)$v;
+        return $n > 0 ? $n : 100;
+    }
+
+    /**
      * ★discount の入力キー揺れを吸収して正規化（数値化）する
      *
      * 目的:
@@ -94,7 +116,9 @@ trait SalesPersistence
     {
         $item_kind = (int)$detail->get('item_kind');
         $item_id   = (int)$detail->get('item_id');
-
+         if (in_array($item_kind, [1, 3], true) && $item_id <= 0) {
+            throw new \RuntimeException("invalid sales detail: item_id is missing (item_kind={$item_kind})");
+        }
         /** @var SalesDetail $m */
         $m = new SalesDetail();
         $m->sale_id          = $sales_id;
@@ -106,7 +130,9 @@ trait SalesPersistence
         $detailTable = $m->getTable();
 
         if ($this->hasColumnSafe($detailTable, 'sales_unit_price')) $m->sales_unit_price = $detail->get('sales_unit_price');
-        if ($this->hasColumnSafe($detailTable, 'rate'))            $m->rate            = $detail->get('rate');
+
+        // ★ rate: NULL/空なら 100 を入れて必ず整数化
+        if ($this->hasColumnSafe($detailTable, 'rate'))            $m->rate            = $this->resolveDetailRate($detail);
 
         if ($this->hasColumnSafe($detailTable, 'fraction')) {
             $m->fraction = $detail->get('fraction') !== null ? (int)$detail->get('fraction') : 1;
@@ -199,7 +225,9 @@ trait SalesPersistence
         $detailTable = $m->getTable();
 
         if ($this->hasColumnSafe($detailTable, 'sales_unit_price')) $m->sales_unit_price = $detail->get('sales_unit_price');
-        if ($this->hasColumnSafe($detailTable, 'rate'))            $m->rate            = $detail->get('rate');
+
+        // ★ rate: NULL/空なら 100 を入れて必ず整数化（更新時もNULL上書きを防ぐ）
+        if ($this->hasColumnSafe($detailTable, 'rate'))            $m->rate            = $this->resolveDetailRate($detail);
 
         if ($this->hasColumnSafe($detailTable, 'fraction')) {
             $m->fraction = $detail->get('fraction') !== null ? (int)$detail->get('fraction') : ((int)($m->fraction ?? 1));
@@ -476,6 +504,10 @@ trait SalesPersistence
         $subtotal = $unitPrice * $qty;
         $taxable  = max($subtotal - $disc, 0);
 
+        // ★ float誤差で 4999.999999... になり得るので、まず0桁に丸める
+        // （日本円運用なので小数は不要。ここで誤差を潰す）
+        $taxable = round($taxable, 0);
+
         $taxRaw = ($taxable * (float)$taxRate) / 100;
 
         $fraction = 1;
@@ -484,10 +516,13 @@ trait SalesPersistence
         }
 
         $salesTax = $fraction === 2 ? round($taxRaw) : ($fraction === 3 ? ceil($taxRaw) : floor($taxRaw));
+
+        // ★ amount も float誤差が残るので、最終的に整数へ
         $amount = $taxable + $salesTax;
+        $amount = (int)round($amount, 0);
 
         if ($hasTax) {
-            $m->sales_tax = (int)$salesTax;
+            $m->sales_tax = (int)round($salesTax, 0);
         }
         if ($hasAmount) {
             $m->amount = $amount;

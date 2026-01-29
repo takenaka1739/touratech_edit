@@ -19,11 +19,20 @@ class ReceiveOrderSquareController extends Controller
         $order = ReceiveOrder::findOrFail($id);
 
         if (!$order->square_payment_id) {
-            return response()->json(['message' => 'Square決済IDが登録されていません。'], 400);
+            // 互換: message は維持 + success を追加
+            return response()->json([
+                'success' => false,
+                'message' => 'Square決済IDが登録されていません。',
+            ], 400);
         }
 
+        // 既に支払い済み（= captured）
         if ($order->square_status === 'captured') {
-            return response()->json(['message' => '既に支払い済みです。'], 200);
+            // 互換: 200 のまま + success を追加（フロントが success 判定でも通る）
+            return response()->json([
+                'success' => true,
+                'message' => '既に支払い済みです。',
+            ], 200);
         }
 
         $env = config('services.square.env') === 'production' ? 'production' : 'sandbox';
@@ -42,8 +51,8 @@ class ReceiveOrderSquareController extends Controller
                 ->send('POST', $url, ['body' => '{}']);
 
             if ($response->failed()) {
-                $body   = $response->json();
-                $msg    = collect($body['errors'] ?? [])
+                $body = $response->json();
+                $msg = collect($body['errors'] ?? [])
                     ->map(fn($e) => $e['detail'] ?? 'Unknown error')
                     ->implode(' / ');
 
@@ -54,7 +63,14 @@ class ReceiveOrderSquareController extends Controller
                     'body'              => $body,
                 ]);
 
-                return response()->json(['message' => $msg ?: 'Square決済APIエラーが発生しました。'], 400);
+                return response()->json([
+                    'success' => false,
+                    'message' => $msg ?: 'Square決済APIエラーが発生しました。',
+                    // デバッグで見たい場合に備えて最低限の情報を返す（互換のため追加しても壊れにくい）
+                    'data'    => [
+                        'square_status' => $order->square_status,
+                    ],
+                ], 400);
             }
 
             // ▼▼ remarks に履歴を追記 ▼▼
@@ -70,14 +86,26 @@ class ReceiveOrderSquareController extends Controller
                 'square_payment_id' => $order->square_payment_id,
             ]);
 
-            return response()->json(['message' => '支払いを実行しました。']);
+            // 互換: message は維持 + success/data を追加
+            return response()->json([
+                'success' => true,
+                'message' => '支払いを実行しました。',
+                'data'    => [
+                    'receive_order_id'  => $order->id,
+                    'square_payment_id' => $order->square_payment_id,
+                    'square_status'     => $order->square_status, // captured
+                ],
+            ], 200);
         } catch (\Throwable $e) {
             Log::error('[ReceiveOrderSquare] completePayment 致命的エラー', [
                 'receive_order_id' => $order->id ?? $id,
-                'error'           => $e->getMessage(),
+                'error'            => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => '支払い実行中にエラーが発生しました。'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => '支払い実行中にエラーが発生しました。',
+            ], 500);
         }
     }
 
@@ -90,11 +118,23 @@ class ReceiveOrderSquareController extends Controller
         $order = ReceiveOrder::findOrFail($id);
 
         if (!$order->square_payment_id) {
-            return response()->json(['message' => 'Square決済IDが登録されていません。'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Square決済IDが登録されていません。',
+            ], 400);
         }
 
+        // canceled / voided はキャンセル済み扱い（旧挙動を維持）
         if (in_array($order->square_status, ['canceled', 'voided'], true)) {
-            return response()->json(['message' => '既にキャンセル済みです。'], 200);
+            return response()->json([
+                'success' => true,
+                'message' => '既にキャンセル済みです。',
+                'data'    => [
+                    'receive_order_id'  => $order->id,
+                    'square_payment_id' => $order->square_payment_id,
+                    'square_status'     => $order->square_status,
+                ],
+            ], 200);
         }
 
         $env = config('services.square.env') === 'production' ? 'production' : 'sandbox';
@@ -113,8 +153,8 @@ class ReceiveOrderSquareController extends Controller
                 ->send('POST', $url, ['body' => '{}']);
 
             if ($response->failed()) {
-                $body   = $response->json();
-                $msg    = collect($body['errors'] ?? [])
+                $body = $response->json();
+                $msg = collect($body['errors'] ?? [])
                     ->map(fn($e) => $e['detail'] ?? 'Unknown error')
                     ->implode(' / ');
 
@@ -125,7 +165,13 @@ class ReceiveOrderSquareController extends Controller
                     'body'              => $body,
                 ]);
 
-                return response()->json(['message' => $msg ?: 'Square決済APIエラーが発生しました。'], 400);
+                return response()->json([
+                    'success' => false,
+                    'message' => $msg ?: 'Square決済APIエラーが発生しました。',
+                    'data'    => [
+                        'square_status' => $order->square_status,
+                    ],
+                ], 400);
             }
 
             // ▼▼ remarks に履歴を追記 ▼▼
@@ -141,14 +187,25 @@ class ReceiveOrderSquareController extends Controller
                 'square_payment_id' => $order->square_payment_id,
             ]);
 
-            return response()->json(['message' => '決済をキャンセルしました。']);
+            return response()->json([
+                'success' => true,
+                'message' => '決済をキャンセルしました。',
+                'data'    => [
+                    'receive_order_id'  => $order->id,
+                    'square_payment_id' => $order->square_payment_id,
+                    'square_status'     => $order->square_status, // canceled
+                ],
+            ], 200);
         } catch (\Throwable $e) {
             Log::error('[ReceiveOrderSquare] cancelPayment 致命的エラー', [
                 'receive_order_id' => $order->id ?? $id,
-                'error'           => $e->getMessage(),
+                'error'            => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => '決済キャンセル中にエラーが発生しました。'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => '決済キャンセル中にエラーが発生しました。',
+            ], 500);
         }
     }
 }

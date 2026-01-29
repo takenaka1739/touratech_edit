@@ -54,31 +54,48 @@ class SalesUpdateRequest extends FormRequest
 
             'send_flg' => ['required', 'integer', 'in:0,1'],
 
-            // ★発送あり(send_flg=1)で必須
             'name'     => ['required_if:send_flg,1', 'string'],
             'zip_code' => ['required_if:send_flg,1', 'string'],
             'address1' => ['required_if:send_flg,1', 'string'],
             'address2' => ['nullable', 'string'],
 
             // ===== それ以外は従来通り =====
-            'customer_id'     => ['nullable', 'integer'],
-            'user_id'         => ['nullable', 'integer'],
-            'shipping_amount' => ['nullable', 'numeric'],
-            'fee'             => ['nullable', 'numeric'],
-            'discount'        => ['nullable', 'numeric'],
-            'total_amount'    => ['nullable', 'numeric'],
-            'order_no'        => ['nullable', 'string'],
-            'remarks'         => ['nullable', 'string'],
-            'rate'            => ['nullable', 'integer'],
-            'sales_tax_rate'  => ['nullable', 'integer'],
-            'fraction'        => ['nullable', 'integer'],
-            'receive_order_id'=> ['nullable', 'integer'],
-            'has_invoice'     => ['nullable', 'boolean'],
+            'customer_id'      => ['nullable', 'integer'],
+            'user_id'          => ['nullable', 'integer'],
+            'shipping_amount'  => ['nullable', 'numeric'],
+            'fee'              => ['nullable', 'numeric'],
+            'discount'         => ['nullable', 'numeric'],
+            'total_amount'     => ['nullable', 'numeric'],
+            'order_no'         => ['nullable', 'string'],
+            'remarks'          => ['nullable', 'string'],
+            'rate'             => ['nullable', 'integer'],
+            'sales_tax_rate'   => ['nullable', 'integer'],
+            'fraction'         => ['nullable', 'integer'],
+            'receive_order_id' => ['nullable', 'integer'],
+            'has_invoice'      => ['nullable', 'boolean'],
 
             // 明細（更新でも必須）
-            'details'            => ['required', 'array', 'min:1'],
+            'details' => ['required', 'array', 'min:1'],
+            'details.*.id'       => ['nullable', 'integer'],
+            'details.*.no'       => ['nullable', 'integer'],
+            'details.*.item_kind'=> ['required', 'integer'],
+            'details.*.item_id'  => ['nullable', 'integer'], // item_kind に応じた必須は Service 側で弾いているのでここは nullable でOK
+            'details.*.unit_price' => ['nullable', 'numeric'],
+            'details.*.sales_unit_price' => ['nullable', 'numeric'],
+            'details.*.rate'     => ['nullable', 'integer'],
+            'details.*.fraction' => ['nullable', 'integer'],
+
             'details.*.quantity' => ['required', 'integer', 'min:1'],
             'details.*.discount' => ['nullable', 'numeric', 'min:0'],
+
+            'details.*.item_number' => ['nullable', 'string'],
+            'details.*.item_name'   => ['nullable', 'string'],
+            'details.*.item_name_jp'=> ['nullable', 'string'],
+            'details.*.parent_id'   => ['nullable', 'integer'],
+            'details.*.receive_order_detail_id' => ['nullable', 'integer'],
+            'details.*.sales_tax_rate' => ['nullable', 'numeric'],
+            'details.*.sales_tax'      => ['nullable', 'numeric'],
+            'details.*.amount'         => ['nullable', 'numeric'],
         ];
     }
 
@@ -93,6 +110,8 @@ class SalesUpdateRequest extends FormRequest
             'address1'   => '住所1',
             'details'    => '明細',
             'details.*.quantity' => '数量',
+            'details.*.item_kind' => '種類',
+            'details.*.item_id'   => '商品ID',
         ];
     }
 

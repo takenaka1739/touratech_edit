@@ -15,10 +15,17 @@ type SalesDetailPageState = Sales & {
   prev_title: string | undefined;
   prev_url: string;
   is_send?: number;
+
+  // 受注のSquare状態（売上画面で決済/キャンセル制御に使う）
+  square_payment_id?: string | number | null;
+  square_status?: string | null;
 };
 
 const to01 = (v: any): 0 | 1 => (Number(v) === 1 || v === true ? 1 : 0);
 const toBool = (v: any): boolean => to01(v) === 1;
+
+// 空文字も null 扱いしたい用途向け
+const normStr = (v: any): string => (v === null || v === undefined ? '' : String(v).trim());
 
 /**
  * 売上データ（詳細）画面用 hooks
@@ -84,6 +91,9 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       barcode: undefined,
       prev_title: from_receive ? '受注状況一覧' : undefined,
       prev_url: from_receive ? '/receive_order_status' : `/${slug}`,
+
+      square_payment_id: undefined,
+      square_status: undefined,
     },
     from_receive ? '/receive_order_status' : `/${slug}`,
   );
@@ -211,6 +221,9 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
         receive_order_id,
         has_sales,
         sales_tax_rate,
+
+        square_payment_id,
+        square_status,
       } = props;
 
       if (has_sales == 1) {
@@ -251,6 +264,9 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
           sales_tax_rate: resolvedSalesTaxRate,
           details_amount: Number(details_amount ?? 0),
           receive_order_id,
+
+          square_payment_id,
+          square_status,
         });
       }
 
@@ -360,6 +376,39 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     }
   };
 
+  const applyFetchedSalesState = useCallback(
+    (raw: any, receive_order_id_override?: number | undefined) => {
+      const st = toState(raw ?? { details: [] }) as any;
+      st.details = Array.isArray(st.details) ? st.details : [];
+
+      const isSend01 = to01(st.is_send ?? st.send_flg ?? 0);
+      st.is_send = isSend01;
+      st.send_flg = toBool(isSend01);
+
+      const sales_tax_rate = getRate(st.sales_at) || st.sales_tax_rate || 0;
+      const has_invoice = st.has_invoice == 1;
+
+      const delivery = raw?.delivery;
+      if (delivery) {
+        st.name = delivery?.recipient_name ?? st.name ?? '';
+        st.zip_code = delivery?.zip_code ?? st.zip_code ?? '';
+        st.address1 = `${delivery?.prefectures ?? ''}${delivery?.municipality ?? ''}` || st.address1 || '';
+        st.address2 = delivery?.number ?? st.address2 ?? '';
+        st.tel = delivery?.tel ?? st.tel ?? '';
+      }
+
+      setState((prev) => ({
+        ...prev,
+        ...st,
+        sales_tax_rate,
+        fraction: 1,
+        has_invoice,
+        ...(receive_order_id_override ? { receive_order_id: receive_order_id_override } : {}),
+      }));
+    },
+    [getRate, setState, toState],
+  );
+
   const get: (id: number | undefined) => Promise<boolean> = async (idArg) => {
     if (!from_receive && (idArg === undefined || idArg === null)) {
       return await getNewData();
@@ -383,36 +432,9 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     try {
       const res = await axios.get(url);
       if (res.status === 200) {
-        const st = toState(res.data?.data ?? { details: [] }) as any;
-        st.details = Array.isArray(st.details) ? st.details : [];
-
-        const isSend01 = to01(st.is_send ?? st.send_flg ?? 0);
-        st.is_send = isSend01;
-        st.send_flg = toBool(isSend01);
-
-        const sales_tax_rate = getRate(st.sales_at) || st.sales_tax_rate || 0;
-        const has_invoice = st.has_invoice == 1;
-
-        const delivery = res.data?.data?.delivery;
-        if (delivery) {
-          st.name = delivery?.recipient_name ?? st.name ?? '';
-          st.zip_code = delivery?.zip_code ?? st.zip_code ?? '';
-          st.address1 =
-            `${delivery?.prefectures ?? ''}${delivery?.municipality ?? ''}` || st.address1 || '';
-          st.address2 = delivery?.number ?? st.address2 ?? '';
-          st.tel = delivery?.tel ?? st.tel ?? '';
-        }
-
         if (!mountedRef.current) return true;
 
-        setState((prev) => ({
-          ...prev,
-          ...st,
-          sales_tax_rate,
-          fraction: 1,
-          has_invoice,
-          ...(from_receive ? { receive_order_id } : {}),
-        }));
+        applyFetchedSalesState(res.data?.data, from_receive ? receive_order_id : undefined);
 
         if (!mountedRef.current) return true;
         setErrors(undefined);
@@ -428,6 +450,38 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
 
     return false;
   };
+
+  /**
+   * 売上画面でSquare決済/キャンセルした後に、受注起点で最新状態を取り直す
+   * - 新規作成（idなし）でも受注IDが分かれば refresh できる
+   */
+  const refreshByReceiveOrderId = useCallback(
+    async (receiveOrderId: number): Promise<boolean> => {
+      if (!receiveOrderId) return false;
+
+      safeDispatch(AppActions.request());
+      try {
+        const res = await axios.get(`/api/${slug}/edit_by_receive_id/${receiveOrderId}`);
+        if (res.status === 200) {
+          if (!mountedRef.current) return true;
+
+          applyFetchedSalesState(res.data?.data, receiveOrderId);
+
+          if (!mountedRef.current) return true;
+          setErrors(undefined);
+          safeDispatch(AppActions.success());
+          return true;
+        }
+
+        safeDispatch(AppActions.success());
+        return false;
+      } catch (e) {
+        safeDispatch(AppActions.failed('データの取得に失敗しました。'));
+        return false;
+      }
+    },
+    [applyFetchedSalesState, safeDispatch, setErrors, slug],
+  );
 
   const validate: () => Promise<boolean> = async () => {
     safeDispatch(AppActions.request());
@@ -531,6 +585,111 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     }
     return false;
   };
+
+  /**
+   * Square: 決済確定（capture相当）
+   * - 受注側APIをそのまま叩く
+   * - 成功したら受注起点で売上画面のstateを取り直して captured に更新する
+   */
+  const onClickSquareComplete: () => Promise<boolean> = useCallback(async () => {
+    const roIdRaw =
+      (state as any)?.receive_order_id ?? (from_receive ? id : undefined);
+
+    const roId = Number(roIdRaw ?? 0);
+    if (!roId || roId <= 0) {
+      await appAlert('受注IDが取得できないため、決済処理できません。');
+      return false;
+    }
+
+    // payment_id が無いなら本来このボタンは出ないが、ガード
+    const payId = normStr((state as any)?.square_payment_id);
+    if (!payId) {
+      await appAlert('Square決済IDが無いため、決済処理できません。');
+      return false;
+    }
+
+    if (!(await appConfirm('カード決済を確定しますか？'))) return false;
+
+    safeDispatch(AppActions.request());
+    try {
+      const res = await axios.post(`/api/receive_order/${roId}/square/complete`, {});
+
+      // 受注側も success=false + errors 形式の可能性があるので吸収
+      if (res?.status === 200 && res.data?.success === false) {
+        safeDispatch(AppActions.success());
+        const msg =
+          (res.data?.errors && (res.data.errors.message || res.data.errors.square_status)) ||
+          res.data?.message ||
+          '決済に失敗しました。';
+        await appAlert(String(msg));
+        return false;
+      }
+
+      if (res?.status === 200 && res.data?.success) {
+        safeDispatch(AppActions.success());
+        // 最新状態に更新（captured になれば保存/発行が有効化される）
+        await refreshByReceiveOrderId(roId);
+        await appAlert('決済を確定しました。');
+        return true;
+      }
+
+      safeDispatch(AppActions.failed('決済に失敗しました。'));
+      return false;
+    } catch (e) {
+      safeDispatch(AppActions.failed('決済に失敗しました。'));
+      return false;
+    }
+  }, [from_receive, id, refreshByReceiveOrderId, safeDispatch, state]);
+
+  /**
+   * Square: 注文キャンセル
+   */
+  const onClickSquareCancel: () => Promise<boolean> = useCallback(async () => {
+    const roIdRaw =
+      (state as any)?.receive_order_id ?? (from_receive ? id : undefined);
+
+    const roId = Number(roIdRaw ?? 0);
+    if (!roId || roId <= 0) {
+      await appAlert('受注IDが取得できないため、キャンセルできません。');
+      return false;
+    }
+
+    const payId = normStr((state as any)?.square_payment_id);
+    if (!payId) {
+      await appAlert('Square決済IDが無いため、キャンセルできません。');
+      return false;
+    }
+
+    if (!(await appConfirm('この注文をキャンセルしますか？'))) return false;
+
+    safeDispatch(AppActions.request());
+    try {
+      const res = await axios.post(`/api/receive_order/${roId}/square/cancel`, {});
+
+      if (res?.status === 200 && res.data?.success === false) {
+        safeDispatch(AppActions.success());
+        const msg =
+          (res.data?.errors && (res.data.errors.message || res.data.errors.square_status)) ||
+          res.data?.message ||
+          'キャンセルに失敗しました。';
+        await appAlert(String(msg));
+        return false;
+      }
+
+      if (res?.status === 200 && res.data?.success) {
+        safeDispatch(AppActions.success());
+        await refreshByReceiveOrderId(roId);
+        await appAlert('注文をキャンセルしました。');
+        return true;
+      }
+
+      safeDispatch(AppActions.failed('キャンセルに失敗しました。'));
+      return false;
+    } catch (e) {
+      safeDispatch(AppActions.failed('キャンセルに失敗しました。'));
+      return false;
+    }
+  }, [from_receive, id, refreshByReceiveOrderId, safeDispatch, state]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -666,5 +825,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     onClickSave,
     onClickPrintDelivery,
     onClickPrintInvoice,
+    onClickSquareComplete,
+    onClickSquareCancel,
   };
 };

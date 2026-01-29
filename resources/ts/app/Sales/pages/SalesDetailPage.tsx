@@ -1,4 +1,3 @@
-// 更新ファイル: resources/ts/app/Sales/pages/SalesDetailPage.tsx
 import React, { useMemo } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
@@ -47,6 +46,10 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     onClickDelete,
     onClickBarcode,
     onClickCreateCustomer,
+
+    // 追加：Square決済（売上画面から）
+    onClickSquareComplete,
+    onClickSquareCancel,
   } = useSalesDetailPage(slug, from_receive);
 
   const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
@@ -78,6 +81,41 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     const raw = (state as any)?.is_send ?? (state as any)?.send_flg ?? 0;
     return Number(raw) === 1;
   }, [(state as any)?.is_send, (state as any)?.send_flg]);
+
+  /**
+   * Square決済状態
+   */
+  const squarePaymentId = useMemo(() => {
+    const v = (state as any)?.square_payment_id;
+    if (v === null || v === undefined) return '';
+    return String(v).trim();
+  }, [(state as any)?.square_payment_id]);
+
+  const squareStatus = useMemo(() => {
+    const v = (state as any)?.square_status;
+    if (v === null || v === undefined) return '';
+    return String(v).trim();
+  }, [(state as any)?.square_status]);
+
+  // クレジット対象（square_payment_idがある）
+  const isCardTarget = useMemo(() => squarePaymentId !== '', [squarePaymentId]);
+
+  const isSquareAuthorized = useMemo(() => isCardTarget && squareStatus === 'authorized', [
+    isCardTarget,
+    squareStatus,
+  ]);
+  const isSquareCanceled = useMemo(() => isCardTarget && squareStatus === 'canceled', [
+    isCardTarget,
+    squareStatus,
+  ]);
+
+  // 保存/発行を止める条件
+  // - 請求済
+  // - 決済待ち(authorized)
+  // - キャンセル済み(canceled)
+  const disableActions = useMemo(() => {
+    return Boolean(state.has_invoice) || isSquareAuthorized || isSquareCanceled;
+  }, [state.has_invoice, isSquareAuthorized, isSquareCanceled]);
 
   /**
    * FormInputCheck の onChange が
@@ -139,6 +177,21 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           <div className="bg-red-200 py-2 px-4 text-sm">{errors?.has_invoice}</div>
         )}
 
+        {/* 決済待ち（authorized）バナー */}
+        {isSquareAuthorized && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 py-2 px-4 text-sm mb-4">
+            カード未決済（status: {squareStatus || 'unknown'}）のため、保存・書類発行はできません。
+            「決済確定」または「注文キャンセル」を実行してください。
+          </div>
+        )}
+
+        {/* キャンセル済み（canceled）バナー */}
+        {isSquareCanceled && (
+          <div className="bg-gray-100 border border-gray-400 text-gray-800 py-2 px-4 text-sm mb-4">
+            カード決済がキャンセルされています。 保存・書類発行はできません。
+          </div>
+        )}
+
         <div className="flex max-w-2xl">
           <div className="w-2/5">
             <Forms.FormGroupInputDate
@@ -156,6 +209,16 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             {state.has_invoice && (
               <div className=" bg-red-100 border border-red-500 text-red-500 px-2 text-center">
                 請求済
+              </div>
+            )}
+            {!state.has_invoice && isSquareAuthorized && (
+              <div className=" bg-yellow-100 border border-yellow-500 text-yellow-700 px-2 text-center">
+                カード未決済
+              </div>
+            )}
+            {!state.has_invoice && isSquareCanceled && (
+              <div className=" bg-gray-100 border border-gray-500 text-gray-700 px-2 text-center">
+                キャンセル済
               </div>
             )}
           </div>
@@ -202,13 +265,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               checked={sendFlag}
               onChange={handleIsSendChange as any}
             />
-            {/*
-              重要:
-              保存処理が FormData/フォームシリアライズ方式の場合、
-              checkbox は「未チェックだと送信されない」ため DB で 1/0 が欠けます。
-              hidden を併設して、常に 0/1 を送れるようにします。
-              併せて旧キー send_flg も送って互換性を確保します。
-            */}
             <input type="hidden" name="is_send" value={sendFlag ? 1 : 0} />
             <input type="hidden" name="send_flg" value={sendFlag ? 1 : 0} />
           </div>
@@ -501,19 +557,32 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>
-            <button className="btn" onClick={onClickSave} disabled={state.has_invoice}>
+            {/* Square: authorized（決済待ち）のときだけ決済/キャンセルを出す */}
+            {isSquareAuthorized && (
+              <>
+                <button className="btn mr-3" onClick={onClickSquareComplete}>
+                  決済確定
+                </button>
+                <button className="btn-delete mr-6" onClick={onClickSquareCancel}>
+                  注文キャンセル
+                </button>
+              </>
+            )}
+
+            <button className="btn" onClick={onClickSave} disabled={disableActions}>
               保存
             </button>
-            <button className="btn ml-6" onClick={onClickPrintDelivery}>
+            <button className="btn ml-6" onClick={onClickPrintDelivery} disabled={disableActions}>
               納品書発行
             </button>
-            <button className="btn ml-6" onClick={onClickPrintInvoice}>
+            <button className="btn ml-6" onClick={onClickPrintInvoice} disabled={disableActions}>
               請求書発行
             </button>
           </div>
         </div>
+
         {id && !from_receive && (
-          <button className="btn-delete" onClick={onClickDelete} disabled={state.has_invoice}>
+          <button className="btn-delete" onClick={onClickDelete} disabled={disableActions}>
             削除
           </button>
         )}

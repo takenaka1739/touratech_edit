@@ -14,7 +14,7 @@ class SalesStoreRequest extends FormRequest
     }
 
     /**
-     * ★重要
+     * 
      * send_flg を 0/1 に正規化して required_if を確実に効かせる
      */
     protected function prepareForValidation(): void
@@ -51,33 +51,33 @@ class SalesStoreRequest extends FormRequest
             'sales_at'        => ['required', 'string'],
             'corporate_class' => ['required', 'integer'],
             'tel'             => ['required', 'string'],
-
-            // ★0/1 前提
             'send_flg' => ['required', 'integer', 'in:0,1'],
-
-            // ★発送あり(send_flg=1)で必須
             'name'      => ['required_if:send_flg,1', 'string'],
             'zip_code'  => ['required_if:send_flg,1', 'string'],
             'address1'  => ['required_if:send_flg,1', 'string'],
             'address2'  => ['nullable', 'string'],
 
-            'customer_id'     => ['nullable', 'integer'],
-            'user_id'         => ['nullable', 'integer'],
-            'shipping_amount' => ['nullable', 'numeric'],
-            'fee'             => ['nullable', 'numeric'],
-            'discount'        => ['nullable', 'numeric'],
-            'total_amount'    => ['nullable', 'numeric'],
-            'order_no'        => ['nullable', 'string'],
-            'remarks'         => ['nullable', 'string'],
-            'rate'            => ['nullable', 'integer'],
-            'sales_tax_rate'  => ['nullable', 'integer'],
-            'fraction'        => ['nullable', 'integer'],
-            'receive_order_id'=> ['nullable', 'integer'],
+            'customer_id'      => ['nullable', 'integer'],
+            'user_id'          => ['nullable', 'integer'],
+            'shipping_amount'  => ['nullable', 'numeric'],
+            'fee'              => ['nullable', 'numeric'],
+            'discount'         => ['nullable', 'numeric'],
+            'total_amount'     => ['nullable', 'numeric'],
+            'order_no'         => ['nullable', 'string'],
+            'remarks'          => ['nullable', 'string'],
+            'rate'             => ['nullable', 'integer'],
+            'sales_tax_rate'   => ['nullable', 'integer'],
+            'fraction'         => ['nullable', 'integer'],
+            'receive_order_id' => ['nullable', 'integer'],
 
-            // 明細は必須
-            'details'                 => ['required', 'array', 'min:1'],
-            'details.*.quantity'      => ['required', 'integer', 'min:1'],
-            'details.*.discount'      => ['nullable', 'numeric', 'min:0'],
+            // ===== 明細は必須 =====
+            'details'                    => ['required', 'array', 'min:1'],
+            'details.*.no'               => ['required', 'integer', 'min:1'],
+            'details.*.item_kind'        => ['required', 'integer'],
+            'details.*.item_id'          => ['required', 'integer', 'min:1'],
+            'details.*.unit_price'       => ['required', 'numeric'],
+            'details.*.quantity'         => ['required', 'integer', 'min:1'],
+            'details.*.discount'         => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -91,6 +91,9 @@ class SalesStoreRequest extends FormRequest
             'zip_code'   => '郵便番号',
             'address1'   => '住所1',
             'details'    => '明細',
+            'details.*.no' => '明細行',
+            'details.*.item_id' => '商品',
+            'details.*.unit_price' => '単価',
             'details.*.quantity' => '数量',
         ];
     }
@@ -102,12 +105,13 @@ class SalesStoreRequest extends FormRequest
             'zip_code.required_if' => '発送ありの場合は:attributeを入力してください。',
             'address1.required_if' => '発送ありの場合は:attributeを入力してください。',
             'details.required'     => ':attributeを1件以上追加してください。',
+            'details.*.item_id.required' => ':attributeが未設定の明細があります。',
+            'details.*.item_id.min' => ':attributeが未設定（0）の明細があります。',
         ];
     }
 
     /**
-     * ★Estimate と同じ挙動にするための肝
-     * 422 にせず success=false + errors を返す
+     * success=false + errors を返す
      */
     protected function failedValidation(Validator $validator)
     {
