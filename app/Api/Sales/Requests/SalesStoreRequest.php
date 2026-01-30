@@ -78,6 +78,12 @@ class SalesStoreRequest extends FormRequest
             'details.*.unit_price'       => ['required', 'numeric'],
             'details.*.quantity'         => ['required', 'integer', 'min:1'],
             'details.*.discount'         => ['nullable', 'numeric', 'min:0'],
+            'details.*.receive_order_detail_id' => ['nullable', 'integer'],
+            'details.*.amount'         => ['nullable', 'numeric'],
+            'details.*.sales_tax'      => ['nullable', 'numeric'],
+            'details.*.sales_tax_rate' => ['nullable', 'integer'],
+            'details.*.fraction'       => ['nullable', 'integer'],
+            'details.*.rate'           => ['nullable', 'integer'],
         ];
     }
 

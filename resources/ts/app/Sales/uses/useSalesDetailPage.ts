@@ -37,6 +37,47 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   // アンマウント判定
   const mountedRef = useRef(true);
 
+  /**
+   * ★重要: 受注由来明細の receive_order_detail_id を「落としても復元できる」ように保持する
+   *
+   * 背景:
+   * - 受注取り込み直後の details には receive_order_detail_id があるはず
+   * - しかしその後の明細編集（数量変更/追加/差し替え）で key が欠落しがち
+   * - 保存時に receive_order_detail_id が無いと、
+   *   t_link_r_order_sales_detail が作れず has_sales が 0 のままになる
+   *
+   * 方針:
+   * - 受注取り込み時点で Map に保存
+   * - 保存直前(buildPayload)で復元して送る
+   *
+   * キー設計:
+   * - 受注由来の明細は receive_order_detail_id が一意なので本来不要だが、
+   *   失われた時に復元するために「同一明細を同定するキー」を作る
+   * - no + item_id + item_kind を基本にする（十分安定）
+   */
+  const receiveDetailIdMapRef = useRef<Map<string, number>>(new Map());
+
+  const buildDetailKey = useCallback((d: any): string => {
+    const no = Number(d?.no ?? 0);
+    const itemId = Number(d?.item_id ?? 0);
+    const kind = Number(d?.item_kind ?? 0);
+    return `${no}:${kind}:${itemId}`;
+  }, []);
+
+  const rememberReceiveDetailIds = useCallback(
+    (details: any[]) => {
+      if (!Array.isArray(details)) return;
+      for (const d of details) {
+        const rid = Number(d?.receive_order_detail_id ?? 0);
+        if (rid > 0) {
+          const key = buildDetailKey(d);
+          receiveDetailIdMapRef.current.set(key, rid);
+        }
+      }
+    },
+    [buildDetailKey],
+  );
+
   const safeDispatch = useCallback(
     (action: any) => {
       if (!mountedRef.current) return;
@@ -126,7 +167,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
    */
   const handleApiErrors200 = useCallback(
     (res: any): boolean => {
-      // Estimate流儀: status=200 & success=false & errors
       if (!res || res.status !== 200) return false;
       if (res.data?.success !== false) return false;
 
@@ -140,68 +180,127 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   const buildPayload = useCallback(() => {
     const isSend01 = to01((state as any)?.is_send ?? (state as any)?.send_flg ?? 0);
 
+    // ★保存直前に receive_order_detail_id を復元する
+    const rawDetails = Array.isArray((state as any)?.details) ? (state as any).details : [];
+    const patchedDetails = rawDetails.map((d: any) => {
+      const rid = Number(d?.receive_order_detail_id ?? 0);
+      if (rid > 0) return d;
+
+      const key = buildDetailKey(d);
+      const remembered = receiveDetailIdMapRef.current.get(key);
+      if (remembered && remembered > 0) {
+        return { ...d, receive_order_detail_id: remembered };
+      }
+      return d;
+    });
+
     return {
       ...state,
+      details: patchedDetails,
       is_send: isSend01,
       // API互換（0/1として送る）
       send_flg: isSend01,
     } as any;
-  }, [state]);
+  }, [state, buildDetailKey]);
 
-  /**
-   * create の戻り値仕様
-   * - >0: 新規ID
-   * - 0 : 422以外の失敗 or success=false（※commonStore fallback の対象）
-   * - -1: 422(バリデーション) を処理済み（※commonStore は呼ばない）
-   */
   const create: () => Promise<number> = useCallback(async () => {
-    safeDispatch(AppActions.request());
-    try {
-      const res = await axios.post(`/api/${slug}/store`, buildPayload());
+  safeDispatch(AppActions.request());
+  try {
+    const payload = buildPayload();
 
-      // 200 success=false で errors が返る設計にも対応
-      if (handleApiErrors200(res)) {
-        safeDispatch(AppActions.success());
-        return 0;
-      }
+    const res = await axios.post(`/api/${slug}/store`, payload);
 
+    if (handleApiErrors200(res)) {
       safeDispatch(AppActions.success());
-
-      if (res.status === 200 && res.data?.success) {
-        const newId =
-          Number(res.data?.data?.id) ||
-          Number(res.data?.data) ||
-          Number(res.data?.id) ||
-          0;
-
-        if (!mountedRef.current) return 0;
-        setErrors(undefined);
-        return newId;
-      }
-
-      if (!mountedRef.current) return 0;
-      setErrors(res.data?.errors);
-      return 0;
-    } catch (e) {
-      if (handleValidationError(e)) return -1;
-
-      safeDispatch(AppActions.failed('データの保存に失敗しました。'));
       return 0;
     }
-  }, [slug, buildPayload, safeDispatch, setErrors, handleValidationError, handleApiErrors200]);
+
+    safeDispatch(AppActions.success());
+
+    if (res.status === 200 && res.data?.success) {
+      const newId =
+        Number(res.data?.data?.id) ||
+        Number(res.data?.data) ||
+        Number(res.data?.id) ||
+        0;
+
+      if (!mountedRef.current) return 0;
+      setErrors(undefined);
+      return newId;
+    }
+
+    if (!mountedRef.current) return 0;
+    setErrors(res.data?.errors);
+    return 0;
+  } catch (e) {
+    if (handleValidationError(e)) return -1;
+
+    safeDispatch(AppActions.failed('データの保存に失敗しました。'));
+    return 0;
+  }
+}, [slug, buildPayload, safeDispatch, setErrors, handleValidationError, handleApiErrors200]);
 
   // ===== 受注検索ダイアログ =====
   const {
-    open: openReceiveOrderDialog,
-    searchDialogProps: receiveOrderSearchDialogProps,
-  } = useCommonSearchDialogProps<any>(
-    'receive_order',
-    async (props) => {
-      const {
+  open: openReceiveOrderDialog,
+  searchDialogProps: receiveOrderSearchDialogProps,
+} = useCommonSearchDialogProps<any>(
+  'receive_order',
+  async (props) => {
+    const {
+      delivery_date,
+      customer_id,
+      customer_name,
+      send_flg,
+      name,
+      zip_code,
+      address1,
+      address2,
+      tel,
+      fax,
+      corporate_class,
+      details,
+
+      shipping_amount,
+      fee,
+      discount,
+      total_amount,
+      order_no,
+      remarks,
+      rate,
+      details_amount,
+      receive_order_id,
+      has_sales,
+      sales_tax_rate,
+
+      square_payment_id,
+      square_status,
+    } = props;
+
+    if (has_sales == 1) {
+      await appAlert('既に売上が完了しているため、選択できません。');
+    } else {
+      const resolvedSalesTaxRate =
+        getRate(state.sales_at) || sales_tax_rate || getRate(undefined as any) || 0;
+
+      if (!mountedRef.current) return true;
+
+      const isSend01 = to01(send_flg);
+      const isSendBool = toBool(send_flg);
+
+      const nextDetails = Array.isArray(details) ? details : [];
+
+      // ★受注選択時点で receive_order_detail_id を記憶
+      rememberReceiveDetailIds(nextDetails);
+
+      updateState({
         delivery_date,
         customer_id,
-        customer_name,
-        send_flg,
+        customer_name: customer_name ?? '上様',
+
+        send_flg: isSendBool,
+        is_send: isSend01,
+
         name,
         zip_code,
         address1,
@@ -209,7 +308,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
         tel,
         fax,
         corporate_class,
-        details,
+        details: nextDetails,
         shipping_amount,
         fee,
         discount,
@@ -217,66 +316,27 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
         order_no,
         remarks,
         rate,
-        details_amount,
+        fraction: 1,
+        sales_tax_rate: resolvedSalesTaxRate,
+        details_amount: Number(details_amount ?? 0),
         receive_order_id,
-        has_sales,
-        sales_tax_rate,
 
         square_payment_id,
         square_status,
-      } = props;
+      });
+    }
 
-      if (has_sales == 1) {
-        await appAlert('既に売上が完了しているため、選択できません。');
-      } else {
-        const resolvedSalesTaxRate =
-          getRate(state.sales_at) || sales_tax_rate || getRate(undefined as any) || 0;
+    if (!mountedRef.current) return true;
+    setErrors(undefined);
+    return true;
+  },
+  undefined,
+  'selected_for_sales',
+);
 
-        if (!mountedRef.current) return true;
-
-        const isSend01 = to01(send_flg);
-        const isSendBool = toBool(send_flg);
-
-        updateState({
-          delivery_date,
-          customer_id,
-          customer_name: customer_name ?? '上様',
-
-          send_flg: isSendBool,
-          is_send: isSend01,
-
-          name,
-          zip_code,
-          address1,
-          address2,
-          tel,
-          fax,
-          corporate_class,
-          details: Array.isArray(details) ? details : [],
-          shipping_amount,
-          fee,
-          discount,
-          total_amount,
-          order_no,
-          remarks,
-          rate,
-          fraction: 1,
-          sales_tax_rate: resolvedSalesTaxRate,
-          details_amount: Number(details_amount ?? 0),
-          receive_order_id,
-
-          square_payment_id,
-          square_status,
-        });
-      }
-
-      if (!mountedRef.current) return true;
-      setErrors(undefined);
-      return true;
-    },
-    undefined,
-    'selected_for_sales',
-  );
+const openReceiveOrderDialogWithLog = useCallback(() => {
+  return openReceiveOrderDialog();
+}, [openReceiveOrderDialog]);
 
   // ===== 得意先検索ダイアログ =====
   const { open: openCustomerDialog, searchDialogProps: customerSearchDialogProps } =
@@ -381,6 +441,9 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       const st = toState(raw ?? { details: [] }) as any;
       st.details = Array.isArray(st.details) ? st.details : [];
 
+      // ★取得時点で receive_order_detail_id を記憶（受注起点/編集の両方に効く）
+      rememberReceiveDetailIds(st.details);
+
       const isSend01 = to01(st.is_send ?? st.send_flg ?? 0);
       st.is_send = isSend01;
       st.send_flg = toBool(isSend01);
@@ -406,7 +469,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
         ...(receive_order_id_override ? { receive_order_id: receive_order_id_override } : {}),
       }));
     },
-    [getRate, setState, toState],
+    [getRate, setState, toState, rememberReceiveDetailIds],
   );
 
   const get: (id: number | undefined) => Promise<boolean> = async (idArg) => {
@@ -451,10 +514,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     return false;
   };
 
-  /**
-   * 売上画面でSquare決済/キャンセルした後に、受注起点で最新状態を取り直す
-   * - 新規作成（idなし）でも受注IDが分かれば refresh できる
-   */
   const refreshByReceiveOrderId = useCallback(
     async (receiveOrderId: number): Promise<boolean> => {
       if (!receiveOrderId) return false;
@@ -488,7 +547,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     try {
       const res = await axios.post(`/api/${slug}/validate_edit/${id}`, buildPayload());
 
-      // 200 success=false で errors が返る設計にも対応
       if (handleApiErrors200(res)) {
         safeDispatch(AppActions.success());
         return false;
@@ -522,7 +580,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     try {
       const res = await axios.put(`/api/${slug}/edit/${idArg}`, buildPayload());
 
-      // 200 success=false で errors が返る設計にも対応
       if (handleApiErrors200(res)) {
         safeDispatch(AppActions.success());
         return false;
@@ -553,7 +610,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     try {
       const res = await axios.post(`/api/${slug}/output/${doc_type}`, buildPayload());
 
-      // 200 success=false で errors が返る設計にも対応
       if (handleApiErrors200(res)) {
         safeDispatch(AppActions.success());
         return false;
@@ -586,11 +642,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     return false;
   };
 
-  /**
-   * Square: 決済確定（capture相当）
-   * - 受注側APIをそのまま叩く
-   * - 成功したら受注起点で売上画面のstateを取り直して captured に更新する
-   */
+  // --- Square 系（変更なし） ---
   const onClickSquareComplete: () => Promise<boolean> = useCallback(async () => {
     const roIdRaw =
       (state as any)?.receive_order_id ?? (from_receive ? id : undefined);
@@ -601,7 +653,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       return false;
     }
 
-    // payment_id が無いなら本来このボタンは出ないが、ガード
     const payId = normStr((state as any)?.square_payment_id);
     if (!payId) {
       await appAlert('Square決済IDが無いため、決済処理できません。');
@@ -614,7 +665,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     try {
       const res = await axios.post(`/api/receive_order/${roId}/square/complete`, {});
 
-      // 受注側も success=false + errors 形式の可能性があるので吸収
       if (res?.status === 200 && res.data?.success === false) {
         safeDispatch(AppActions.success());
         const msg =
@@ -627,7 +677,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
 
       if (res?.status === 200 && res.data?.success) {
         safeDispatch(AppActions.success());
-        // 最新状態に更新（captured になれば保存/発行が有効化される）
         await refreshByReceiveOrderId(roId);
         await appAlert('決済を確定しました。');
         return true;
@@ -641,9 +690,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     }
   }, [from_receive, id, refreshByReceiveOrderId, safeDispatch, state]);
 
-  /**
-   * Square: 注文キャンセル
-   */
   const onClickSquareCancel: () => Promise<boolean> = useCallback(async () => {
     const roIdRaw =
       (state as any)?.receive_order_id ?? (from_receive ? id : undefined);
@@ -706,7 +752,6 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
   }, [id, from_receive]);
 
   const onClickSave: () => void = async () => {
-    // 既存更新
     if (id && !from_receive) {
       if (await validate()) {
         if (await edit(id)) {
@@ -719,16 +764,13 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       return;
     }
 
-    // 新規作成
     const newId = await create();
 
-    // ★422(バリデーション) の場合は fallback しない（errors 表示を優先）
     if (newId === -1) {
       window.scrollTo(0, 0);
       return;
     }
 
-    // createが通らない旧経路フォールバック
     let finalId = newId;
     if (!finalId || Number(finalId) <= 0) {
       finalId = await commonStore();
@@ -817,7 +859,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
     id,
     state,
     receiveOrderSearchDialogProps,
-    openReceiveOrderDialog,
+    openReceiveOrderDialog: openReceiveOrderDialogWithLog, // ★差し替え
     customerSearchDialogProps,
     openCustomerDialog,
     userSearchDialogProps,

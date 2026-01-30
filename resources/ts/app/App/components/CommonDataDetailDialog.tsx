@@ -1,4 +1,4 @@
-// 更新: resources/ts/app/App/components/CommonDataDetailDialog.tsx
+// resources/ts/app/App/components/CommonDataDetailDialog.tsx
 import React, { useEffect } from 'react';
 import toNumber from 'lodash/toNumber';
 import { Item, CommonDataDetail } from '@/types';
@@ -7,15 +7,17 @@ import { useCommonSearchDialogProps } from '../uses/useCommonSearchDialogProps';
 import { useCommonDataDetailDialog } from '../uses/useCommonDataDetailDialog';
 import { ItemSearchDialog } from '@/app/Item/components/ItemSearchDialog';
 import { getAnswerDate } from '@/utils/getAnswerDate';
-import { numberFormat, calcUnitPrice } from '@/utils';
-import { calcAmountExternalTax } from '@/utils/calcAmountExternalTax';
+import { numberFormat } from '@/utils';
 
 export interface CommonDetailDialogProps<T> {
   title: string;
   slug: string;
   isShown: boolean;
   state: T;
+
+  // 互換のため props は残すが、今回の方針で「計算には使わない」
   fraction: number;
+
   salesTaxRate: number;
   showAnswerDate?: boolean;
   receiveOrderDate?: string | undefined;
@@ -30,12 +32,65 @@ type DataDetailDialog = <T extends CommonDataDetail>(
   props: CommonDetailDialogProps<T>
 ) => React.ReactElement<CommonDetailDialogProps<T>>;
 
+/**
+ * ★丸めは「常に切上げ」に固定（要望）
+ */
+const roundTaxAlwaysCeil = (v: number): number => {
+  if (!Number.isFinite(v)) return 0;
+  return Math.ceil(v);
+};
+
+/**
+ * 外税計算（常に切上げ）
+ * - unit_price は税抜単価
+ * - amount は税込金額
+ */
+const calcAmountExternalTaxAlwaysCeil = (
+  unitPriceAny: any,
+  quantityAny: any,
+  discountAny: any,
+  salesTaxRateAny: any
+) => {
+  const unitPrice = toNumber(unitPriceAny ?? 0);
+  const quantity = toNumber(quantityAny ?? 0);
+  const discount = toNumber(discountAny ?? 0);
+
+  const taxRate = toNumber(salesTaxRateAny ?? 0);
+
+  const subtotal = unitPrice * quantity;
+  const taxableRaw = subtotal - discount;
+
+  // 0未満防止
+  const taxable = taxableRaw > 0 ? taxableRaw : 0;
+
+  const taxRaw = (taxable * taxRate) / 100;
+  const sales_tax = roundTaxAlwaysCeil(taxRaw);
+
+  // 税込（円運用：最終は整数）
+  const amount = Math.round(taxable + sales_tax);
+
+  return {
+    amount,
+    sales_tax,
+    sales_tax_rate: taxRate,
+  };
+};
+
+const calcUnitPriceLocal = (salesUnitPriceAny: any, rateAny: any) => {
+  const s = toNumber(salesUnitPriceAny ?? 0);
+  const r = toNumber(rateAny ?? 100);
+  const raw = (s * r) / 100;
+
+  // 小数2桁（入力UI precision=2）
+  return Math.round(raw * 100) / 100;
+};
+
 export const CommonDataDetailDialog: DataDetailDialog = ({
   title,
   slug,
   isShown,
   state,
-  fraction,
+  fraction, // 受け取るが計算には使わない
   salesTaxRate,
   showAnswerDate,
   receiveOrderDate,
@@ -47,15 +102,31 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
 }) => {
   const { errors, setErrors, save } = useCommonDataDetailDialog(slug);
 
+  // ★ログは常時出す（後で消す前提）
+  console.log('[CommonDataDetailDialog] opened', {
+    slug,
+    fraction_prop: fraction,
+    salesTaxRate,
+    rounding: 'ALWAYS_CEIL',
+    state_snapshot: state,
+  });
+
   /**
-   * 🔽 外税再計算を1か所に集約
+   * 🔽 再計算を1か所に集約（常に切上げ）
    */
   const recalc = (
     unitPrice: number | undefined,
     quantity: number | undefined,
     discount: number | undefined
   ) => {
-    return calcAmountExternalTax(unitPrice, quantity, discount, salesTaxRate, fraction);
+    const out = calcAmountExternalTaxAlwaysCeil(unitPrice, quantity, discount, salesTaxRate);
+
+    console.log('[CommonDataDetailDialog][recalc]', {
+      in: { unitPrice, quantity, discount, salesTaxRate },
+      out,
+    });
+
+    return out;
   };
 
   const { open: openItemDialog, searchDialogProps: itemSearchDialogProps } =
@@ -63,37 +134,56 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       'item',
       async props => {
         const p: any = props as any;
+
         const itemNumber: string = (p.item_number ?? p.itemNo ?? p.item_no ?? p.code ?? '') as string;
         const domesticStocks: number = toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
         const overseasStocks: number = toNumber(p.overseas_stocks ?? p.overseas_stock ?? p.overseasStock ?? 0);
 
         const { id, name, name_note, sales_unit_price, is_set_item } = p;
 
-        const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, fraction);
-        const ret = recalc(unit_price, 1, state.discount ?? 0);
+        // rate は number/undefined 前提に寄せる（TSエラー回避）
+        const rateForCalc =
+          (state as any).rate === undefined || (state as any).rate === null
+            ? 100
+            : toNumber((state as any).rate);
+
+        const unit_price = calcUnitPriceLocal(sales_unit_price, rateForCalc);
+        const ret = recalc(unit_price, 1, (state as any).discount ?? 0);
 
         let answer_date: string | undefined = undefined;
         if (showAnswerDate) {
           answer_date = getAnswerDate(receiveOrderDate, domesticStocks, overseasStocks);
         }
 
+        console.log('[CommonDataDetailDialog][item selected]', {
+          id,
+          itemNumber,
+          sales_unit_price,
+          rateForCalc,
+          unit_price,
+          rounding: 'ALWAYS_CEIL',
+          salesTaxRate,
+          ret,
+        });
+
         updateState({
           item_kind: is_set_item ? 2 : 1,
           item_id: id,
-
-          // ★これが無いと品番欄に絶対入らない
           item_number: itemNumber,
-
           item_name: name,
           item_name_jp: name_note,
-          sales_unit_price,
+
+          sales_unit_price: toNumber(sales_unit_price ?? 0),
+          rate: rateForCalc,
           unit_price,
           quantity: 1,
-          discount: state.discount ?? 0,
-          sales_tax_rate: salesTaxRate,
+          discount: (state as any).discount ?? 0,
+
+          // ★重複回避: sales_tax_rate は ret 側で返すのでここでは指定しない
           ...ret,
+
           answer_date,
-        });
+        } as any);
 
         setErrors(undefined);
         return true;
@@ -102,9 +192,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     );
 
   useEffect(() => {
-    if (isShown) {
-      setErrors(undefined);
-    }
+    if (isShown) setErrors(undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isShown]);
 
@@ -119,117 +207,136 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       (typeof value === 'string' || typeof value === 'undefined')
     ) {
       updateState({ [name]: value } as any);
-      // 入力系は即時にエラークリア（存在する場合のみ）
       if (errors && (errors as any)[name]) setErrors({ ...(errors as any), [name]: '' });
     }
   };
 
   const onChangeRate = (name: string, value: string | number | boolean | undefined) => {
-    const rate = value ? toNumber(value) : undefined;
-    const unit_price = calcUnitPrice(state.sales_unit_price ?? 0, rate ?? 0, fraction);
-    const ret = recalc(unit_price, state.quantity, state.discount);
+    const rate = value === '' || value === undefined ? undefined : toNumber(value);
+    const unit_price = calcUnitPriceLocal((state as any).sales_unit_price ?? 0, rate ?? 100);
+    const ret = recalc(unit_price, (state as any).quantity as any, (state as any).discount as any);
+
+    console.log('[CommonDataDetailDialog][onChangeRate]', {
+      name,
+      value,
+      parsed_rate: rate,
+      sales_unit_price: (state as any).sales_unit_price,
+      unit_price,
+      quantity: (state as any).quantity,
+      discount: (state as any).discount,
+      ret,
+    });
+
     updateState({ [name]: rate, unit_price, ...ret } as any);
-    // 掛率自体は必須でないが、表示済みエラーがあれば消す
     if (errors && (errors as any)[name]) setErrors({ ...(errors as any), [name]: '' });
   };
 
   const onChangeUnitPrice = (name: string, value: string | number | boolean | undefined) => {
     const unitPrice = value === '' || value === undefined ? undefined : toNumber(value);
-    const ret = recalc(unitPrice, state.quantity, state.discount);
+    const ret = recalc(unitPrice, (state as any).quantity as any, (state as any).discount as any);
+
+    console.log('[CommonDataDetailDialog][onChangeUnitPrice]', {
+      name,
+      value,
+      parsed_unitPrice: unitPrice,
+      quantity: (state as any).quantity,
+      discount: (state as any).discount,
+      ret,
+    });
+
     updateState({ [name]: unitPrice, ...ret } as any);
     setErrors({ ...(errors as any), unit_price: '' });
   };
 
   const onChangeQuantity = (name: string, value: string | number | boolean | undefined) => {
     const quantity = value === '' || value === undefined ? undefined : toNumber(value);
-    const ret = recalc(state.unit_price, quantity, state.discount);
+    const ret = recalc((state as any).unit_price as any, quantity as any, (state as any).discount as any);
+
+    console.log('[CommonDataDetailDialog][onChangeQuantity]', {
+      name,
+      value,
+      parsed_quantity: quantity,
+      unit_price: (state as any).unit_price,
+      discount: (state as any).discount,
+      ret,
+    });
+
     updateState({ [name]: quantity, ...ret } as any);
-    // quantity は必須なので入力時にクリア
     setErrors({ ...(errors as any), quantity: '' });
   };
 
   const onChangeDetailDiscount = (name: string, value: string | number | boolean | undefined) => {
     const discount = value === '' || value === undefined ? 0 : toNumber(value);
-    const ret = recalc(state.unit_price, state.quantity, discount);
+    const ret = recalc((state as any).unit_price as any, (state as any).quantity as any, discount);
+
+    console.log('[CommonDataDetailDialog][onChangeDiscount]', {
+      name,
+      value,
+      parsed_discount: discount,
+      unit_price: (state as any).unit_price,
+      quantity: (state as any).quantity,
+      ret,
+    });
 
     updateState({ [name]: discount, ...ret } as any);
     setErrors({ ...(errors as any), discount: '' });
   };
 
-  /**
-   * 保存前の必須チェック（このコンポーネント内で完結）
-   * 必須: 品番(item_id) / 単価(unit_price) / 数量(quantity)
-   */
   const validateBeforeSave = (): boolean => {
-  const nextErrors: Record<string, string> = {};
+    const nextErrors: Record<string, string> = {};
 
-  // === 品番（必須）===
-  if (!state.item_id) {
-    nextErrors.item_id = '品番を選択してください。';
-  }
+    if (!(state as any).item_id) nextErrors.item_id = '品番を選択してください。';
 
-  // === 単価（必須・数値・0以上）===
-  const unitPriceNum =
-    state.unit_price === undefined || state.unit_price === null
-      ? NaN
-      : toNumber(state.unit_price);
+    const unitPriceNum =
+      (state as any).unit_price === undefined || (state as any).unit_price === null
+        ? NaN
+        : toNumber((state as any).unit_price);
 
-  if (Number.isNaN(unitPriceNum)) {
-    nextErrors.unit_price = '単価を入力してください。';
-  } else if (unitPriceNum < 0) {
-    nextErrors.unit_price = '単価は0以上で入力してください。';
-  }
+    if (Number.isNaN(unitPriceNum)) nextErrors.unit_price = '単価を入力してください。';
+    else if (unitPriceNum < 0) nextErrors.unit_price = '単価は0以上で入力してください。';
 
-  // === 数量（必須・数値・1以上）===
-  const qtyNum =
-    state.quantity === undefined || state.quantity === null
-      ? NaN
-      : toNumber(state.quantity);
+    const qtyNum =
+      (state as any).quantity === undefined || (state as any).quantity === null
+        ? NaN
+        : toNumber((state as any).quantity);
 
-  if (Number.isNaN(qtyNum)) {
-    nextErrors.quantity = '数量を入力してください。';
-  } else if (qtyNum < 1) {
-    nextErrors.quantity = '数量は1以上で入力してください。';
-  }
+    if (Number.isNaN(qtyNum)) nextErrors.quantity = '数量を入力してください。';
+    else if (qtyNum < 1) nextErrors.quantity = '数量は1以上で入力してください。';
 
-  if (Object.keys(nextErrors).length > 0) {
-    setErrors(nextErrors);
-    return false;
-  }
-
-  return true;
-};
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return false;
+    }
+    return true;
+  };
 
   const onClickSave = () => {
-    // ★必須チェックで止める（APIに依存しない）
     if (!validateBeforeSave()) return;
 
     const snapshot = { ...(state as any) };
     save(snapshot).then(ret => {
-      if (ret) {
-        onSelected(snapshot);
-      }
+      if (ret) onSelected(snapshot);
     });
   };
 
   const onClickDelete = () => {
-    if (state.no) onDeleted(state.no);
+    if ((state as any).no) onDeleted((state as any).no);
   };
 
   return (
     <DialogWrapper title={`${title}明細`} isShown={isShown} onClickCancel={onCancel}>
       <div className="form-group-wrapper">
         <div>
-          <Forms.FormGroup labelText="品番" required error={errors?.item_id} groupClassName="mt-0">
+          <Forms.FormGroup labelText="品番" required error={(errors as any)?.item_id} groupClassName="mt-0">
             <div className="flex">
               <Forms.FormInputText
                 name="item_number"
-                value={state.item_number ?? ''}
-                error={errors?.item_id}
+                value={(state as any).item_number ?? ''}
+                error={(errors as any)?.item_id}
                 className="max-w-lg"
                 readOnly
               />
-              <input type="hidden" name="item_id" value={state.item_id ?? ''} />
+              <input type="hidden" name="item_id" value={(state as any).item_id ?? ''} />
               <button className="btn ml-2 py-0 px-2" onClick={openItemDialog}>
                 ...
               </button>
@@ -241,7 +348,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         <Forms.FormGroupInputText
           labelText="商品名"
           name="item_name"
-          value={state.item_name ?? ''}
+          value={(state as any).item_name ?? ''}
           onChange={onChange}
           removeOptionalLabel
         />
@@ -249,7 +356,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         <Forms.FormGroupInputText
           labelText="商品名（納品書）"
           name="item_name_jp"
-          value={state.item_name_jp ?? ''}
+          value={(state as any).item_name_jp ?? ''}
           onChange={onChange}
           removeOptionalLabel
         />
@@ -258,7 +365,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           <Forms.FormGroupInputText
             labelText="定価"
             name="sales_unit_price"
-            value={numberFormat(state.sales_unit_price, 2)}
+            value={numberFormat((state as any).sales_unit_price, 2)}
             className="max-w-8 text-right"
             readOnly
             removeOptionalLabel
@@ -270,8 +377,8 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             labelText="掛率"
             labelUnitText="%"
             name="rate"
-            value={state.rate ?? ''}
-            error={errors?.rate}
+            value={(state as any).rate ?? ''}
+            error={(errors as any)?.rate}
             onChange={onChangeRate}
             precision={0}
             min={0}
@@ -283,13 +390,13 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           <Forms.FormGroupInputNumber
             labelText="単価"
             name="unit_price"
-            value={state.unit_price}
-            error={errors?.unit_price}
+            value={(state as any).unit_price}
+            error={(errors as any)?.unit_price}
             onChange={onChangeUnitPrice}
             precision={2}
             required
             min={0}
-            readOnly={state.item_kind !== 1}
+            readOnly={(state as any).item_kind !== 1}
           />
         </div>
 
@@ -297,8 +404,8 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           <Forms.FormGroupInputNumber
             labelText="数量"
             name="quantity"
-            value={state.quantity}
-            error={errors?.quantity}
+            value={(state as any).quantity}
+            error={(errors as any)?.quantity}
             onChange={onChangeQuantity}
             precision={0}
             required
@@ -311,7 +418,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           <Forms.FormGroupInputNumber
             labelText="割引"
             name="discount"
-            value={state.discount ?? 0}
+            value={(state as any).discount ?? 0}
             error={(errors as any)?.discount}
             onChange={onChangeDetailDiscount}
             precision={2}
@@ -324,7 +431,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             <Forms.FormGroupInputText
               labelText="金額（税込）"
               name="amount"
-              value={numberFormat(state.amount, 0)}
+              value={numberFormat((state as any).amount, 0)}
               className="max-w-8 text-right"
               readOnly
               removeOptionalLabel
@@ -334,7 +441,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             <Forms.FormGroupInputText
               labelText="消費税"
               name="sales_tax"
-              value={numberFormat(state.sales_tax, 0)}
+              value={numberFormat((state as any).sales_tax, 0)}
               className="max-w-8 text-right"
               readOnly
               removeOptionalLabel
@@ -347,8 +454,8 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
             <Forms.FormGroupInputText
               labelText="回答納期"
               name="answer_date"
-              value={state.answer_date ?? ''}
-              error={errors?.answer_date}
+              value={(state as any).answer_date ?? ''}
+              error={(errors as any)?.answer_date}
               onChange={onChange}
             />
           </div>
@@ -359,7 +466,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         <button className="btn" onClick={onClickSave}>
           保存
         </button>
-        {state?.no != undefined && (
+        {(state as any)?.no != undefined && (
           <button className="btn-delete" onClick={onClickDelete}>
             削除
           </button>

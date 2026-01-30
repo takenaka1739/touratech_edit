@@ -299,11 +299,26 @@ class SalesService
 
         DB::beginTransaction();
         try {
+            $receive_order_id = $data->get('receive_order_id');
+
+            \Log::info('[SalesService][store] begin', [
+                'has_receive_order_id' => (bool)$receive_order_id,
+                'receive_order_id' => $receive_order_id ? (int)$receive_order_id : null,
+                'detail_count' => is_array($data->get('details')) ? count($data->get('details')) : null,
+                'detail_keys_0' => (isset(($data->get('details') ?? [])[0]) && is_array(($data->get('details') ?? [])[0]))
+                    ? array_keys(($data->get('details') ?? [])[0])
+                    : null,
+            ]);
+
             $sales = new Sales();
             $this->fillSalesHeader($sales, $data);
             $sales->save();
 
-            $receive_order_id = $data->get('receive_order_id');
+            \Log::info('[SalesService][store] saved header', [
+                'sales_id' => (int)$sales->id,
+                'receive_order_id' => $receive_order_id ? (int)$receive_order_id : null,
+            ]);
+
             if ($receive_order_id) {
                 $this->insertReceiveOrderSales((int)$receive_order_id, (int)$sales->id);
             }
@@ -314,13 +329,31 @@ class SalesService
             if ($receive_order_id) {
                 $this->updateSalesCompleted((int)$receive_order_id);
                 $this->updateHasSales((int)$receive_order_id);
+
+                // ★ upsert後にDBを読み直してログ（〇が付かない原因切り分け）
+                $hasTbl = $this->receiveOrderHasSalesTable();
+                $hasSalesRow = $hasTbl
+                    ? DB::table($hasTbl)->where('receive_order_id', (int)$receive_order_id)->first()
+                    : null;
+
+                \Log::info('[SalesService][store] after status update', [
+                    'sales_id' => (int)$sales->id,
+                    'receive_order_id' => (int)$receive_order_id,
+                    'receive_order_has_sales_table' => $hasTbl,
+                    'has_sales_row' => $hasSalesRow ? (array)$hasSalesRow : null,
+                ]);
             }
 
-            // 旧版互換：moves を作り直し → t_inventories + t_inventory_moves で再計算
             $this->rebuildInventoryMovesBySalesId((int)$sales->id);
             $this->recalcDomesticStockBySalesId((int)$sales->id, []);
 
             DB::commit();
+
+            \Log::info('[SalesService][store] committed', [
+                'sales_id' => (int)$sales->id,
+                'receive_order_id' => $receive_order_id ? (int)$receive_order_id : null,
+            ]);
+
             return ['success' => true, 'id' => $sales->id];
         } catch (\Throwable $e) {
             $lvl = DB::transactionLevel();
@@ -330,10 +363,7 @@ class SalesService
                 'exception' => get_class($e),
             ]);
 
-            if ($lvl > 0) {
-                DB::rollBack();
-            }
-
+            if ($lvl > 0) DB::rollBack();
             throw $e;
         }
     }
@@ -344,29 +374,57 @@ class SalesService
 
         DB::beginTransaction();
         try {
+            \Log::info('[SalesService][update] begin', [
+                'sales_id' => $sales_id,
+                'incoming_detail_count' => is_array($data->get('details')) ? count($data->get('details')) : null,
+            ]);
+
             /** @var Sales $sales */
             $sales = Sales::query()->from('t_sales')->findOrFail($sales_id);
 
-            // 更新前の品番を保持（旧版の pre_item_numbers 相当）
             $preItemNumbers = $this->getSaleItemNumbers($sales_id);
 
             $this->fillSalesHeader($sales, $data);
             $sales->save();
 
-            $details = $data->get('details') ?? [];
-            $this->updateDetails($sales_id, $details);
-
+            // ★この売上が紐づく受注ID（リンク経由）
             $receive_order_id = $this->getReceiveOrderIdBySaleId($sales_id);
+
+            \Log::info('[SalesService][update] header saved', [
+                'sales_id' => $sales_id,
+                'receive_order_id' => $receive_order_id,
+            ]);
+
+            $details = $data->get('details') ?? [];
+            $this->updateDetails($sales_id, $details); // ※ここはログ確認後に改修する
+
             if ($receive_order_id) {
                 $this->updateSalesCompleted((int)$receive_order_id);
                 $this->updateHasSales((int)$receive_order_id);
+
+                $hasTbl = $this->receiveOrderHasSalesTable();
+                $hasSalesRow = $hasTbl
+                    ? DB::table($hasTbl)->where('receive_order_id', (int)$receive_order_id)->first()
+                    : null;
+
+                \Log::info('[SalesService][update] after status update', [
+                    'sales_id' => $sales_id,
+                    'receive_order_id' => (int)$receive_order_id,
+                    'receive_order_has_sales_table' => $hasTbl,
+                    'has_sales_row' => $hasSalesRow ? (array)$hasSalesRow : null,
+                ]);
             }
 
-            // 旧版互換：moves を作り直し → 再計算（更新前後の品番を対象にする）
             $this->rebuildInventoryMovesBySalesId($sales_id);
             $this->recalcDomesticStockBySalesId($sales_id, $preItemNumbers);
 
             DB::commit();
+
+            \Log::info('[SalesService][update] committed', [
+                'sales_id' => $sales_id,
+                'receive_order_id' => $receive_order_id,
+            ]);
+
             return ['success' => true];
         } catch (\Throwable $e) {
             $lvl = DB::transactionLevel();
@@ -377,10 +435,7 @@ class SalesService
                 'exception' => get_class($e),
             ]);
 
-            if ($lvl > 0) {
-                DB::rollBack();
-            }
-
+            if ($lvl > 0) DB::rollBack();
             throw $e;
         }
     }

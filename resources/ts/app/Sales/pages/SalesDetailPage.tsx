@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo} from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { PageWrapper, Forms } from '@/components';
 import { CommonDataDetailDialog } from '@/app/App/components/CommonDataDetailDialog';
@@ -22,6 +22,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
   const title = '売上データ';
   const slug = 'sales';
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
+
   const {
     isLoading,
     id,
@@ -54,6 +55,17 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
 
   const { searchAddressByZip, loading: isSearchingZip } = useZipcodeAddress();
 
+  // ====== デバッグスイッチ（localStorage）======
+  // ON:  localStorage.setItem('debug_sales','1')
+  // OFF: localStorage.removeItem('debug_sales')
+  const debugSales = useMemo(() => {
+    try {
+      return localStorage.getItem('debug_sales') === '1';
+    } catch {
+      return false;
+    }
+  }, []);
+
   const setFieldValue = (name: string, value: any) => {
     onChange(name, value);
   };
@@ -75,7 +87,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
 
   /**
    * 送付フラグ（新: is_send / 旧: send_flg）互換
-   * - 初期表示・必須制御は旧 send_flg でも成立させる
    */
   const sendFlag = useMemo(() => {
     const raw = (state as any)?.is_send ?? (state as any)?.send_flg ?? 0;
@@ -97,7 +108,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     return String(v).trim();
   }, [(state as any)?.square_status]);
 
-  // クレジット対象（square_payment_idがある）
   const isCardTarget = useMemo(() => squarePaymentId !== '', [squarePaymentId]);
 
   const isSquareAuthorized = useMemo(() => isCardTarget && squareStatus === 'authorized', [
@@ -109,22 +119,14 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     squareStatus,
   ]);
 
-  // 保存/発行を止める条件
-  // - 請求済
-  // - 決済待ち(authorized)
-  // - キャンセル済み(canceled)
   const disableActions = useMemo(() => {
     return Boolean(state.has_invoice) || isSquareAuthorized || isSquareCanceled;
   }, [state.has_invoice, isSquareAuthorized, isSquareCanceled]);
 
   /**
-   * FormInputCheck の onChange が
-   * - (event) で呼ばれる
-   * - (name, value) で呼ばれる
-   * どちらでも正しく is_send を 1/0 更新できるように吸収する
+   * FormInputCheck の onChange 互換
    */
   const handleIsSendChange = (...args: any[]) => {
-    // 形式A: onChange(name, value)
     if (args.length >= 2 && typeof args[0] === 'string') {
       const name = args[0];
       const value = args[1];
@@ -132,7 +134,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
       return;
     }
 
-    // 形式B: onChange(event)
     const e = args[0];
     const checked = !!e?.target?.checked;
     onChange('is_send', checked ? 1 : 0);
@@ -152,9 +153,38 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
         <div className="flex items-center">
           {!id && (
             <>
-              <button className="btn" onClick={openReceiveOrderDialog}>
+              <button
+                className="btn"
+                onClick={() => {
+                  openReceiveOrderDialog();
+                }}
+              >
                 受注取得
               </button>
+
+              {/* ここで props を丸ごと表示（debugSales のときだけ） */}
+              {debugSales && (
+                <pre className="text-xs bg-gray-50 border p-2 mt-2 ml-2" style={{ maxWidth: 520 }}>
+                  {JSON.stringify(
+                    {
+                      receiveOrderSearchDialogPropsKeys: Object.keys(
+                        (receiveOrderSearchDialogProps as any) ?? {},
+                      ),
+                      // よくあるキー候補（存在したら値も見えるようにする）
+                      isOpen: (receiveOrderSearchDialogProps as any)?.isOpen,
+                      open: (receiveOrderSearchDialogProps as any)?.open,
+                      onClose: !!(receiveOrderSearchDialogProps as any)?.onClose,
+                      onConfirm: !!(receiveOrderSearchDialogProps as any)?.onConfirm,
+                      onSelect: !!(receiveOrderSearchDialogProps as any)?.onSelect,
+                      selectedKey: (receiveOrderSearchDialogProps as any)?.selectedKey,
+                      selected_for: (receiveOrderSearchDialogProps as any)?.selected_for,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              )}
+
               <ReceiveOrderSearchDialog {...receiveOrderSearchDialogProps} />
             </>
           )}
@@ -177,7 +207,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           <div className="bg-red-200 py-2 px-4 text-sm">{errors?.has_invoice}</div>
         )}
 
-        {/* 決済待ち（authorized）バナー */}
         {isSquareAuthorized && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 py-2 px-4 text-sm mb-4">
             カード未決済（status: {squareStatus || 'unknown'}）のため、保存・書類発行はできません。
@@ -185,7 +214,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
           </div>
         )}
 
-        {/* キャンセル済み（canceled）バナー */}
         {isSquareCanceled && (
           <div className="bg-gray-100 border border-gray-400 text-gray-800 py-2 px-4 text-sm mb-4">
             カード決済がキャンセルされています。 保存・書類発行はできません。
@@ -391,7 +419,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
                     onChange={onChange}
                     onCompositionStart={onCompositionStart}
                     onCompositionEnd={onCompositionEnd}
-                    onKeyDown={e => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter' && !composing) {
                         onClickBarcode();
                       }
@@ -557,7 +585,6 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>
-            {/* Square: authorized（決済待ち）のときだけ決済/キャンセルを出す */}
             {isSquareAuthorized && (
               <>
                 <button className="btn mr-3" onClick={onClickSquareComplete}>

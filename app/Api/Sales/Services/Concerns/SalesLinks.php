@@ -125,7 +125,7 @@ trait SalesLinks
 
             if (Schema::hasTable($detailTable)) {
                 // 売上明細IDを拾い、リンクテーブルから削除
-                $detailIds = DB::table($detailTable)->where('sale_id', $sales_id)->pluck('id')->toArray();
+                $detailIds = DB::table($detailTable)->where('sales_id', $sales_id)->pluck('id')->toArray();
 
                 if (!empty($detailIds)) {
                     DB::table($tbl2)->whereIn('sales_detail_id', $detailIds)->delete();
