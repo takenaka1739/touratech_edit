@@ -127,14 +127,22 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         const domesticStocks: number = toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
         const overseasStocks: number = toNumber(p.overseas_stocks ?? p.overseas_stock ?? p.overseasStock ?? 0);
 
-        const { id, name, name_note, sales_unit_price, is_set_item } = p;
+        // ✅ 既存の項目名(sales_unit_price等)は維持し、値だけ仕入単価を採用する
+        // - props側の purchase_unit_price を優先して salesUnitPriceNum に入れる
+        // - purchase_unit_price が無い場合は従来通り sales_unit_price にフォールバック
+        const { id, name, name_note, purchase_unit_price, sales_unit_price, is_set_item } = p;
 
         // ======================================================
         // sometimes要望対応:
         // 商品選択時は「定価=単価=sales_unit_price」にする
-        // 掛率計算は使わず、rateも100で揃える
+        // → ただし今回は “渡す値” を仕入単価に差し替える
         // ======================================================
-        const salesUnitPriceNum = toNumber(sales_unit_price ?? 0);
+        const salesUnitPriceNum = toNumber(
+          purchase_unit_price !== undefined && purchase_unit_price !== null
+            ? purchase_unit_price
+            : (sales_unit_price ?? 0)
+        );
+
         const rateForCalc = 100; // sometimes固定
         const unit_price = salesUnitPriceNum; // sometimes固定（掛率を通さない）
         const ret = recalc(unit_price, 1, (state as any).discount ?? 0);
@@ -147,7 +155,10 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         console.log('[CommonDataDetailDialog][item selected]', {
           id,
           itemNumber,
-          sales_unit_price: salesUnitPriceNum,
+          // デバッグ上は両方出して、採用した値を明示
+          purchase_unit_price: toNumber(purchase_unit_price ?? 0),
+          sales_unit_price: toNumber(sales_unit_price ?? 0),
+          adopted_sales_unit_price: salesUnitPriceNum,
           rateForCalc,
           unit_price,
           rounding: 'ALWAYS_CEIL',
@@ -162,7 +173,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           item_name: name,
           item_name_jp: name_note,
 
-          // sometimes定価/単価はsales_unit_priceで確定
+          // ✅ ここは項目名を変えず、値だけ仕入単価に差し替え
           sales_unit_price: salesUnitPriceNum,
           rate: rateForCalc,
           unit_price,
