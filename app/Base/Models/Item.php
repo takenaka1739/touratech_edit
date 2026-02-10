@@ -21,6 +21,7 @@ class Item extends Model
     'code',
     'name',
     'item_number',
+    'is_sell_variation',
     'variations1',
     'variations2',
     'variations3',

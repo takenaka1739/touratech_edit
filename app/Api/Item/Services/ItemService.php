@@ -312,7 +312,8 @@ class ItemService
                      $item->variations3 === null ? '' : $item->variations3,
                      $item->variations4 === null ? '' : $item->variations4,
                      $item->item_number === null ? '' : $item->item_number,
-                     $item->sales_price === null ? '' : $item->sales_price);
+                     $item->sales_price === null ? '' : $item->sales_price,
+                     $item->is_sell_variation === null ? '0' : $item->is_sell_variation);
 
       array_push($b, $item->id,
                      $item->variations1, 
@@ -320,7 +321,8 @@ class ItemService
                      $item->variations3,
                      $item->variations4,
                      $item->item_number,
-                     $item->sales_price);
+                     $item->sales_price,
+                     $item->is_sell_variation);
       array_push($test, $a);
       array_push($backVariItems, $b);
     }
@@ -451,7 +453,7 @@ foreach ($idList as $id) {
 
     if (count($variItems) < 1) {
       $variItems = [
-        ['new1', '', '', '', '', '', '']
+        ['new1', '', '', '', '', '', '', '']
       ];
     }
   
@@ -742,6 +744,7 @@ foreach ($idList as $id) {
       'variations4' => $resolved[4],
       'item_number' => $variation[5] ?? null,
       'sales_price' => $variation[6] ?? 0,
+      'is_sell_variation' => $variation[7] ?? '0',
     ];
   }
 
@@ -1000,6 +1003,7 @@ foreach ($idList as $id) {
             'variations4' => $data['variItems'][0][4] ?? null,
             'item_number' => $data['variItems'][0][5] ?? null,
             'sales_price' => $data['variItems'][0][6] ?? 0,
+            'is_sell_variation' => $data['variItems'][0][7] ?? '0',
           ]);
         }
         else
@@ -1067,6 +1071,7 @@ foreach ($idList as $id) {
             'variations4' => $data['variItems'][0][4] ?? null,
             'item_number' => $data['variItems'][0][5] ?? null,
             'sales_price' => $data['variItems'][0][6] ?? 0,
+            'is_sell_variation' => $data['variItems'][0][7] ?? '0',
           ]);
         }
         else
@@ -1078,6 +1083,7 @@ foreach ($idList as $id) {
             'variations4' => null,
             'item_number' => $data['item_number'] ?? null,
             'sales_price' => $data['sales_price'] ?? 0,
+            'is_sell_variation' => $data['is_sell_variation'] ?? '0',
           ]);
         }
 
