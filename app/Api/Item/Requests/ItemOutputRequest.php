@@ -18,6 +18,8 @@ class ItemOutputRequest extends BaseRequest
         'max:50',
       ],
       'name_label' => 'required|string|max:36',
+      'variItems' => 'array',
+      'sales_price' => 'nullable|numeric|price',
       'sales_unit_price' => 'required|numeric|price',
       'selected' => 'required|array',
       'isPrintPrice' => 'nullable|boolean',

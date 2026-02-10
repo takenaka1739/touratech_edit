@@ -21,6 +21,7 @@ export const ItemPriceSection: React.VFC<Props> = ({
 }) => {
   return (
     <div className="flex flex-wrap max-w-2xl">
+      {/* 不要なので削除しても構わないとの顧客要望（削除の場合は影響確認が必要なためコメントアウトで対応
       <div className="w-1/2">
         <Forms.FormGroupInputNumber
           labelText="売上単価"
@@ -33,6 +34,7 @@ export const ItemPriceSection: React.VFC<Props> = ({
           min={0}
         />
       </div>
+      */}
 
       <div className="w-1/2">
         <Forms.FormGroupInputNumber
