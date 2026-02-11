@@ -108,7 +108,6 @@ class HomeDataImportService
 
     // 現在の商品データを取得する（セット品を除く）
     $items = DB::table('m_items')->where('is_set_item', false)->get()->keyBy('item_number');
-    //$items = DB::table('m_items')->where('is_set_item', false)->get()->keyBy('item_number');
 
     $rows = [];
     foreach ($tmps as $tmp) {
@@ -127,6 +126,7 @@ class HomeDataImportService
         if ($item) {
           $edit_kind = $this::EDIT_KIND_UPDATE;
         }
+
         $remarks = "";
         // 商品が存在し、値が違う場合は備考を編集する
         if ($item) {
@@ -139,9 +139,11 @@ class HomeDataImportService
             $remarks .= "廃盤予定：".$item->is_discontinued."->".$is_discontinued;
           }
         }
-        $overseas_stocks = $tmp->get('stock', 0);
-        if (!is_numeric($overseas_stocks)) {
-          $overseas_stocks = 0;
+
+        // item_temporaries は旧DDL通り overseas_stock（単数）
+        $overseas_stock = $tmp->get('stock', 0);
+        if (!is_numeric($overseas_stock)) {
+          $overseas_stock = 0;
         }
 
         $rows[] = [
@@ -151,7 +153,7 @@ class HomeDataImportService
           'sample_price' => bcmul($price, $rate, 2),
           'supplier_id' => $supplier_id,
           'is_discontinued' => $is_discontinued,
-          'overseas_stocks' => $overseas_stocks,
+          'overseas_stock' => (int)$overseas_stock,
           'edit_kind' => $edit_kind,
           'remarks' => $remarks,
         ];
@@ -160,12 +162,18 @@ class HomeDataImportService
     return $rows;
   }
 
-  /**
+    /**
    * 商品を新規追加する
+   *
+   * 注意:
+   * - item_temporaries: overseas_stock（単数）
+   * - m_items: overseas_stocks（複数）
+   * - m_items.code が NOT NULL のため、最低限 item_number を入れる
    */
   private function insertItems()
   {
     DB::insert("INSERT INTO m_items (item_number
+      , code
       , name
       , purchase_unit_price
       , sample_price
@@ -176,13 +184,14 @@ class HomeDataImportService
       , created_at
       , updated_at)
     SELECT item_number
+      , item_number
       , name
       , purchase_unit_price
       , sample_price
       , supplier_id
       , is_discontinued
       , 1
-      , overseas_stocks
+      , overseas_stock
       , CURRENT_TIMESTAMP
       , CURRENT_TIMESTAMP
     FROM item_temporaries WHERE item_temporaries.edit_kind = ".$this::EDIT_KIND_INSERT);
@@ -200,7 +209,7 @@ class HomeDataImportService
       , a.sample_price = b.sample_price
       , a.supplier_id = b.supplier_id
       , a.is_discontinued = b.is_discontinued
-      , a.overseas_stocks = b.overseas_stocks
+      , a.overseas_stocks = b.overseas_stock
       , a.updated_at = CURRENT_TIMESTAMP");
   }
 
@@ -218,7 +227,7 @@ class HomeDataImportService
       , sample_price
       , supplier_id
       , is_discontinued
-      , overseas_stocks
+      , overseas_stock
       , edit_kind
       , remarks)
     SELECT item_number

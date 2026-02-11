@@ -22370,7 +22370,7 @@ label {
 }
 
 .item-detail-page .variation-header .vh-col2 {
-  margin-left: 60px;
+  margin-left: 10px;
 }
 
 .item-detail-page .variation-header .vh-col3 {
@@ -22386,6 +22386,10 @@ label {
 }
 
 .item-detail-page .variation-header .vh-col6 {
+  margin-left: 60px;
+}
+
+.item-detail-page .variation-header .vh-col7 {
   margin-left: 126px;
 }
 
@@ -22399,6 +22403,11 @@ label {
   display: flex;
   justify-content: flex-start;
   align-items: center;
+}
+
+.item-detail-page .variation-publish {
+  margin-left: 5px;
+  margin-right: 15px;
 }
 
 .item-detail-page .variation-row-cell {
