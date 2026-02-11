@@ -106,7 +106,6 @@ class PurchaseService
       }
 
       $m = Purchase::create($payload);
-      //$m->save();
 
       // 発注仕入連結テーブルを登録する
       $place_order_id = $data->get('place_order_id');
@@ -118,10 +117,10 @@ class PurchaseService
       $details = $data->get('details');
       $this->insertDetails($m->id, $details, $place_order_id);
 
-      // 入出庫データを登録する
+      // 入出庫データを登録する（quantity は符号付きでそのまま反映される）
       $this->insertInventoryMoves($m->id);
 
-      // 国内在庫数を更新する
+      // 国内在庫数を更新する（InventoryMove::getQuantity が符号付き合算なら減算も効く）
       $this->updateDomesticStock($m->id, []);
     });
   }
@@ -323,7 +322,7 @@ class PurchaseService
       'item_name' => $detail->get('item_name'),
       'item_name_jp' => $detail->get('item_name_jp'),
       'unit_price' => $detail->get('unit_price'),
-      'quantity' => $detail->get('quantity'),
+      'quantity' => $detail->get('quantity'), // ★符号付きで保存
       'amount' => $detail->get('amount'),
       'sales_tax_rate' => $detail->get('sales_tax_rate'),
       'sales_tax' => $detail->get('sales_tax'),
@@ -340,6 +339,7 @@ class PurchaseService
         // セット品の明細を発注データから生成する
         $this->createSetItemsByPlaceOrder($purchase_id, $detail->get('place_order_detail_id'), $m);
       } else {
+        // ★親数量に追従（マイナス数量も反映）
         $this->createSetItems($purchase_id, $item_id, $m);
       }
     }
@@ -355,9 +355,11 @@ class PurchaseService
   private function updateDetailItems(int $id, int $purchase_id, $detail) {
     $item_kind = $detail->get('item_kind');
     $item_id = $detail->get('item_id');
+    $quantity = $detail->get('quantity');
 
     $m = PurchaseDetail::find($id);
     $prev_item_id = $m->item_id;
+    $prev_quantity = $m->quantity;
 
     $m->id = $id;
     $m->purchase_id = $purchase_id;
@@ -368,20 +370,24 @@ class PurchaseService
     $m->item_name = $detail->get('item_name');
     $m->item_name_jp = $detail->get('item_name_jp');
     $m->unit_price = $detail->get('unit_price');
-    $m->quantity = $detail->get('quantity');
+    $m->quantity = $quantity; // ★符号付きで保存
     $m->amount = $detail->get('amount');
     $m->sales_tax_rate = $detail->get('sales_tax_rate');
     $m->sales_tax = $detail->get('sales_tax');
     $m->save();
 
-    // 商品IDが変わった場合、セット品の明細を削除する
-    if ($prev_item_id != $item_id) {
-      DB::table('t_purchase_details')->where('parent_id', $id)->delete();
-
-      // セット品の場合、セット品の明細を登録する
-      if ($item_kind === 2) {
+    // ★セット品（親）の場合、親数量変更でも子明細を作り直す必要がある
+    if ($item_kind === 2) {
+      if ($prev_item_id != $item_id || (int)$prev_quantity !== (int)$quantity) {
+        DB::table('t_purchase_details')->where('parent_id', $id)->delete();
         $this->createSetItems($purchase_id, $item_id, $m);
       }
+      return;
+    }
+
+    // 商品IDが変わった場合、セット品の明細を削除する（従来挙動維持）
+    if ($prev_item_id != $item_id) {
+      DB::table('t_purchase_details')->where('parent_id', $id)->delete();
     }
   }
 
@@ -395,7 +401,13 @@ class PurchaseService
   private function createSetItems(int $purchase_id, int $item_id, $parent) {
     $items = Item::getSetItems($item_id);
     $data = [];
+
+    // ★親数量に追従（マイナス数量なら子もマイナスになる）
+    $parentQty = (int)($parent->quantity ?? 0);
+
     foreach ($items as $i => $item) {
+      $componentQty = (int)($item->quantity ?? 0);
+
       $data[] = [
         'id' => null,
         'purchase_id' => $purchase_id,
@@ -406,14 +418,20 @@ class PurchaseService
         'item_name' => $item->name,
         'item_name_jp' => $item->name_jp,
         'unit_price' => $item->set_price,
-        'quantity' => $item->quantity,
+
+        // 旧: 'quantity' => $item->quantity,
+        // 新: 子数量 = 構成数 × 親数量（符号付き）
+        'quantity' => $componentQty * $parentQty,
+
         'amount' => 0,
         'sales_tax_rate' => $parent->sales_tax_rate,
         'sales_tax' => 0,
         'parent_id' => $parent->id,
       ];
     }
-    DB::table('t_purchase_details')->insert($data);
+    if (!empty($data)) {
+      DB::table('t_purchase_details')->insert($data);
+    }
   }
 
   /**
@@ -441,7 +459,10 @@ class PurchaseService
         'item_name' => $row->name,
         'item_name_jp' => $row->name_jp,
         'unit_price' => $row->unit_price,
+
+        // 発注側の子数量が「親数量込み」で格納されている前提を維持
         'quantity' => $row->quantity,
+
         'amount' => $row->amount,
         'sales_tax_rate' => $parent->sales_tax_rate,
         'sales_tax' => $row->sales_tax,
@@ -522,7 +543,7 @@ class PurchaseService
     DB::table('t_inventory_moves')->where('purchase_id', '=', $purchase_id)->delete();
 
     // item_number が NULL/空文字の行は在庫移動を作らない
-    // quantity が NULL の場合は 0 に補正
+    // quantity が NULL の場合は 0 に補正（符号は維持）
     DB::insert("
       INSERT INTO t_inventory_moves (
           job_date,
@@ -597,7 +618,7 @@ class PurchaseService
         }
       }
 
-      // 型エラー対策：第2引数は必ず string（ここまでで空は弾いている）
+      // move_quantity は符号付き合算の想定（マイナスがあれば減算になる）
       $move_quantity = InventoryMove::getQuantity($import_month, $number);
 
       Item::where('item_number', $number)

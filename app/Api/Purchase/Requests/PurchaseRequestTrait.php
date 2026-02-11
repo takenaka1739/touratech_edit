@@ -28,7 +28,13 @@ trait PurchaseRequestTrait
       'details.*.item_name' => 'nullable|string|max:400',
       'details.*.item_name_jp' => 'nullable|string|max:400',
       'details.*.unit_price' => 'required|numeric|price',
-      'details.*.quantity' => 'required|integer|between:0,999',
+
+      // 旧:
+      // 'details.*.quantity' => 'required|integer|between:0,999',
+
+      // 新: マイナス数量を許可（在庫調整用）
+      'details.*.quantity' => 'required|integer|between:-999,999',
+
       'details.*.amount' => 'nullable|numeric',
       'details.*.sales_tax' => 'nullable|numeric',
     ];

@@ -13,7 +13,12 @@ class PurchaseDetailRequest extends BaseRequest
   {
     return [
       'item_id' => 'required|integer|exists:m_items,id',
-      'quantity' => 'required|integer|between:0,999',
+
+      // 旧:
+      // 'quantity' => 'required|integer|between:0,999',
+
+      // 新: マイナス数量を許可（在庫調整用）
+      'quantity' => 'required|integer|between:-999,999',
     ];
   }
 
