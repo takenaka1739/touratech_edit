@@ -10,6 +10,7 @@ import { TEMPLATE_ITEM_URLS } from '@/constants/TEMPLATE_ITEM_URLS';
 import { useItemCategory } from './useItemCategory';            // 商品分類
 import { useItemVariation } from './useItemVariation';          // バリエーション
 import { useItemManual } from './useItemManual';                // 取扱説明書
+import { useItemLink } from './useItemLink';                    // 国外リンク
 import { useItemPrint } from './useItemPrint';                  // 印刷・ラベル選択
 import { useItemSave } from './useItemSave';                    // 保存
 import { useItemNavigation } from './useItemNavigation';        // ページ遷移・location.state の復元
@@ -158,6 +159,17 @@ export const useItemDetailPage = () => {
     setState,
   });
 
+  // 国外リンク
+  const {
+    linkName,
+    linkNameBackColor,
+    onChangeLinkName,
+    setLinkName,
+  } = useItemLink({
+    state,
+    setState,
+  });
+
   // 印刷
   const {
     onSelected,
@@ -214,6 +226,7 @@ export const useItemDetailPage = () => {
     setSupplierChangeFlag,
     setvariClickFlag,
     setTypeName,
+    setLinkName,
   });
 
   // ==============================================================
@@ -295,6 +308,12 @@ export const useItemDetailPage = () => {
     onChangeTypeName,
     handleFileChange,
     handleClick,
+
+    // 国外リンク
+    linkName,
+    linkNameBackColor,
+    onChangeLinkName,
+    setLinkName,
 
     // 印刷
     onSelected,

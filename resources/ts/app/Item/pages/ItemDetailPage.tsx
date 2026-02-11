@@ -81,6 +81,11 @@ export const ItemDetailPage: React.FC = () => {
     handleFileChange,
     handleClick,
 
+    // 国外リンク
+    linkName,
+    linkNameBackColor,
+    onChangeLinkName,
+
     // 印刷
     onSelected,
     onClickPrint,
@@ -149,6 +154,14 @@ export const ItemDetailPage: React.FC = () => {
             fileInputRef={inputRef}
             handleClick={handleClick}
             handleFileChange={handleFileChange}
+          />
+          <ItemLinksSection
+            state={state}
+            errors={errors}
+            onChange={onChange}
+            linkName={linkName}
+            onChangeLinkName={onChangeLinkName}
+            linkNameBackColor={linkNameBackColor}
           />
           <div>
             <hr className="border-dashed border-gray-400 mt-4 mb-4" />
@@ -221,7 +234,7 @@ export const ItemDetailPage: React.FC = () => {
 
           {id && (
             <>
-              <ItemLinksSection id={id} domesticUrl={domestic_url} overseasUrl={overseas_url} />
+              {/*<ItemLinksSection id={id} domesticUrl={domestic_url} overseasUrl={overseas_url} />*/}
               <ItemLabelSection
                 selected={state.selected}
                 onSelected={onSelected}

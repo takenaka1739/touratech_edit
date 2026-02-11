@@ -72,12 +72,20 @@ export const itemInitialState: Item & { selected: number[] | undefined } ={
   combIdList: [],
   send_trader: undefined,
   send_personal: undefined,
+
+  // 取扱説明書
   type_status: undefined,
   type_name: '',
   file_name: '',
   document_id: undefined,
   pdf: undefined,
   documentFileList: [],
+
+  // 国外リンク
+  type_status_link: undefined,
+  type_name_link: '',
+  link_url: '',
+
   categoryListAll: [],
   dataBaceAllCodeList: [],
   initialCode: '',
