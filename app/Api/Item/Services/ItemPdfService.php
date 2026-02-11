@@ -96,7 +96,24 @@ class ItemPdfService implements ItemBarcodeInterface
 
     $item_number = $data->get('item_number');
     $name = $data->get('name_label');
-    $sales_unit_price = $data->get('sales_unit_price');
+
+    // 出力する金額を「売上単価」⇒「販売価格（税込）」に変更 ・・・ 開発環境で動作確認が出来ないため残しておく
+    //$sales_unit_price = $data->get('sales_unit_price');
+
+    $item_number = $data->get('item_number');
+    $variItems = $data->get('variItems');
+    $count = count($variItems);
+
+    if (is_array($variItems) && (($count === 1 && !empty($variItems[0][1])) || ($count >= 2))) {
+      foreach ($variItems as $row) {
+        if (isset($row[5]) && $row[5] === $item_number) {
+          $sales_unit_price = $row[6];
+          break;
+        }
+      }
+    } else {
+      $sales_unit_price = $data->get('sales_price');
+    }
 
     $selected = $data->get('selected');
 

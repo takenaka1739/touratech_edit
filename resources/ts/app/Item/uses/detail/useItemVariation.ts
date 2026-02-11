@@ -28,8 +28,8 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
     if (!Array.isArray(state.variItems)) {
       setState((prev: any) => ({
         ...prev,
-        variItems: [['', '', '', '', '', '', '']],
-        backVariItems: [['', '', '', '', '', '', '']],
+        variItems: [['', '', '', '', '', '', '', '0']],
+        backVariItems: [['', '', '', '', '', '', '', '0']],
         imageList: [['']],
       }));
       return;
@@ -38,21 +38,22 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
     const needsFix = state.variItems.some(
       (row: any) =>
         !Array.isArray(row) ||
-        row.length < 7 ||
+        row.length < 8 ||
         row.some((col: any) => col === undefined)
     );
 
     if (needsFix) {
       const fixed = state.variItems.map((row: any, rowIndex: number) => {
-        if (!Array.isArray(row)) return ['', '', '', '', '', '', ''];
+        if (!Array.isArray(row)) return ['', '', '', '', '', '', '', '0'];
 
-        return Array.from({ length: 7 }).map((_, i) => {
+        return Array.from({ length: 8 }).map((_, i) => {
           const v = row[i];
 
           // 初期行のみ（rowIndex === 0）
           if (rowIndex === 0) {
             if (i >= 1 && i <= 4) return v ?? '';
             if (i === 5 || i === 6) return v ?? '';
+            if (i === 7) return v ?? '0';
             return v === undefined ? null : v;
           }
 
@@ -61,6 +62,9 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
 
           // 品番・価格（index 5,6）
           if (i === 5 || i === 6) return v ?? '';
+
+          // 公開フラグ (index7)
+          if (i === 7) return v ?? '0';
 
           // id
           return v === undefined ? null : v;
@@ -80,7 +84,7 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
 
   const variItems: string[][] = Array.isArray(state.variItems)
     ? state.variItems
-    : [['', '', '', '', '', '', '']];
+    : [['', '', '', '', '', '', '', '']];
 
   const [variDelItem, setVariDelItem] = useState<string[][]>([]);
   const [variChangeItem, setVariChangeItem] = useState<string[][]>([]);
@@ -376,10 +380,12 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
     select: number,
     selectIndex: number
   ) => {
-    setvariClickFlag(true);
-    event.persist();
-
-    const value = String(event.target.value);
+    let value: string;
+    if (event.target.type === 'checkbox') {
+      value = event.target.checked ? '1' : '0';
+    } else {
+      value = String(event.target.value);
+    }
 
     setState((prev: any) => ({
       ...prev,

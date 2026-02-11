@@ -26,16 +26,23 @@ export const ItemVariationRow = ({
   errorMap,
   verticalLines,
 }: VariationRowProps) => {
-
   // 行で最初の非 null の index（バリエーションは index=1 から）
   const firstNonNullIndex = item.findIndex((v, i) => i > 0 && v !== null) - 1;
 
   return (
     <div className="variation-row">
-      {item.map((value, index) =>
-        index > 0 ? (
-          <div key={index} className="variation-row-cell">
+      <input
+        className='variation-publish'
+        type="checkbox"
+        checked={String(item[7]) === '1'}
+        onChange={(e) => onChangeValue(e, itemIndex, 7)}
+        disabled={!isEditable}
+      />
 
+      {item.map((value, index) =>
+        index > 0 && index < 7 ? (
+          <div key={index} className="variation-row-cell">
+            
             {/* 入力欄＋ボタン */}
             <div className="variation-input-wrapper">
               <input
@@ -66,7 +73,7 @@ export const ItemVariationRow = ({
             </div>
 
             {/* 横線（半分 or 全線） */}
-            {index < item.length - 1 && (
+            {index < 6 && (
               <div className="variation-tree-cell">
                 <svg className="tree-svg">
 
@@ -130,7 +137,7 @@ export const ItemVariationRow = ({
           </div>
         ) : null
       )}
-
+      
       {showDelete && (
         <button
           className="btn-delete variation-delete-button"

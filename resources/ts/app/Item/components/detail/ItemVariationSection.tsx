@@ -99,13 +99,14 @@ export const ItemVariationSection: React.VFC<Props> = ({
 }) => {
 
   // 最低 1 行は必ず表示させる（state.variItems が空 or 不正な場合の補正）
+  // variItems = [ id, vari1, vari2, vari3, vari4, 品番, 販売価格, 公開フラグ ]
   let variItems: any[] = [];
 
   if (Array.isArray(state.variItems) && state.variItems.length > 0) {
     variItems = state.variItems.map((row: any, rowIndex: number) => {
-      if (!Array.isArray(row)) return ['', '', '', '', '', '', ''];
+      if (!Array.isArray(row)) return ['', '', '', '', '', '', '', ''];
 
-      const fixed = Array.from({ length: 7 }).map((_, i) => {
+      const fixed = Array.from({ length: 8 }).map((_, i) => {
         const v = row[i];
 
         if (rowIndex === 0) {
@@ -120,13 +121,17 @@ export const ItemVariationSection: React.VFC<Props> = ({
           return v === null || v === undefined ? '' : v;
         }
 
+        if (i === 7) {
+          return v === null || v === undefined ? '0' : v;
+        }
+
         return v === undefined ? null : v;
       });
 
       return fixed;
     });
   } else {
-    variItems = [['', '', '', '', '', '', '']];
+    variItems = [['', '', '', '', '', '', '', '']];
   }
 
   // バリエーションツリー縦線の描画位置の計算
@@ -181,4 +186,3 @@ export const ItemVariationSection: React.VFC<Props> = ({
     </>
   );
 };
-
