@@ -18,6 +18,7 @@ type UseItemNavigationArgs = {
   setvariClickFlag: (value: boolean) => void;
 
   setTypeName: (value: string) => void;
+  setLinkName: (value: string) => void;
 };
 
 /**
@@ -45,6 +46,7 @@ export const useItemNavigation = ({
   setvariClickFlag,
 
   setTypeName,
+  setLinkName,
 }: UseItemNavigationArgs) => {
   const history = useHistory();
   const location = useLocation<any>();
@@ -119,6 +121,11 @@ export const useItemNavigation = ({
         setTypeName(location.state.preState.type_name);
       }
 
+      // type_link_name の復元
+      if (location.state.preState?.type_link_status === 3) {
+        setLinkName(location.state.preState.type_link_name);
+      }
+
       // state の復元
       if (location.state.preState) {
         setState((prev: any) => ({
@@ -131,6 +138,7 @@ export const useItemNavigation = ({
           supplier_name: location.state.preState.supplier_name,
           supplier_id: location.state.preState.supplier_id,
           type_status: location.state.preState.type_status,
+          type_status_link: location.state.preState.type_status_link,
           type_name: location.state.preState.type_name,
           file_name: location.state.preState.file_name,
           categoryList: location.state.preState.categoryList,

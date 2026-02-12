@@ -83,7 +83,7 @@
  * @param specialSalesList        - 特売設定の初期値
  * @param specialSalesDelFlag     - 特売設定の削除フラグ
 
- // 取扱説明書設定 m_documents 関連
+ 取扱説明書設定 m_documents 関連
  // 関連変数
  * @param document_id             - 管理ID
  * @param type_status             - 題目のステータス（0:なし, 1:取扱説明書, 2:サイズ表, 3:その他）
@@ -91,6 +91,11 @@
  * @param file_name               - フォイル名
  * @param pdf                     - 取得したファイル情報
  * @param documentFileList        - 商品ID毎のファイルリスト
+ 
+ 国外リンク m_documents_links 関連
+ * @param type_status_link        - 国外リンクのステータス（0:なし, 1:取扱説明書, 2:サイズ表, 3:その他）
+ * @param type_name_link          - 国外リンク名（0:なし, 1:取扱説明書, 2:サイズ表, 3:任意の名前）
+ * @param link_url                - 国外リンクのURL
  */
 
 export interface Item {
@@ -164,12 +169,18 @@ export interface Item {
   send_trader?: number | undefined;
   send_personal?: number | undefined;
 
+  // 取扱説明書設定 m_documents 関連
   document_id?: number | undefined;
   type_status?: number | undefined;
   type_name?: string | undefined;
   file_name?: string | undefined;
   pdf?: File;
   documentFileList?: any[];
+
+  // 国外リンク m_documents_links 関連
+  type_status_link?: number | undefined;
+  type_name_link?: string | undefined;
+  link_url?: string | undefined;
 
   payErrorMessage?: string | undefined;
 }

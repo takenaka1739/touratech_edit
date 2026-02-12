@@ -7,6 +7,7 @@ use App\Base\Models\Image;
 use App\Base\Models\ItemCategoryCombination;
 use App\Base\Models\Category;
 use App\Base\Models\Document;
+use App\Base\Models\DocumentLink;
 use App\Base\Models\SpecialSale;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -171,10 +172,16 @@ class ItemService
       'm_configs.send_trader AS send_trader',
       'm_configs.send_personal AS send_personal',
 
+      // 取り扱い説明書設定
       'm_documents.id AS document_id',
       'm_documents.type_status AS type_status',
       'm_documents.type_name AS type_name',
-      'm_documents.file_name AS file_name'
+      'm_documents.file_name AS file_name',
+
+      // 国外リンク
+      'm_documents_links.type_status_link AS type_status_link',
+      'm_documents_links.type_name_link AS type_name_link',
+      'm_documents_links.url AS link_url'
     )
 
     ->leftJoin('m_configs', 'm_items.supplier_id', '=', 'm_configs.id')
@@ -182,6 +189,10 @@ class ItemService
     ->leftJoin('m_documents', function($join) {
         $join->on('m_items.id', '=', 'm_documents.item_id')
              ->whereNull('m_documents.deleted_at');
+    })
+    ->leftJoin('m_documents_links', function($join) {
+        $join->on('m_items.id', '=', 'm_documents_links.item_id')
+             ->whereNull('m_documents_links.deleted_at');
     })
 
     ->leftJoin('t_special_sales', function ($join) {
@@ -298,6 +309,10 @@ class ItemService
       array_push($d, ItemCategoryCombination::where('item_id', '=', $item->id)->first());
 
       array_push($documentFileList, Document::where('item_id', $item->id)
+                  ->whereNull('deleted_at')
+                  ->first());
+
+      array_push($documentFileList, DocumentLink::where('item_id', $item->id)
                   ->whereNull('deleted_at')
                   ->first());
 
@@ -464,6 +479,7 @@ foreach ($idList as $id) {
     $selectItems['is_payment_id5'] = $selectItems['is_payment_id5'] === 0 ? false : true;
     $selectItems['sales_price'] = count($variItems) > 1 ? 0 : $selectItems['sales_price'];
     $selectItems['type_status'] = $selectItems['type_status'] === null || $selectItems['type_status'] === '' ? 0 : $selectItems['type_status'];
+    $selectItems['type_status_link'] = $selectItems['type_status_link'] === null || $selectItems['type_status_link'] === '' ? 0 : $selectItems['type_status_link'];
     $selectItems['codeList'] = $codeList;
     $selectItems['categoryList'] = $category_list;
     $selectItems['categoryListAll'] = $category_list_all;
@@ -786,6 +802,19 @@ foreach ($idList as $id) {
   }
 
   /**
+   * m_items の国外リンク情報を生成する。
+   */
+  private function buildLinkAttributes(int $itemId, array $data): array
+  {
+    return [
+      'item_id'          => $itemId,
+      'type_status_link' => $data['type_status_link'] ?? 0,
+      'type_name_link'   => $data['type_name_link'] ?? '',
+      'url'         => $data['link_url'] ?? '',
+    ];
+  }
+
+  /**
    * t_special_sales の特売設定情報を生成する。
    */
   private function buildSpecialSaleAttributes(int $itemId, array $data): array
@@ -832,6 +861,12 @@ foreach ($idList as $id) {
     if (!empty($data['type_status']) && $data['type_status'] !== 0)
     {
       Document::create($this->buildDocumentAttributes($item->id, $data));
+    }
+
+    // 本国リンクの登録 (Itemごとに必ず1件)
+    if (!empty($data['type_status_link']) && $data['type_status_link'] !== 0)
+    {
+      DocumentLink::create($this->buildLinkAttributes($item->id, $data));
     }
 
     // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
@@ -914,6 +949,16 @@ foreach ($idList as $id) {
       );
     } else {
       Document::where('item_id', $item->id)->delete();
+    }
+
+    // 本国リンクの更新／新規作成（Itemごとに1件）
+    if (!empty($data['type_status_link']) && $data['type_status_link'] !== 0) {
+      DocumentLink::updateOrCreate(
+        ['item_id' => $item->id],
+        $this->buildLinkAttributes($item->id, $data)
+      );
+    } else {
+      DocumentLink::where('item_id', $item->id)->delete();
     }
 
     // 特売設定の更新／新規作成 (1つの Item に1件)
