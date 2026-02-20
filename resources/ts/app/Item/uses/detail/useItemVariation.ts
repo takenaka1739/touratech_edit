@@ -28,8 +28,8 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
     if (!Array.isArray(state.variItems)) {
       setState((prev: any) => ({
         ...prev,
-        variItems: [['', '', '', '', '', '', '', '0']],
-        backVariItems: [['', '', '', '', '', '', '', '0']],
+        variItems: [['', '', '', '', '', '', '', '1']],
+        backVariItems: [['', '', '', '', '', '', '', '1']],
         imageList: [['']],
       }));
       return;
@@ -44,7 +44,7 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
 
     if (needsFix) {
       const fixed = state.variItems.map((row: any, rowIndex: number) => {
-        if (!Array.isArray(row)) return ['', '', '', '', '', '', '', '0'];
+        if (!Array.isArray(row)) return ['', '', '', '', '', '', '', '1'];
 
         return Array.from({ length: 8 }).map((_, i) => {
           const v = row[i];
@@ -53,7 +53,7 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
           if (rowIndex === 0) {
             if (i >= 1 && i <= 4) return v ?? '';
             if (i === 5 || i === 6) return v ?? '';
-            if (i === 7) return v ?? '0';
+            if (i === 7) return v ?? '1';
             return v === undefined ? null : v;
           }
 
@@ -237,7 +237,7 @@ export const useItemVariation = ({ state, setState, onClickDelete, errors, setEr
   const addNewVari = (selectRow: number, selectIndex: number) => {
     setvariClickFlag(true);
 
-    let variArr = [null, null, null, null, null, '', ''];
+    let variArr = [null, null, null, null, null, '', '', '1'];
     let imgArr = ['', {}];
 
     for (let i = selectIndex; i <= 4; i++) variArr[i] = '';

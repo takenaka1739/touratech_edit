@@ -1056,6 +1056,7 @@ foreach ($idList as $id) {
           $item = Item::create($base + [
             'item_number' => $data['item_number'] ?? null,
             'sales_price' => $data['sales_price'] ?? 0,
+            'is_sell_variation' => $data['variItems'][0][7] ?? '0',
           ]);
         }
 
@@ -1128,7 +1129,7 @@ foreach ($idList as $id) {
             'variations4' => null,
             'item_number' => $data['item_number'] ?? null,
             'sales_price' => $data['sales_price'] ?? 0,
-            'is_sell_variation' => $data['is_sell_variation'] ?? '0',
+            'is_sell_variation' => $data['variItems'][0][7] ?? '0',
           ]);
         }
 
