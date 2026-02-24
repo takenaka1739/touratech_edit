@@ -9,6 +9,7 @@ type MenuItem = {
  */
 export const APP_MENU: {
   slip: MenuItem[];
+  mail: MenuItem[];
   capture: MenuItem[];
   monthClosing: MenuItem[];
   inventory: MenuItem[];
@@ -25,6 +26,9 @@ export const APP_MENU: {
     { name: '発送予定取込', url: '/shipment_plan_import' },
     { name: '発送予定一覧', url: '/shipment_plan' },
     { name: '仕入データ', url: '/purchase' },
+  ],
+  mail: [{name: '自動送信メール', url: '/auto_reply_mail'},
+         {name: 'お問い合わせ', url: '/inquiry_mail'}
   ],
   capture: [{ name: '本国商品データ取込', url: '/home_data_import' }],
   monthClosing: [
@@ -47,6 +51,7 @@ export const APP_MENU: {
     { name: 'カレンダーマスタ', url: '/calendar' },
     { name: '注目ランキングマスタ', url: '/pickup_ranking' },
     { name: '情報管理', url: '/info_management' },
+    { name: 'メールマスタ', url: '/shop_mail' },
     { name: '環境設定', url: '/config', className: 'pt-4' },
   ],
 };

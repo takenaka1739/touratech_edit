@@ -1,0 +1,52 @@
+import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
+import { useSwichingMailPage } from '@/app/ShopMail/uses/useSwichingMailPage';
+import { itemInitialState } from '@/app/Item/modules/itemInitialState';
+import { useAutoReplySettingPage } from '@/app/ShopMail/uses/useAutoReplySettingPage';
+import { Item } from '@/types';
+
+export const useShoMailPage = () => {
+  const title = 'お問い合わせ / 発送メール';
+  const slug = 'item';
+
+  // ==============================================================
+  // 共通の詳細ページ管理（state / errors / onChange など）
+  // ==============================================================
+  const {
+    //isLoading,
+    //id,
+    state,
+    errors,
+    //isDisabled,
+    setState,
+    //updateState,
+    onChange,
+    setErrors,
+    //onClickDelete,
+  } = useCommonDetailPage<Item & { selected: number[] | undefined }>(
+    slug,
+    itemInitialState
+  );
+
+  // 支払い方法
+  const {
+  } = useSwichingMailPage({
+    setState,
+    setErrors,
+  });
+
+  const {
+    saveClick
+  } = useAutoReplySettingPage();
+
+  return{
+    title,
+    slug,
+    state,
+    errors,
+
+    setState,
+    setErrors,
+    onChange,
+    saveClick
+  };
+}

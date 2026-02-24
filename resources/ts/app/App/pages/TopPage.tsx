@@ -32,6 +32,23 @@ export const TopPage: React.VFC = () => {
     );
   }, []);
 
+  const _mail = useMemo(() => {
+    return (
+      <div className="top-page__menu">
+        <h3 className="top-page__h3">ショップメール</h3>
+        <div className="top-page__menu-box">
+          <ul>
+            {APP_MENU.mail.map((x, i) => (
+              <li key={i}>
+                <Link to={x.url}>{x.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }, []);
+
   const _capture = useMemo(() => {
     return (
       <div className="top-page__menu">
@@ -105,6 +122,7 @@ export const TopPage: React.VFC = () => {
       <div className="top-page__row">
         <div className="top-page__col">
           {_slip}
+          {_mail}
           {_capture}
           {_monthClosing}
           {_inventory}
