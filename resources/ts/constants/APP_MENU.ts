@@ -27,8 +27,7 @@ export const APP_MENU: {
     { name: '発送予定一覧', url: '/shipment_plan' },
     { name: '仕入データ', url: '/purchase' },
   ],
-  mail: [{name: '自動送信メール', url: '/auto_reply_mail'},
-         {name: 'お問い合わせ', url: '/inquiry_mail'}
+  mail: [{name: 'お問い合わせ', url: '/inquiry_mail'}
   ],
   capture: [{ name: '本国商品データ取込', url: '/home_data_import' }],
   monthClosing: [

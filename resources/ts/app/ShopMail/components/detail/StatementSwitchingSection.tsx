@@ -17,7 +17,7 @@ export const StatementSwitchingSection: React.VFC<Props> = ({
       {/* 支払い方法 */}
         <Forms.FormGroupInputRadio
           labelText="お買い上げ明細"
-          name="display_status"
+          name="display_change_status"
           value={state.display_status}
           error={errors?.display_status}
           onChange={onChange}
