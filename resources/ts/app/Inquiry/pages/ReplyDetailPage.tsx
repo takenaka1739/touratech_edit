@@ -56,7 +56,9 @@ export const ReplyDetailPage: React.VFC = () => {
   //}, [state.rows]);
 
   return (
-    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
+    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: 'お問い合わせ一覧', url: `/inquiry` },
+                                                          { name: '返信一覧', url: `/inquiry/reply/${8}`},
+                                                          { name: '個別返信メール詳細' }]}>
       <span style={{ display: 'block', width: '950px', margin: '0 auto' }}>
         <div style={{display: 'flex'}}>
           <label style={{ border: '1px solid #ccc', padding: '4px 8px', backgroundColor: '#EDF2F7', width: '200px' }}>題名</label>

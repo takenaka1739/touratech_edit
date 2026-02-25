@@ -5,7 +5,7 @@ import { useAutoReplySettingPage } from '@/app/Mail/uses/useAutoReplySettingPage
 import { Item } from '@/types';
 
 export const useMailDetailPage = () => {
-  const title = 'お問い合わせ / 発送メール';
+  const title = 'メール設定詳細';
   const slug = 'item';
 
   // ==============================================================

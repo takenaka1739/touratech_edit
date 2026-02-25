@@ -22753,11 +22753,17 @@ th.col-btn, td.col-btn {
   background: #d4e4ff !important;
 }
 
+.mail-wrapper-page {
+  width: 1500px;
+  /* ← 固定幅ではなく最大幅 */
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .page-container-re {
   background-color: #FFF;
   padding: 1rem;
-  width: 1500px;
-  margin-left: -100px;
 }
 
 @media (min-width: 640px){

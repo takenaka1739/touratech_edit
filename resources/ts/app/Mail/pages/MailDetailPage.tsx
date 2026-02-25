@@ -27,7 +27,8 @@ export const MailDetailPage: React.VFC = () => {
 
   return (
     //<PageWrapper prefix={slug} title={title} breadcrumb={[]} isLoading={isLoading}>
-    <PageWrapper prefix={slug} title={title} breadcrumb={[]}>
+    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: '自動返信一覧', url: `/mail` },
+                                                          { name: 'メール設定詳細' }]}>
       <ShopMailSwitchingSection
         state={state}
         errors={errors}

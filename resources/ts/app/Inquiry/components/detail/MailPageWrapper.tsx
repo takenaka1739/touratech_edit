@@ -29,7 +29,9 @@ export const MailPageWrapper: React.FC<PageWrapperProps> = ({
   children,
 }) => {
   return (
-    <div className={classNames(`${prefix}-page`, className)}>
+    <div className='mail-wrapper-page'>
+      {console.log('classNames(`${prefix}-page`, className)')}
+      {console.log(classNames(`${prefix}-page`, className))}
       <Helmet titleTemplate={`${title} | ${process.env.MIX_APP_NAME}`}>
         <title>{title}</title>
       </Helmet>

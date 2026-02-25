@@ -55,7 +55,8 @@ export const ReplyListPage: React.VFC = () => {
   }, [state.rows]);
 
   return (
-    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
+    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: 'お問い合わせ一覧', url: `/inquiry` },
+                                                          { name: '返信一覧' }]}>
       <BoxConditions
         onClickSearchButton={onClickSearchButton}
         onClickClearButton={onClickClearButton}
