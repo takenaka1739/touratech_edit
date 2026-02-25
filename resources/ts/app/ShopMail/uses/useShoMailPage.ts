@@ -16,7 +16,7 @@ export const useShoMailPage = () => {
     //id,
     state,
     errors,
-    //isDisabled,
+    isDisabled,
     setState,
     //updateState,
     onChange,
@@ -39,6 +39,7 @@ export const useShoMailPage = () => {
   } = useAutoReplySettingPage();
 
   return{
+    isDisabled,
     title,
     slug,
     state,

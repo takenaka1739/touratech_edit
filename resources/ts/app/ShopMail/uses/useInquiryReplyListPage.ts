@@ -11,6 +11,7 @@ import {
   CalendarListPageActions,
   calendarInitialState,
 } from '../modules/calendarListPageModule';
+import { useIndividualReplySearch } from './useIndividualReplySearch';          // 他商品情報参照
 
 export type CalendarPageState = {
   rows: Calendar[];
@@ -55,6 +56,15 @@ export const useInquiryReplyListPage = (slug: string) => {
     setConditions
   );
 
+  // 他商品情報参照
+  const {
+    openIndividualReplyDialog,
+    individualReplyDialogProps,
+    onChangeRefState,
+  } = useIndividualReplySearch({
+    state,
+  });
+
   const output: () => Promise<boolean> = async () => {
     dispatch(AppActions.request());
 
@@ -89,6 +99,9 @@ export const useInquiryReplyListPage = (slug: string) => {
     isLoading,
     state,
     conditions,
+    openIndividualReplyDialog,
+    onChangeRefState,
+    individualReplyDialogProps,
     onChange,
     onClickSearchButton,
     onClickClearButton,

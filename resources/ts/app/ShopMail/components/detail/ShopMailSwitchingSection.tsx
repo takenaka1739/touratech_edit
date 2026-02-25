@@ -14,6 +14,8 @@ export const ShopMailSwitchingSection: React.VFC<Props> = ({
 }) => {
   return (
     <>
+  {console.log('state.display_status')}
+  {console.log(state.display_status)}
       {/* 支払い方法 */}
         <Forms.FormGroupInputRadio
           labelText="メール設定切替"

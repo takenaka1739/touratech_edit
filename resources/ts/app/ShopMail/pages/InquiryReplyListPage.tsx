@@ -1,26 +1,30 @@
 import React, { useMemo } from 'react';
 import { useInquiryReplyListPage } from '../uses/useInquiryReplyListPage';
 import { Link } from 'react-router-dom';
-import dayjs from 'dayjs';
 import { PageWrapper, BoxConditions, TableWrapper, Forms } from '@/components';
 import { useComposing } from '@/uses';
+import { IndividualReplyDialog } from '../components/IndividualReplyDialog';
 
 /**
  * お問い合わせ（一覧）画面 Component
  */
 export const InquiryReplyListPage: React.VFC = () => {
 
-const slug = '';
-const title = 'お問い合わせ一覧';
+  //const slug = 'calendar';
+  const slug = 'calendar';
+  const title = 'お問い合わせ一覧';
 
   const {
     isLoading,
     state,
     onChange,
+    onChangeRefState,
     onChangePage,
     onClickSearchButton,
     onClickClearButton,
     addDetail,
+    openIndividualReplyDialog,
+    individualReplyDialogProps,
     conditions,
     isDisabled,
   } = useInquiryReplyListPage(slug);
@@ -29,20 +33,19 @@ const title = 'お問い合わせ一覧';
   const tables = useMemo(() => {
     const tbody = state.rows.map((r:any) => (
       <tr key={r.id}>
-        <td>
-          <div>{r.name}</div>
-        </td>
-        <td className="text-right">{dayjs(r.start_at).format('YYYY-MM-DD')}</td>
-        <td className="text-right">{dayjs(r.end_at).format('YYYY-MM-DD')}</td>
-        <td className="text-right" style={{padding: '10px'}}>
-          <div style={{backgroundColor: r.back_color, width: '75px', height: '50px', color: r.font_color,
-                       display: 'flex', alignItems: 'center', justifyContent: 'center', // 水平方向の中央揃え
-                     }}>
-            サンプル
-          </div>
-        </td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
         <td className="col-btn">
-          <Link to={`/${slug}/detail/${r.id}`}>編集</Link>
+          <Link to={`/inquiry_mail/detail/${r.id}`}>編集</Link>
         </td>
       </tr>
     ));
@@ -62,6 +65,7 @@ const title = 'お問い合わせ一覧';
             <th className="col-amount">支払種別</th>
             <th className="col-amount">発送日</th>
             <th className="col-amount">取消日</th>
+            <th className="col-amount">編集</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
@@ -94,9 +98,15 @@ const title = 'お問い合わせ一覧';
       </BoxConditions>
 
       <div className="mt-2">
-        <button className="btn" onClick={addDetail} disabled={isDisabled}>
+        <button className="btn ml-5" onClick={openIndividualReplyDialog}>
           お問い合わせ一覧
         </button>
+        <IndividualReplyDialog
+          //selectId={state.id}
+          selectId={1}
+          onChangeState={onChangeRefState}
+          {...individualReplyDialogProps}
+        />
       </div>
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
