@@ -755,6 +755,44 @@ div[aria-disabled=true]::after {
   background: rgba(255, 255, 255, 0.4);
 }
 
+/*------------------------------------------------------*/
+/* ツールチップ（補足説明）
+/*------------------------------------------------------*/
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+          transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+  white-space: pre-line;
+  display: block;
+  width: -webkit-max-content;
+  width: -moz-max-content;
+  width: max-content;
+  max-width: 900px;
+  text-align: left;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}
+
 .top-page__row {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -1064,8 +1102,7 @@ label {
 }
 
 #shop-image {
-  margin-right: calc(40% - 40vw);
-  margin-left: calc(40% - 40vw);
+  margin: 0 auto;
 }
 #shop-image #button-area {
   display: -webkit-box;
@@ -1089,21 +1126,45 @@ label {
   margin-top: 10px;
 }
 #shop-image #input-area #image-area {
+  width: 100%;
+  max-width: 540px;
   margin-top: 20px;
   margin-left: 30px;
   margin-right: 20px;
   margin-bottom: 20px;
 }
-#shop-image #input-area #image-area .image-size {
-  border: 1px solid #333;
-  width: 550px;
-  height: 550px;
+#shop-image #input-area #image-area #main-img {
+  border: 1px solid #555;
+  border-radius: 10px;
+  width: 100%;
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  text-align: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+#shop-image #input-area #image-area .no-image-message {
+  color: #ccc;
+  font-size: 20px;
+}
+#shop-image #input-area #image-area .preview-content {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: contain;
+     object-fit: contain;
 }
 #shop-image #input-area #image-area .image-input-erea {
   margin-top: 20px;
   margin-left: auto;
   margin-right: auto;
-  width: 450px;
+  width: 550px;
   height: 100px;
 }
 #shop-image #input-area #image-area .image-input-erea .b {
@@ -1114,23 +1175,6 @@ label {
 #shop-image #input-area #image-area .image-input-erea .b .img {
   width: 10px;
   height: 10px;
-}
-#shop-image #input-area #image-area .image-input-erea .a {
-  margin-top: 10px;
-  height: 40px;
-  width: 448px;
-  position: absolute;
-  background-color: transparent;
-  color: transparent;
-}
-#shop-image #input-area #image-area .image-input-erea .a:hover {
-  margin-top: 10px;
-  height: 40px;
-  width: 448px;
-  visibility: visible;
-  opacity: 0.5;
-  color: #000000;
-  background-color: #C9C9C9;
 }
 #shop-image #input-area #image-area .image-input-erea .b {
   margin-top: 10px;
@@ -1148,7 +1192,7 @@ label {
   display: flex;
   position: absolute;
   height: 115px;
-  width: 450px;
+  width: 550px;
   border: 1px solid #333;
 }
 #shop-image #input-area #dust-box-icon {
@@ -1169,18 +1213,18 @@ label {
       -ms-flex-direction: column;
           flex-direction: column;
   height: 100%;
-  margin-left: 40px;
-  margin-right: 20px;
-  margin-top: 20px;
-  margin-bottom: 10px;
+  margin: 20px;
 }
 #shop-image #input-area #item-info #item-name {
   border: 1px solid white;
   border-radius: 5px;
   width: 550px;
-  height: 70px;
-  font-size: 30px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  font-size: 24px;
+  color: #3d3d2b;
+  margin-top: 31px;
+  margin-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 #shop-image #input-area #item-info #item-name:hover {
   border: 1px solid rgba(201, 215, 232, 0.9725490196);
@@ -1193,7 +1237,6 @@ label {
 #shop-image #input-area #item-info hr {
   border: none;
   border-bottom: 1px solid #333;
-  margin-top: 20px;
 }
 #shop-image #input-area #item-info label {
   margin-top: 20px;
@@ -1203,13 +1246,19 @@ label {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
-  vertical-align: middle;
+  vertical-align: center;
   text-align: center;
+}
+#shop-image #input-area #item-info #price-col label {
+  margin-top: 5px;
 }
 #shop-image #input-area #item-info #price-col #input-price {
   border: 1px solid white;
   border-radius: 5px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #3d3d2b;
+  font-size: 20px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 #shop-image #input-area #item-info #price-col #input-price:hover {
   border: 1px solid rgba(201, 215, 232, 0.9725490196);
@@ -1228,6 +1277,8 @@ label {
   font-size: 20px;
   text-align: left;
   background-color: #E4E8ED;
+  margin-bottom: 5px;
+  padding-left: 10px;
 }
 #shop-image #input-area #item-info .document_url {
   font-size: 15px;
@@ -1254,10 +1305,12 @@ label {
   font-size: 20px;
   border: 1px solid white;
   border-radius: 5px;
-  color: rgba(201, 215, 232, 0.9725490196);
+  color: #3d3d2b;
   margin-top: 20px;
-  width: 450px;
+  width: 550px;
   height: 300px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 #shop-image #input-area #item-info #item-detail-erea #item-detail:hover {
   border: 1px solid rgba(201, 215, 232, 0.9725490196);
@@ -1271,13 +1324,15 @@ label {
   font-size: 20px;
   text-align: left;
 }
-#shop-image #input-area #vari-erea {
+#shop-image #input-area #vari-area {
   padding: 5px;
   border-radius: 5px;
   margin-top: 20px;
   color: #a0aec0;
   border: 1px solid #a0aec0;
-  font-size: 30px;
+  font-size: 18px;
+  width: 240px;
+  text-align: center;
 }
 #shop-image #input-area #vari-info {
   display: -webkit-box;
@@ -1337,10 +1392,6 @@ label {
    ============================ */
 .item-detail-page {
   /* 商品分類セクション全体 */
-  /* 左側の 790px の枠 */
-  /* ラベル部分 */
-  /* エラー表示 */
-  /* 追加ボタン（既存 category-plus-button を拡張） */
 }
 .item-detail-page .category-section {
   display: -webkit-box;
@@ -1348,11 +1399,17 @@ label {
   display: flex;
   margin-top: 6px;
 }
+.item-detail-page {
+  /* 左側の 790px の枠 */
+}
 .item-detail-page .category-inner {
   width: 790px;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
+}
+.item-detail-page {
+  /* ラベル部分 */
 }
 .item-detail-page .category-label {
   display: -webkit-box;
@@ -1361,8 +1418,14 @@ label {
   margin-top: 8px;
   margin-left: 60px;
 }
+.item-detail-page {
+  /* エラー表示 */
+}
 .item-detail-page .category-error {
   margin-top: 4px;
+}
+.item-detail-page {
+  /* 追加ボタン（既存 category-plus-button を拡張） */
 }
 .item-detail-page .category-add-button {
   margin-left: 10px;
@@ -1470,16 +1533,15 @@ label {
    ============================ */
 .item-detail-page {
   /* セクション全体 */
-  /* ラジオ + その他入力欄 */
-  /* その他入力欄（typeName） */
-  /* ファイル選択行 */
-  /* 非表示の file input */
 }
 .item-detail-page .manual-section {
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
   margin-top: 15px;
+}
+.item-detail-page {
+  /* ラジオ + その他入力欄 */
 }
 .item-detail-page .manual-type-row {
   display: -webkit-box;
@@ -1490,6 +1552,9 @@ label {
           justify-content: flex-start;
   width: 627px;
 }
+.item-detail-page {
+  /* その他入力欄（typeName） */
+}
 .item-detail-page .manual-type-input {
   border-right: 1px solid #a0aec0;
   width: 200px;
@@ -1497,6 +1562,9 @@ label {
 }
 .item-detail-page .manual-type-input[data-bgcolor] {
   background-color: attr(data-bgcolor color);
+}
+.item-detail-page {
+  /* ファイル選択行 */
 }
 .item-detail-page .manual-file-row {
   display: -webkit-box;
@@ -1513,6 +1581,9 @@ label {
 }
 .item-detail-page .manual-file-label {
   margin-right: 5px;
+}
+.item-detail-page {
+  /* 非表示の file input */
 }
 .item-detail-page .manual-file-hidden {
   display: none;
@@ -1533,11 +1604,13 @@ label {
    ============================ */
 .item-detail-page {
   /* 販売価格（税込） */
-  /* 支払い方法の横並び */
 }
 .item-detail-page .sales-price-wrapper {
   margin-left: 1px;
   margin-top: 10px;
+}
+.item-detail-page {
+  /* 支払い方法の横並び */
 }
 .item-detail-page .payment-kind-row {
   display: -webkit-box;
@@ -1570,24 +1643,6 @@ label {
    ============================ */
 .item-detail-page {
   /* バリエーション追加チェック */
-  /* バリエーション一覧の外枠 */
-  /* バリエーション行コンテナ */
-  /* エラー表示 */
-  /* ============================
-     バリエーションヘッダー
-     ============================ */
-  /* ============================
-     バリエーション行（ItemVariationRow）
-     ============================ */
-  /* input の動的スタイル */
-  /* ＋ボタン（既存 plus-button を拡張） */
-  /* 入力欄＋ボタンのラッパー */
-  /* input の右側にボタン分の余白を確保 */
-  /* ＋ボタンを input の右端に重ねる */
-  /* 削除ボタン */
-  /* ============================
-     ツリー線
-     ============================ */
 }
 .item-detail-page .variation-add-check {
   margin-top: 8px;
@@ -1595,8 +1650,14 @@ label {
 .item-detail-page .variation-add-check input {
   margin-top: 5px;
 }
+.item-detail-page {
+  /* バリエーション一覧の外枠 */
+}
 .item-detail-page .variation-list-wrapper {
   margin-left: 160px;
+}
+.item-detail-page {
+  /* バリエーション行コンテナ */
 }
 .item-detail-page .variation-rows {
   display: -webkit-box;
@@ -1607,8 +1668,16 @@ label {
       -ms-flex-direction: column;
           flex-direction: column;
 }
+.item-detail-page {
+  /* エラー表示 */
+}
 .item-detail-page .variation-error {
   margin-top: 5px;
+}
+.item-detail-page {
+  /* ============================
+     バリエーションヘッダー
+     ============================ */
 }
 .item-detail-page .variation-header {
   display: -webkit-box;
@@ -1625,7 +1694,7 @@ label {
   /* バリエーション1 → margin-left なし */
 }
 .item-detail-page .variation-header .vh-col2 {
-  margin-left: 60px;
+  margin-left: 10px;
 }
 .item-detail-page .variation-header .vh-col3 {
   margin-left: 60px;
@@ -1637,7 +1706,15 @@ label {
   margin-left: 60px;
 }
 .item-detail-page .variation-header .vh-col6 {
+  margin-left: 60px;
+}
+.item-detail-page .variation-header .vh-col7 {
   margin-left: 126px;
+}
+.item-detail-page {
+  /* ============================
+     バリエーション行（ItemVariationRow）
+     ============================ */
 }
 .item-detail-page .variation-row {
   display: -webkit-box;
@@ -1650,6 +1727,10 @@ label {
       -ms-flex-align: center;
           align-items: center;
 }
+.item-detail-page .variation-publish {
+  margin-left: 5px;
+  margin-right: 15px;
+}
 .item-detail-page .variation-row-cell {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -1657,6 +1738,9 @@ label {
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
+}
+.item-detail-page {
+  /* input の動的スタイル */
 }
 .item-detail-page .variation-row-input[data-visible="0"] {
   visibility: hidden;
@@ -1676,6 +1760,9 @@ label {
 .item-detail-page .variation-row-input[data-error="0"] {
   border: 1px solid #a0aec0;
 }
+.item-detail-page {
+  /* ＋ボタン（既存 plus-button を拡張） */
+}
 .item-detail-page .variation-plus-button[data-visible="0"] {
   visibility: hidden;
 }
@@ -1688,12 +1775,21 @@ label {
 .item-detail-page .variation-plus-button[data-editable="1"] {
   background-color: #ffffff;
 }
+.item-detail-page {
+  /* 入力欄＋ボタンのラッパー */
+}
 .item-detail-page .variation-input-wrapper {
   position: relative;
   display: inline-block;
 }
+.item-detail-page {
+  /* input の右側にボタン分の余白を確保 */
+}
 .item-detail-page .variation-row-input-padding {
   padding-right: 28px; /* ＋ボタンの幅＋余白 */
+}
+.item-detail-page {
+  /* ＋ボタンを input の右端に重ねる */
 }
 .item-detail-page .variation-plus-inside {
   position: absolute;
@@ -1711,11 +1807,19 @@ label {
   background: transparent;
   cursor: pointer;
 }
+.item-detail-page {
+  /* 削除ボタン */
+}
 .item-detail-page .variation-delete-button {
   height: 26px;
   margin-left: 10px;
   padding: 0 5px;
   white-space: nowrap;
+}
+.item-detail-page {
+  /* ============================
+     ツリー線
+     ============================ */
 }
 .item-detail-page .variation-tree-cell {
   width: 33px;
@@ -1744,16 +1848,6 @@ label {
   stroke-width: 0.8;
 }
 
-.item-classification-list-page {
-  /* ------------------------------
-     テーブル行の背景色（公開・非公開）
-  ------------------------------ */
-  /* 公開行 */
-  /* 非公開行 */
-  /* ------------------------------
-     商品分類名セルの構造
-  ------------------------------ */
-}
 .item-classification-list-page__legend {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -1777,17 +1871,31 @@ label {
   background-color: #d5d7db;
   border: 1px solid #bbb;
 }
+.item-classification-list-page {
+  /* ------------------------------
+     テーブル行の背景色（公開・非公開）
+  ------------------------------ */
+  /* 公開行 */
+}
 .item-classification-list-page .row-child {
   background: #fafafa;
 }
 .item-classification-list-page .row-child:hover {
   background: #f0f0f0;
 }
+.item-classification-list-page {
+  /* 非公開行 */
+}
 .item-classification-list-page .row-hidden {
   background: #d5d7db;
 }
 .item-classification-list-page .row-hidden:hover {
   background: #c7c9cc;
+}
+.item-classification-list-page {
+  /* ------------------------------
+     商品分類名セルの構造
+  ------------------------------ */
 }
 .item-classification-list-page .name-cell-wrapper {
   position: relative;
@@ -2030,4 +2138,11 @@ th.col-btn, td.col-btn {
 
 .row-is-future {
   background: #d4e4ff !important;
+}
+
+.page-container-re {
+  background-color: #FFF;
+  padding: 1rem;
+  width: 1500px;
+  margin-left: -100px;
 }

@@ -27,7 +27,7 @@ export const APP_MENU: {
     { name: '発送予定一覧', url: '/shipment_plan' },
     { name: '仕入データ', url: '/purchase' },
   ],
-  mail: [{name: 'お問い合わせ', url: '/inquiry_mail'}
+  mail: [{name: 'お問い合わせ', url: '/inquiry'}
   ],
   capture: [{ name: '本国商品データ取込', url: '/home_data_import' }],
   monthClosing: [
@@ -50,7 +50,7 @@ export const APP_MENU: {
     { name: 'カレンダーマスタ', url: '/calendar' },
     { name: '注目ランキングマスタ', url: '/pickup_ranking' },
     { name: '情報管理', url: '/info_management' },
-    { name: 'メールマスタ', url: '/shop_mail_list' },
+    { name: 'メールマスタ', url: '/mail' },
     { name: '環境設定', url: '/config', className: 'pt-4' },
   ],
 };

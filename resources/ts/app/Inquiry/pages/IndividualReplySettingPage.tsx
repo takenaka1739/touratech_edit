@@ -1,8 +1,8 @@
 import React from 'react';
 import { Forms } from '@/components';
-import { HeaderSection } from '@/app/ShopMail/components/detail/HeaderSection';
-import { FooterSection } from '@/app/ShopMail/components/detail/FooterSection';
-import { StatementSection} from '@/app/ShopMail/components/detail/StatementSection';
+import { HeaderSection } from '@/app/Inquiry/components/detail/HeaderSection';
+import { StatementSwitchingSection } from '@/app/Inquiry/components/detail/StatementSwitchingSection';
+import { FooterSection } from '@/app/Inquiry/components/detail/FooterSection';
 
 type Props = {
   state: any;
@@ -11,7 +11,7 @@ type Props = {
   saveClick: (value: any) => void;
 };
 
-export const AutoReplySettingPage: React.VFC<Props> = ({
+export const IndividualReplySettingPage: React.VFC<Props> = ({
   state,
   errors,
   onChange,
@@ -19,20 +19,7 @@ export const AutoReplySettingPage: React.VFC<Props> = ({
 }) => {
   return (
     <>
-      {/* 自動返信 */}
-      <Forms.FormGroupInputRadio
-        labelText="自動返信"
-        name="display_status"
-        value={state.display_status}
-        error={errors?.display_status}
-        onChange={onChange}
-        items={[
-          { labelText: 'する', id: 'display_status_0', value: 0 },
-          { labelText: 'しない', id: 'display_status_1', value: 1 },
-        ]}
-        required={true}
-      />
-      {/* 題目 */}
+      {/* 題名 */}
       <Forms.FromGroupInputItemNumber
         labelText="題名"
         name="item_number"
@@ -51,11 +38,10 @@ export const AutoReplySettingPage: React.VFC<Props> = ({
         onChange={onChange}
         saveClick={saveClick}
       />
-      <StatementSection
+      <StatementSwitchingSection
         state={state}
         errors={errors}
         onChange={onChange}
-        saveClick={saveClick}
       />
       <FooterSection
         state={state}
@@ -64,5 +50,5 @@ export const AutoReplySettingPage: React.VFC<Props> = ({
         saveClick={saveClick}
       />
     </>
-  );
-};
+  )
+}

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useInquiryReplyListPage } from '../uses/useInquiryReplyListPage';
+import { useReplyListPage } from '../uses/useReplyListPage';
 import { Link } from 'react-router-dom';
 import { PageWrapper, BoxConditions, TableWrapper, Forms } from '@/components';
 import { useComposing } from '@/uses';
@@ -8,11 +8,11 @@ import { IndividualReplyDialog } from '../components/IndividualReplyDialog';
 /**
  * お問い合わせ（一覧）画面 Component
  */
-export const ShopMailListPage: React.VFC = () => {
+export const ReplyListPage: React.VFC = () => {
 
   //const slug = 'calendar';
   const slug = 'calendar';
-  const title = '自動返信一覧';
+  const title = '返信一覧';
 
   const {
     isLoading,
@@ -24,16 +24,17 @@ export const ShopMailListPage: React.VFC = () => {
     onClickClearButton,
     individualReplyDialogProps,
     conditions,
-  } = useInquiryReplyListPage(slug);
+  } = useReplyListPage(slug);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
   const tables = useMemo(() => {
     const tbody = state.rows.map((r:any) => (
       <tr key={r.id}>
         <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
         <td className="col-btn">
-          {/*<Link to={`/shop_mail/${r.id}`}>編集</Link>*/}
-          <Link to={`/shop_mail_list/detail/${r.id}`}>編集</Link>
+          <Link to={`/inquiry/reply/detail/${r.id}`}>確認</Link>
         </td>
       </tr>
     ));
@@ -42,8 +43,10 @@ export const ShopMailListPage: React.VFC = () => {
       <table>
         <thead>
           <tr>
-            <th className="col-amount">メール題名</th>
-            <th className="col-amount">編集</th>
+            <th className="col-amount">題名</th>
+            <th className="col-amount">送信先メールアドレス</th>
+            <th className="col-amount">送信日時</th>
+            <th className="col-amount">確認</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
@@ -86,12 +89,6 @@ export const ShopMailListPage: React.VFC = () => {
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
       </TableWrapper>
-      <div className="flex justify-between">
-        {/*<button className="btn" onClick={saveClick}>保存</button>*/}
-        {/*<button className="btn" style={{marginTop: '5px'}}>新規追加</button>*/}
-        <Link className="btn" to={`/shop_mail_list/detail`} style={{marginTop: '10px'}}>新規追加</Link>
-      </div>
     </PageWrapper>
-    
   );
 };

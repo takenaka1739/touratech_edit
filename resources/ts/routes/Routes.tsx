@@ -32,7 +32,8 @@ const RouteCoupon = React.lazy(() => import('./RouteCoupon'));
 const RouteTopimage = React.lazy(() => import('./RouteTopimage'));
 const RouteInfoManagement = React.lazy(() => import('./RouteInfoManagement'));
 const RoutePickupRanking = React.lazy(() => import('./RoutePickupRanking'));
-const RouteShopMail = React.lazy(() => import('./RouteShopMail'));
+const RouteMail = React.lazy(() => import('./RouteMail'));
+const RouteInquiry = React.lazy(() => import('./RouteInquiry'));
 
 const Routes: React.VFC = () => {
   const isOther = useIsOther();
@@ -73,8 +74,8 @@ const Routes: React.VFC = () => {
         <Route path="/user" component={RouteUser} />
         <Route path="/info_management" component={RouteInfoManagement} />
         <Route path="/pickup_ranking" component={RoutePickupRanking} />
-        <Route path="/shop_mail_list" component={RouteShopMail} />
-        <Route path="/inquiry_mail" component={RouteShopMail} />
+        <Route path="/mail" component={RouteMail} />
+        <Route path="/inquiry" component={RouteInquiry} />
         <Route component={NotFound} />
       </Switch>
     </React.Suspense>

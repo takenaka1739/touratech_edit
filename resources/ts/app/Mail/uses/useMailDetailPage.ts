@@ -1,10 +1,10 @@
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
-import { useSwichingMailPage } from '@/app/ShopMail/uses/useSwichingMailPage';
-import { itemInitialState } from '@/app/ShopMail/modules/itemInitialState';
-import { useAutoReplySettingPage } from '@/app/ShopMail/uses/useAutoReplySettingPage';
+import { useSwichingMailPage } from '@/app/Mail/uses/useSwichingMailPage';
+import { itemInitialState } from '@/app/Mail/modules/itemInitialState';
+import { useAutoReplySettingPage } from '@/app/Mail/uses/useAutoReplySettingPage';
 import { Item } from '@/types';
 
-export const useShoMailDetailPage = () => {
+export const useMailDetailPage = () => {
   const title = 'お問い合わせ / 発送メール';
   const slug = 'item';
 

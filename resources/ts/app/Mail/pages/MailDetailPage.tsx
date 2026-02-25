@@ -1,14 +1,14 @@
 import React from 'react';
 import { PageWrapper } from '@/components';
-import { ShopMailSwitchingSection } from '@/app/ShopMail/components/detail/ShopMailSwitchingSection';
-import { useShoMailDetailPage } from '@/app/ShopMail/uses/useShoMailDetailPage';
-import { AutoReplySettingPage } from '@/app/ShopMail/pages/AutoReplySettingPage';
-import { IndividualReplySettingPage } from '@/app/ShopMail/pages/IndividualReplySettingPage';
+import { ShopMailSwitchingSection } from '@/app/Mail/components/detail/ShopMailSwitchingSection';
+import { useMailDetailPage } from '@/app/Mail/uses/useMailDetailPage';
+import { AutoReplySettingPage } from '@/app/Mail/pages/AutoReplySettingPage';
+import { IndividualReplySettingPage } from '@/app/Mail/pages/IndividualReplySettingPage';
 
 /**
  * 画面 Component
  */
-export const ShopMailDetailPage: React.VFC = () => {
+export const MailDetailPage: React.VFC = () => {
 
   const {
     id,
@@ -20,7 +20,7 @@ export const ShopMailDetailPage: React.VFC = () => {
     //delButton,
     onChange,
     saveClick
-  } = useShoMailDetailPage();
+  } = useMailDetailPage();
 
   {console.log('state.display_status')}
   {console.log(state.display_status)}

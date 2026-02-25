@@ -1,18 +1,19 @@
 import React, { useMemo } from 'react';
 import { useInquiryReplyListPage } from '../uses/useInquiryReplyListPage';
 import { Link } from 'react-router-dom';
-import { PageWrapper, BoxConditions, TableWrapper, Forms } from '@/components';
+import { BoxConditions, TableWrapper, Forms } from '@/components';
 import { useComposing } from '@/uses';
 import { IndividualReplyDialog } from '../components/IndividualReplyDialog';
+import { MailPageWrapper } from '../components/detail/MailPageWrapper';
 
 /**
  * お問い合わせ（一覧）画面 Component
  */
-export const ReplyListPage: React.VFC = () => {
+export const InquiryReplyListPage: React.VFC = () => {
 
   //const slug = 'calendar';
   const slug = 'calendar';
-  const title = '返信一覧';
+  const title = 'お問い合わせ一覧';
 
   const {
     isLoading,
@@ -22,8 +23,10 @@ export const ReplyListPage: React.VFC = () => {
     onChangePage,
     onClickSearchButton,
     onClickClearButton,
+    //addDetail,
     individualReplyDialogProps,
     conditions,
+    //isDisabled,
   } = useInquiryReplyListPage(slug);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
@@ -33,8 +36,23 @@ export const ReplyListPage: React.VFC = () => {
         <td className="text-right">{}</td>
         <td className="text-right">{}</td>
         <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
+        <td className="text-right">{}</td>
         <td className="col-btn">
-          <Link to={`/inquiry_mail/reply/detail/${r.id}`}>確認</Link>
+          <Link to={`/inquiry/reply/${r.id}`}>{}件</Link>
+        </td>
+        <td className="col-btn">
+          {r.receive_order_id && !r.sales_id ? (
+            <Link to={`/inquiry_mail/receive_order/${r.receive_order_id}`}>詳細</Link>
+          ) : r.receive_order_id && r.sales_id ? (
+            <Link to={`/sales/detail/${r.sales_id}`}>詳細</Link>
+          ) : <p className="form-label-text" style={{ textAlign: 'center' }}>なし</p>}
         </td>
       </tr>
     ));
@@ -43,10 +61,19 @@ export const ReplyListPage: React.VFC = () => {
       <table>
         <thead>
           <tr>
-            <th className="col-amount">題名</th>
-            <th className="col-amount">送信先メールアドレス</th>
-            <th className="col-amount">送信日時</th>
-            <th className="col-amount">確認</th>
+            <th className="col-amount">売上形態</th>
+            <th className="col-amount">状態</th>
+            <th className="col-amount">伝票番号</th>
+            <th className="col-amount">合計金額</th>
+            <th className="col-amount">請求日</th>
+            <th className="col-amount">入金日</th>
+            <th className="col-amount">会員氏名</th>
+            <th className="col-amount">購入者氏名</th>
+            <th className="col-amount">支払種別</th>
+            <th className="col-amount">発送日</th>
+            <th className="col-amount">取消日</th>
+            <th className="col-amount" style={{width: '90px'}}>送信件数</th>
+            <th className="col-amount" style={{width: '90px'}}>詳細</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
@@ -55,7 +82,7 @@ export const ReplyListPage: React.VFC = () => {
   }, [state.rows]);
 
   return (
-    <PageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
+    <MailPageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
       <BoxConditions
         onClickSearchButton={onClickSearchButton}
         onClickClearButton={onClickClearButton}
@@ -89,6 +116,11 @@ export const ReplyListPage: React.VFC = () => {
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
       </TableWrapper>
-    </PageWrapper>
+      {/*<div className="mt-2">
+        <button className="btn" onClick={addDetail} disabled={isDisabled}>
+          新規追加
+        </button>
+      </div>*/}
+    </MailPageWrapper>
   );
 };
