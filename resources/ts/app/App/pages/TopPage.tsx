@@ -35,7 +35,7 @@ export const TopPage: React.VFC = () => {
   const _mail = useMemo(() => {
     return (
       <div className="top-page__menu">
-        <h3 className="top-page__h3">ショップメール</h3>
+        <h3 className="top-page__h3">メール</h3>
         <div className="top-page__menu-box">
           <ul>
             {APP_MENU.mail.map((x, i) => (
