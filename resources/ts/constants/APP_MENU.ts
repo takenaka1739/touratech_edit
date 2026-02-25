@@ -50,7 +50,7 @@ export const APP_MENU: {
     { name: 'カレンダーマスタ', url: '/calendar' },
     { name: '注目ランキングマスタ', url: '/pickup_ranking' },
     { name: '情報管理', url: '/info_management' },
-    { name: 'メールマスタ', url: '/shop_mail' },
+    { name: 'メールマスタ', url: '/shop_mail_list' },
     { name: '環境設定', url: '/config', className: 'pt-4' },
   ],
 };

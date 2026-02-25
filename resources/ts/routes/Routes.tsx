@@ -73,7 +73,7 @@ const Routes: React.VFC = () => {
         <Route path="/user" component={RouteUser} />
         <Route path="/info_management" component={RouteInfoManagement} />
         <Route path="/pickup_ranking" component={RoutePickupRanking} />
-        <Route path="/shop_mail" component={RouteShopMail} />
+        <Route path="/shop_mail_list" component={RouteShopMail} />
         <Route path="/inquiry_mail" component={RouteShopMail} />
         <Route component={NotFound} />
       </Switch>

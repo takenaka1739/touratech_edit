@@ -8,11 +8,11 @@ import { IndividualReplyDialog } from '../components/IndividualReplyDialog';
 /**
  * お問い合わせ（一覧）画面 Component
  */
-export const InquiryReplyListPage: React.VFC = () => {
+export const ReplyListPage: React.VFC = () => {
 
   //const slug = 'calendar';
   const slug = 'calendar';
-  const title = 'お問い合わせ一覧';
+  const title = '返信一覧';
 
   const {
     isLoading,
@@ -22,10 +22,8 @@ export const InquiryReplyListPage: React.VFC = () => {
     onChangePage,
     onClickSearchButton,
     onClickClearButton,
-    //addDetail,
     individualReplyDialogProps,
     conditions,
-    //isDisabled,
   } = useInquiryReplyListPage(slug);
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
@@ -35,23 +33,8 @@ export const InquiryReplyListPage: React.VFC = () => {
         <td className="text-right">{}</td>
         <td className="text-right">{}</td>
         <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
-        <td className="text-right">{}</td>
         <td className="col-btn">
-          <Link to={`/inquiry_mail/reply_list/${r.id}`}>送信件数{}件</Link>
-        </td>
-        <td className="col-btn">
-          {r.receive_order_id && !r.sales_id ? (
-            <Link to={`/inquiry_mail/receive_order/${r.receive_order_id}`}>詳細</Link>
-          ) : r.receive_order_id && r.sales_id ? (
-            <Link to={`/inquiry_mail/sales/${r.sales_id}`}>詳細</Link>
-          ) : <p className="form-label-text" style={{ textAlign: 'center' }}>なし</p>}
+          <Link to={`/inquiry_mail/reply/detail/${r.id}`}>確認</Link>
         </td>
       </tr>
     ));
@@ -60,19 +43,10 @@ export const InquiryReplyListPage: React.VFC = () => {
       <table>
         <thead>
           <tr>
-            <th className="col-amount">売上形態</th>
-            <th className="col-amount">状態</th>
-            <th className="col-amount">伝票番号</th>
-            <th className="col-amount">合計金額</th>
-            <th className="col-amount">請求日</th>
-            <th className="col-amount">入金日</th>
-            <th className="col-amount">会員氏名</th>
-            <th className="col-amount">購入者氏名</th>
-            <th className="col-amount">支払種別</th>
-            <th className="col-amount">発送日</th>
-            <th className="col-amount">取消日</th>
-            <th className="col-amount">送信件数{}件</th>
-            <th className="col-amount">詳細</th>
+            <th className="col-amount">題名</th>
+            <th className="col-amount">送信先メールアドレス</th>
+            <th className="col-amount">送信日時</th>
+            <th className="col-amount">確認</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
@@ -115,11 +89,6 @@ export const InquiryReplyListPage: React.VFC = () => {
       <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
         {tables}
       </TableWrapper>
-      {/*<div className="mt-2">
-        <button className="btn" onClick={addDetail} disabled={isDisabled}>
-          新規追加
-        </button>
-      </div>*/}
     </PageWrapper>
   );
 };

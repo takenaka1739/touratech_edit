@@ -1,16 +1,17 @@
 import React from 'react';
 import { PageWrapper } from '@/components';
 import { ShopMailSwitchingSection } from '@/app/ShopMail/components/detail/ShopMailSwitchingSection';
-import { useShoMailPage } from '@/app/ShopMail/uses/useShoMailPage';
+import { useShoMailDetailPage } from '@/app/ShopMail/uses/useShoMailDetailPage';
 import { AutoReplySettingPage } from '@/app/ShopMail/pages/AutoReplySettingPage';
 import { IndividualReplySettingPage } from '@/app/ShopMail/pages/IndividualReplySettingPage';
 
 /**
  * 画面 Component
  */
-export const ShopMailPage: React.VFC = () => {
+export const ShopMailDetailPage: React.VFC = () => {
+
   const {
-    //id,
+    id,
     isDisabled,
     title,
     slug,
@@ -19,7 +20,7 @@ export const ShopMailPage: React.VFC = () => {
     //delButton,
     onChange,
     saveClick
-  } = useShoMailPage();
+  } = useShoMailDetailPage();
 
   {console.log('state.display_status')}
   {console.log(state.display_status)}
@@ -53,11 +54,14 @@ export const ShopMailPage: React.VFC = () => {
           <button className="btn" onClick={saveClick} disabled={isDisabled}>保存</button>
         </div>
 
-        {/*{id && (
-          <button className="btn-delete" onClick={() => delButton(-1)} disabled={isDisabled}>
+        {id && (
+          <button className="btn-delete" disabled={isDisabled}>
             削除
           </button>
-        )}*/}
+          /*<button className="btn-delete" onClick={() => delButton(-1)} disabled={isDisabled}>
+            削除
+          </button>*/
+        )}
       </div>
     </PageWrapper>
   );

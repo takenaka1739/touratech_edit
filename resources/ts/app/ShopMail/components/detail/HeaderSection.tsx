@@ -26,18 +26,21 @@ export const HeaderSection: React.VFC<Props> = ({
         maxLength={2000}
       />
       <div style={{display: 'flex'}}>
-        <Forms.FormGroupSelect
-          labelText=""
-          name="company_level"
-          options={[
-            { name: "適格請求書発行事業者の登録番号", value: "適格請求書発行事業者の登録番号" },
-          ]}
-          value={""}
-          error={errors?.company_level}
-          onChange={onChange}
-          required
-        />
-        <button className="btn" onClick={saveClick}>挿入</button>
+        <div>
+          <Forms.FormGroupSelect
+            labelText=""
+            name="company_level"
+            options={[
+              { name: "適格請求書発行事業者の登録番号", value: "適格請求書発行事業者の登録番号" },
+            ]}
+            value={""}
+            error={errors?.company_level}
+            onChange={onChange}
+            required
+          />
+        </div>
+        <button className="btn" onClick={saveClick}
+                style={{height: '28px', marginLeft: '8px', marginTop: '12px'}}>挿入</button>
       </div>
     </>
   );

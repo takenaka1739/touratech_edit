@@ -39,7 +39,7 @@ export const AutoReplySettingPage: React.VFC<Props> = ({
         value={state.item_number}
         error={errors?.item_number}
         onChange={onChange}
-        groupClassName="mt-0"
+        groupClassName="mt-2"
         className="max-w-lg"
         required
         autoFocus

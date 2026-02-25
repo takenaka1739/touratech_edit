@@ -1,10 +1,10 @@
 import { useCommonDetailPage } from '@/app/App/uses/useCommonDetailPage';
 import { useSwichingMailPage } from '@/app/ShopMail/uses/useSwichingMailPage';
-import { itemInitialState } from '@/app/Item/modules/itemInitialState';
+import { itemInitialState } from '@/app/ShopMail/modules/itemInitialState';
 import { useAutoReplySettingPage } from '@/app/ShopMail/uses/useAutoReplySettingPage';
 import { Item } from '@/types';
 
-export const useShoMailPage = () => {
+export const useShoMailDetailPage = () => {
   const title = 'お問い合わせ / 発送メール';
   const slug = 'item';
 
@@ -13,7 +13,7 @@ export const useShoMailPage = () => {
   // ==============================================================
   const {
     //isLoading,
-    //id,
+    id,
     state,
     errors,
     isDisabled,
@@ -39,6 +39,7 @@ export const useShoMailPage = () => {
   } = useAutoReplySettingPage();
 
   return{
+    id,
     isDisabled,
     title,
     slug,
