@@ -208,6 +208,7 @@ return [
         App\Api\ShipmentPlanImport\ShipmentPlanImportServiceProvider::class,
         App\Api\ShipmentPlan\ShipmentPlanServiceProvider::class,
         App\Api\PickupRanking\PickupRankingServiceProvider::class,
+        App\Api\ShopMail\ShopMailProvider::class,
 
         // Web
         App\Web\Customer\CustomerServiceProvider::class,
