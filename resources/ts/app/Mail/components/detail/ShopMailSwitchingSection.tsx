@@ -7,28 +7,24 @@ type Props = {
   onChange: (name: string, value: any) => void;
 };
 
-export const ShopMailSwitchingSection: React.VFC<Props> = ({
-  state,
-  errors,
-  onChange,
-}) => {
+const TYPE_AUTO = 1;
+const TYPE_INDIV = 2;
+
+export const ShopMailSwitchingSection: React.VFC<Props> = ({ state, errors, onChange }) => {
   return (
     <>
-  {console.log('state.display_status')}
-  {console.log(state.display_status)}
-      {/* 支払い方法 */}
-        <Forms.FormGroupInputRadio
-          labelText="メール設定切替"
-          name="display_status"
-          value={state.display_status}
-          error={errors?.display_status}
-          onChange={onChange}
-          items={[
-            { labelText: '自動返信メール設定', id: 'display_status_0', value: 0 },
-            { labelText: '個別返信メール設定', id: 'display_status_1', value: 1 },
-          ]}
-          required={true}
-        />
+      <Forms.FormGroupInputRadio
+        labelText="メール種別"
+        name="template_type"
+        value={Number(state.template_type ?? TYPE_AUTO)}
+        error={errors?.template_type}
+        onChange={onChange}
+        items={[
+          { labelText: '自動返信メール', id: 'template_type_1', value: TYPE_AUTO },
+          { labelText: '個別返信メール', id: 'template_type_2', value: TYPE_INDIV },
+        ]}
+        required={true}
+      />
     </>
   );
 };

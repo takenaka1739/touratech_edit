@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Api\ShopMail\Controllers\MailTemplateController;
 use App\Api\ShopMail\Controllers\MailMessageController;
-use App\Api\ShopMail\Controllers\InquiryMailController;
+use App\Api\ShopMail\Controllers\InquiryController;
+use App\Api\ShopMail\Controllers\EcMailHistoryController;
+use App\Api\ShopMail\Controllers\InquiryReplyController; // ★追加
 
 Route::prefix('api/shop-mail')->group(function () {
 
@@ -26,8 +28,13 @@ Route::prefix('api/shop-mail')->group(function () {
     Route::get('/sales/{salesId}/messages', [MailMessageController::class, 'salesMessages']);
 
     // ===== Inquiries =====
-    Route::get('/inquiries', [InquiryMailController::class, 'index']);
-    Route::get('/inquiries/{id}', [InquiryMailController::class, 'show']);
-    Route::get('/inquiries/{id}/messages', [InquiryMailController::class, 'messages']);
-    Route::post('/inquiries/{id}/send', [InquiryMailController::class, 'send']);
+    Route::get('/inquiries', [InquiryController::class, 'index']);
+    Route::get('/inquiries/{id}', [InquiryController::class, 'show']);
+    Route::get('/inquiries/{id}/messages', [InquiryController::class, 'messages']);
+
+    // ★追加：問い合わせ返信送信（t_inquiries_history に保存）
+    Route::post('/inquiries/{id}/send', [InquiryReplyController::class, 'send']);
+
+    // ===== EC Mail Histories (slip-based) =====
+    Route::get('/ec-mail-histories', [EcMailHistoryController::class, 'index']);
 });

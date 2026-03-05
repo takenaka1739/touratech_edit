@@ -1,114 +1,141 @@
-import { useState } from 'react';
-import { useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
-import { RootState } from '@/store';
-import { Calendar, Pager } from '@/types';
-import { useCommonListPage } from '@/app/App/uses/useCommonListPage';
 import { AppActions } from '@/app/App/modules/appModule';
-import {
-  CalendarListPageConditionState,
-  CalendarListPageActions,
-  calendarInitialState,
-} from '../modules/calendarListPageModule';
-import { useIndividualReplySearch } from './useIndividualReplySearch';          // 他商品情報参照
 
-export type CalendarPageState = {
-  rows: Calendar[];
-  pager: Pager | undefined;
+type ConditionState = {
+  c_keyword: string;
+  page: number;
 };
 
-/**
- * メールマスタ（一覧）画面用 hooks
- */
-export const useMailListPage = (slug: string) => {
+type MailTemplateRow = {
+  id: number;
+  template_type: number;
+  title: string;
+
+  detail_mode?: number; // 0/1
+  payment_url_enabled?: number; // 0/1
+  is_active?: number;
+
+  subject_template?: string;
+  header_template?: string;
+  footer_template?: string;
+  shipping_text?: string;
+
+  [key: string]: any;
+};
+
+export type MailListPageState = {
+  rows: MailTemplateRow[];
+  pager: any | undefined;
+};
+
+export const useMailListPage = () => {
   const dispatch = useDispatch();
-  const [isDisabled, setDisabled] = useState(false);
-  const initialConditions = calendarInitialState.conditions;
 
-  const setConditions = useCallback(
-    (conditions: CalendarListPageConditionState) =>
-      dispatch(CalendarListPageActions.setConditions(conditions)),
-    [dispatch]
-  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [conditions, setConditions] = useState<ConditionState>({ c_keyword: '', page: 1 });
+  const [allRows, setAllRows] = useState<MailTemplateRow[]>([]);
 
-  const getConditions = () => {
-    return useSelector((state: RootState) => state.calendarListPage.conditions);
-  };
-
-  const {
-    isLoading,
-    state,
-    conditions,
-    onChange,
-    onClickSearchButton,
-    onClickClearButton,
-    onChangePage,
-    addDetail,
-  } = useCommonListPage<CalendarPageState, CalendarListPageConditionState>(
-    slug,
-    {
-      rows: [],
-      pager: undefined,
-    },
-    initialConditions,
-    getConditions,
-    setConditions
-  );
-
-  // 個別返信
-  const {
-    openIndividualReplyDialog,
-    individualReplyDialogProps,
-    onChangeRefState,
-  } = useIndividualReplySearch({
-    state,
-  });
-
-  const output: () => Promise<boolean> = async () => {
+  const fetchList = useCallback(async () => {
+    setIsLoading(true);
     dispatch(AppActions.request());
 
-    const res = await axios.post(`/api/${slug}/output_excel`, conditions);
-    if (res.status === 200) {
-      dispatch(AppActions.success());
-      if (res.data.success) {
-        const { file_id } = res.data.data;
-        const link = document.createElement('a');
-        link.href = `/web/${slug}/output_excel/${file_id}`;
-        link.click();
-
-        return true;
+    try {
+      const res = await axios.get('/api/shop-mail/templates');
+      if (res.status === 200) {
+        dispatch(AppActions.success());
+        const data = res.data?.data ?? {};
+        const rows = (data.rows ?? []) as MailTemplateRow[];
+        setAllRows(rows);
+      } else {
+        dispatch(AppActions.failed('一覧の取得に失敗しました。'));
       }
-    } else {
-      dispatch(AppActions.failed('出力に失敗しました。'));
+    } catch {
+      dispatch(AppActions.failed('一覧の取得に失敗しました。'));
+    } finally {
+      setIsLoading(false);
     }
-    return false;
-  };
+  }, [dispatch]);
 
-  const onClickOutput: () => void = async () => {
-    setDisabled(true);
-    await output();
-    setDisabled(false);
-  };
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
 
-  const changeStockDisplay: () => void = async () => {
+  const onChange = useCallback((name: string, value: any) => {
+    setConditions(prev => ({ ...prev, [name]: value }));
+  }, []);
 
-  };
+  const onClickSearchButton = useCallback(() => {
+    setConditions(prev => ({ ...prev, page: 1 }));
+  }, []);
+
+  const onClickClearButton = useCallback(() => {
+    setConditions({ c_keyword: '', page: 1 });
+  }, []);
+
+  const onChangePage = useCallback((_page: number) => {
+    // 今回はページング未対応
+  }, []);
+
+  const state: MailListPageState = useMemo(() => {
+    const kw = (conditions.c_keyword ?? '').trim().toLowerCase();
+
+    const rows = !kw
+      ? allRows
+      : allRows.filter(r => {
+          const hay = [
+            r.title ?? '',
+            r.subject_template ?? '',
+            r.header_template ?? '',
+            r.footer_template ?? '',
+            r.shipping_text ?? '',
+          ]
+            .join('\n')
+            .toLowerCase();
+          return hay.includes(kw);
+        });
+
+    return { rows, pager: undefined };
+  }, [allRows, conditions.c_keyword]);
+
+  const deleteTemplate = useCallback(
+    async (id: number) => {
+      if (!id) return false;
+
+      setIsDeleting(true);
+      dispatch(AppActions.request());
+
+      try {
+        const res = await axios.delete(`/api/shop-mail/templates/${id}`);
+        if (res.status === 200) {
+          dispatch(AppActions.success());
+          await fetchList();
+          return true;
+        }
+        dispatch(AppActions.failed('削除に失敗しました。'));
+        return false;
+      } catch {
+        dispatch(AppActions.failed('削除に失敗しました。'));
+        return false;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [dispatch, fetchList]
+  );
 
   return {
     isLoading,
+    isDeleting,
     state,
     conditions,
-    openIndividualReplyDialog,
-    onChangeRefState,
-    individualReplyDialogProps,
     onChange,
     onClickSearchButton,
     onClickClearButton,
     onChangePage,
-    addDetail,
-    onClickOutput,
-    changeStockDisplay,
-    isDisabled,
+    refetch: fetchList,
+    deleteTemplate,
   };
 };

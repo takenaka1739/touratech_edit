@@ -76,6 +76,8 @@ const Routes: React.VFC = () => {
         <Route path="/pickup_ranking" component={RoutePickupRanking} />
         <Route path="/mail" component={RouteMail} />
         <Route path="/inquiry" component={RouteInquiry} />
+        <Route path="/inquiry_mail" component={RouteInquiry} />
+
         <Route component={NotFound} />
       </Switch>
     </React.Suspense>
