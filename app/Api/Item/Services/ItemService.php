@@ -156,6 +156,7 @@ class ItemService
       'm_items.is_payment_id3',
       'm_items.is_payment_id4',
       'm_items.is_payment_id5',
+      'm_items.is_payment_id6',
       'm_items.is_set_item',
 
       'm_suppliers.id AS supplier_id',
@@ -477,6 +478,7 @@ foreach ($idList as $id) {
     $selectItems['is_payment_id3'] = $selectItems['is_payment_id3'] === 0 ? false : true;
     $selectItems['is_payment_id4'] = $selectItems['is_payment_id4'] === 0 ? false : true;
     $selectItems['is_payment_id5'] = $selectItems['is_payment_id5'] === 0 ? false : true;
+    $selectItems['is_payment_id6'] = $selectItems['is_payment_id6'] === 0 ? false : true;
     $selectItems['sales_price'] = count($variItems) > 1 ? 0 : $selectItems['sales_price'];
     $selectItems['type_status'] = $selectItems['type_status'] === null || $selectItems['type_status'] === '' ? 0 : $selectItems['type_status'];
     $selectItems['type_status_link'] = $selectItems['type_status_link'] === null || $selectItems['type_status_link'] === '' ? 0 : $selectItems['type_status_link'];
@@ -575,6 +577,7 @@ foreach ($idList as $id) {
       $m->is_payment_id3 = $data->get('is_payment_id3');
       $m->is_payment_id4 = $data->get('is_payment_id4');
       $m->is_payment_id5 = $data->get('is_payment_id5');
+      $m->is_payment_id6 = $data->get('is_payment_id6');
       $m->save();
     });
   }
@@ -717,6 +720,7 @@ foreach ($idList as $id) {
       'is_payment_id3'         => $data['is_payment_id3'] ?? false,
       'is_payment_id4'         => $data['is_payment_id4'] ?? false,
       'is_payment_id5'         => $data['is_payment_id5'] ?? false,
+      'is_payment_id6'         => $data['is_payment_id6'] ?? false,
       'remarks'                => $data['remarks'] ?? null,
       'is_set_item'            => $data['is_set_item'] ?? false,
     ];

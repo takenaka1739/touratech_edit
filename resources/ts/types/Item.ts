@@ -37,6 +37,7 @@
  * @param is_payment_id3          - 支払い方法3フラグ
  * @param is_payment_id4          - 支払い方法4フラグ
  * @param is_payment_id5          - 支払い方法5フラグ
+ * @param is_payment_id6          - 支払い方法6フラグ
  * @param payErrorMessage         - 支払い方法項目入力エラー時のメッセージ格納変数
  * @param domestic_stocks         - 国内在庫数
  * @param overseas_stocks         - 国外在庫数
@@ -133,6 +134,7 @@ export interface Item {
   is_payment_id3?: boolean | undefined;
   is_payment_id4?: boolean | undefined;
   is_payment_id5?: boolean | undefined;
+  is_payment_id6?: boolean | undefined;
   variItems: string[][];
   backVariItems: string[][];
   dataBaceAllCodeList: string[];

@@ -13,7 +13,8 @@ const validatePaymentMethods = (state: Item): string | null => {
     (state.is_payment_id2 == null || state.is_payment_id2 === false) &&
     (state.is_payment_id3 == null || state.is_payment_id3 === false) &&
     (state.is_payment_id4 == null || state.is_payment_id4 === false) &&
-    (state.is_payment_id5 == null || state.is_payment_id5 === false);
+    (state.is_payment_id5 == null || state.is_payment_id5 === false) &&
+    (state.is_payment_id6 == null || state.is_payment_id6 === false);
 
   if (noPaymentSelected) {
     return '支払い方法を選択してください';

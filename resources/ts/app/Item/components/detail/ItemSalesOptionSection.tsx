@@ -181,6 +181,13 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
             checked={state.is_payment_id5}
             onChange={(name, value) => onChangePayment(name, value === true)}
           />
+          <Forms.FormInputCheck
+            id="is_payment_id6"
+            name="is_payment_id6"
+            labelText="ポイント払い"
+            checked={state.is_payment_id6}
+            onChange={(name, value) => onChangePayment(name, value === true)}
+          />
         </div>
       </Forms.FormGroup>
     </>

@@ -53,6 +53,7 @@ $factory->define(Item::class, function (Faker $faker, $attributes) {
         'is_payment_id3' => true,
         'is_payment_id4' => true,
         'is_payment_id5' => true,
+        'is_payment_id6' => true,
     ];
 });
 
@@ -119,6 +120,7 @@ $factory->define(Item::class, function (Faker $faker, $attributes) {
 //        'is_payment_id3' => true,
 //        'is_payment_id4' => true,
 //        'is_payment_id5' => true,
+//        'is_payment_id6' => true,
 //    ];
 //}, 'setItem');
 

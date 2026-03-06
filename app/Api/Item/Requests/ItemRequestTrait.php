@@ -62,6 +62,7 @@ trait ItemRequestTrait
       'is_payment_id3' => 'required|boolean',
       'is_payment_id4' => 'required|boolean',
       'is_payment_id5' => 'required|boolean',
+      'is_payment_id6' => 'required|boolean',
       'shipping_pay' => 'nullable|numeric|price',
     ];
   }

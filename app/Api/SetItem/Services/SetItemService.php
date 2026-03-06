@@ -108,6 +108,7 @@ class SetItemService
       'm_items.is_payment_id3',
       'm_items.is_payment_id4',
       'm_items.is_payment_id5',
+      'm_items.is_payment_id6',
       'm_items.is_set_item',
     )
       ->where('m_items.id', $id)
@@ -172,6 +173,7 @@ class SetItemService
       $m->is_payment_id3          = $data->has('is_payment_id3') ? $data->get('is_payment_id3') : false;
       $m->is_payment_id4          = $data->has('is_payment_id4') ? $data->get('is_payment_id4') : false;
       $m->is_payment_id5          = $data->has('is_payment_id5') ? $data->get('is_payment_id5') : false;
+      $m->is_payment_id6          = $data->has('is_payment_id6') ? $data->get('is_payment_id6') : false;
       $m->is_set_item             = $data->has('is_set_item') ? $data->get('is_set_item') : true;
 
       $m->save();
@@ -236,6 +238,7 @@ class SetItemService
       $m->is_payment_id3          = $data->has('is_payment_id3') ? $data->get('is_payment_id3') : false;
       $m->is_payment_id4          = $data->has('is_payment_id4') ? $data->get('is_payment_id4') : false;
       $m->is_payment_id5          = $data->has('is_payment_id5') ? $data->get('is_payment_id5') : false;
+      $m->is_payment_id6          = $data->has('is_payment_id6') ? $data->get('is_payment_id6') : false;
       $m->is_set_item             = $data->has('is_set_item') ? $data->get('is_set_item') : true;
 
       $m->save();

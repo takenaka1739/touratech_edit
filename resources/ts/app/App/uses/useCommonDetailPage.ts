@@ -21,9 +21,6 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
 
   const backPage = () => history.push(`/${slug}`);
 
-  console.log('slug');
-  console.log(slug);
-
   const updateState: <K extends keyof T>(
     props: {
       [key in K]?: T[K];
@@ -51,7 +48,7 @@ export const useCommonDetailPage = <T>(slug: string, initialState: T) => {
   const get: (id: number) => Promise<boolean> = async id => {
     dispatch(AppActions.request());
     const res = await axios.get(`/api/${slug}/edit/${id}`);
-    console.log(res);
+    
     if (res.status === 200) {
       setState(res.data.data);
       dispatch(AppActions.success());

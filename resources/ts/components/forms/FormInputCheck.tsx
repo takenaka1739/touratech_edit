@@ -21,7 +21,7 @@ export const FormInputCheck: React.VFC<FormInputCheckProps> = ({
   ...rest
 }) => {
   const onChangeRaw: (e: ChangeEvent<HTMLInputElement>) => void = e => {
-    console.log(`e.currentTarget.checked：${e.currentTarget.checked}`);
+    
     if (onChange) onChange(name, e.currentTarget.checked ? true : false);
   };
 
