@@ -22,7 +22,15 @@ type InquiryListState = {
 
 type Conditions = {
   keyword: string;
-  // 画面側は TableWrapper の pager でページングするので、ここも持つ
+
+  c_sales_date_from: string;
+  c_sales_date_to: string;
+  c_customer_name: string;
+  c_user_name: string;
+  c_item_number: string;
+  c_name: string;
+  c_order_no: string;
+
   page: number;
   per_page: number;
 };
@@ -36,6 +44,15 @@ export const useInquiryReplyListPage = (_slug: string) => {
 
   const [conditions, setConditions] = useState<Conditions>({
     keyword: '',
+
+    c_sales_date_from: '',
+    c_sales_date_to: '',
+    c_customer_name: '',
+    c_user_name: '',
+    c_item_number: '',
+    c_name: '',
+    c_order_no: '',
+
     page: 1,
     per_page: 20,
   });
@@ -45,13 +62,22 @@ export const useInquiryReplyListPage = (_slug: string) => {
     pager: undefined,
   });
 
-  const fetchList = useCallback(async () => {
+  const fetchList = useCallback(async (targetConditions: Conditions) => {
     setLoading(true);
     try {
       const params: any = {
-        keyword: conditions.keyword || undefined,
-        page: conditions.page,
-        per_page: conditions.per_page,
+        keyword: targetConditions.keyword || undefined,
+
+        c_sales_date_from: targetConditions.c_sales_date_from || undefined,
+        c_sales_date_to: targetConditions.c_sales_date_to || undefined,
+        c_customer_name: targetConditions.c_customer_name || undefined,
+        c_user_name: targetConditions.c_user_name || undefined,
+        c_item_number: targetConditions.c_item_number || undefined,
+        c_name: targetConditions.c_name || undefined,
+        c_order_no: targetConditions.c_order_no || undefined,
+
+        page: targetConditions.page,
+        per_page: targetConditions.per_page,
       };
 
       const res = await axios.get('/api/shop-mail/inquiries', { params });
@@ -59,7 +85,6 @@ export const useInquiryReplyListPage = (_slug: string) => {
       const rows: InquiryRow[] = res.data?.rows ?? [];
       const meta = res.data?.meta;
 
-      // Pager 型が厳密でも、一般的にこの4つがあれば TableWrapper は動く想定
       const pager: any = meta
         ? {
             current_page: meta.current_page,
@@ -76,51 +101,69 @@ export const useInquiryReplyListPage = (_slug: string) => {
     } finally {
       setLoading(false);
     }
-  }, [conditions.keyword, conditions.page, conditions.per_page]);
+  }, []);
 
-  // 初回ロード
   useEffect(() => {
-    fetchList();
+    fetchList(conditions);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+  const onChange = useCallback((nameOrEvent: any, value?: any) => {
+    setConditions((prev) => {
+      if (typeof nameOrEvent === 'string') {
+        return {
+          ...prev,
+          [nameOrEvent]: value,
+          page: 1,
+        };
+      }
 
-    setConditions(prev => {
-      const next = { ...prev, [name]: value } as any;
-      // 検索条件が変わったら1ページ目に戻す
-      next.page = 1;
-      return next;
+      const e = nameOrEvent;
+      const name = e?.target?.name;
+      const nextValue = e?.target?.value;
+
+      if (!name) return prev;
+
+      return {
+        ...prev,
+        [name]: nextValue,
+        page: 1,
+      };
     });
   }, []);
 
   const onClickSearchButton = useCallback(() => {
-    // conditions の state が最新なのでそのまま fetch
-    fetchList();
-  }, [fetchList]);
+    fetchList(conditions);
+  }, [fetchList, conditions]);
 
   const onClickClearButton = useCallback(() => {
-    setConditions(prev => ({
-      ...prev,
+    const cleared: Conditions = {
       keyword: '',
+      c_sales_date_from: '',
+      c_sales_date_to: '',
+      c_customer_name: '',
+      c_user_name: '',
+      c_item_number: '',
+      c_name: '',
+      c_order_no: '',
       page: 1,
-    }));
-    // クリア後に取得
-    setTimeout(() => {
-      fetchList();
-    }, 0);
-  }, [fetchList]);
+      per_page: conditions.per_page,
+    };
+
+    setConditions(cleared);
+    fetchList(cleared);
+  }, [fetchList, conditions.per_page]);
 
   const onChangePage = useCallback(
     (page: number) => {
-      setConditions(prev => ({ ...prev, page }));
-      // page 更新後に取得（state反映待ちを避けるため page を直接使う）
-      setTimeout(() => {
-        // fetchList は conditions に依存してるため、次tickでOK
-        fetchList();
-      }, 0);
+      const next = {
+        ...conditions,
+        page,
+      };
+
+      setConditions(next);
+      fetchList(next);
     },
-    [fetchList]
+    [fetchList, conditions]
   );
 
   return {

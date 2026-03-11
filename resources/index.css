@@ -2141,7 +2141,7 @@ th.col-btn, td.col-btn {
 }
 
 .mail-wrapper-page {
-  width: 1500px; /* ← 固定幅ではなく最大幅 */
+  width: 1500px;
   position: relative;
   left: 50%;
   -webkit-transform: translateX(-50%);
@@ -2149,6 +2149,326 @@ th.col-btn, td.col-btn {
 }
 
 .page-container-re {
-  background-color: #FFF;
+  background-color: #fff;
   padding: 1rem;
+}
+
+/* 一覧テーブル全体 */
+.shop-mail-list-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* ヘッダ共通 */
+.shop-mail-th-center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 詳細列 共通 */
+.shop-mail-col-detail {
+  width: 90px;
+}
+
+/* セル共通 */
+.shop-mail-cell-center {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* セル共通（折り返しなし） */
+.shop-mail-cell-center-nowrap {
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* 氏名系セル共通（1行省略表示） */
+.shop-mail-cell-name-one-line {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 伝票番号 1行表示 */
+.shop-mail-slip-no {
+  display: inline;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.shop-mail-slip-no > span {
+  display: inline;
+}
+
+/* 問い合わせ一覧 返信状態バッジ */
+.shop-mail-reply-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.shop-mail-reply-badge.is-replied {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.shop-mail-reply-badge.is-unreplied {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* EC検索エリア全体 */
+.shop-mail-ec-search {
+  font-size: 12px;
+}
+
+/* EC検索 条件グリッド */
+.shop-mail-ec-search-grid {
+  display: grid;
+  grid-template-columns: 120px 320px 120px 320px;
+  -webkit-column-gap: 16px;
+     -moz-column-gap: 16px;
+          column-gap: 16px;
+  row-gap: 8px;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+/* EC検索 ラベル */
+.shop-mail-ec-label {
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* EC検索 入力欄ラッパー */
+.shop-mail-ec-field {
+  min-width: 0;
+}
+
+/* EC検索 共通入力 */
+.shop-mail-form-control {
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid #9ca3af;
+  border-radius: 2px;
+  background-color: #fff;
+  font-size: 12px;
+  line-height: 1.2;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+/* 合計金額 範囲入力 */
+.shop-mail-range {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 6px;
+}
+
+/* 合計金額 最小値・最大値 input */
+.shop-mail-range-input {
+  width: calc(50% - 22px);
+}
+
+/* 合計金額 単位「円」 */
+.shop-mail-range-suffix {
+  width: 14px;
+  -webkit-box-flex: 0;
+      -ms-flex: 0 0 14px;
+          flex: 0 0 14px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 合計金額 区切り「～」 */
+.shop-mail-range-separator {
+  width: 16px;
+  -webkit-box-flex: 0;
+      -ms-flex: 0 0 16px;
+          flex: 0 0 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 日付行（請求日・入金日・発送日） */
+.shop-mail-ec-date-line {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  -webkit-column-gap: 16px;
+     -moz-column-gap: 16px;
+          column-gap: 16px;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+/* 日付行 ラベル */
+.shop-mail-ec-date-line-label {
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* 日付行 入力エリア */
+.shop-mail-ec-date-line-field {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* 年月日コンボ全体 */
+.shop-mail-date-range {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  min-width: -webkit-max-content;
+  min-width: -moz-max-content;
+  min-width: max-content;
+}
+
+/* 年月日コンボ共通 */
+.shop-mail-date-select {
+  height: 26px;
+  padding: 0 2px;
+  border: 1px solid #9ca3af;
+  border-radius: 2px;
+  background-color: #fff;
+  font-size: 12px;
+  line-height: 1.2;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+/* 年コンボ */
+.shop-mail-date-select-year {
+  width: 58px;
+  min-width: 58px;
+}
+
+/* 月・日コンボ */
+.shop-mail-date-select-md {
+  width: 44px;
+  min-width: 44px;
+}
+
+/* 日付 単位（年 / 月 / 日）と区切り（～） */
+.shop-mail-date-unit,
+.shop-mail-date-separator {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* =========================
+   EC一覧 列幅調整
+   ========================= */
+.shop-mail-ec-list-table {
+  /* 売上形態 */
+}
+.shop-mail-ec-list-table .shop-mail-col-sales-form {
+  width: 50px;
+}
+.shop-mail-ec-list-table {
+  /* 状態 */
+}
+.shop-mail-ec-list-table .shop-mail-col-order-state {
+  width: 50px;
+}
+.shop-mail-ec-list-table {
+  /* 伝票番号 */
+}
+.shop-mail-ec-list-table .shop-mail-col-slip-no {
+  width: 92px;
+}
+.shop-mail-ec-list-table {
+  /* 合計金額 */
+}
+.shop-mail-ec-list-table .shop-mail-col-total-amount {
+  width: 92px;
+}
+.shop-mail-ec-list-table {
+  /* 請求日 */
+}
+.shop-mail-ec-list-table .shop-mail-col-invoice-date {
+  width: 80px;
+}
+.shop-mail-ec-list-table {
+  /* 入金日 */
+}
+.shop-mail-ec-list-table .shop-mail-col-paid-date {
+  width: 80px;
+}
+.shop-mail-ec-list-table {
+  /* 会員氏名 */
+}
+.shop-mail-ec-list-table .shop-mail-col-member-name {
+  width: 120px;
+}
+.shop-mail-ec-list-table {
+  /* 購入者氏名 */
+}
+.shop-mail-ec-list-table .shop-mail-col-buyer-name {
+  width: 120px;
+}
+.shop-mail-ec-list-table {
+  /* 支払種別 */
+}
+.shop-mail-ec-list-table .shop-mail-col-payment-name {
+  width: 110px;
+}
+.shop-mail-ec-list-table {
+  /* 発送日 */
+}
+.shop-mail-ec-list-table .shop-mail-col-shipped-date {
+  width: 80px;
+}
+.shop-mail-ec-list-table {
+  /* 取消日 */
+}
+.shop-mail-ec-list-table .shop-mail-col-canceled-date {
+  width: 80px;
+}
+.shop-mail-ec-list-table {
+  /* 送信件数 */
+}
+.shop-mail-ec-list-table .shop-mail-col-send-count {
+  width: 50px;
+}
+.shop-mail-ec-list-table {
+  /* 詳細 */
+}
+.shop-mail-ec-list-table .shop-mail-col-detail {
+  width: 50px;
+}
+
+@media (max-width: 1500px) {
+  .mail-wrapper-page {
+    width: 100%;
+    left: 0;
+    -webkit-transform: none;
+            transform: none;
+  }
+  .shop-mail-ec-search-grid {
+    grid-template-columns: 120px minmax(240px, 1fr) 120px minmax(240px, 1fr);
+  }
 }

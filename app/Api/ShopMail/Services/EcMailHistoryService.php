@@ -19,13 +19,30 @@ class EcMailHistoryService
 
         $hasSalesDeleted = Schema::hasColumn('t_sales', 'deleted_at');
         $hasMsgDeleted   = Schema::hasColumn('t_mail_messages', 'deleted_at');
+        $hasCustomerId   = Schema::hasColumn('t_receive_orders', 'customer_id');
+        $hasCustomerMail = Schema::hasColumn('t_customers', 'email_main');
+        $hasSalesIsSend  = Schema::hasColumn('t_sales', 'is_send');
+        $hasShippedAt    = Schema::hasColumn('t_sales', 'shipped_at');
+        $hasInvoiceNo    = Schema::hasColumn('t_sales', 'invoice_number');
+        $hasSendStatus   = Schema::hasColumn('t_mail_messages', 'send_status');
 
         // =========================================================
         // 母集団：t_mail_messages を receive_order_id 単位で集計
-        // （＝メールが存在する受注だけ）
+        // - send_count: 総送信件数
+        // - success_send_count: send_status=1 の件数
+        //   1通目は自動送信のため、2件以上で「個別返信メール送信済み」
         // =========================================================
+        $successSendCase = $hasSendStatus
+            ? 'SUM(CASE WHEN send_status = 1 THEN 1 ELSE 0 END)'
+            : 'COUNT(*)';
+
         $mmc = DB::table('t_mail_messages')
-            ->selectRaw('receive_order_id, COUNT(*) as send_count, MAX(sent_at) as last_sent_at')
+            ->selectRaw("
+                receive_order_id,
+                COUNT(*) as send_count,
+                {$successSendCase} as success_send_count,
+                MAX(sent_at) as last_sent_at
+            ")
             ->whereNotNull('receive_order_id')
             ->groupBy('receive_order_id');
 
@@ -33,7 +50,7 @@ class EcMailHistoryService
             $mmc->whereNull('t_mail_messages.deleted_at');
         }
 
-        // 受注→売上リンク（受注ごとに最新1件に潰す）
+        // 受注→売上リンク
         $lrsLatest = DB::table('t_link_r_order_sales as lrs1')
             ->selectRaw('lrs1.receive_order_id, lrs1.sales_id')
             ->join(
@@ -44,47 +61,16 @@ class EcMailHistoryService
                 }
             );
 
-        // 支払いJOIN列の解決（環境差吸収）
         $paymentIdCol = null;
-        foreach (['payment_id', 'm_payment_id'] as $col) {
-            if (Schema::hasColumn('t_receive_orders', $col)) {
-                $paymentIdCol = $col;
-                break;
+
+            if (Schema::hasColumn('t_receive_orders', 'm_payment_id')) {
+                $paymentIdCol = 'm_payment_id';
+            } elseif (Schema::hasColumn('t_receive_orders', 'payment_id')) {
+                $paymentIdCol = 'payment_id';
             }
-        }
-
-        // 端末判定用の列候補
-        $hasIsMobile   = Schema::hasColumn('t_receive_orders', 'is_mobile');
-        $hasDeviceType = Schema::hasColumn('t_receive_orders', 'device_type');
-        $hasDevice     = Schema::hasColumn('t_receive_orders', 'device');
-        $hasUserAgent  = Schema::hasColumn('t_receive_orders', 'user_agent');
-
-        // 端末の SQL expression（取れる情報に応じて作る）
-        $deviceExpr = "'（不明）'";
-        if ($hasIsMobile) {
-            // 0/1想定
-            // NOTE: 仕様の sales_form とは別。旧互換で sale_type を返す用途。
-            $deviceExpr = "CASE WHEN ro.is_mobile = 1 THEN 'スマフォ' ELSE 'PC' END";
-        } elseif ($hasDeviceType) {
-            $deviceExpr = "CASE
-                WHEN ro.device_type IN ('sp','SP','mobile','Mobile','smartphone','Smartphone', '1', 1, '2', 2) THEN 'スマフォ'
-                WHEN ro.device_type IN ('pc','PC','desktop','Desktop', '0', 0) THEN 'PC'
-                ELSE '（不明）'
-            END";
-        } elseif ($hasDevice) {
-            $deviceExpr = "CASE
-                WHEN ro.device like '%sp%' OR ro.device like '%SP%' OR ro.device like '%mobile%' OR ro.device like '%Mobile%' THEN 'スマフォ'
-                ELSE 'PC'
-            END";
-        } elseif ($hasUserAgent) {
-            $deviceExpr = "CASE
-                WHEN ro.user_agent like '%Mobile%' OR ro.user_agent like '%Android%' OR ro.user_agent like '%iPhone%' OR ro.user_agent like '%iPad%' THEN 'スマフォ'
-                ELSE 'PC'
-            END";
-        }
 
         // =========================================================
-        // ベース：mmc（=メール有り受注） → ro → lrs → s → payments
+        // ベースクエリ
         // =========================================================
         $q = DB::table(DB::raw('(' . $mmc->toSql() . ') as mmc'))
             ->mergeBindings($mmc)
@@ -92,73 +78,254 @@ class EcMailHistoryService
             ->leftJoinSub($lrsLatest, 'lrs', function ($j) {
                 $j->on('lrs.receive_order_id', '=', 'ro.id');
             })
-            ->leftJoin('t_sales as s', function ($j) use ($hasSalesDeleted) {
+            ->leftJoin('t_sales as s', function ($j) {
                 $j->on('s.id', '=', 'lrs.sales_id');
-                if ($hasSalesDeleted) {
-                    $j->whereNull('s.deleted_at');
-                }
             });
 
-        // 支払マスタ（payment_id がある環境だけ JOIN）
+        if ($hasCustomerId && $hasCustomerMail) {
+            $q->leftJoin('t_customers as cu', 'cu.id', '=', 'ro.customer_id');
+        }
+
         if ($paymentIdCol) {
             $q->leftJoin('m_payments as pay', 'pay.id', '=', DB::raw("ro.{$paymentIdCol}"));
         }
 
-        // 検索（ro側）
+        // =========================================================
+        // キーワード検索
+        // =========================================================
         if ($keyword !== '') {
-            $q->where(function ($w) use ($keyword) {
+            $q->where(function ($w) use ($keyword, $hasCustomerId, $hasCustomerMail, $hasInvoiceNo) {
                 $w->where('ro.customer_name', 'like', "%{$keyword}%")
-                  ->orWhere('ro.order_no', 'like', "%{$keyword}%")
-                  ->orWhere('ro.email', 'like', "%{$keyword}%");
+                  ->orWhere('ro.tel', 'like', "%{$keyword}%");
+
+                if ($hasCustomerId && $hasCustomerMail) {
+                    $w->orWhere('cu.email_main', 'like', "%{$keyword}%");
+                }
+
+                if ($hasInvoiceNo) {
+                    $w->orWhere('s.invoice_number', 'like', "%{$keyword}%");
+                } else {
+                    $w->orWhere('ro.order_no', 'like', "%{$keyword}%");
+                }
             });
         }
 
-        // =========================
-        // ★ 手動ページング
-        // =========================
+        // =========================================================
+        // 追加検索条件
+        // =========================================================
+
+        if ($c->get('slip_no')) {
+            if ($hasInvoiceNo) {
+                $q->where('s.invoice_number', 'like', '%' . $c->get('slip_no') . '%');
+            } else {
+                $q->where('ro.order_no', 'like', '%' . $c->get('slip_no') . '%');
+            }
+        }
+
+        if ($c->get('buyer_name')) {
+            $q->where('ro.customer_name', 'like', '%' . $c->get('buyer_name') . '%');
+        }
+
+        if ($c->get('buyer_email')) {
+            if ($hasCustomerId && $hasCustomerMail) {
+                $q->where('cu.email_main', 'like', '%' . $c->get('buyer_email') . '%');
+            } else {
+                $q->whereRaw('1 = 0');
+            }
+        }
+
+        if ($c->get('buyer_tel')) {
+            $q->where('ro.tel', 'like', '%' . $c->get('buyer_tel') . '%');
+        }
+
+        if ($c->get('sales_form') !== null && $c->get('sales_form') !== '') {
+            $q->where('ro.sales_form', $c->get('sales_form'));
+        }
+
+        if ($c->get('invoice_date_from')) {
+            $q->whereDate('ro.receive_order_date', '>=', $c->get('invoice_date_from'));
+        }
+
+        if ($c->get('invoice_date_to')) {
+            $q->whereDate('ro.receive_order_date', '<=', $c->get('invoice_date_to'));
+        }
+
+        if ($c->get('paid_date_from')) {
+            $q->whereDate('s.payment_at', '>=', $c->get('paid_date_from'));
+        }
+
+        if ($c->get('paid_date_to')) {
+            $q->whereDate('s.payment_at', '<=', $c->get('paid_date_to'));
+        }
+
+        if ($c->get('shipped_date_from')) {
+            if ($hasShippedAt) {
+                $q->whereDate('s.shipped_at', '>=', $c->get('shipped_date_from'));
+            }
+        }
+
+        if ($c->get('shipped_date_to')) {
+            if ($hasShippedAt) {
+                $q->whereDate('s.shipped_at', '<=', $c->get('shipped_date_to'));
+            }
+        }
+
+        if ($c->get('total_amount_min') !== null && $c->get('total_amount_min') !== '') {
+            $q->where('ro.total_amount', '>=', $c->get('total_amount_min'));
+        }
+
+        if ($c->get('total_amount_max') !== null && $c->get('total_amount_max') !== '') {
+            $q->where('ro.total_amount', '<=', $c->get('total_amount_max'));
+        }
+
+        if ($c->get('shipped_status') !== null && $c->get('shipped_status') !== '') {
+            if ($hasSalesIsSend) {
+                if ((string)$c->get('shipped_status') === '1') {
+                    $q->where('s.is_send', 1);
+                } else {
+                    $q->where(function ($w) {
+                        $w->whereNull('s.is_send')
+                          ->orWhere('s.is_send', 0);
+                    });
+                }
+            }
+        }
+
+        if ($c->get('payment_type') !== null && $c->get('payment_type') !== '') {
+            if ($paymentIdCol) {
+                $q->where("ro.{$paymentIdCol}", $c->get('payment_type'));
+            }
+        }
+
+        if ($c->get('paid_status') !== null && $c->get('paid_status') !== '') {
+            if ((string)$c->get('paid_status') === '1') {
+                $q->whereNotNull('s.payment_at');
+            } else {
+                $q->whereNull('s.payment_at');
+            }
+        }
+
+        if ($c->get('reply_mail_status') !== null && $c->get('reply_mail_status') !== '') {
+            if ((string)$c->get('reply_mail_status') === '1') {
+                $q->where('mmc.success_send_count', '>=', 2);
+            } else {
+                $q->where('mmc.success_send_count', '<', 2);
+            }
+        }
+
+        if ($c->get('cancel_status') !== null && $c->get('cancel_status') !== '') {
+            if (!$hasSalesDeleted) {
+                $q->whereRaw('1 = 0');
+            } elseif ((string)$c->get('cancel_status') === '1') {
+                $q->whereNotNull('s.deleted_at');
+            } else {
+                $q->whereNull('s.deleted_at');
+            }
+        }
+
+        if ($c->get('order_state')) {
+            if ($c->get('order_state') === '受注') {
+                $q->whereNull('lrs.sales_id');
+            }
+            if ($c->get('order_state') === '売上') {
+                $q->whereNotNull('lrs.sales_id');
+            }
+        }
+
+        // 重複対策
+        $q->groupBy([
+            'ro.id',
+            's.id',
+            's.payment_at',
+            'ro.customer_name',
+            'ro.sales_form',
+            'ro.total_amount',
+            'ro.receive_order_date',
+            'mmc.send_count',
+            'mmc.success_send_count',
+            'mmc.last_sent_at',
+            'lrs.sales_id',
+        ]);
+
+        if ($hasCustomerId && $hasCustomerMail) {
+            $q->groupBy('cu.email_main');
+        }
+
+        if ($paymentIdCol) {
+            $q->groupBy('pay.name');
+        }
+
+        if ($hasInvoiceNo) {
+            $q->groupBy('s.invoice_number');
+        }
+
+        if ($hasShippedAt) {
+            $q->groupBy('s.shipped_at');
+        }
+
+        if ($hasSalesDeleted) {
+            $q->groupBy('s.deleted_at');
+        }
+
+        if ($hasSalesIsSend) {
+            $q->groupBy('s.is_send');
+        }
+
+        // =========================================================
+        // ページング
+        // =========================================================
+
         $countQ = clone $q;
-        $total = (int)$countQ->count();
+        $total = (int)$countQ->get()->count();
 
         $offset = ($page - 1) * $perPage;
 
-        // 返却列
-        $q->select([
+        $selects = [
             DB::raw('ro.id as receive_order_id'),
             DB::raw('s.id as sales_id'),
-            DB::raw('ro.order_no as slip_no'),
+            $hasInvoiceNo
+                ? DB::raw('s.invoice_number as slip_no')
+                : DB::raw('ro.order_no as slip_no'),
             DB::raw('ro.total_amount as total_amount'),
             DB::raw('ro.receive_order_date as invoice_date'),
-            DB::raw('null as paid_date'),
+            DB::raw('s.payment_at as paid_date'),
             DB::raw('ro.customer_name as member_name'),
             DB::raw('ro.customer_name as buyer_name'),
-
-            // ★★★ 追加：売上形態（仕様の本命）
-            // 1=PC,2=スマフォ,3=タブレット（フロントで salesFormLabel() 変換）
             DB::raw('ro.sales_form as sales_form'),
 
-            // ★ 支払種別：m_payments.name（取れない環境は従来値にフォールバック）
             $paymentIdCol
                 ? DB::raw('pay.name as payment_name')
                 : DB::raw('null as payment_name'),
 
-            // 旧: payment_type（残すなら corporate_class を返しておく）
-            DB::raw('ro.corporate_class as payment_type'),
+            $hasCustomerId && $hasCustomerMail
+                ? DB::raw('cu.email_main as buyer_email')
+                : DB::raw('null as buyer_email'),
 
-            DB::raw('ro.delivery_date as shipped_date'),
-            DB::raw('null as canceled_date'),
+            DB::raw('ro.tel as buyer_tel'),
+
+            $hasShippedAt
+                ? DB::raw('s.shipped_at as shipped_date')
+                : DB::raw('null as shipped_date'),
+
+            $hasSalesDeleted
+                ? DB::raw('s.deleted_at as canceled_date')
+                : DB::raw('null as canceled_date'),
+
             DB::raw('mmc.send_count as send_count'),
-
-            // 旧互換: 端末推定（sales_form とは別物）
-            DB::raw("{$deviceExpr} as sale_type"),
-
-            // ★ 状態（受注/売上）は別名で返す
+            DB::raw('mmc.success_send_count as success_send_count'),
+            DB::raw("CASE WHEN mmc.success_send_count >= 2 THEN 1 ELSE 0 END as reply_mail_sent"),
             DB::raw("CASE WHEN lrs.sales_id is null THEN '受注' ELSE '売上' END as order_state"),
-
-            DB::raw("'' as status"),
             DB::raw('mmc.last_sent_at as last_sent_at'),
-        ]);
 
-        // 並び：最新送信日時 → 受注ID
+            $hasSalesIsSend
+                ? DB::raw('s.is_send as shipped_status')
+                : DB::raw('null as shipped_status'),
+
+            DB::raw('s.payment_at as payment_type'),
+        ];
+
+        $q->select($selects);
+
         $q->orderByDesc('mmc.last_sent_at')
           ->orderByDesc('ro.id')
           ->offset($offset)
@@ -167,23 +334,6 @@ class EcMailHistoryService
         $rows = $q->get();
 
         $lastPage = (int)max(1, (int)ceil($total / $perPage));
-
-        Log::info('[EcMailHistoryService][fetch][manual_pager]', [
-            'page' => $page,
-            'per_page' => $perPage,
-            'total' => $total,
-            'data_count' => $rows->count(),
-            'last_page' => $lastPage,
-            'offset' => $offset,
-            'keyword' => $keyword,
-            'paymentIdCol' => $paymentIdCol,
-            'device_source' => [
-                'is_mobile' => $hasIsMobile,
-                'device_type' => $hasDeviceType,
-                'device' => $hasDevice,
-                'user_agent' => $hasUserAgent,
-            ],
-        ]);
 
         return [
             'rows' => $rows,

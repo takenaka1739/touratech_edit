@@ -23,6 +23,26 @@ class EcMailHistoryController extends Controller
             'c_keyword',
             'page',
             'per_page',
+
+            'sales_form',
+            'buyer_name',
+            'buyer_email',
+            'shipped_status',
+            'buyer_tel',
+            'invoice_date_from',
+            'invoice_date_to',
+            'paid_date_from',
+            'paid_date_to',
+            'shipped_date_from',
+            'shipped_date_to',
+            'slip_no',
+            'total_amount_min',
+            'total_amount_max',
+            'payment_type',
+            'paid_status',
+            'reply_mail_status',
+            'cancel_status',
+            'order_state',
         ]);
 
         return response()->json(

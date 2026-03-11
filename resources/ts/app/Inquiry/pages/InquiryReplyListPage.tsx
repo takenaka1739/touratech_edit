@@ -7,7 +7,6 @@ import { useComposing } from '@/uses';
 import { MailPageWrapper } from '../components/detail/MailPageWrapper';
 import { useInquiryReplyListPage } from '../uses/useInquiryReplyListPage';
 
-
 type EcRow = {
   sales_form?: number | null;
   sale_type: string;
@@ -39,6 +38,28 @@ type PagerLike = {
   total: number;
 };
 
+type EcConditions = {
+  sales_form: string;
+  buyer_name: string;
+  buyer_email: string;
+  shipped_status: string;
+  buyer_tel: string;
+  invoice_date_from: string;
+  invoice_date_to: string;
+  paid_date_from: string;
+  paid_date_to: string;
+  shipped_date_from: string;
+  shipped_date_to: string;
+  slip_no: string;
+  total_amount_min: string;
+  total_amount_max: string;
+  payment_type: string;
+  paid_status: string;
+  reply_mail_status: string;
+  cancel_status: string;
+  order_state: string;
+};
+
 const TabButton: React.VFC<{
   active: boolean;
   onClick: () => void;
@@ -54,13 +75,11 @@ const TabButton: React.VFC<{
   </button>
 );
 
-/** YYYY/MM/DD だけに整形（ISO/DB timestamp でもOK） */
 const toYmd = (v: any): string => {
   const s = (v ?? '').toString().trim();
   if (!s) return '';
-  // "2026-02-27 06:00:00" / "2026-02-27T06:00:00" / "2026/02/27 ..." を想定
   const m = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})/);
-  if (!m) return s; // 想定外はそのまま
+  if (!m) return s;
   return `${m[1]}/${m[2]}/${m[3]}`;
 };
 
@@ -72,95 +91,216 @@ const salesFormLabel = (v: any): string => {
   return '';
 };
 
-/** 伝票番号を2行にする（可能なら 先頭/末尾 を分割、無理なら中央で改行） */
 const renderSlipNo2Lines = (slipNo: string) => {
   const s = (slipNo ?? '').toString();
   if (!s) return '';
 
-  // よくある "YYYYMMDDHHMMSS-?-??" 形式を想定して最後の "-xx" などを2行目へ
   const idx = s.lastIndexOf('-');
   if (idx > 0 && idx < s.length - 1) {
     const a = s.slice(0, idx);
     const b = s.slice(idx + 1);
     return (
-      <span style={{ display: 'inline-block', lineHeight: 1.15 }}>
-        <span style={{ display: 'block' }}>{a}</span>
-        <span style={{ display: 'block' }}>{b}</span>
+      <span className="shop-mail-slip-no">
+        <span>{a}</span>
+        <span>{b}</span>
       </span>
     );
   }
 
-  // "-" が無い場合：半分で分割
   const mid = Math.ceil(s.length / 2);
   return (
-    <span style={{ display: 'inline-block', lineHeight: 1.15 }}>
-      <span style={{ display: 'block' }}>{s.slice(0, mid)}</span>
-      <span style={{ display: 'block' }}>{s.slice(mid)}</span>
+    <span className="shop-mail-slip-no">
+      <span>{s.slice(0, mid)}</span>
+      <span>{s.slice(mid)}</span>
     </span>
   );
 };
 
-// ===== 表示スタイル =====
-const tableStyle: React.CSSProperties = {
-  fontSize: 12,
-  lineHeight: 1.2,
+const normalizeParam = (v: any) => {
+  const s = `${v ?? ''}`.trim();
+  return s === '' ? undefined : s;
 };
 
+const pad2 = (v: string | number) => String(v).padStart(2, '0');
 
-const replyBadgeStyle = (isReplied: any): React.CSSProperties => {
-  const n = Number(isReplied);
-
-  if (n === 1) {
-    return {
-      padding: '3px 10px',
-      borderRadius: 999,
-      fontSize: 12,
-      fontWeight: 700,
-      background: '#dcfce7',
-      color: '#166534',
-      border: '1px solid #86efac',
-      whiteSpace: 'nowrap',
-    };
+const splitDateParts = (value: string) => {
+  const s = `${value ?? ''}`.trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) {
+    return { year: '', month: '', day: '' };
   }
-
   return {
-    padding: '3px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 700,
-    background: '#fee2e2',
-    color: '#991b1b',
-    border: '1px solid #fecaca',
-    whiteSpace: 'nowrap',
+    year: m[1],
+    month: m[2],
+    day: m[3],
   };
 };
 
-const replyLabel = (isReplied: any) =>
-  Number(isReplied) === 1 ? '返信済' : '未返信';
-
-const thStyle: React.CSSProperties = {
-  textAlign: 'center',
-  whiteSpace: 'nowrap',
+const buildDateValue = (year: string, month: string, day: string) => {
+  if (!year || !month || !day) return '';
+  return `${year}-${pad2(month)}-${pad2(day)}`;
 };
 
-const tdCenter: React.CSSProperties = {
-  textAlign: 'center',
-  verticalAlign: 'middle',
+const years = (() => {
+  const currentYear = new Date().getFullYear();
+  const arr: string[] = [];
+  for (let y = currentYear + 1; y >= currentYear - 15; y -= 1) {
+    arr.push(String(y));
+  }
+  return arr;
+})();
+
+const months = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const days = Array.from({ length: 31 }, (_, i) => String(i + 1));
+
+type DateSelectRangeProps = {
+  fromName: keyof EcConditions;
+  toName: keyof EcConditions;
+  fromValue: string;
+  toValue: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 };
 
-const tdCenterNoWrap: React.CSSProperties = {
-  ...tdCenter,
-  whiteSpace: 'nowrap',
+const DateSelectRange: React.VFC<DateSelectRangeProps> = ({
+  fromName,
+  toName,
+  fromValue,
+  toValue,
+  onChange,
+}) => {
+  const from = splitDateParts(fromValue);
+  const to = splitDateParts(toValue);
+
+  const emit = (name: string, value: string) => {
+    onChange({
+      target: { name, value },
+    } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>);
+  };
+
+  return (
+    <div className="shop-mail-date-range">
+      <select
+        value={from.year}
+        onChange={(e) =>
+          emit(String(fromName), buildDateValue(e.target.value, from.month, from.day))
+        }
+        className="shop-mail-date-select shop-mail-date-select-year"
+      >
+        <option value="">-</option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+      <span className="shop-mail-date-unit">年</span>
+
+      <select
+        value={from.month ? String(Number(from.month)) : ''}
+        onChange={(e) =>
+          emit(String(fromName), buildDateValue(from.year, e.target.value, from.day))
+        }
+        className="shop-mail-date-select shop-mail-date-select-md"
+      >
+        <option value="">-</option>
+        {months.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+      <span className="shop-mail-date-unit">月</span>
+
+      <select
+        value={from.day ? String(Number(from.day)) : ''}
+        onChange={(e) =>
+          emit(String(fromName), buildDateValue(from.year, from.month, e.target.value))
+        }
+        className="shop-mail-date-select shop-mail-date-select-md"
+      >
+        <option value="">-</option>
+        {days.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+      <span className="shop-mail-date-unit">日</span>
+
+      <span className="shop-mail-date-separator">～</span>
+
+      <select
+        value={to.year}
+        onChange={(e) =>
+          emit(String(toName), buildDateValue(e.target.value, to.month, to.day))
+        }
+        className="shop-mail-date-select shop-mail-date-select-year"
+      >
+        <option value="">-</option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+      <span className="shop-mail-date-unit">年</span>
+
+      <select
+        value={to.month ? String(Number(to.month)) : ''}
+        onChange={(e) =>
+          emit(String(toName), buildDateValue(to.year, e.target.value, to.day))
+        }
+        className="shop-mail-date-select shop-mail-date-select-md"
+      >
+        <option value="">-</option>
+        {months.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+      <span className="shop-mail-date-unit">月</span>
+
+      <select
+        value={to.day ? String(Number(to.day)) : ''}
+        onChange={(e) =>
+          emit(String(toName), buildDateValue(to.year, to.month, e.target.value))
+        }
+        className="shop-mail-date-select shop-mail-date-select-md"
+      >
+        <option value="">-</option>
+        {days.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+      <span className="shop-mail-date-unit">日</span>
+    </div>
+  );
 };
 
-const nameSmallOneLine: React.CSSProperties = {
-  ...tdCenter,
-  fontSize: 11, // 会員/購入者氏名だけ少し小さく
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  maxWidth: 180, // ここは列幅に合わせて調整
-};
+const createInitialEcConditions = (): EcConditions => ({
+  sales_form: '',
+  buyer_name: '',
+  buyer_email: '',
+  shipped_status: '',
+  buyer_tel: '',
+  invoice_date_from: '',
+  invoice_date_to: '',
+  paid_date_from: '',
+  paid_date_to: '',
+  shipped_date_from: '',
+  shipped_date_to: '',
+  slip_no: '',
+  total_amount_min: '',
+  total_amount_max: '',
+  payment_type: '',
+  paid_status: '',
+  reply_mail_status: '',
+  cancel_status: '',
+  order_state: '',
+});
 
 export const InquiryReplyListPage: React.VFC = () => {
   const slug = 'shop-mail';
@@ -175,33 +315,54 @@ export const InquiryReplyListPage: React.VFC = () => {
     return t === 'ec' ? 'ec' : 'inquiry';
   }, [location.search]);
 
+  const [tab, setTab] = useState<'inquiry' | 'ec'>(initialTab);
+  const inquiry = useInquiryReplyListPage(slug);
+
+  const [ecLoading, setEcLoading] = useState(false);
+  const [ecRows, setEcRows] = useState<EcRow[]>([]);
+  const [ecPager, setEcPager] = useState<PagerLike | undefined>(undefined);
+  const [ecConditions, setEcConditions] = useState<EcConditions>(createInitialEcConditions());
+
+  const { onCompositionStart, onCompositionEnd } = useComposing();
+
   const changeTab = async (next: 'inquiry' | 'ec') => {
     setTab(next);
     history.replace(`/inquiry?tab=${next}`);
 
-    if (next === 'ec' && ecRows.length === 0) {
-      await fetchEc(1);
+    inquiry.onClickClearButton();
+    setEcConditions(createInitialEcConditions());
+
+    if (next === 'ec') {
+      await fetchEc(1, createInitialEcConditions());
     }
   };
 
-  const [tab, setTab] = useState<'inquiry' | 'ec'>(initialTab);
-  // ===== inquiry tab =====
-  const inquiry = useInquiryReplyListPage(slug);
+  const fetchEc = async (page = 1, conditions?: EcConditions) => {
+    const c = conditions ?? ecConditions;
 
-  // ===== ec tab =====
-  const [ecLoading, setEcLoading] = useState(false);
-  const [ecRows, setEcRows] = useState<EcRow[]>([]);
-  const [ecPager, setEcPager] = useState<PagerLike | undefined>(undefined);
-  const [ecKeyword, setEcKeyword] = useState('');
-
-  const { composing, onCompositionStart, onCompositionEnd } = useComposing();
-
-  const fetchEc = async (page = 1) => {
     setEcLoading(true);
     try {
       const res = await axios.get('/api/shop-mail/ec-mail-histories', {
         params: {
-          keyword: ecKeyword || undefined,
+          sales_form: normalizeParam(c.sales_form),
+          buyer_name: normalizeParam(c.buyer_name),
+          buyer_email: normalizeParam(c.buyer_email),
+          shipped_status: normalizeParam(c.shipped_status),
+          buyer_tel: normalizeParam(c.buyer_tel),
+          invoice_date_from: normalizeParam(c.invoice_date_from),
+          invoice_date_to: normalizeParam(c.invoice_date_to),
+          paid_date_from: normalizeParam(c.paid_date_from),
+          paid_date_to: normalizeParam(c.paid_date_to),
+          shipped_date_from: normalizeParam(c.shipped_date_from),
+          shipped_date_to: normalizeParam(c.shipped_date_to),
+          slip_no: normalizeParam(c.slip_no),
+          total_amount_min: normalizeParam(c.total_amount_min),
+          total_amount_max: normalizeParam(c.total_amount_max),
+          payment_type: normalizeParam(c.payment_type),
+          paid_status: normalizeParam(c.paid_status),
+          reply_mail_status: normalizeParam(c.reply_mail_status),
+          cancel_status: normalizeParam(c.cancel_status),
+          order_state: normalizeParam(c.order_state),
           page,
           per_page: 20,
         },
@@ -220,56 +381,62 @@ export const InquiryReplyListPage: React.VFC = () => {
     }
   }, [tab]);
 
+  const onChangeEcCondition = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setEcConditions((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const onClickEcSearch = async () => {
     await fetchEc(1);
   };
 
   const onClickEcClear = async () => {
-    setEcKeyword('');
-    setTimeout(() => fetchEc(1), 0);
+    const cleared = createInitialEcConditions();
+    setEcConditions(cleared);
+    setTimeout(() => fetchEc(1, cleared), 0);
   };
 
   const onChangeEcPage = async (page: number) => {
     await fetchEc(page);
   };
 
-  // ===== tables =====
   const inquiryTable = useMemo(() => {
     const tbody = (inquiry.state.rows ?? []).map((r: any) => (
       <tr key={r.id}>
-        <td style={tdCenterNoWrap}>{r.content ?? ''}</td>
-        <td style={tdCenterNoWrap}>{toYmd(r.created_at ?? '')}</td>
-        <td style={tdCenter}>{r.customer_name ?? ''}</td>
-        <td style={tdCenter}>{r.email ?? ''}</td>
-        <td className="col-btn" style={tdCenterNoWrap}>
+        <td className="shop-mail-cell-center-nowrap">{r.content ?? ''}</td>
+        <td className="shop-mail-cell-center-nowrap">{toYmd(r.created_at ?? '')}</td>
+        <td className="shop-mail-cell-center">{r.customer_name ?? ''}</td>
+        <td className="shop-mail-cell-center">{r.email ?? ''}</td>
+        <td className="col-btn shop-mail-cell-center-nowrap">
           <Link to={`/inquiry/detail/${r.id}`}>詳細</Link>
         </td>
-        <td style={tdCenter}>
-          <span style={replyBadgeStyle(r.is_replied)}>
-            {replyLabel(r.is_replied)}
+        <td className="shop-mail-cell-center">
+          <span
+            className={`shop-mail-reply-badge ${
+              Number(r.is_replied) === 1 ? 'is-replied' : 'is-unreplied'
+            }`}
+          >
+            {Number(r.is_replied) === 1 ? '返信済' : '未返信'}
           </span>
         </td>
       </tr>
     ));
 
     return (
-      <table style={tableStyle}>
+      <table className="shop-mail-list-table">
         <thead>
           <tr>
-            <th className="col-amount" style={thStyle}>
-              問い合わせ種別
-            </th>
-            <th className="col-amount" style={thStyle}>
-              問い合わせ日
-            </th>
-            <th style={thStyle}>問い合わせ氏名</th>
-            <th style={thStyle}>email</th>
-            <th className="col-amount" style={{ ...thStyle, width: '90px' }}>
-              詳細
-            </th>
-            <th className="col-amount" style={thStyle}>
-              返信状態
-            </th>
+            <th className="col-amount shop-mail-th-center">問い合わせ種別</th>
+            <th className="col-amount shop-mail-th-center">問い合わせ日</th>
+            <th className="shop-mail-th-center">問い合わせ氏名</th>
+            <th className="shop-mail-th-center">email</th>
+            <th className="col-amount shop-mail-th-center shop-mail-col-detail">詳細</th>
+            <th className="col-amount shop-mail-th-center">返信状態</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
@@ -280,98 +447,71 @@ export const InquiryReplyListPage: React.VFC = () => {
   const ecTable = useMemo(() => {
     const tbody = (ecRows ?? []).map((r) => (
       <tr key={`${r.receive_order_id}-${r.sales_id ?? 0}`}>
-        <td style={tdCenterNoWrap}>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-sales-form">
           {salesFormLabel(r.sales_form) || r.sale_type || ''}
         </td>
-        <td style={tdCenterNoWrap}>{r.order_state ?? r.status ?? ''}</td>
-
-        {/* 伝票番号：2行表示 */}
-        <td style={tdCenter}>{renderSlipNo2Lines(r.slip_no ?? '')}</td>
-
-        <td style={tdCenterNoWrap}>{r.total_amount ?? 0}</td>
-
-        {/* 日付はYYYY/MM/DDのみ */}
-        <td style={tdCenterNoWrap}>{toYmd(r.invoice_date ?? '')}</td>
-        <td style={tdCenterNoWrap}>{toYmd(r.paid_date ?? '')}</td>
-
-        {/* 会員/購入者氏名：さらに小さく、1行固定（省略） */}
-        <td style={nameSmallOneLine} title={r.member_name ?? ''}>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-order-state">
+          {r.order_state ?? r.status ?? ''}
+        </td>
+        <td className="shop-mail-cell-center shop-mail-col-slip-no">
+          {renderSlipNo2Lines(r.slip_no ?? '')}
+        </td>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-total-amount">
+          {r.total_amount ?? 0}
+        </td>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-invoice-date">
+          {toYmd(r.invoice_date ?? '')}
+        </td>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-paid-date">
+          {toYmd(r.paid_date ?? '')}
+        </td>
+        <td className="shop-mail-cell-name-one-line shop-mail-col-member-name">
           {r.member_name ?? ''}
         </td>
-        <td style={nameSmallOneLine} title={r.buyer_name ?? ''}>
+        <td className="shop-mail-cell-name-one-line shop-mail-col-buyer-name">
           {r.buyer_name ?? ''}
         </td>
-
-        <td style={nameSmallOneLine} title={String(r.payment_name ?? r.payment_type ?? '')}>
-          {(r.payment_name ?? r.payment_type ?? '') as any}
+        <td className="shop-mail-cell-name-one-line shop-mail-col-payment-name">
+          {r.payment_name ?? ''}
         </td>
-
-        <td style={tdCenterNoWrap}>{toYmd(r.shipped_date ?? '')}</td>
-        <td style={tdCenterNoWrap}>{toYmd(r.canceled_date ?? '')}</td>
-
-        <td className="col-btn" style={tdCenterNoWrap}>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-shipped-date">
+          {toYmd(r.shipped_date ?? '')}
+        </td>
+        <td className="shop-mail-cell-center-nowrap shop-mail-col-canceled-date">
+          {toYmd(r.canceled_date ?? '')}
+        </td>
+        <td className="col-btn shop-mail-cell-center-nowrap shop-mail-col-send-count">
           <Link to={`/inquiry_mail/receive_order/${r.receive_order_id}`}>
             {r.send_count ?? 0}件
           </Link>
         </td>
-
-        <td className="col-btn" style={tdCenterNoWrap}>
+        <td className="col-btn shop-mail-cell-center-nowrap shop-mail-col-detail">
           {r.sales_id ? (
-            // 売上があれば売上詳細へ
             <Link to={`/sales/detail/${r.sales_id}`}>詳細</Link>
-          ) : r.receive_order_id ? (
-            // 売上未作成なら受注詳細へ
-            <Link to={`/receive_order/detail/${r.receive_order_id}`}>詳細</Link>
           ) : (
-            <span>なし</span>
+            <Link to={`/receive_order/detail/${r.receive_order_id}`}>詳細</Link>
           )}
         </td>
       </tr>
     ));
 
     return (
-      <table style={tableStyle}>
+      <table className="shop-mail-list-table shop-mail-ec-list-table">
         <thead>
           <tr>
-            <th className="col-amount" style={thStyle}>
-              売上形態
-            </th>
-            <th className="col-amount" style={thStyle}>
-              状態
-            </th>
-            <th className="col-amount" style={thStyle}>
-              伝票番号
-            </th>
-            <th className="col-amount" style={thStyle}>
-              合計金額
-            </th>
-            <th className="col-amount" style={thStyle}>
-              請求日
-            </th>
-            <th className="col-amount" style={thStyle}>
-              入金日
-            </th>
-            <th className="col-amount" style={thStyle}>
-              会員氏名
-            </th>
-            <th className="col-amount" style={thStyle}>
-              購入者氏名
-            </th>
-            <th className="col-amount" style={thStyle}>
-              支払種別
-            </th>
-            <th className="col-amount" style={thStyle}>
-              発送日
-            </th>
-            <th className="col-amount" style={thStyle}>
-              取消日
-            </th>
-            <th className="col-amount" style={{ ...thStyle, width: '90px' }}>
-              送信件数
-            </th>
-            <th className="col-amount" style={{ ...thStyle, width: '90px' }}>
-              詳細
-            </th>
+            <th className="shop-mail-th-center shop-mail-col-sales-form">売上形態</th>
+            <th className="shop-mail-th-center shop-mail-col-order-state">状態</th>
+            <th className="shop-mail-th-center shop-mail-col-slip-no">伝票番号</th>
+            <th className="shop-mail-th-center shop-mail-col-total-amount">合計金額</th>
+            <th className="shop-mail-th-center shop-mail-col-invoice-date">請求日</th>
+            <th className="shop-mail-th-center shop-mail-col-paid-date">入金日</th>
+            <th className="shop-mail-th-center shop-mail-col-member-name">会員氏名</th>
+            <th className="shop-mail-th-center shop-mail-col-buyer-name">購入者氏名</th>
+            <th className="shop-mail-th-center shop-mail-col-payment-name">支払種別</th>
+            <th className="shop-mail-th-center shop-mail-col-shipped-date">発送日</th>
+            <th className="shop-mail-th-center shop-mail-col-canceled-date">取消日</th>
+            <th className="shop-mail-th-center shop-mail-col-send-count">送信件数</th>
+            <th className="shop-mail-th-center shop-mail-col-detail">詳細</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
@@ -381,7 +521,6 @@ export const InquiryReplyListPage: React.VFC = () => {
 
   return (
     <MailPageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
-      {/* Tabs */}
       <div className="flex gap-2 mb-2">
         <TabButton active={tab === 'inquiry'} onClick={() => changeTab('inquiry')}>
           問い合わせ
@@ -391,57 +530,308 @@ export const InquiryReplyListPage: React.VFC = () => {
         </TabButton>
       </div>
 
-      {/* Conditions */}
-      {tab === 'inquiry' ? (
-        <BoxConditions
-          onClickSearchButton={inquiry.onClickSearchButton}
-          onClickClearButton={inquiry.onClickClearButton}
-        >
-          <Forms.FormGroupInputText
-            labelText="文字列"
-            name="c_keyword"
-            value={(inquiry.conditions as any).c_keyword ?? ''}
-            onChange={(name, value) => {
-              try {
-                (inquiry.onChange as any)(name, value);
-              } catch {
-                // noop
-              }
-            }}
-            onCompositionStart={onCompositionStart}
-            onCompositionEnd={onCompositionEnd}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !composing) {
-                inquiry.onClickSearchButton();
-              }
-            }}
-            maxLength={100}
-            groupClassName="max-w-sm"
-            removeOptionalLabel
-          />
-        </BoxConditions>
-      ) : (
-        <BoxConditions onClickSearchButton={onClickEcSearch} onClickClearButton={onClickEcClear}>
-          <Forms.FormGroupInputText
-            labelText="文字列"
-            name="ec_keyword"
-            value={ecKeyword}
-            onChange={(_name, value) => setEcKeyword(String(value ?? ''))}
-            onCompositionStart={onCompositionStart}
-            onCompositionEnd={onCompositionEnd}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !composing) {
-                onClickEcSearch();
-              }
-            }}
-            maxLength={100}
-            groupClassName="max-w-sm"
-            removeOptionalLabel
-          />
-        </BoxConditions>
-      )}
+      <BoxConditions
+        onClickSearchButton={tab === 'inquiry' ? inquiry.onClickSearchButton : onClickEcSearch}
+        onClickClearButton={tab === 'inquiry' ? inquiry.onClickClearButton : onClickEcClear}
+      >
+        {tab === 'inquiry' ? (
+          <>
+            <Forms.FormGroup labelText="日付" removeOptionalLabel>
+              <div className="flex">
+                <Forms.FormInputDate
+                  name="c_sales_date_from"
+                  value={(inquiry.conditions as any).c_sales_date_from ?? ''}
+                  onChange={inquiry.onChange as any}
+                />
+                <span className="mx-2">～</span>
+                <Forms.FormInputDate
+                  name="c_sales_date_to"
+                  value={(inquiry.conditions as any).c_sales_date_to ?? ''}
+                  onChange={inquiry.onChange as any}
+                />
+              </div>
+            </Forms.FormGroup>
 
-      {/* Table */}
+            <div className="flex">
+              <div className="w-1/2 max-w-sm mt-2 pr-4">
+                <Forms.FormGroupInputText
+                  labelText="得意先"
+                  name="c_customer_name"
+                  value={(inquiry.conditions as any).c_customer_name ?? ''}
+                  onChange={inquiry.onChange as any}
+                  maxLength={20}
+                  removeOptionalLabel
+                />
+              </div>
+
+              <div className="w-1/2 max-w-sm mt-2 pr-4">
+                <Forms.FormGroupInputText
+                  labelText="担当者"
+                  name="c_user_name"
+                  value={(inquiry.conditions as any).c_user_name ?? ''}
+                  onChange={inquiry.onChange as any}
+                  onCompositionStart={onCompositionStart}
+                  onCompositionEnd={onCompositionEnd}
+                  maxLength={20}
+                  removeOptionalLabel
+                />
+              </div>
+            </div>
+
+            <div className="flex">
+              <div className="w-1/2 max-w-sm mt-2 pr-4">
+                <Forms.FormGroupInputText
+                  labelText="品番"
+                  name="c_item_number"
+                  value={(inquiry.conditions as any).c_item_number ?? ''}
+                  onChange={inquiry.onChange as any}
+                  maxLength={20}
+                  removeOptionalLabel
+                />
+              </div>
+
+              <div className="w-1/2 max-w-sm mt-2 pr-4">
+                <Forms.FormGroupInputText
+                  labelText="品名"
+                  name="c_name"
+                  value={(inquiry.conditions as any).c_name ?? ''}
+                  onChange={inquiry.onChange as any}
+                  maxLength={20}
+                  removeOptionalLabel
+                />
+              </div>
+            </div>
+
+            <div className="max-w-sm mt-2 pr-4">
+              <Forms.FormGroupInputText
+                labelText="注文番号"
+                name="c_order_no"
+                value={(inquiry.conditions as any).c_order_no ?? ''}
+                onChange={inquiry.onChange as any}
+                maxLength={20}
+                removeOptionalLabel
+              />
+            </div>
+          </>
+        ) : (
+          <div className="shop-mail-ec-search">
+            <div className="shop-mail-ec-search-grid">
+              <div className="shop-mail-ec-label">伝票状態</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="order_state"
+                  value={ecConditions.order_state}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="受注">受注</option>
+                  <option value="売上">売上</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label">伝票番号</div>
+              <div className="shop-mail-ec-field">
+                <input
+                  type="text"
+                  name="slip_no"
+                  value={ecConditions.slip_no}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                />
+              </div>
+
+              <div className="shop-mail-ec-label">売上形態</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="sales_form"
+                  value={ecConditions.sales_form}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="1">PC</option>
+                  <option value="2">スマフォ</option>
+                  <option value="3">タブレット</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label">合計金額</div>
+              <div className="shop-mail-ec-field">
+                <div className="shop-mail-range">
+                  <input
+                    type="number"
+                    name="total_amount_min"
+                    value={ecConditions.total_amount_min}
+                    onChange={onChangeEcCondition}
+                    className="shop-mail-form-control shop-mail-range-input"
+                  />
+                  <span className="shop-mail-range-suffix">円</span>
+                  <span className="shop-mail-range-separator">～</span>
+                  <input
+                    type="number"
+                    name="total_amount_max"
+                    value={ecConditions.total_amount_max}
+                    onChange={onChangeEcCondition}
+                    className="shop-mail-form-control shop-mail-range-input"
+                  />
+                  <span className="shop-mail-range-suffix">円</span>
+                </div>
+              </div>
+
+              <div className="shop-mail-ec-label">氏名</div>
+              <div className="shop-mail-ec-field">
+                <input
+                  type="text"
+                  name="buyer_name"
+                  value={ecConditions.buyer_name}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                />
+              </div>
+
+              <div className="shop-mail-ec-label" />
+              <div className="shop-mail-ec-field" />
+
+              <div className="shop-mail-ec-label">購入者メールアドレス</div>
+              <div className="shop-mail-ec-field">
+                <input
+                  type="text"
+                  name="buyer_email"
+                  value={ecConditions.buyer_email}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                />
+              </div>
+
+              <div className="shop-mail-ec-label">支払い種別</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="payment_type"
+                  value={ecConditions.payment_type}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="3">宅配代引き</option>
+                  <option value="4">銀行振り込み</option>
+                  <option value="5">クレジットカード</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label">発送状況</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="shipped_status"
+                  value={ecConditions.shipped_status}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="0">未発送</option>
+                  <option value="1">発送済み</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label">入金状況</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="paid_status"
+                  value={ecConditions.paid_status}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="0">未入金</option>
+                  <option value="1">入金済み</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label">購入者電話番号</div>
+              <div className="shop-mail-ec-field">
+                <input
+                  type="text"
+                  name="buyer_tel"
+                  value={ecConditions.buyer_tel}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                />
+              </div>
+
+              <div className="shop-mail-ec-label">個別返信メール送信状況</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="reply_mail_status"
+                  value={ecConditions.reply_mail_status}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="0">未送信</option>
+                  <option value="1">送信</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label">取消状況</div>
+              <div className="shop-mail-ec-field">
+                <select
+                  name="cancel_status"
+                  value={ecConditions.cancel_status}
+                  onChange={onChangeEcCondition}
+                  className="shop-mail-form-control"
+                >
+                  <option value="">-</option>
+                  <option value="0">未取り消し</option>
+                  <option value="1">取り消し済み</option>
+                </select>
+              </div>
+
+              <div className="shop-mail-ec-label" />
+              <div className="shop-mail-ec-field" />
+
+              <div className="shop-mail-ec-date-line">
+                <div className="shop-mail-ec-date-line-label">請求日</div>
+                <div className="shop-mail-ec-date-line-field">
+                  <DateSelectRange
+                    fromName="invoice_date_from"
+                    toName="invoice_date_to"
+                    fromValue={ecConditions.invoice_date_from}
+                    toValue={ecConditions.invoice_date_to}
+                    onChange={onChangeEcCondition}
+                  />
+                </div>
+              </div>
+
+              <div className="shop-mail-ec-date-line">
+                <div className="shop-mail-ec-date-line-label">入金日</div>
+                <div className="shop-mail-ec-date-line-field">
+                  <DateSelectRange
+                    fromName="paid_date_from"
+                    toName="paid_date_to"
+                    fromValue={ecConditions.paid_date_from}
+                    toValue={ecConditions.paid_date_to}
+                    onChange={onChangeEcCondition}
+                  />
+                </div>
+              </div>
+
+              <div className="shop-mail-ec-date-line">
+                <div className="shop-mail-ec-date-line-label">発送日</div>
+                <div className="shop-mail-ec-date-line-field">
+                  <DateSelectRange
+                    fromName="shipped_date_from"
+                    toName="shipped_date_to"
+                    fromValue={ecConditions.shipped_date_from}
+                    toValue={ecConditions.shipped_date_to}
+                    onChange={onChangeEcCondition}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </BoxConditions>
+
       {tab === 'inquiry' ? (
         <TableWrapper
           pager={inquiry.state.pager}
