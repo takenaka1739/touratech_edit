@@ -44,7 +44,7 @@ export const ItemListPage: React.VFC = () => {
           {/*<div>{r.name_jp}</div>*/}
           <div>{r.name_note}</div>
         </td>
-        <td className="text-right">{numberFormat(r.sales_unit_price)}</td>
+        <td className="text-right">{numberFormat(r.sales_price ?? 0)}</td>
         <td className="text-right">{numberFormat(r.purchase_unit_price)}</td>
         <td className="text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
         <td className="text-right">{numberFormat(r.overseas_stocks ?? 0, 0)}</td>

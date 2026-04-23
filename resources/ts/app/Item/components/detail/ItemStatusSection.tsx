@@ -13,7 +13,7 @@ type Props = {
  * - 確認（is_discontinued）
  * - 廃盤日（discontinued_at）
  * - 廃盤（is_display）
- * - 国内在庫数 / 国外在庫数（読み取り専用）
+ * - 国内在庫数 / 国外在庫数
  * - 在庫表示（display_status）
  */
 export const ItemStatusSection: React.VFC<Props> = ({
@@ -71,23 +71,29 @@ export const ItemStatusSection: React.VFC<Props> = ({
       {/* 国内・国外在庫 */}
       <div className="flex max-w-xl">
         <div className="w-1/2">
-          <Forms.FormGroupInputText
+          <Forms.FormGroupInputNumber
             labelText="国内在庫数"
             name="domestic_stocks"
-            value={state.domestic_stocks ?? '0'}
-            className="max-w-8 text-right"
-            readOnly
+            value={state.domestic_stocks ?? 0}
+            error={errors?.domestic_stocks}
+            onChange={onChange}
+            precision={0}
+            className="max-w-8"
+            min={0}
             removeOptionalLabel
           />
         </div>
 
         <div className="w-1/2">
-          <Forms.FormGroupInputText
+          <Forms.FormGroupInputNumber
             labelText="国外在庫数"
             name="overseas_stocks"
-            value={state.overseas_stocks ?? '0'}
-            className="max-w-8 text-right"
-            readOnly
+            value={state.overseas_stocks ?? 0}
+            error={errors?.overseas_stocks}
+            onChange={onChange}
+            precision={0}
+            className="max-w-8"
+            min={0}
             removeOptionalLabel
           />
         </div>

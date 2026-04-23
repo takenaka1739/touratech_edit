@@ -1,7 +1,12 @@
 import { Category } from '@/app/Item/modules/types/Category';
 
 type Props = {
-  item: Category & { originalIndex: number };
+  item: Category & {
+    originalIndex: number;
+    categoryName?: string;
+    category_name?: string;
+    name?: string;
+  };
   isDuplicate: boolean;
   isEmptyError: boolean;
   onChangeCategory: (index: number) => void;
@@ -17,26 +22,28 @@ export const ItemCategoryRow = ({
   onDeleteCategory,
   showDelete,
 }: Props) => {
-  const borderColor = (isDuplicate || isEmptyError) ? "red" : "#BCC7D4";
+  const borderColor = isDuplicate || isEmptyError ? 'red' : '#BCC7D4';
+  const displayName = item.categoryName ?? item.category_name ?? item.name ?? '';
 
   return (
     <div>
-      <div style={{ display: "flex" }}>
+      <div style={{ display: 'flex' }}>
         <input
           className="vari-row-input"
           style={{
             border: `1px solid ${borderColor}`,
-            backgroundColor: "#EDF2F7",
-            marginTop: "5px",
-            width: "512px",
+            backgroundColor: '#EDF2F7',
+            marginTop: '5px',
+            width: '512px',
           }}
-          value={item.name}
-          readOnly            // ダイアログで選択するため直接編集不可
+          value={displayName}
+          readOnly
         />
 
         <button
+          type="button"
           className="btn py-0 px-2"
-          style={{ marginTop: "5px", marginLeft: "8px" }}
+          style={{ marginTop: '5px', marginLeft: '8px' }}
           onClick={() => onChangeCategory(item.originalIndex)}
         >
           ...
@@ -44,8 +51,9 @@ export const ItemCategoryRow = ({
 
         {showDelete && (
           <button
+            type="button"
             className="btn-delete"
-            style={{ marginTop: "5px", marginLeft: "5px", whiteSpace: "nowrap" }}
+            style={{ marginTop: '5px', marginLeft: '5px', whiteSpace: 'nowrap' }}
             onClick={() => onDeleteCategory(item.originalIndex)}
           >
             削除

@@ -25,11 +25,14 @@ export const ItemCategorySection: React.VFC<Props> = ({
   addNewCategory,
   itemClassSearchDialogProps,
 }) => {
-
   // ------------------------------------------------------------
   // 除外する分類IDを算出する
+  // 自分以外の行で選択されている分類のみ除外する
   // ------------------------------------------------------------
   const handleOpenCategoryDialog = (rowIndex: number) => {
+    const currentRow = state.categoryList?.[rowIndex];
+    const currentCategoryId = currentRow?.categoryId ?? null;
+
     // 自分以外の行で選択されている categoryId を収集
     const excludeIds = state.categoryList
       .map((x: any, idx: number) => ({ ...x, idx }))
@@ -37,10 +40,10 @@ export const ItemCategorySection: React.VFC<Props> = ({
       .map((x: { categoryId: number | null }) => x.categoryId)
       .filter((id: any) => id != null);
 
-    // ダイアログに渡す props を更新
     itemClassSearchDialogProps.openDialog({
       rowIndex,
       excludeIds,
+      currentCategoryId,
     });
   };
 
@@ -52,14 +55,11 @@ export const ItemCategorySection: React.VFC<Props> = ({
   return (
     <div className="category-section">
       <div className="category-inner">
-
-        {/* ラベル */}
         <div className="category-label">
           <label>商品分類</label>
           <label className="label-required">必須</label>
         </div>
 
-        {/* カテゴリ行 */}
         <div>
           {activeCategories.map((item: any) => (
             <ItemCategoryRow
@@ -81,7 +81,6 @@ export const ItemCategorySection: React.VFC<Props> = ({
             />
           ))}
 
-          {/* エラー表示 */}
           {errors?.categoryList && (
             <div className="form-error category-error">
               {errors.categoryList}
@@ -90,19 +89,19 @@ export const ItemCategorySection: React.VFC<Props> = ({
         </div>
       </div>
 
-      {/* カテゴリ追加 */}
       <button
+        type="button"
         className="category-plus-button category-add-button"
         onClick={addNewCategory}
       >
         ＋
       </button>
 
-      {/* 商品分類検索ダイアログ */}
       <ItemClassificationSearchDialog
         {...itemClassSearchDialogProps}
         excludeIds={itemClassSearchDialogProps.excludeIds}
         rowIndex={itemClassSearchDialogProps.rowIndex}
+        currentCategoryId={itemClassSearchDialogProps.currentCategoryId}
       />
     </div>
   );

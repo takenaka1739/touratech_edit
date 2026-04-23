@@ -13,13 +13,13 @@ type Props = {
 /**
  * 商品マスタの「販売オプション」入力セクション。
  *
+ * - 仕入単価
  * - 販売価格（税込）
- * - 仕入価格
  * - 予約受付数
  * - 送料適用 / 送料 / 追加送料
  * - 代引手数料適用
  * - ポイント還元
- * - 支払い方法（現金 / 売掛 / 宅配代引 / 銀行振込 / クレジットカード）
+ * - 支払い方法（ 宅配代引 / 銀行振込 / クレジットカード / ポイント）
  */
 export const ItemSalesOptionSection: React.VFC<Props> = ({
   state,
@@ -31,6 +31,19 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
 }) => {
   return (
     <>
+      {/* 仕入単価 */}
+      <Forms.FormGroupInputNumber
+        labelText="仕入単価"
+        name="purchase_unit_price"
+        value={state.purchase_unit_price}
+        error={errors?.purchase_unit_price}
+        onChange={onChange}
+        precision={2}
+        className="max-w-8"
+        min={0}
+        required
+      />
+
       {/* 販売価格（税込） */}
       <div className="price-erea sales-price-wrapper">
         <Forms.FormGroupInputNumber
@@ -47,18 +60,6 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
           required
         />
       </div>
-
-      {/* 仕入価格 */}
-      <Forms.FormGroupInputNumber
-        labelText="仕入価格"
-        name="purchase_price"
-        value={state.purchase_price}
-        error={errors?.purchase_price}
-        onChange={onChange}
-        precision={2}
-        className="max-w-8"
-        min={0}
-      />
 
       {/* 予約受付数 */}
       <Forms.FormGroupInputNumber
@@ -146,20 +147,6 @@ export const ItemSalesOptionSection: React.VFC<Props> = ({
         error={errors?.payErrorMessage}
       >
         <div className="payment-kind payment-kind-row">
-          <Forms.FormInputCheck
-            id="is_payment_id1"
-            name="is_payment_id1"
-            labelText="現金"
-            checked={state.is_payment_id1}
-            onChange={(name, value) => onChangePayment(name, value === true || value === "true")}
-          />
-          <Forms.FormInputCheck
-            id="is_payment_id2"
-            name="is_payment_id2"
-            labelText="売掛"
-            checked={state.is_payment_id2}
-            onChange={(name, value) => onChangePayment(name, value === true)}
-          />
           <Forms.FormInputCheck
             id="is_payment_id3"
             name="is_payment_id3"

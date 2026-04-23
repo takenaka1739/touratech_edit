@@ -1,322 +1,244 @@
-import { useState, useEffect } from 'react';
-import { Category } from '@/app/Item/modules/types/Category';
-import { useCommonSearchDialogProps } from '@/app/App/uses/useCommonSearchDialogProps';
+import { useCallback, useMemo, useState } from 'react';
+import { appAlert } from '@/components';
 import { ItemClassification } from '@/types';
 
-type UseItemCategoryArgs = {
+type Props = {
   state: any;
-  setState: React.Dispatch<React.SetStateAction<any>>;
-  setErrors: React.Dispatch<React.SetStateAction<any>>;
+  updateState: (props: any) => void;
 };
 
-/**
- * 商品マスタの「商品分類」用フックス。
- * 
- * - 商品分類行の追加
- * - 商品分類の変更
- * - 商品分類関連のuseEffect
- * - categoryChangeFlag / supplierChangeFlag の管理
- * - itemClassSearchDialogProps の連携
- */
-export const useItemCategory = ({
-  state,
-  setState,
-  setErrors,
-}: UseItemCategoryArgs) => {
-  const [changeCategoryIndex, setChangeCategoryIndex] = useState<number | null>(null);
+type CategoryRow = {
+  id?: number | null;
+  categoryId?: number | null;
+  categoryName?: string;
+  category_name?: string;
+  name?: string;
+  status?: string;
+};
+
+type DialogOpenProps = {
+  rowIndex?: number;
+  excludeIds?: number[];
+  currentCategoryId?: number | null;
+};
+
+export const useItemCategory = ({ state, updateState }: Props) => {
+  const [isShown, setIsShown] = useState(false);
+  const [rowIndex, setRowIndex] = useState<number | undefined>(undefined);
+  const [excludeIds, setExcludeIds] = useState<number[]>([]);
+  const [currentCategoryId, setCurrentCategoryId] = useState<number | null>(null);
   const [categoryChangeFlag, setCategoryChangeFlag] = useState(false);
-  const [supplierChangeFlag, setSupplierChangeFlag] = useState(false);
 
-  // --------------------------------------------------------------
-  // ダイアログに渡す rowIndex / excludeIds を保持する state
-  // --------------------------------------------------------------
-  const [dialogState, setDialogState] = useState<{
-    rowIndex: number | null;
-    excludeIds: number[];
-  }>({
-    rowIndex: null,
-    excludeIds: [],
-  });
+  const normalizeCategoryList = (list: CategoryRow[]) => {
+    const active = list.filter(x => x.status !== 'del');
 
-  // ==============================================================
-  // カテゴリ検索ダイアログ
-  // ==============================================================
-  const {
-    open: openItemClassDialog,
-    searchDialogProps: itemClassSearchDialogProps,
-  } = useCommonSearchDialogProps<ItemClassification>(
-    'item_classification',
-    async ({ id, name }) => {
-      // キャンセル判定（id=null, id=0, name="", name=null）
-      const isCancel = id == null || id === 0 || !name;
-
-      if (isCancel) {
-        setChangeCategoryIndex(null);
-        return true;
-      }
-
-      // categoryId が入っているときだけ重複チェック
-      const isDuplicate = state.categoryList.some(
-        (item: any) =>
-          item.status !== 'del' &&
-          item.categoryId != null &&
-          item.categoryId === id &&
-          item.originalIndex !== changeCategoryIndex
-      );
-
-      if (!isDuplicate) {
-        changeCategory({ id, name });
-      }
-
-      setChangeCategoryIndex(null);
-      return true;
+    if (active.length > 0) {
+      return list;
     }
+
+    return [
+      {
+        id: null,
+        categoryId: null,
+        categoryName: '',
+        category_name: '',
+        name: '',
+        status: 'new',
+      },
+    ];
+  };
+
+  const addNewCategory = useCallback(() => {
+    const categoryList = [...(state.categoryList ?? [])];
+    categoryList.push({
+      id: null,
+      categoryId: null,
+      categoryName: '',
+      category_name: '',
+      name: '',
+      status: 'new',
+    });
+
+    updateState({ categoryList });
+    setCategoryChangeFlag(true);
+  }, [state.categoryList, updateState]);
+
+  const onDeleteCategory = useCallback(
+    (index: number) => {
+      const categoryList = [...(state.categoryList ?? [])];
+      const row = categoryList[index];
+
+      if (!row) {
+        return;
+      }
+
+      if (row.status === 'new') {
+        categoryList.splice(index, 1);
+      } else {
+        categoryList[index] = {
+          ...row,
+          status: 'del',
+        };
+      }
+
+      updateState({
+        categoryList: normalizeCategoryList(categoryList),
+      });
+      setCategoryChangeFlag(true);
+    },
+    [state.categoryList, updateState]
   );
 
-  // --------------------------------------------------------------
-  // rowIndex / excludeIds を保存してからダイアログを開く
-  // --------------------------------------------------------------
-  const openDialog = ({
-    rowIndex,
-    excludeIds,
-  }: {
-    rowIndex: number;
-    excludeIds: number[];
-  }) => {
-    setDialogState({ rowIndex, excludeIds });
-    setChangeCategoryIndex(rowIndex);
-    openItemClassDialog();
-  };
+  const openDialog = useCallback((props?: DialogOpenProps) => {
+    setRowIndex(props?.rowIndex);
+    setExcludeIds(props?.excludeIds ?? []);
+    setCurrentCategoryId(props?.currentCategoryId ?? null);
+    setIsShown(true);
+  }, []);
 
-  // ==============================================================
-  // カテゴリ行追加
-  // ==============================================================
-  const addNewCategory = () => {
-    setState((prev: any) => {
-      const currentList = Array.isArray(prev.categoryList) ? prev.categoryList : [];
+  const closeDialog = useCallback(() => {
+    setIsShown(false);
+    setRowIndex(undefined);
+    setExcludeIds([]);
+    setCurrentCategoryId(null);
+  }, []);
 
-      const newStatuses = currentList
-        .map((item: any) => item.status)
-        .filter((status: any) => /^new\d+$/.test(status));
+  const onSelected = useCallback(
+    async (item: ItemClassification) => {
+      const targetIndex = rowIndex ?? 0;
+      const categoryList = [...(state.categoryList ?? [])];
 
-      const maxNumber =
-        newStatuses.length > 0
-          ? Math.max(...newStatuses.map((s: any) => parseInt(s.replace('new', ''), 10)))
-          : 0;
+      if (!categoryList[targetIndex]) {
+        categoryList[targetIndex] = {
+          id: null,
+          categoryId: null,
+          categoryName: '',
+          category_name: '',
+          name: '',
+          status: 'new',
+        };
+      }
 
-      const nextStatus = `new${maxNumber + 1}`;
-
-      const arr: Category = {
-        combId: undefined,
-        categoryId: null,
-        name: '',
-        status: nextStatus,
-        initialcategoryId: undefined,
+      categoryList[targetIndex] = {
+        ...categoryList[targetIndex],
+        categoryId: item.id,
+        categoryName: item.name,
+        category_name: item.name,
+        name: item.name,
+        status: categoryList[targetIndex].id ? 'edit' : 'new',
       };
 
-      return { ...prev, categoryList: [...currentList, arr] };
-    });
-  };
+      updateState({ categoryList });
+      setCategoryChangeFlag(true);
+      closeDialog();
+    },
+    [rowIndex, state.categoryList, updateState, closeDialog]
+  );
 
-  // ==============================================================
-  // カテゴリ変更
-  // ==============================================================
-  const changeCategory = ({ id, name }: { id: number; name: string }) => {
-    if (changeCategoryIndex === null) return;
+  const onSelectedMultiple = useCallback(
+    async (items: ItemClassification[]) => {
+      if (!items || items.length === 0) {
+        await appAlert('商品分類が選択されていません。');
+        return;
+      }
 
-    setErrors((prev: any) => ({ ...prev, categoryList: null }));
-    setState((prev: any) => {
-      const list = [...prev.categoryList];
-      const target = list[changeCategoryIndex];
+      const targetIndex = rowIndex ?? 0;
+      const currentList: CategoryRow[] = [...(state.categoryList ?? [])];
 
-      // 削除済みの同じカテゴリがあれば復活
-      const deletedIndex = list.findIndex(
-        item => item.status === 'del' && item.categoryId === id
+      while (currentList.length <= targetIndex) {
+        currentList.push({
+          id: null,
+          categoryId: null,
+          categoryName: '',
+          category_name: '',
+          name: '',
+          status: 'new',
+        });
+      }
+
+      const activeSelectedIds = new Set(
+        currentList
+          .filter((x, idx) => x.status !== 'del' && idx !== targetIndex)
+          .map(x => x.categoryId)
+          .filter((id): id is number => id != null)
       );
 
-      if (deletedIndex !== -1) {
-        const deletedItem = list[deletedIndex];
+      const filteredItems = items.filter(x => x.id != null && !activeSelectedIds.has(x.id));
 
-        list[changeCategoryIndex] = {
-          ...target,
-          combId: deletedItem.combId,
-          categoryId: deletedItem.categoryId,
-          name: deletedItem.name,
-          initialcategoryId: deletedItem.initialcategoryId,
-          status:
-            deletedItem.categoryId === deletedItem.initialcategoryId
-              ? 'no update'
-              : 'update',
-        };
-
-        list.splice(deletedIndex, 1);
-        return { ...prev, categoryList: list };
+      if (filteredItems.length === 0) {
+        await appAlert('選択した商品分類はすでに登録されています。');
+        return;
       }
 
-      // 通常の更新
-      list[changeCategoryIndex] = {
-        ...target,
-        categoryId: id,
-        name,
-        status: target.combId
-          ? id === target.initialcategoryId
-            ? 'no update'
-            : 'update'
-          : 'new',
-      };
+      const newList = [...currentList];
 
-      return { ...prev, categoryList: list };
-    });
-  };
+      filteredItems.forEach((item, idx) => {
+        if (idx === 0) {
+          const currentRow = newList[targetIndex] ?? {
+            id: null,
+            categoryId: null,
+            categoryName: '',
+            category_name: '',
+            name: '',
+            status: 'new',
+          };
 
-  // ==============================================================
-  // カテゴリ変更ボタン
-  // ==============================================================
-  const onChangeCategory = (originalIndex: number) => {
-    setChangeCategoryIndex(originalIndex);
-    openItemClassDialog();
-  };
-
-  // ==============================================================
-  // カテゴリ削除
-  // ==============================================================
-  const onDeleteCategory = (originalIndex: number) => {
-    setCategoryChangeFlag(true);
-
-    setState((prev: any) => {
-      const target = prev.categoryList[originalIndex];
-
-      // new の場合は削除
-      if (target.status.includes('new')) {
-        return {
-          ...prev,
-          categoryList: prev.categoryList.filter((_: any, index: number) => index !== originalIndex),
-        };
-      }
-
-      // update / no update の場合は del に変更
-      return {
-        ...prev,
-        categoryList: prev.categoryList.map((item: any, index: number) =>
-          index === originalIndex ? { ...item, status: 'del' } : item
-        ),
-      };
-    });
-
-    setChangeCategoryIndex(originalIndex);
-  };
-
-  // ==============================================================
-  // カテゴリ復元処理（useEffect）
-  // ==============================================================
-  useEffect(() => {
-    if (changeCategoryIndex !== null) {
-      if (state.category_id !== undefined && state.category_name !== undefined) {
-        const flag = state.categoryList.some(
-          (item: any) =>
-            item.categoryId !== null &&
-            item.status !== 'del' &&
-            item.categoryId === state.category_id
-        );
-
-        if (!flag) {
-          setState((prev: any) => {
-            const delIndex = prev.categoryList.findIndex(
-              (item: any) => item.status === 'del' && item.categoryId === state.category_id
-            );
-
-            if (delIndex !== -1) {
-              const delItem = prev.categoryList[delIndex];
-
-              const revivedList = prev.categoryList.map((item: any, idx: number) => {
-                if (idx === changeCategoryIndex) {
-                  return {
-                    ...item,
-                    combId: delItem.combId,
-                    categoryId: delItem.categoryId,
-                    name: delItem.name,
-                    initialcategoryId: delItem.initialcategoryId,
-                    status:
-                      delItem.categoryId === delItem.initialcategoryId
-                        ? 'no update'
-                        : 'update',
-                  };
-                }
-                return item;
-              });
-
-              const maxNewIndex = revivedList.reduce(
-                (acc: any, item: any, idx: number) => {
-                  if (item.categoryId == null && /^new\d+$/.test(item.status)) {
-                    const num = parseInt(item.status.replace('new', ''), 10);
-                    if (num > acc.value) {
-                      return { value: num, index: idx };
-                    }
-                  }
-                  return acc;
-                },
-                { value: -1, index: -1 }
-              );
-
-              let filteredList = revivedList;
-              if (maxNewIndex.index !== -1 && delIndex === changeCategoryIndex) {
-                filteredList = revivedList.filter((_: any, idx: number) => idx !== maxNewIndex.index);
-              }
-
-              return { ...prev, categoryList: filteredList };
-            }
-
-            return {
-              ...prev,
-              categoryList: prev.categoryList.map((item: any, index: number) => {
-                if (index !== changeCategoryIndex) return item;
-
-                if (item.status.includes('new')) {
-                  return {
-                    ...item,
-                    categoryId: state.category_id,
-                    name: state.category_name,
-                    status: item.status,
-                  };
-                } else if (state.category_id === item.initialcategoryId) {
-                  return {
-                    ...item,
-                    categoryId: state.category_id,
-                    name: state.category_name,
-                    status: 'no update',
-                  };
-                } else {
-                  return {
-                    ...item,
-                    categoryId: state.category_id,
-                    name: state.category_name,
-                    status: 'update',
-                  };
-                }
-              }),
-            };
-          });
+          newList[targetIndex] = {
+            ...currentRow,
+            categoryId: item.id,
+            categoryName: item.name,
+            category_name: item.name,
+            name: item.name,
+            status: currentRow.id ? 'edit' : 'new',
+          };
+          return;
         }
-      }
-    }
-  }, [state.category_id, state.category_name]);
+
+        newList.push({
+          id: null,
+          categoryId: item.id,
+          categoryName: item.name,
+          category_name: item.name,
+          name: item.name,
+          status: 'new',
+        });
+      });
+
+      updateState({ categoryList: newList });
+      setCategoryChangeFlag(true);
+      closeDialog();
+    },
+    [rowIndex, state.categoryList, updateState, closeDialog]
+  );
+
+  const itemClassSearchDialogProps = useMemo(
+    () => ({
+      isShown,
+      onSelected,
+      onSelectedMultiple,
+      onCancel: closeDialog,
+      openDialog,
+      excludeIds,
+      rowIndex,
+      currentCategoryId,
+    }),
+    [
+      isShown,
+      onSelected,
+      onSelectedMultiple,
+      closeDialog,
+      openDialog,
+      excludeIds,
+      rowIndex,
+      currentCategoryId,
+    ]
+  );
 
   return {
-    changeCategoryIndex,
+    addNewCategory,
+    onDeleteCategory,
+    itemClassSearchDialogProps,
     categoryChangeFlag,
     setCategoryChangeFlag,
-    supplierChangeFlag,
-    setSupplierChangeFlag,
-    addNewCategory,
-    onChangeCategory,
-    onDeleteCategory,
-    changeCategory,
-
-    itemClassSearchDialogProps: {
-      ...itemClassSearchDialogProps,
-      rowIndex: dialogState.rowIndex,
-      excludeIds: dialogState.excludeIds,
-      openDialog,
-    },
   };
 };

@@ -69,7 +69,7 @@ class ItemService
     return $query->paginate(config('const.paginate.per_page'))->toArray();
   }
 
-  /**
+ /**
    * 一覧データを取得する
    *
    * @param array $cond 検索条件
@@ -82,7 +82,7 @@ class ItemService
       'code',
       'item_number',
       'name',
-      'sales_unit_price',
+      'sales_price',
       'variations1',
       'variations2',
       'variations3',

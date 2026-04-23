@@ -7,7 +7,6 @@ import { useItemDetailPage } from '@/app/Item/uses/detail/useItemDetailPage';
 import {
   ItemBasicInfoSection,
   ItemCategorySection,
-  ItemPriceSection,
   ItemSupplierSection,
   ItemStatusSection,
   ItemRemarksSection,
@@ -100,13 +99,6 @@ export const ItemDetailPage: React.FC = () => {
     // 保存
     saveClick,
 
-    // ページ遷移
-    useMovePage,
-
-    // URL
-    domestic_url,
-    overseas_url,
-
     // 販売オプション
     backColor,
   } = useItemDetailPage();
@@ -134,7 +126,6 @@ export const ItemDetailPage: React.FC = () => {
             addNewCategory={addNewCategory}
             itemClassSearchDialogProps={itemClassSearchDialogProps}
           />
-          <ItemPriceSection state={state} errors={errors} onChange={onChange} />
           <ItemSupplierSection
             state={state}
             errors={errors}

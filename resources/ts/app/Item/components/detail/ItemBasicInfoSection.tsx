@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Forms } from '@/components';
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
 
 /**
  * 商品マスタの「基本情報」入力セクション。
- * 
+ *
  * - 品番
  * - 商品名
  * - 商品名 (納品書)
@@ -20,6 +20,25 @@ export const ItemBasicInfoSection: React.VFC<Props> = ({
   errors,
   onChange,
 }) => {
+  const [isNameNoteEditable, setIsNameNoteEditable] = useState(
+    (state.name_note ?? '') !== '' && (state.name_note ?? '') !== (state.name ?? '')
+  );
+
+  const onChangeNameNoteEditable = (
+    _name: string,
+    value: string | number | boolean | undefined
+  ) => {
+    const checked = value === true || value === 'true';
+
+    if (checked) {
+      onChange('name_note', state.name ?? '');
+    } else {
+      onChange('name_note', state.name ?? '');
+    }
+
+    setIsNameNoteEditable(checked);
+  };
+
   return (
     <>
       <Forms.FromGroupInputItemNumber
@@ -45,15 +64,28 @@ export const ItemBasicInfoSection: React.VFC<Props> = ({
         maxLength={401}
       />
 
+      <Forms.FormGroup
+        labelText="納品書名を個別設定"
+        groupClassName="items-center my-1"
+        removeOptionalLabel
+      >
+        <Forms.FormInputCheck
+          id="is_name_note_editable"
+          name="is_name_note_editable"
+          checked={isNameNoteEditable}
+          onChange={onChangeNameNoteEditable}
+        />
+      </Forms.FormGroup>
+
       <Forms.FormGroupInputText
         labelText="商品名（納品書）"
         name="name_note"
-        value={state.name_note}
+        value={isNameNoteEditable ? (state.name_note ?? '') : (state.name ?? '')}
         error={errors?.name_note}
         onChange={onChange}
         className="max-w-lg"
-        required
         maxLength={401}
+        readOnly={!isNameNoteEditable}
       />
 
       <Forms.FormGroupInputText

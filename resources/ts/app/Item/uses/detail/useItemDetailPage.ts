@@ -57,17 +57,14 @@ export const useItemDetailPage = () => {
 
   // カテゴリ
   const {
-    changeCategoryIndex,
     categoryChangeFlag,
     setCategoryChangeFlag,
     addNewCategory,
-    onChangeCategory,
     onDeleteCategory,
     itemClassSearchDialogProps,
   } = useItemCategory({
     state,
-    setState,
-    setErrors,
+    updateState,
   });
 
   // 仕入先
@@ -258,9 +255,7 @@ export const useItemDetailPage = () => {
     setState,
 
     // カテゴリ
-    changeCategoryIndex,
     addNewCategory,
-    onChangeCategory,
     onDeleteCategory,
     itemClassSearchDialogProps,
     categoryChangeFlag,
