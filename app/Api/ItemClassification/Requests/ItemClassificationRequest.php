@@ -17,26 +17,24 @@ class ItemClassificationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $id = $this->route('id'); // ルートパラメータ名が id 前提（/.../{id}）
+        $id = $this->route('id');
 
-        // code は未入力OK（サービス側で自動採番する運用も許容）
         $codeRule = [
-            'nullable',
+            'required',
             'string',
-            'max:255',
+            'max:20',
             Rule::unique('m_categories', 'code')
-                ->ignore($id)                 // 更新時は自分を無視
-                ->whereNull('deleted_at'),    // ソフトデリート無視
+                ->ignore($id)
+                ->whereNull('deleted_at'),
         ];
 
         return [
-            'name'        => ['required', 'string', 'max:255'],
             'is_display'  => ['required', 'boolean'],
+            'name'        => ['required', 'string', 'max:100'],
             'code'        => $codeRule,
-            // 親子関係の厳密チェックは後回しにするので exists は一旦外す
-            'parent_code' => ['nullable', 'string', 'max:255'],
+            'parent_code' => ['nullable', 'string', 'max:20'],
             'sort_order'  => ['nullable', 'integer', 'min:0'],
-            'remarks'     => ['nullable', 'string', 'max:1000'],
+            'remarks'     => ['nullable', 'string', 'max:500'],
         ];
     }
 
@@ -47,7 +45,7 @@ class ItemClassificationRequest extends FormRequest
     {
         $input = $this->all();
 
-        foreach (['code', 'parent_code', 'remarks'] as $k) {
+        foreach (['parent_code', 'remarks'] as $k) {
             if (array_key_exists($k, $input) && $input[$k] === '') {
                 $input[$k] = null;
             }
@@ -58,12 +56,11 @@ class ItemClassificationRequest extends FormRequest
         }
 
         if (array_key_exists('is_display', $input)) {
-            // '0'/'1' や 'true'/'false' を boolean に寄せる
             $val = $input['is_display'];
             $input['is_display'] = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
             if ($input['is_display'] === null) {
-                // 数値/文字列の '0'/'1' を最後に判定
-                $input['is_display'] = (string)$val === '1';
+                $input['is_display'] = (string) $val === '1';
             }
         }
 
@@ -73,10 +70,10 @@ class ItemClassificationRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'is_display'  => 'ショップへの公開',
             'name'        => '商品分類名',
-            'is_display'  => '表示フラグ',
             'code'        => '分類コード',
-            'parent_code' => '親分類コード',
+            'parent_code' => '親カテゴリ',
             'sort_order'  => '表示順',
             'remarks'     => '備考',
         ];
@@ -86,8 +83,10 @@ class ItemClassificationRequest extends FormRequest
     {
         return [
             'name.required'   => ':attributeは必須です。',
-            'is_display.*'    => ':attributeの形式が不正です。',
+            'name.max'        => ':attributeは100文字以内で入力してください。',
+            'code.required'   => ':attributeは必須です。',
             'code.unique'     => ':attributeが既に使用されています。',
+            'is_display.*'    => ':attributeの形式が不正です。',
             'sort_order.*'    => ':attributeは0以上の整数で入力してください。',
         ];
     }

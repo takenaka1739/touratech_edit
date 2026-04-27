@@ -3,12 +3,9 @@
 namespace App\Api\ItemClassification\Controllers;
 
 use App\Base\Http\Controllers\Api\BaseController;
-// use App\Api\ItemClassification\Requests\ItemClassificationStoreRequest;
-// use App\Api\ItemClassification\Requests\ItemClassificationUpdateRequest;
+use App\Api\ItemClassification\Requests\ItemClassificationRequest;
 use App\Api\ItemClassification\Services\ItemClassificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 /**
  * 商品分類マスタ
@@ -54,51 +51,17 @@ class ItemClassificationController extends BaseController
     }
 
     /** 登録（作成IDを返却） */
-    public function store(Request $request)
+    public function store(ItemClassificationRequest $request)
     {
-        // ここで直接バリデーション
-        $valid = $request->validate([
-            'is_display'  => ['required', 'boolean'],
-            'name'        => ['required', 'string', 'max:30'],
-            'code'        => ['required', 'string', 'max:20'],
-            'parent_code' => ['nullable', 'string', 'max:20'],
-            'sort_order'  => ['nullable', 'integer', 'min:0'],
-            'remarks'     => ['nullable', 'string', 'max:500'],
-            // 画像系は別API
-        ], [], [
-            'is_display'  => 'ショップへの公開',
-            'name'        => '商品分類名',
-            'code'        => '分類コード',
-            'parent_code' => '親カテゴリ',
-            'sort_order'  => '表示順',
-            'remarks'     => '備考',
-        ]);
-
-        $newId = $this->service->store($valid);
+        $newId = $this->service->store($request->validated());
 
         return $this->success(['id' => $newId]);
     }
 
-    /** 更新（同じルールでOK） */
-    public function update(Request $request, int $id)
+    /** 更新 */
+    public function update(ItemClassificationRequest $request, int $id)
     {
-        $valid = $request->validate([
-            'is_display'  => ['required', 'boolean'],
-            'name'        => ['required', 'string', 'max:30'],
-            'code'        => ['required', 'string', 'max:20'],
-            'parent_code' => ['nullable', 'string', 'max:20'],
-            'sort_order'  => ['nullable', 'integer', 'min:0'],
-            'remarks'     => ['nullable', 'string', 'max:500'],
-        ], [], [
-            'is_display'  => 'ショップへの公開',
-            'name'        => '商品分類名',
-            'code'        => '分類コード',
-            'parent_code' => '親カテゴリ',
-            'sort_order'  => '表示順',
-            'remarks'     => '備考',
-        ]);
-
-        $this->service->update($id, $valid);
+        $this->service->update($id, $request->validated());
 
         return $this->success();
     }

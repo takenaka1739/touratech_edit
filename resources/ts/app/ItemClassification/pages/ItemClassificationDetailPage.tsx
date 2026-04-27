@@ -645,7 +645,7 @@ export const ItemClassificationDetailPage: React.VFC<ItemClassificationDetailPag
               groupClassName="mt-0"
               className="max-w-lg"
               required
-              maxLength={30}
+              maxLength={100}
             />
 
             <Forms.FormGroupInputText
