@@ -640,45 +640,41 @@ foreach ($idList as $id) {
    * @param array $cond 条件
    * @return mixed
    */
-  private function setCondition($query, array $cond)
-  {
-    $cond = new Collection($cond);
-    $c_keyword = $cond->get('c_keyword');
-    if ($c_keyword !== null && $c_keyword !== '') {
-      $keywords = explode(" ", $c_keyword);
-      foreach ($keywords as $key) {
-        $query->where(function($query) use ($key) {
-          $query->where('code', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('name', 'like', '%' . escape_like($key) . '%')
-            ->orWhere('item_number', 'like', '%' . escape_like($key) . '%');
-        });
-      }
+    private function setCondition($query, array $cond)
+    {
+        $cond = new Collection($cond);
+
+        $c_keyword = $cond->get('c_keyword');
+        if ($c_keyword !== null && $c_keyword !== '') {
+            $keywords = explode(" ", $c_keyword);
+            foreach ($keywords as $key) {
+                $query->where(function($query) use ($key) {
+                    $query->where('code', 'like', '%' . escape_like($key) . '%')
+                        ->orWhere('name', 'like', '%' . escape_like($key) . '%')
+                        ->orWhere('item_number', 'like', '%' . escape_like($key) . '%');
+                });
+            }
+        }
+
+        $c_is_display = $cond->get('c_is_display');
+        if ($c_is_display === "1") {
+            $query->where('is_discontinued', false);
+        } elseif ($c_is_display === "2") {
+            $query->where('is_discontinued', true);
+        }
+
+        $c_supplier_id = $cond->get('c_supplier_id');
+        if ($c_supplier_id) {
+            $query->where('supplier_id', $c_supplier_id);
+        }
+
+        $c_un_supplier = $cond->get('c_un_supplier');
+        if ($c_un_supplier) {
+            $query->whereNull('supplier_id');
+        }
+
+        return $query;
     }
-
-
-    $c_is_display = $cond->get('c_is_display');
-    if ($c_is_display !== "none") {
-      //$query->where('is_display', $c_is_display === "1");
-      $query->where('is_display', $c_is_display === "2");
-    }
-
-    $has_discontinued = $cond->get('c_has_discontinued');
-    if (!$has_discontinued) {
-      $query->whereNull('discontinued_at');
-    }
-
-    $c_supplier_id = $cond->get('c_supplier_id');
-    if ($c_supplier_id) {
-      $query->where('supplier_id', $c_supplier_id);
-    }
-
-    $c_un_supplier = $cond->get('c_un_supplier');
-    if ($c_un_supplier) {
-      $query->whereNull('supplier_id');
-    }
-
-    return $query;
-  }
 
   /**
    * m_items の共通部分を生成する。

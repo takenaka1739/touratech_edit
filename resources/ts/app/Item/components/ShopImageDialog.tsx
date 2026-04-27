@@ -666,6 +666,8 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
 
     return null;
   };
+  
+  const hasVisibleFiles = Array.isArray(files) && files.filter(Boolean).length > 0;
 
   return (
     <DialogWrapper
@@ -725,44 +727,88 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
             </div>
 
             <div className="image-input-erea">
-              <input type="file" style={{ display: 'none' }} ref={attachRef} multiple onChange={handleInpuFileChange}/>
-              <div 
-                style={{ height: '115px', width: '550px'}}
-                tabIndex={0}
-                onDragEnter={onDragEnter}
-                onDragLeave={onDragLeave}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onPaste={onPaste}
-              >
-                <p style={{height: '30px', fontSize: '20px', color: '#c9d7e8f8', textAlign: 'center', position: 'absolute'}}>{dropErea}</p>
-                <DragDropContext onDragEnd={onDragEnd}> 
-                  <Droppable key={'droppable'} droppableId="droppable" direction="horizontal">
-                    {(provided) => (
-                      <div key={'scllowDiv'} className="scllowDiv" {...provided.droppableProps} ref={provided.innerRef}>
-                        {files.map((f, index) => (
-                          <Draggable key={String(index)} draggableId={String(index)} index={index}>
-                            {(provided) => (
-                              <div
-                                key={index}
-                                style={{ display: "flex" }}
-                                {...provided.draggableProps}
-                                ref={provided.innerRef}
-                              >
-                                <div {...provided.dragHandleProps}>
-                                  <Image file={f} />
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                      {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
-              </div>
-            </div>
+  <input
+    type="file"
+    style={{ display: 'none' }}
+    ref={attachRef}
+    multiple
+    onChange={handleInpuFileChange}
+  />
+  <div
+    style={{
+      height: '115px',
+      width: '550px',
+      position: 'relative',
+      border: '1px dashed #c9d7e8',
+      borderRadius: '6px',
+      backgroundColor: '#fafcff',
+    }}
+    tabIndex={0}
+    onDragEnter={onDragEnter}
+    onDragLeave={onDragLeave}
+    onDragOver={onDragOver}
+    onDrop={onDrop}
+    onPaste={onPaste}
+  >
+    {!hasVisibleFiles && (
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10,
+          pointerEvents: 'none',
+          fontSize: '20px',
+          fontWeight: 600,
+          color: '#6f88a8',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        ここにドロップ
+      </div>
+    )}
+
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable key={'droppable'} droppableId="droppable" direction="horizontal">
+        {(provided) => (
+          <div
+            key={'scllowDiv'}
+            className="scllowDiv"
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              overflowX: 'auto',
+            }}
+          >
+            {files.map((f, index) => (
+              <Draggable key={String(index)} draggableId={String(index)} index={index}>
+                {(provided) => (
+                  <div
+                    key={index}
+                    style={{ display: 'flex' }}
+                    {...provided.draggableProps}
+                    ref={provided.innerRef}
+                  >
+                    <div {...provided.dragHandleProps}>
+                      <Image file={f} />
+                    </div>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
+  </div>
+</div>
           </div>
 
           <div id="item-info">

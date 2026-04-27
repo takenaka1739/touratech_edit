@@ -10,9 +10,9 @@ type Props = {
 /**
  * 商品マスタの「在庫・廃盤・表示設定」セクション。
  *
- * - 確認（is_discontinued）
+ * - 廃盤（is_discontinued）
  * - 廃盤日（discontinued_at）
- * - 廃盤（is_display）
+ * - 表示（is_display）
  * - 国内在庫数 / 国外在庫数
  * - 在庫表示（display_status）
  */
@@ -27,7 +27,7 @@ export const ItemStatusSection: React.VFC<Props> = ({
       <div className="flex">
         <div>
           <Forms.FormGroup
-            labelText="確認"
+            labelText="廃盤"
             error={errors?.is_discontinued}
             groupClassName="items-center mt-4"
           >
@@ -53,7 +53,7 @@ export const ItemStatusSection: React.VFC<Props> = ({
 
         <div>
           <Forms.FormGroup
-            labelText="廃盤"
+            labelText="表示"
             error={errors?.is_display}
             groupClassName="items-center mt-4"
             removeOptionalLabel

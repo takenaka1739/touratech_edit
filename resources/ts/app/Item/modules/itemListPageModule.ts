@@ -6,7 +6,6 @@ const create = actionCreatorFactory();
 export type ItemListPageConditionState = {
   c_keyword?: string;
   c_is_display: string;
-  c_has_discontinued: boolean;
   c_is_set_item?: boolean;
   c_supplier_id?: number | undefined;
   c_supplier_name?: string | undefined;
@@ -22,7 +21,6 @@ export const itemInitialState: ItemListPageState = {
   conditions: {
     c_keyword: '',
     c_is_display: 'none',
-    c_has_discontinued: false,
     c_is_set_item: false,
     c_supplier_id: undefined,
     c_supplier_name: undefined,

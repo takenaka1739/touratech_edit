@@ -36,12 +36,14 @@ export const ItemListPage: React.VFC = () => {
       <tr key={r.id}>
         <td>
           <div className="text-xs">{r.item_number}</div>
-          {/*<div className="text-xs">{r.itemNumberItem}</div>*/}
-          <div>{r.name + '　' +
-                (r.variations1 ? `${r.variations1}` : '') + (r.variations2 ? ` / ${r.variations2}` : '') + 
-                (r.variations3 ? ` / ${r.variations3}` : '') + (r.variations4 ? ` / ${r.variations4}` : '')
-                }</div>
-          {/*<div>{r.name_jp}</div>*/}
+          <div>
+            {r.name + '　' +
+              (r.variations1 ? `${r.variations1}` : '') +
+              (r.variations2 ? ` / ${r.variations2}` : '') +
+              (r.variations3 ? ` / ${r.variations3}` : '') +
+              (r.variations4 ? ` / ${r.variations4}` : '')
+            }
+          </div>
           <div>{r.name_note}</div>
         </td>
         <td className="text-right">{numberFormat(r.sales_price ?? 0)}</td>
@@ -121,17 +123,7 @@ export const ItemListPage: React.VFC = () => {
             removeOptionalLabel
           />
         </div>
-        <div className="w-40 mt-2">
-          <div className="form-group">
-            <Forms.FormInputCheck
-              id="is_discontinued"
-              name="c_has_discontinued"
-              labelText="確認データを含む"
-              checked={conditions.c_has_discontinued}
-              onChange={onChange}
-            />
-          </div>
-        </div>
+
         <div className="flex mt-2">
           <div className="w-1/2 mr-4">
             <Forms.FormGroup labelText="仕入先" removeOptionalLabel>
@@ -176,18 +168,19 @@ export const ItemListPage: React.VFC = () => {
           </button>
         </div>
 
-        {isAdmin && (<div style={{ display: 'flex', alignItems: 'center' }}>
-          <label style={{ marginRight: '4px' }}>在庫表示一括切替：</label>
-          <button className="btn" onClick={() => changeStockDisplay(0)} disabled={isDisabled}>
-            非表示
-          </button>
-          <button className="btn ml-6" onClick={() => changeStockDisplay(1)} disabled={isDisabled}>
-            表示（一般含む）
-          </button>
-          <button className="btn ml-6" onClick={() => changeStockDisplay(2)} disabled={isDisabled}>
-            表示（業者のみ）
-          </button>
-        </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <label style={{ marginRight: '4px' }}>在庫表示一括切替：</label>
+            <button className="btn" onClick={() => changeStockDisplay(0)} disabled={isDisabled}>
+              非表示
+            </button>
+            <button className="btn ml-6" onClick={() => changeStockDisplay(1)} disabled={isDisabled}>
+              表示（一般含む）
+            </button>
+            <button className="btn ml-6" onClick={() => changeStockDisplay(2)} disabled={isDisabled}>
+              表示（業者のみ）
+            </button>
+          </div>
         )}
       </div>
     </PageWrapper>
