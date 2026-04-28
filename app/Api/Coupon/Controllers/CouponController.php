@@ -42,11 +42,22 @@ class CouponController extends BaseController
     }
 
     /**
+     * 次のクーポンコード取得
+     */
+    public function nextCode()
+    {
+        return $this->success([
+            'code' => $this->service->getNextCode(),
+        ]);
+    }
+
+    /**
      * 登録処理
      */
     public function store(CouponStoreRequest $request)
     {
         $data = $request->validated();
+
         if (Coupon::where('code', $data['code'])->exists()) {
             return response()->json([
                 'success' => false,
@@ -72,8 +83,7 @@ class CouponController extends BaseController
     public function update(CouponUpdateRequest $request, int $id)
     {
         try {
-
-            $data = $request->validated(); // ← ここで例外が出てる可能性が高い
+            $data = $request->validated();
 
             if (Coupon::where('code', $data['code'])->where('id', '!=', $id)->exists()) {
                 return response()->json([
@@ -112,12 +122,11 @@ class CouponController extends BaseController
                 'is_active' => $coupon->is_active,
             ]);
         } catch (\Throwable $e) {
-            \Log::error('❌ クーポン有効切替エラー', ['message' => $e->getMessage()]);
+            Log::error('❌ クーポン有効切替エラー', ['message' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => '切り替えに失敗しました',
             ], 500);
         }
     }
-
 }

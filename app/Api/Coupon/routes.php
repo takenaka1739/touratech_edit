@@ -16,6 +16,7 @@ Route::group([
     'middleware' => ['check.admin']
   ], function () {
     Route::post('fetch', [CouponController::class, 'fetch']);
+    Route::get('next-code', [CouponController::class, 'nextCode']);
     Route::post('store', [CouponController::class, 'store']);
     Route::get('edit/{id}', [CouponController::class, 'edit']);
     Route::post('/coupon/toggle-active/{id}', [CouponController::class, 'toggleActive']);

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import axios from 'axios';
 import { PageWrapper, Forms } from '@/components';
 import { useCouponDetailPage } from '@/app/Coupon/uses/useCouponDetailPage';
 import { CouponRuleForm } from '@/app/Coupon/components/CouponRuleForm';
@@ -15,6 +16,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
   const isNew = couponIdParam === 'new';
   const couponId = isNew ? 0 : Number(couponIdParam);
   const fetched = useRef(false);
+  const initializedCode = useRef(false);
 
   const conditionTypeOptions = [
     { value: '', name: '選択してください' },
@@ -43,6 +45,15 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     onOpenItemClassificationModal,
   } = useCouponDetailPage(slug);
 
+  const fetchAndSetNextCode = async () => {
+    const response = await axios.get('/api/coupon/next-code');
+    const nextCode = response.data?.data?.code ?? '';
+
+    if (nextCode) {
+      onChange('code', nextCode);
+    }
+  };
+
   const updateRuleError = (ruleIndex: number, field: string) => {
     setErrors((prev: any) => {
       const next = { ...prev };
@@ -63,13 +74,17 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
     }
   }, [couponId, fetchDetailData, isNew]);
 
+  useEffect(() => {
+    if (!isNew || initializedCode.current || state.code) return;
+
+    fetchAndSetNextCode();
+    initializedCode.current = true;
+  }, [isNew, state.code]);
+
   const handleOpenItemModal = (selectedIds: number[], ruleIndex: number) => {
     const parsedIds = selectedIds.filter(n => !isNaN(n)).map(n => n.toString());
     itemModal.open(parsedIds, ruleIndex);
   };
-
-  console.log('errors');
-  console.log(errors);
 
   return (
     <PageWrapper
@@ -157,10 +172,10 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
       </div>
 
       <CouponItemSelectModal
-          isOpen={itemModal.isOpen}
-          selected={itemModal.selected}
-          onClose={itemModal.close}
-          onConfirm={itemModal.confirm}
+        isOpen={itemModal.isOpen}
+        selected={itemModal.selected}
+        onClose={itemModal.close}
+        onConfirm={itemModal.confirm}
       />
 
       <ItemClassificationSelectModal
@@ -169,7 +184,6 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
         onClose={itemClassificationModal.close}
         onConfirm={itemClassificationModal.confirm}
       />
-
     </PageWrapper>
   );
 };
