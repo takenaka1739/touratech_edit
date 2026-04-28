@@ -29,143 +29,96 @@ export type ShopImageDialogProps = {
   delimageItem: any[][];
 };
 
+type SettingMode = "common" | "variation";
+
 export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   isShown,
   onClickCancel,
   onChangeShopImage,
   preState,
-  preImageItem,
   imageItem,
   variItems,
-  preVariItem,
   variChangeItem,
-  backVariItems,
-  categoryChangeFlag,
-  supplierChangeFlag,
-  delimageItem,
 }) => {
   type Props = {
     file: File;
   };
 
   // 画像・動画一覧をUI表示用の形式に変換
-const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) => {
-  return variItems.map((vari) => {
-    const variId = vari[0];
+  const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) => {
+    return variItems.map((vari) => {
+      const variId = vari[0];
 
-    const related = preImageList
-      .filter((row) => row[1] === variId)
-      .sort((a, b) => {
-        const sa = a[3];
-        const sb = b[3];
-        if (sa == null && sb == null) return 0;
-        if (sa == null) return 1;
-        if (sb == null) return -1;
-        return sa - sb;
-      });
+      const related = preImageList
+        .filter((row) => row[1] === variId)
+        .sort((a, b) => {
+          const sa = a[3];
+          const sb = b[3];
+          if (sa == null && sb == null) return 0;
+          if (sa == null) return 1;
+          if (sb == null) return -1;
+          return sa - sb;
+        });
 
-    if (related.length > 0) {
-      const paths = related.map((r) => {
-        const fileName = r[2];
+      if (related.length > 0) {
+        const paths = related.map((r) => {
+          const fileName = r[2];
 
-        // YouTube はそのまま
-        if (typeof fileName === "string" && fileName.includes("youtube.com/embed")) {
-          return fileName;
-        }
+          // YouTube はそのまま
+          if (typeof fileName === "string" && fileName.includes("youtube.com/embed")) {
+            return fileName;
+          }
 
-        // File はそのまま返す（URL に変換しない）
-        if (fileName instanceof File) {
-          return fileName;
-        }
+          // File はそのまま返す
+          if (fileName instanceof File) {
+            return fileName;
+          }
 
-        // 通常のファイル名
-        return `/images/${fileName}`;
-      });
+          // 通常のファイル名
+          return `/images/${fileName}`;
+        });
 
-      return [variId, ...paths];
-    }
+        return [variId, ...paths];
+      }
 
-    return [variId];
-  });
-};
-
+      return [variId];
+    });
+  };
 
   const attachRef = useRef<HTMLInputElement>(null);
-  const [itemNameInput, setItemNameInput] = useState("");         // 商品名
-  const [salesPriceInput, setSalesPriceInput] = useState("");     // 販売価格（税込み）
-  const [point, setPoint] = useState("");                         // ポイント
-  const [exDetailsInput, setExDetailsInput] = useState("");       // 商品説明（詳細）
+  const [settingMode, setSettingMode] = useState<SettingMode>("common");
+  const [itemNameInput, setItemNameInput] = useState("");
+  const [salesPriceInput, setSalesPriceInput] = useState("");
+  const [point, setPoint] = useState("");
+  const [exDetailsInput, setExDetailsInput] = useState("");
   const [movieUrl, setMovieUrl] = useState("");
   const [variKindItem, setVariKindItem] = useState(variItems);
   const [variChangeItemState, setVariChangeItemState] = useState(variChangeItem);
-  const [dropErea, setDropErea] = useState("");
+  const [, setDropErea] = useState("");
   const [selectImageSrc, setSelectImageSrc] = useState("");
   const [selectImageType, setSelectImageType] = useState(-1);
   const [files, setFiles] = useState<any[]>(Array.isArray(imageItem) ? imageItem[0] : [""]);
   const [clicked, setClicked] = useState(false);
-  const [SelectImage, setSelectImage] = useState("");
+  const [, setSelectImage] = useState("");
   const [selectId, setSelectId] = useState(Array.isArray(imageItem) && imageItem.length > 0 ? imageItem[0][0] : null);
   const [selectIndex, setSelectIndex] = useState(0);
+  const [isImageEdited, setIsImageEdited] = useState(false);
+  const [individualEditedIds, setIndividualEditedIds] = useState<any[]>([]);
+
   const initialMatrix = buildInitialImageMatrix(variItems, preState.preImageList);
+
   const sortedMatrix = variItems.map(v => {
     const row = initialMatrix.find(r => r[0] === v[0]);
     return row ?? [v[0]];
   });
+
   const [edtImageItems, setEdtImageItems] = useState<any[][]>(sortedMatrix);
-  const [isImageEdited, setIsImageEdited] = useState(false);
-  
-  // ダイアログオープン時に最新の値を反映する
-  useEffect(() => {
-    if (!isShown) return;
-    if (variItems.length === 0) return;
-    if (initialMatrix.length === 0) return;
-    
-    console.log("=== 画像初期化開始 ===");
-    console.log("variItems:", JSON.parse(JSON.stringify(variItems)));
-    console.log("initialMatrix:", JSON.parse(JSON.stringify(initialMatrix)));
 
-    const idx = variItems.findIndex(v => v[0] === preState.id);
-
-    const isVariationEnabled =
-      (variItems.length > 1) ||
-      (variItems.length === 1 && variItems[0][1] !== "" && variItems[0][1] !== null);
-
-    let initialPrice: number | null = null;
-    if (isVariationEnabled && idx !== -1) {
-      initialPrice = Number(variItems[idx][6]);
-    } else {
-      initialPrice = preState.sales_price != null ? Number(preState.sales_price) : null;
-    }
-
-    setItemNameInput(preState.name ?? "");
-    setSalesPriceInput(initialPrice !== null ? String(initialPrice) : "");
-    if (initialPrice != null) setPoint(String(Math.floor(initialPrice / 100)));
-    setExDetailsInput(preState.explanation_details ?? "");
-
-    setVariKindItem(fillNulls(variItems ?? []));
-
-    setSelectIndex(idx);
-    setSelectId(idx !== -1 ? variItems[idx][0] : null);
-
-    if (idx !== -1 && initialMatrix[idx]) {
-      const row = initialMatrix[idx];
-      setFiles(row.slice(1));
-    }
-  }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details]);
-
-  useEffect(() => {
-    if (!isShown) return;
-
-    const initial = variItems.map((v, i) => initialMatrix[i]);
-    console.log("edtImageItems 初期化:", initial);
-    setEdtImageItems(initial);
-  }, [isShown]);
-
-  const [delimageItemState, setDelImageItem] = useState<string[][]>([]);
+  const isCommonMode = settingMode === "common";
 
   // バリエーションの null を直前の値で補完する
   const fillNulls = (items: any[][]) => {
-    let last = ["", "", "", ""]; // item[1]〜item[4] の直前値を保持
+    let last = ["", "", "", ""];
 
     return items.map(row => {
       const newRow = [...row];
@@ -182,63 +135,174 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
     });
   };
 
-  const inputPriceFocusOut = () => {
+  const getVariationLabel = (item: any[]) => {
+    return item[1] +
+      (item[2] !== "" && item[2] !== null ? " / " + item[2] : "") +
+      (item[3] !== "" && item[3] !== null ? " / " + item[3] : "") +
+      (item[4] !== "" && item[4] !== null ? " / " + item[4] : "");
+  };
+
+  const normalizeImageFiles = (row: any[] | undefined) => {
+    if (!Array.isArray(row)) return [];
+
+    return row.slice(1).map((fileName: any) => {
+      if (fileName instanceof File) return fileName;
+
+      if (typeof fileName === "string") {
+        if (fileName.includes("youtube.com/embed")) return fileName;
+        if (fileName.startsWith("/images/")) return fileName;
+        return `/images/${fileName}`;
+      }
+
+      return fileName;
+    });
+  };
+
+  const updateImageItemsByFiles = (newFiles: any[]) => {
+    const targetIds = getTargetVariationIds();
+
+    const updatedMatrix = variKindItem.map((row: any) => {
+      const variId = row[0];
+      const exists = edtImageItems.find((imageRow: any) => imageRow[0] === variId);
+
+      if (targetIds.includes(variId)) {
+        return [variId, ...newFiles];
+      }
+
+      return exists ?? [variId];
+    });
+
+    if (!isCommonMode && selectId !== null && selectId !== undefined) {
+      setIndividualEditedIds((prev) => (
+        prev.includes(selectId) ? prev : [...prev, selectId]
+      ));
+    }
+
+    setFiles(newFiles);
+    setEdtImageItems(updatedMatrix);
+    setIsImageEdited(true);
+
+    onChangeShopImage({
+      isImageEdited: true,
+      edtImageItems: updatedMatrix,
+    });
+  };
+
+  const updateVariationPrice = (targetIds: any[], price: string) => {
+    const fixedTargetIds = targetIds;
+
     const updatedItems = variKindItem.map((row: any) => {
-      if (row[0] === selectId) {
+      if (fixedTargetIds.includes(row[0])) {
         const newRow = [...row];
-        newRow[6] = salesPriceInput;
+        newRow[6] = price;
         return newRow;
       }
       return row;
     });
+
     setVariKindItem(updatedItems);
 
-    const updateChangeItems = (() => {
-      const exists = variChangeItemState.some(
-        (row: any) => row[0] === selectId
-      );
-      const target = preVariItem.find((row: any) => row[0] === selectId);
-      if (target) {
-        target[6] = salesPriceInput;
-      }
+    const updatedChangeItems = (() => {
+      let result = [...variChangeItemState];
 
-      if (exists) {
-        return variChangeItemState.map((row: any) => {
-          if (row[0] === selectId) {
-            const newRow = [...row];
-            newRow[6] = salesPriceInput;
-            return newRow;
-          }
-          return row;
-        });
-      } else {
-        const matched = variKindItem.find(
-          (row: any) => row[0] === selectId
-        );
-        if (matched) {
-          const newRow = [...matched];
-          newRow[6] = salesPriceInput;
-          return [...variChangeItemState, newRow];
-        } else {
-          return variChangeItemState;
+      fixedTargetIds.forEach((targetId: any) => {
+        const exists = result.some((row: any) => row[0] === targetId);
+        const baseRow = updatedItems.find((row: any) => row[0] === targetId);
+
+        if (exists) {
+          result = result.map((row: any) => {
+            if (row[0] === targetId) {
+              const newRow = [...row];
+              newRow[6] = price;
+              return newRow;
+            }
+            return row;
+          });
+        } else if (baseRow) {
+          result = [...result, [...baseRow]];
         }
-      }
+      });
+
+      return result;
     })();
 
-    setVariChangeItemState(updateChangeItems);
-
-    if (salesPriceInput !== "") {
-      setPoint(String(Math.floor(Number(salesPriceInput) / 100)));
+    if (!isCommonMode && selectId !== null && selectId !== undefined) {
+      setIndividualEditedIds((prev) => (
+        prev.includes(selectId) ? prev : [...prev, selectId]
+      ));
     }
+
+    setVariChangeItemState(updatedChangeItems);
+
+    onChangeShopImage({
+      variItems: updatedItems,
+      variChangeItem: updatedChangeItems,
+      variChangeItemState: updatedChangeItems,
+    });
+
+    setPoint(price !== "" ? String(Math.floor(Number(price) / 100)) : "0");
+  };
+
+  // ダイアログオープン時に最新の値を反映する
+  useEffect(() => {
+    if (!isShown) return;
+    if (variItems.length === 0) return;
+
+    const initialIndex = 0;
+    const initialPrice =
+      variItems[initialIndex]?.[6] != null && variItems[initialIndex]?.[6] !== ""
+        ? Number(variItems[initialIndex][6])
+        : preState.sales_price != null
+          ? Number(preState.sales_price)
+          : null;
+
+    setSettingMode("common");
+    setItemNameInput(preState.name ?? "");
+    setSalesPriceInput(initialPrice !== null ? String(initialPrice) : "");
+    setPoint(initialPrice !== null ? String(Math.floor(initialPrice / 100)) : "0");
+    setExDetailsInput(preState.explanation_details ?? "");
+
+    const filledVariItems = fillNulls(variItems ?? []);
+    setVariKindItem(filledVariItems);
+    setVariChangeItemState(variChangeItem ?? []);
+
+    setSelectIndex(initialIndex);
+    setSelectId(variItems[initialIndex]?.[0] ?? null);
+
+    const initial = variItems.map((v) => {
+      const row = initialMatrix.find(r => r[0] === v[0]);
+      return row ?? [v[0]];
+    });
+
+    setEdtImageItems(initial);
+
+    if (initial[initialIndex]) {
+      setFiles(normalizeImageFiles(initial[initialIndex]));
+    } else {
+      setFiles([]);
+    }
+
+    setSelectImageSrc("");
+    setSelectImageType(-1);
+    setIsImageEdited(false);
+  }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details]);
+
+  const inputPriceFocusOut = () => {
+    const targetIds = isCommonMode
+      ? variKindItem.map((row: any) => row[0])
+      : [selectId];
+
+    updateVariationPrice(targetIds, salesPriceInput);
   };
 
   const handleInpuFileChange = useCallback((e: any) => {
     if (e.target.files == null) return;
-    const newFiles = Array.from(e.target.files);
-    setFiles((current) => current.concat(newFiles));
+
+    const newFiles = files.concat(Array.from(e.target.files));
+    updateImageItemsByFiles(newFiles);
+
     if (attachRef.current) attachRef.current.value = "";
-    setIsImageEdited(true);
-  }, []);
+  }, [files, edtImageItems, selectId, settingMode, variKindItem]);
 
   const onDragEnter = useCallback((e: any) => {
     e.preventDefault();
@@ -266,82 +330,28 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
         .map((item) => item.getAsFile())
         .filter((file): file is File => file !== null);
 
-      setFiles((current) =>
-        Array.isArray(current)
-          ? current.concat(addFiles)
-          : [...addFiles]
-      );
-
-      if (Array.isArray(edtImageItems)) {
-        const item = edtImageItems[selectIndex];
-
-        if (item[0] === selectId) {
-          const updatedMatrix = edtImageItems.filter(
-            (_, idx) => idx !== selectIndex
-          );
-          const a = edtImageItems[selectIndex].concat(addFiles);
-
-          if (selectIndex === 0) {
-            const withoutFirst = edtImageItems.slice(1);
-            const addItem = [a, ...withoutFirst];
-            setEdtImageItems(addItem);
-            onChangeShopImage({ edtImageItems: addItem, });
-          } else {
-            const addItem = [
-              ...updatedMatrix.slice(0, selectIndex),
-              a,
-              ...updatedMatrix.slice(selectIndex),
-            ];
-            setEdtImageItems(addItem);
-            onChangeShopImage({ edtImageItems: addItem, });
-          }
-        } else {
-          const a = [selectId, ...addFiles];
-          const withoutFirst = edtImageItems.filter(
-            (_, i) => i !== selectIndex
-          );
-          const addItem = [
-            ...withoutFirst.slice(0, selectIndex),
-            a,
-            ...withoutFirst.slice(selectIndex),
-          ];
-          setEdtImageItems(addItem);
-          onChangeShopImage({ edtImageItems: addItem, });
-        }
-      }
-
+      updateImageItemsByFiles(files.concat(addFiles));
       setDropErea("");
-      setIsImageEdited(true);
     },
-    [edtImageItems, selectId]
+    [files, edtImageItems, selectId, settingMode, variKindItem]
   );
 
   const onPaste = useCallback((e: any) => {
     const file = e.clipboardData.items[0].getAsFile() ?? undefined;
     if (file === undefined) return;
-    setFiles((current) => current.concat(file));
+
+    updateImageItemsByFiles(files.concat(file));
     setDropErea("");
-  }, []);
+  }, [files, edtImageItems, selectId, settingMode, variKindItem]);
 
   const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
     const newFiles = [...files];
     const [removed] = newFiles.splice(result.source.index, 1);
     newFiles.splice(result.destination.index, 0, removed);
 
-    setFiles(newFiles);
-
-    // edtImageItems の該当行も更新
-    const updated = edtImageItems.map((row, idx) =>
-      idx === selectIndex ? [row[0], ...newFiles] : row
-    );
-
-    setEdtImageItems(updated);
-
-    onChangeShopImage({
-      edtImageItems: updated,
-    });
-
-    setIsImageEdited(true);
+    updateImageItemsByFiles(newFiles);
   };
 
   const handleClick = (src: string, type: number, fileName: string) => {
@@ -357,7 +367,6 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
 
   // ダイアログを閉じるときの処理
   const handleClose = () => {
-    // バリエーションが1つだけなら sales_price を更新する
     const updatedSalesPrice = variItems.length === 1 ? Number(salesPriceInput) : preState.sales_price;
 
     onChangeShopImage({
@@ -367,6 +376,7 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
       explanation_details: exDetailsInput,
       isImageEdited,
       edtImageItems,
+      variChangeItem: variChangeItemState,
     });
 
     onClickCancel();
@@ -374,16 +384,13 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
 
   // YouTubeのURLを埋め込み動画に変換
   const toEmbedUrl = (url: string): string => {
-    // iframe タグが貼られた場合
     const iframeMatch = url.match(/src="([^"]+)"/);
     if (iframeMatch) {
       return iframeMatch[1];
     }
 
-    // すでに embed URL の場合
     if (url.includes("youtube.com/embed/")) return url;
 
-    // watch?v= の通常 URL
     const watchMatch = url.match(/v=([^&]+)/);
     if (watchMatch) {
       const videoId = watchMatch[1];
@@ -393,14 +400,12 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
         : `https://www.youtube.com/embed/${videoId}`;
     }
 
-    // youtu.be の短縮 URL
     const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
     if (shortMatch) {
       const videoId = shortMatch[1];
       return `https://www.youtube.com/embed/${videoId}`;
     }
 
-    // どれにも当てはまらない場合はそのまま返す
     return url;
   };
 
@@ -409,256 +414,139 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
     if (movieUrl.trim() === "") return;
 
     const embedUrl = toEmbedUrl(movieUrl);
-
-    setFiles((current) => current.concat(embedUrl));
+    updateImageItemsByFiles(files.concat(embedUrl));
     setMovieUrl("");
-
-    if (Array.isArray(edtImageItems)) {
-      const index = edtImageItems.findIndex(
-        (item: any) => item[0] === selectId
-      );
-      if (index !== -1) {
-        const originalItem = edtImageItems[index];
-        const updatedItem = [
-          originalItem[0],
-          ...originalItem.slice(1),
-          embedUrl,
-        ];
-        const updatedMatrix = edtImageItems.map(
-          (item: any, idx: number) =>
-            idx === index ? updatedItem : item
-        );
-        setEdtImageItems(updatedMatrix);
-        onChangeShopImage({ edtImageItems: updatedMatrix, });
-      } else {
-        const newItem = [selectId, embedUrl];
-        setEdtImageItems([...edtImageItems, newItem]);
-      }
-    } else {
-      const newItem = [selectId, embedUrl];
-      setEdtImageItems([newItem]);
-    }
-
-    setIsImageEdited(true);
   };
 
   const removeFileByName = (targetName: string) => {
-    // 現在選択中のバリエーションID
-    const variId = selectId;
-
-    edtImageItems.map((item: any, index: number) => {
-      if (item[0] === variId) {
-        let delFile = [];
-
-        if (targetName.includes("blob:")) {
-          delFile = item.filter((file: any) => {
-            if (file instanceof File) {
-              const blobUrl = URL.createObjectURL(file);
-              return blobUrl !== targetName;
-            }
-            return true;
-          });
-        } else {
-          delFile = item.filter((file: any) => file !== targetName);
+    const newFiles = files.filter((file: any) => {
+      if (targetName.includes("blob:")) {
+        if (file instanceof File) {
+          const blobUrl = URL.createObjectURL(file);
+          return blobUrl !== targetName;
         }
-
-        const updatedMatrix = edtImageItems.map((row, idx) =>
-          idx === index ? delFile : row
-        );
-
-        setEdtImageItems(updatedMatrix);
-        onChangeShopImage({ edtImageItems: updatedMatrix });
-        setFiles(delFile.slice(1));
-        setSelectImageSrc("");
-        setIsImageEdited(true);
+        return true;
       }
+
+      return file !== targetName;
     });
+
+    updateImageItemsByFiles(newFiles);
+    setSelectImageSrc("");
+  };
+
+  const clickCommonSetting = () => {
+    setSettingMode("common");
+
+    const commonPrice =
+      variKindItem[0]?.[6] != null && variKindItem[0]?.[6] !== ""
+        ? variKindItem[0][6]
+        : preState.sales_price ?? "";
+
+    setSalesPriceInput(String(commonPrice));
+    setPoint(commonPrice !== "" ? String(Math.floor(Number(commonPrice) / 100)) : "0");
+
+    const firstRow = edtImageItems.find((row: any) => row[0] === variKindItem[0]?.[0]);
+    setFiles(normalizeImageFiles(firstRow));
+    setSelectImageSrc("");
+    setSelectImageType(-1);
   };
 
   const clickVariItem = (index: number) => {
-
+    setSettingMode("variation");
     setSelectIndex(index);
     setSalesPriceInput(variKindItem[index][6]);
     setSelectId(variKindItem[index][0]);
 
-    // ポイントの算出
     const price = variKindItem[index][6];
-    if (price !== "")
+    if (price !== "") {
       setPoint(String(Math.floor(Number(price) / 100)));
-    else setPoint("0");
+    } else {
+      setPoint("0");
+    }
 
-    // プレビューの初期化
     setSelectImageSrc("");
     setSelectImageType(-1);
 
-    // サムネイルの差し替え
     const variId = variKindItem[index][0];
     const row = edtImageItems.find(r => r[0] === variId);
-    
-    if (Array.isArray(row)) {
-      const newFiles = row.slice(1).map((fileName: any) => {
-        if (fileName instanceof File) return fileName;
-        
-        if (typeof fileName === "string") {
-          if (fileName.includes("youtube.com/embed")) return fileName;
-          if (fileName.startsWith("/images/")) return fileName;
-          return `/images/${fileName}`;
-        }
-
-        return fileName;
-      });
-      
-      setFiles(newFiles);
-    } else {
-      setFiles([]);
-    }
+    setFiles(normalizeImageFiles(row));
   };
 
   const Image = ({ file }: Props) => {
     const fileType = typeof file;
     const isBlobLike = file instanceof Blob;
 
-    // Blob（アップロードファイル）の場合
-    if (fileType === 'object' && isBlobLike && typeof file !== 'string') {
-      const isVideo = typeof file.type === 'string' && file.type.indexOf('video') !== -1;
+    if (fileType === "object" && isBlobLike && typeof file !== "string") {
+      const isVideo = typeof file.type === "string" && file.type.indexOf("video") !== -1;
       const src = useMemo(() => URL.createObjectURL(file), [file]);
 
-      // 画像
       if (!isVideo) {
         return (
-          <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center" }}>
             <img key={src} src={src} onClick={() => handleClick(src, -1, file.name)} alt={file.name} />
           </div>
         );
       }
 
-      // 動画
       return (
-        <div
-          style={{
-            height: '80px',
-            width: '80px',
-            margin: '10px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            position: 'relative'
-          }}
-        >
-          {/* クリック検知用オーバーレイ（動画の上に透明で重ねる） */}
+        <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
           <div
             onClick={() => handleClick(src, 1, file.name)}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              cursor: 'pointer',
-              zIndex: 2
-            }}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 2 }}
           />
 
-          {/* 動画本体（pointerEvents: none を付ける） */}
-          <video
-            muted
-            style={{
-              pointerEvents: 'none',
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
-          >
+          <video muted style={{ pointerEvents: "none", width: "100%", height: "100%", objectFit: "cover" }}>
             <source src={src} type="video/mp4" />
           </video>
         </div>
       );
     }
 
-    // 文字列パス（/images/... や YouTube）
     const src = String(file);
     const lower = src.toLowerCase();
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].some(ext => lower.includes(ext));
-    const isVideo = ['mp4', 'mov'].some(ext => lower.includes(ext));
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].some(ext => lower.includes(ext));
+    const isVideo = ["mp4", "mov"].some(ext => lower.includes(ext));
 
-    if (src !== '') {
-      // 画像
+    if (src !== "") {
       if (isImage) {
         return (
-          <div style={{ height: '80px', width: '80px', margin: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <img key={src} src={src} onClick={() => handleClick(src, -1, '')} />
+          <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <img key={src} src={src} onClick={() => handleClick(src, -1, "")} />
           </div>
         );
       }
 
-      // 動画
       if (isVideo) {
         return (
-          <div
-            style={{
-              height: '80px',
-              width: '80px',
-              margin: '10px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              position: 'relative'
-            }}
-          >
-            {/* クリック検知用オーバーレイ */}
+          <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
             <div
-              onClick={() => handleClick(src, 1, '')}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                cursor: 'pointer',
-                zIndex: 2
-              }}
+              onClick={() => handleClick(src, 1, "")}
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 2 }}
             />
 
-            {/* 動画本体 */}
-            <video
-              muted
-              style={{
-                pointerEvents: 'none',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-            >
+            <video muted style={{ pointerEvents: "none", width: "100%", height: "100%", objectFit: "cover" }}>
               <source src={src} type="video/mp4" />
             </video>
           </div>
         );
       }
 
-      // YouTube
       return (
-        <div style={{ margin: '10px', position: 'relative' }}>
+        <div style={{ margin: "10px", position: "relative" }}>
           <iframe
             width="80px"
             height="80px"
             src={src}
-            style={{ pointerEvents: 'none' }}
+            style={{ pointerEvents: "none" }}
             title="YouTube video player"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
           />
           <div
-            onClick={() => handleClick(src, 2, '')}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              cursor: 'pointer',
-              zIndex: 10
-            }}
+            onClick={() => handleClick(src, 2, "")}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 10 }}
           />
         </div>
       );
@@ -666,8 +554,18 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
 
     return null;
   };
-  
+
   const hasVisibleFiles = Array.isArray(files) && files.filter(Boolean).length > 0;
+
+  const getTargetVariationIds = () => {
+    if (!isCommonMode) {
+      return [selectId];
+    }
+
+    return variKindItem
+      .map((row: any) => row[0])
+      .filter((id: any) => !individualEditedIds.includes(id));
+  };
 
   return (
     <DialogWrapper
@@ -677,24 +575,55 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
       onClickCancel={handleClose}
     >
       <div id="shop-image">
+        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+          <button
+            type="button"
+            onClick={clickCommonSetting}
+            style={{
+              padding: "6px 18px",
+              border: "1px solid #a0aec0",
+              backgroundColor: isCommonMode ? "#a6a014" : "#ffffff",
+              color: isCommonMode ? "#ffffff" : "#333333",
+            }}
+          >
+            共通設定
+          </button>
+          <button
+            type="button"
+            onClick={() => clickVariItem(selectIndex)}
+            style={{
+              padding: "6px 18px",
+              border: "1px solid #a0aec0",
+              backgroundColor: !isCommonMode ? "#a6a014" : "#ffffff",
+              color: !isCommonMode ? "#ffffff" : "#333333",
+            }}
+          >
+            バリエーション別設定
+          </button>
+          <div style={{ display: "flex", alignItems: "center", color: "#666666", fontSize: "13px" }}>
+            {isCommonMode
+              ? "共通設定で追加した画像・価格は全バリエーションに反映されます。"
+              : "選択中のバリエーションだけに画像・価格を反映します。"}
+          </div>
+        </div>
+
         <div id="input-area">
-          
           <div id="image-area">
-            <button className="btn-delete"
-                    style={{ marginLeft:'495px', marginBottom:'5px', height: '26px', paddingTop: '0px', paddingBottom: '0px', whiteSpace: "nowrap"}}
-                    onClick={() => removeFileByName(selectImageSrc)}>
+            <button
+              className="btn-delete"
+              style={{ marginLeft: "495px", marginBottom: "5px", height: "26px", paddingTop: "0px", paddingBottom: "0px", whiteSpace: "nowrap" }}
+              onClick={() => removeFileByName(selectImageSrc)}
+            >
               削除
             </button>
 
             <div id="main-img">
-              {/* 画像がまだ選択されていない場合 */}
               {!selectImageSrc ? (
                 <div className="no-image-message">
                   画像を選択してください
                 </div>
               ) : (
                 <>
-                  {/* 画像 */}
                   {selectImageType === -1 && (
                     <img
                       key={selectImageType}
@@ -703,7 +632,6 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
                     />
                   )}
 
-                  {/* YouTube */}
                   {selectImageType === 2 && clicked && (
                     <iframe
                       key={selectImageType}
@@ -716,7 +644,6 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
                     />
                   )}
 
-                  {/* mp4 動画 */}
                   {selectImageType === 1 && (
                     <video className="preview-content" controls muted>
                       <source src={selectImageSrc} type="video/mp4" />
@@ -727,88 +654,88 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
             </div>
 
             <div className="image-input-erea">
-  <input
-    type="file"
-    style={{ display: 'none' }}
-    ref={attachRef}
-    multiple
-    onChange={handleInpuFileChange}
-  />
-  <div
-    style={{
-      height: '115px',
-      width: '550px',
-      position: 'relative',
-      border: '1px dashed #c9d7e8',
-      borderRadius: '6px',
-      backgroundColor: '#fafcff',
-    }}
-    tabIndex={0}
-    onDragEnter={onDragEnter}
-    onDragLeave={onDragLeave}
-    onDragOver={onDragOver}
-    onDrop={onDrop}
-    onPaste={onPaste}
-  >
-    {!hasVisibleFiles && (
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 10,
-          pointerEvents: 'none',
-          fontSize: '20px',
-          fontWeight: 600,
-          color: '#6f88a8',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        ここにドロップ
-      </div>
-    )}
-
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable key={'droppable'} droppableId="droppable" direction="horizontal">
-        {(provided) => (
-          <div
-            key={'scllowDiv'}
-            className="scllowDiv"
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              overflowX: 'auto',
-            }}
-          >
-            {files.map((f, index) => (
-              <Draggable key={String(index)} draggableId={String(index)} index={index}>
-                {(provided) => (
+              <input
+                type="file"
+                style={{ display: "none" }}
+                ref={attachRef}
+                multiple
+                onChange={handleInpuFileChange}
+              />
+              <div
+                style={{
+                  height: "115px",
+                  width: "550px",
+                  position: "relative",
+                  border: "1px dashed #c9d7e8",
+                  borderRadius: "6px",
+                  backgroundColor: "#fafcff",
+                }}
+                tabIndex={0}
+                onDragEnter={onDragEnter}
+                onDragLeave={onDragLeave}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+                onPaste={onPaste}
+              >
+                {!hasVisibleFiles && (
                   <div
-                    key={index}
-                    style={{ display: 'flex' }}
-                    {...provided.draggableProps}
-                    ref={provided.innerRef}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      zIndex: 10,
+                      pointerEvents: "none",
+                      fontSize: "20px",
+                      fontWeight: 600,
+                      color: "#6f88a8",
+                      whiteSpace: "nowrap",
+                    }}
                   >
-                    <div {...provided.dragHandleProps}>
-                      <Image file={f} />
-                    </div>
+                    ここにドロップ
                   </div>
                 )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
-  </div>
-</div>
+
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable key="droppable" droppableId="droppable" direction="horizontal">
+                    {(provided) => (
+                      <div
+                        key="scllowDiv"
+                        className="scllowDiv"
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          zIndex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          overflowX: "auto",
+                        }}
+                      >
+                        {files.map((f, index) => (
+                          <Draggable key={String(index)} draggableId={String(index)} index={index}>
+                            {(provided) => (
+                              <div
+                                key={index}
+                                style={{ display: "flex" }}
+                                {...provided.draggableProps}
+                                ref={provided.innerRef}
+                              >
+                                <div {...provided.dragHandleProps}>
+                                  <Image file={f} />
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </div>
+            </div>
           </div>
 
           <div id="item-info">
@@ -835,35 +762,36 @@ const buildInitialImageMatrix = (variItems: any[][], preImageList: any[] = []) =
                 YouTubeリンク
               </div>
               <div className="movie-add-area" style={{ display: "flex", gap: "10px" }}>
-                <input value={movieUrl} onChange={(event) => setMovieUrl(event.target.value)}
-                  style={{ width: "450px", backgroundColor: 'transparent', border: '1px solid #c9d7e8f8', paddingLeft: '8px', paddingRight: '8px' }}
+                <input
+                  value={movieUrl}
+                  onChange={(event) => setMovieUrl(event.target.value)}
+                  style={{ width: "450px", backgroundColor: "transparent", border: "1px solid #c9d7e8f8", paddingLeft: "8px", paddingRight: "8px" }}
                 />
-                <button style={{ width: "80px", backgroundColor: "#c9d7e8f8", border: "1px solid #a0aec0", }} onClick={addMovie}>
+                <button
+                  style={{ width: "80px", backgroundColor: "#c9d7e8f8", border: "1px solid #a0aec0" }}
+                  onClick={addMovie}
+                >
                   追加
                 </button>
               </div>
             </div>
           </div>
 
-          <div style={{ marginLeft: '60px', marginTop: '10px' }}>
+          <div style={{ marginLeft: "60px", marginTop: "10px" }}>
             {variKindItem.map((item: any, index: number) => {
               if (!item[1] && !item[2] && !item[3] && !item[4]) return null;
-              const varis =
-                item[1] +
-                (item[2] !== '' && item[2] !== null ? ' / ' + item[2] : '') +
-                (item[3] !== '' && item[3] !== null ? ' / ' + item[3] : '') +
-                (item[4] !== '' && item[4] !== null ? ' / ' + item[4] : '');
+
               return (
-                <div key={'vari-area-key' + index}>
+                <div key={"vari-area-key" + index}>
                   <button
                     id="vari-area"
                     onClick={() => clickVariItem(index)}
                     style={{
-                      backgroundColor: index === selectIndex ? "#a6a014" : "",
-                      color: index === selectIndex ? "#ffffff" : "#c2c2c2",
+                      backgroundColor: !isCommonMode && index === selectIndex ? "#a6a014" : "",
+                      color: !isCommonMode && index === selectIndex ? "#ffffff" : "#c2c2c2",
                     }}
                   >
-                    {varis}
+                    {getVariationLabel(item)}
                   </button>
                 </div>
               );
