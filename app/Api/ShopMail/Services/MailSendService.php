@@ -39,8 +39,8 @@ class MailSendService
             $tpl = DB::table('m_mail_templates')->where('id', $templateId)->whereNull('deleted_at')->first();
             if (!$tpl) return ['ok' => false, 'message' => 'テンプレートが存在しません'];
 
-            $subject = trim((string)($tpl->subject_template ?? ''));
-            $subject = $subject !== '' ? $subject : trim((string)($payload['subject'] ?? ''));
+            $payloadSubject = trim((string)($payload['subject'] ?? ''));
+            $subject = $payloadSubject !== '' ? $payloadSubject : trim((string)($tpl->subject_template ?? ''));
             if ($subject === '') $subject = '（件名未設定）';
 
             // テキスト版（履歴保存用）
@@ -190,10 +190,15 @@ class MailSendService
         ]);
 
         $paymentUrl = trim((string)($payload['payment_url'] ?? ''));
+        $payloadBody = trim((string)($payload['body_text'] ?? ($payload['body'] ?? '')));
 
         $parts = [];
-        $head = rtrim((string)($tpl->header_template ?? ''));
-        if ($head !== '') $parts[] = $head;
+        if ($payloadBody !== '') {
+            $parts[] = $payloadBody;
+        } else {
+            $head = rtrim((string)($tpl->header_template ?? ''));
+            if ($head !== '') $parts[] = $head;
+        }
 
         if ($includeDetails) {
             $parts[] = $this->renderOrderDetailsTextBySettings($receiveOrderId);
@@ -208,8 +213,10 @@ class MailSendService
             $parts[] = $shippingText;
         }
 
-        $foot = rtrim((string)($tpl->footer_template ?? ''));
-        if ($foot !== '') $parts[] = $foot;
+        if ($payloadBody === '') {
+            $foot = rtrim((string)($tpl->footer_template ?? ''));
+            if ($foot !== '') $parts[] = $foot;
+        }
 
         return trim(implode("\n\n", array_filter($parts, fn($v) => trim((string)$v) !== '')));
     }
@@ -221,14 +228,19 @@ class MailSendService
             : ((int)($tpl->detail_mode ?? 0) === 1);
 
         $paymentUrl = trim((string)($payload['payment_url'] ?? ''));
+        $payloadBody = trim((string)($payload['body_text'] ?? ($payload['body'] ?? '')));
 
         $mono = "font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;";
 
         $partsHtml = [];
 
-        $head = rtrim((string)($tpl->header_template ?? ''));
-        if ($head !== '') {
-            $partsHtml[] = '<pre style="' . $mono . ' white-space:pre; line-height:1.6;">' . $this->escapeForPre($head) . '</pre>';
+        if ($payloadBody !== '') {
+            $partsHtml[] = '<pre style="' . $mono . ' white-space:pre; line-height:1.6;">' . $this->escapeForPre($payloadBody) . '</pre>';
+        } else {
+            $head = rtrim((string)($tpl->header_template ?? ''));
+            if ($head !== '') {
+                $partsHtml[] = '<pre style="' . $mono . ' white-space:pre; line-height:1.6;">' . $this->escapeForPre($head) . '</pre>';
+            }
         }
 
         if ($includeDetails) {
@@ -245,9 +257,11 @@ class MailSendService
             $partsHtml[] = '<pre style="' . $mono . ' white-space:pre; line-height:1.6;">' . $this->escapeForPre($shippingText) . '</pre>';
         }
 
-        $foot = rtrim((string)($tpl->footer_template ?? ''));
-        if ($foot !== '') {
-            $partsHtml[] = '<pre style="' . $mono . ' white-space:pre; line-height:1.6;">' . $this->escapeForPre($foot) . '</pre>';
+        if ($payloadBody === '') {
+            $foot = rtrim((string)($tpl->footer_template ?? ''));
+            if ($foot !== '') {
+                $partsHtml[] = '<pre style="' . $mono . ' white-space:pre; line-height:1.6;">' . $this->escapeForPre($foot) . '</pre>';
+            }
         }
 
         return implode("\n", array_filter($partsHtml, fn($v) => trim((string)$v) !== ''));

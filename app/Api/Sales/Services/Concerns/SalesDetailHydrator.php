@@ -177,6 +177,14 @@ trait SalesDetailHydrator
             'd.*',
         ];
 
+        if ($hasItems) {
+            foreach (['shipping_pay', 'is_shipping_fee', 'additional_shipping_fee'] as $col) {
+                if ($this->hasColumnSafe($itemTable, $col)) {
+                    $select[] = "i.{$col}";
+                }
+            }
+        }
+
         // -----------------------------
         // 品番：d.item_number が NULL/空なら i.item_number（or i.code）を採用
         // -----------------------------
@@ -283,6 +291,9 @@ trait SalesDetailHydrator
                 'rd.amount',
                 'rd.sales_tax_rate',
                 'rd.sales_tax',
+                'i.shipping_pay',
+                'i.is_shipping_fee',
+                'i.additional_shipping_fee',
 
                 // ★追加：受注明細の割引
                 DB::raw($discountExpr),

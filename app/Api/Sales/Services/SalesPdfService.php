@@ -136,6 +136,7 @@ class SalesPdfService
     $d = new Collection($data);
     $cnt = 0;
     if ((float)$d->get('shipping_amount', 0) > 0) $cnt++;
+    if ((float)$d->get('additional_shipping_amount', 0) > 0) $cnt++;
     if ((float)$d->get('fee', 0) > 0)             $cnt++;
     return $cnt;
   }
@@ -203,25 +204,28 @@ class SalesPdfService
     }
 
     // -----------------------------
-    // 宛先（郵便番号・氏名・TEL/FAX）を確実に埋める
-    // - 旧実装ではヘッダ直下に入っていたが、現行は customer_data 側に入るケースがあるため吸収
+    // 宛先（ship_to_* / ヘッダ / 得意先マスタの順で吸収）
     // -----------------------------
-  // 郵便番号（ship_to_* 優先、旧キーも保険で吸収）
-  $zip = (string)($data->get('ship_to_zip_code', '') ?: $data->get('zip_code', ''));
-  $this->pdf->SetFontSize(13);
-  $this->pdf->Text(23, $base_y + 14.3, "〒" . $zip);
+    $zip = $this->pickFirstNonEmpty([$data, $customer], ['ship_to_zip_code', 'zip_code', 'zipcode']);
+    $address1 = $this->pickFirstNonEmpty([$data, $customer], ['ship_to_address1', 'address1']);
+    $address2 = $this->pickFirstNonEmpty([$data, $customer], ['ship_to_address2', 'address2', 'number']);
+    $toName = $this->pickFirstNonEmpty([$data, $customer], ['ship_to_name', 'name', 'customer_name']);
+    $tel = $this->pickFirstNonEmpty([$data, $customer], ['ship_to_tel', 'tel', 'phone', 'tel_phone']);
+    $fax = $this->pickFirstNonEmpty([$data, $customer], ['fax']);
 
-  // 宛先
-  $toName = (string)($data->get('ship_to_name', '') ?: $data->get('name', ''));
-  $this->pdf->SetFontSize(13);
-  $this->pdf->Text(23, $base_y + 23.7, $toName . "　様");
+    $this->pdf->SetFontSize(12);
+    $this->pdf->Text(23, $base_y + 14.3, "〒" . $zip);
 
-  // TEL / FAX
-  $tel = (string)($data->get('ship_to_tel', '') ?: $data->get('tel', ''));
-  $fax = (string)($data->get('fax', '') ?: ''); // ship_to_fax は無い
-  $this->pdf->SetFontSize(10);
-  $this->pdf->Text(23, $base_y + 34.1, 'TEL ' . $tel);
-  $this->pdf->Text(58.2, $base_y + 34.1, 'FAX ' . $fax);
+    $this->pdf->SetFontSize(9);
+    $this->pdf->Text(23, $base_y + 18.5, $address1);
+    $this->pdf->Text(23, $base_y + 22.5, $address2);
+
+    $this->pdf->SetFontSize(13);
+    $this->pdf->Text(23, $base_y + 28.5, $toName . "　様");
+
+    $this->pdf->SetFontSize(10);
+    $this->pdf->Text(23, $base_y + 34.1, 'TEL ' . $tel);
+    $this->pdf->Text(58.2, $base_y + 34.1, 'FAX ' . $fax);
 
     // タイトル
     $this->pdf->SetFontSize(18);
@@ -283,22 +287,27 @@ class SalesPdfService
     $branch_name    = (string)$config->get('branch_name1', '');
     $account_type   = (string)$config->get('account_type1', '');
     $account_number = (string)$config->get('account_number1', '');
+    $account_name   = (string)$config->get('account_name1', '');
     if (intval($customer->get('bank_class', 1)) === 2) {
       $bank_name      = (string)$config->get('bank_name2', '');
       $branch_name    = (string)$config->get('branch_name2', '');
       $account_type   = (string)$config->get('account_type2', '');
       $account_number = (string)$config->get('account_number2', '');
+      $account_name   = (string)$config->get('account_name2', '');
     }
-    $this->pdf->Text(124, $base_y + 44, $bank_name . $branch_name);
-    $this->pdf->Text(159.78, $base_y + 44, $account_type);
-    $this->pdf->Text(176.61, $base_y + 44, $account_number);
+    $this->pdf->SetFontSize(8);
+    $this->pdf->Text(124, $base_y + 44, mb_strimwidth($bank_name . $branch_name, 0, 42));
+    $this->pdf->Text(170, $base_y + 44, trim($account_type . ' ' . $account_number));
+    $this->pdf->SetXY(124, $base_y + 46.5);
+    $this->pdf->MultiCell(72, 3, '名義：' . $account_name, 0, 'L');
 
-    $this->pdf->rect(155, $base_y + 49, 45, 12.8);
-    $this->pdf->lineH(159, $base_y + 49, 12.8);
-    $this->pdf->lineH(173, $base_y + 49, 12.8);
-    $this->pdf->lineH(187, $base_y + 49, 12.8);
-    $this->pdf->Text(154.5, $base_y + 51.5, "検");
-    $this->pdf->Text(154.5, $base_y + 55.5, "印");
+    $stampY = $base_y + 52.2;
+    $this->pdf->rect(155, $stampY, 45, 9.4);
+    $this->pdf->lineH(159, $stampY, 9.4);
+    $this->pdf->lineH(173, $stampY, 9.4);
+    $this->pdf->lineH(187, $stampY, 9.4);
+    $this->pdf->Text(154.5, $stampY + 3, "検");
+    $this->pdf->Text(154.5, $stampY + 6.6, "印");
 
     $this->pdf->SetFontSize(8);
     $this->pdf->Text(23, $base_y + 54.6, "お客様コードNo." . (string)$data->get('user_id', ''));
@@ -454,15 +463,6 @@ class SalesPdfService
       $this->pdf->SetXY(self::X_DISC_R, $y + 2.5);
       $this->pdf->Cell(self::X_AMOUNT_R - self::X_DISC_R, 5.7, number_format((float)$row->get('amount', 0), 0), 0, 0, "R");
 
-      // 販売上代（元の中身：税込 + （税額））
-      $this->pdf->SetFontSize(7);
-      $this->pdf->SetXY(self::X_AMOUNT_R, $y + 0.5);
-      $this->pdf->Cell(self::X_TBL_R - self::X_AMOUNT_R, 4.35, "税込", 0, 0, "L");
-
-      $this->pdf->SetFontSize(7);
-      $this->pdf->SetXY(self::X_AMOUNT_R, $y + 3.85);
-      $this->pdf->Cell(self::X_TBL_R - self::X_AMOUNT_R, 4.35, '（' . number_format((float)$row->get('sales_tax', 0), 0) . '）', 0, 0, "R");
-
       $rowIndex++;
     }
 
@@ -480,6 +480,7 @@ class SalesPdfService
 
       // 送料/代引は、明細の次の行から「小計行の直前」までに積む
       $shipping_amount = (float)$data->get('shipping_amount', 0);
+      $additional_shipping_amount = (float)$data->get('additional_shipping_amount', 0);
       $fee             = (float)$data->get('fee', 0);
 
       $extraRowIndex = $rowIndex; // 明細の次の空き行
@@ -495,6 +496,19 @@ class SalesPdfService
         $this->pdf->SetFontSize(11);
         $this->pdf->SetXY(self::X_DISC_R, $y + 2.5);
         $this->pdf->Cell(self::X_AMOUNT_R - self::X_DISC_R, 5.7, number_format($shipping_amount, 0), 0, 0, "R");
+
+        $extraRowIndex++;
+      }
+
+      if ($additional_shipping_amount > 0 && $extraRowIndex < $limitRowIndex) {
+        $y = $this->rowY($base_y, $extraRowIndex);
+        $this->pdf->SetFontSize(9);
+        $this->pdf->SetXY(self::X_TBL_L, $y + 4.35);
+        $this->pdf->Cell(self::X_ITEM_R - self::X_TBL_L, 4.35, "別途追加送料");
+
+        $this->pdf->SetFontSize(11);
+        $this->pdf->SetXY(self::X_DISC_R, $y + 2.5);
+        $this->pdf->Cell(self::X_AMOUNT_R - self::X_DISC_R, 5.7, number_format($additional_shipping_amount, 0), 0, 0, "R");
 
         $extraRowIndex++;
       }
@@ -547,7 +561,9 @@ class SalesPdfService
     // -----------------------------
     $this->pdf->SetFontSize(9);
     $this->pdf->Text(23, $base_y + 137.9, "摘要：");
-    // remarks は印字しない
+    if ($page === $max_page) {
+      $this->writeEcNotices($data, $base_y);
+    }
 
     // -----------------------------
     // 合計欄（従来どおり）
@@ -578,6 +594,21 @@ class SalesPdfService
     }
 
     unset($discountPrinted);
+  }
+
+  private function writeEcNotices(Collection $data, int $base_y): void
+  {
+    $ecNotices = $data->get('ec_notices', []);
+    if (!is_array($ecNotices)) {
+      $ecNotices = (array)$ecNotices;
+    }
+    if (empty($ecNotices)) {
+      return;
+    }
+
+    $this->pdf->SetFontSize(6.5);
+    $this->pdf->SetXY(36, $base_y + 137.2);
+    $this->pdf->MultiCell(67, 2.6, "EC情報: " . implode("\n", array_slice($ecNotices, 0, 4)));
   }
 
   private function getFileId(string $prefix)

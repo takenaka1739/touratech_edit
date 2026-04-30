@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 受注データサービス
@@ -74,8 +75,77 @@ class ReceiveOrderService
 
     $data = $row->toArray();
     $data['details'] = $this->getDetails($receive_order_id);
+    $data['square_card'] = $this->getSquareCard($row->customer_payment_id ?? null);
+    $data['square_payment_attempts'] = $this->getSquarePaymentAttempts($receive_order_id);
 
     return $data;
+  }
+
+  private function getSquareCard($customer_payment_id): ?array
+  {
+    if (!$customer_payment_id || !Schema::hasTable('t_customer_payments')) {
+      return null;
+    }
+
+    $row = DB::table('t_customer_payments')
+      ->select([
+        'id',
+        'card_company',
+        'last_four_digit',
+        'month',
+        'year',
+        'account_name',
+      ])
+      ->where('id', $customer_payment_id)
+      ->whereNull('deleted_at')
+      ->first();
+
+    if (!$row) {
+      return null;
+    }
+
+    return [
+      'id' => (int)$row->id,
+      'brand' => $row->card_company,
+      'last4' => $row->last_four_digit,
+      'expiry' => sprintf('%02d/%04d', (int)$row->month, (int)$row->year),
+      'account_name' => $row->account_name,
+    ];
+  }
+
+  private function getSquarePaymentAttempts(int $receive_order_id): array
+  {
+    if (!Schema::hasTable('t_receive_order_square_payment_attempts')) {
+      return [];
+    }
+
+    return DB::table('t_receive_order_square_payment_attempts')
+      ->select([
+        'id',
+        'square_payment_id',
+        'square_status',
+        'amount',
+        'currency',
+        'error_code',
+        'error_message',
+        'attempted_at',
+      ])
+      ->where('receive_order_id', $receive_order_id)
+      ->orderByDesc('attempted_at')
+      ->orderByDesc('id')
+      ->limit(5)
+      ->get()
+      ->map(fn($row) => [
+        'id' => (int)$row->id,
+        'square_payment_id' => $row->square_payment_id,
+        'square_status' => $row->square_status,
+        'amount' => $row->amount !== null ? (float)$row->amount : null,
+        'currency' => $row->currency,
+        'error_code' => $row->error_code,
+        'error_message' => $row->error_message,
+        'attempted_at' => $row->attempted_at,
+      ])
+      ->all();
   }
 
   public function newData()
@@ -83,6 +153,7 @@ class ReceiveOrderService
     $m = new ReceiveOrder();
     $m->receive_order_date = Carbon::today()->format('Y/m/d');
     $m->shipping_amount = null;
+    $m->additional_shipping_amount = null;
     $m->fee = null;
     $m->total_amount = null;
     $data = $m->toArray();
@@ -104,27 +175,29 @@ class ReceiveOrderService
 
   public function store(array $input)
   {
-    $data = new Collection($input);
-    return DB::transaction(function () use ($data) {
+    $data = $this->prepareHeaderData(new Collection($input));
+
+    $id = DB::transaction(function () use ($data) {
       $m = ReceiveOrder::create($data->toArray());
 
-      // 見積受注連結テーブルを登録する
       $estimate_id = $data->get('estimate_id');
       if ($estimate_id) {
         $this->insertEstimateReceiveOrder($estimate_id, $m->id);
       }
 
-      // 明細を登録する
       $details = $data->get('details');
       $this->insertDetails($m->id, $details, $estimate_id);
 
       return $m->id;
     });
+
+    return $this->get($id);
   }
 
   public function update(int $receive_order_id, array $input)
   {
-    $data = new Collection($input);
+    $data = $this->prepareHeaderData(new Collection($input));
+
     DB::transaction(function () use ($receive_order_id, $data) {
       $m = ReceiveOrder::find($receive_order_id);
       $m->receive_order_date = $data->get('receive_order_date');
@@ -141,6 +214,9 @@ class ReceiveOrderService
       $m->corporate_class = $data->get('corporate_class');
       $m->user_id = $data->get('user_id');
       $m->shipping_amount = $data->get('shipping_amount');
+      if (Schema::hasColumn('t_receive_orders', 'additional_shipping_amount')) {
+        $m->additional_shipping_amount = $data->get('additional_shipping_amount');
+      }
       $m->fee = $data->get('fee');
       $m->discount = $data->get('discount');
       $m->total_amount = $data->get('total_amount');
@@ -153,6 +229,17 @@ class ReceiveOrderService
       $details = $data->get('details');
       $this->updateDetails($receive_order_id, $details);
     });
+
+    return $this->get($receive_order_id);
+  }
+
+  private function prepareHeaderData(Collection $data): Collection
+  {
+    if (!Schema::hasColumn('t_receive_orders', 'additional_shipping_amount')) {
+      $data->forget('additional_shipping_amount');
+    }
+
+    return $data;
   }
 
   public function validate_delete(int $receive_order_id)
@@ -175,6 +262,7 @@ class ReceiveOrderService
   {
     $config = Config::getSelf();
     $data['config_data'] = $config->toArray();
+    $data['user_name'] = Auth::user()?->name ?? ($data['user_name'] ?? '');
 
     $customer = Customer::find($data['customer_id']);
     $data['customer_bank_class'] = $customer ? $customer->bank_class : 1;
@@ -243,10 +331,15 @@ class ReceiveOrderService
 
   private function getDetails(int $receive_order_id)
   {
+    $salesQuantityGroups = ReceiveOrder::getSalesQuantityGroups($receive_order_id);
+
     return DB::table('t_receive_order_details')
       ->select([
         't_receive_order_details.*',
         'm_items.purchase_unit_price',
+        'm_items.shipping_pay',
+        'm_items.is_shipping_fee',
+        'm_items.additional_shipping_fee',
       ])
       ->join('m_items', 'm_items.id', '=', 't_receive_order_details.item_id')
       ->where('receive_order_id', $receive_order_id)
@@ -254,6 +347,15 @@ class ReceiveOrderService
       ->orderBy('receive_order_id')
       ->orderBy('no')
       ->get()
+      ->map(function ($detail) use ($salesQuantityGroups) {
+        $group = $salesQuantityGroups->get($detail->id);
+        $salesQuantity = $group ? (int) $group->sum('s_quantity') : 0;
+
+        $detail->sales_quantity = $salesQuantity;
+        $detail->is_sales_registered = $salesQuantity > 0;
+
+        return $detail;
+      })
       ->toArray();
   }
 

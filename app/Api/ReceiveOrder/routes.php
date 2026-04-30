@@ -26,6 +26,10 @@ Route::group([
   Route::post('{id}/square/complete', [ReceiveOrderSquareController::class, 'complete'])
       ->name('api.receive_order.square.complete');
 
+  // POST /api/receive_order/{id}/square/charge
+  Route::post('{id}/square/charge', [ReceiveOrderSquareController::class, 'charge'])
+      ->name('api.receive_order.square.charge');
+
   // POST /api/receive_order/{id}/square/cancel
   Route::post('{id}/square/cancel', [ReceiveOrderSquareController::class, 'cancel'])
       ->name('api.receive_order.square.cancel');

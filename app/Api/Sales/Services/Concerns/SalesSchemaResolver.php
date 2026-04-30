@@ -68,6 +68,19 @@ trait SalesSchemaResolver
     }
 
     /**
+     * 売上明細テーブルが持つ売上ヘッダへの外部キー名を返す。
+     */
+    private function salesDetailSalesKeyColumn(): string
+    {
+        $detailTable = $this->salesDetailTable();
+
+        if ($this->hasColumnSafe($detailTable, 'sale_id')) return 'sale_id';
+        if ($this->hasColumnSafe($detailTable, 'sales_id')) return 'sales_id';
+
+        return 'sale_id';
+    }
+
+    /**
      * 在庫カラム名を返す
      *
      * 要件:

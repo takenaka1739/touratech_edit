@@ -1,6 +1,6 @@
 // 更新: resources/ts/app/Inquiry/pages/InquiryReplyListPage.tsx
 import React, { useMemo, useState, useEffect } from 'react';
-import { Link, useLocation, useHistory } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { BoxConditions, TableWrapper, Forms } from '@/components';
 import { useComposing } from '@/uses';
@@ -59,21 +59,6 @@ type EcConditions = {
   cancel_status: string;
   order_state: string;
 };
-
-const TabButton: React.VFC<{
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}> = ({ active, onClick, children }) => (
-  <button
-    type="button"
-    className={`btn ${active ? 'btn-primary' : ''}`}
-    onClick={onClick}
-    style={{ minWidth: 180 }}
-  >
-    {children}
-  </button>
-);
 
 const toYmd = (v: any): string => {
   const s = (v ?? '').toString().trim();
@@ -304,18 +289,21 @@ const createInitialEcConditions = (): EcConditions => ({
 
 export const InquiryReplyListPage: React.VFC = () => {
   const slug = 'shop-mail';
-  const title = 'お問い合わせ一覧';
 
   const location = useLocation();
-  const history = useHistory();
 
   const initialTab = useMemo(() => {
+    if (location.pathname.startsWith('/inquiry_mail')) {
+      return 'ec';
+    }
+
     const params = new URLSearchParams(location.search);
     const t = params.get('tab');
     return t === 'ec' ? 'ec' : 'inquiry';
-  }, [location.search]);
+  }, [location.pathname, location.search]);
 
   const [tab, setTab] = useState<'inquiry' | 'ec'>(initialTab);
+  const title = tab === 'ec' ? 'EC購入メール履歴' : 'お問い合わせ一覧';
   const inquiry = useInquiryReplyListPage(slug);
 
   const [ecLoading, setEcLoading] = useState(false);
@@ -325,17 +313,14 @@ export const InquiryReplyListPage: React.VFC = () => {
 
   const { onCompositionStart, onCompositionEnd } = useComposing();
 
-  const changeTab = async (next: 'inquiry' | 'ec') => {
-    setTab(next);
-    history.replace(`/inquiry?tab=${next}`);
-
-    inquiry.onClickClearButton();
-    setEcConditions(createInitialEcConditions());
-
-    if (next === 'ec') {
-      await fetchEc(1, createInitialEcConditions());
+  useEffect(() => {
+    if (tab !== initialTab) {
+      setTab(initialTab);
+      if (initialTab === 'ec' && ecRows.length === 0) {
+        fetchEc(1);
+      }
     }
-  };
+  }, [initialTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchEc = async (page = 1, conditions?: EcConditions) => {
     const c = conditions ?? ecConditions;
@@ -521,15 +506,6 @@ export const InquiryReplyListPage: React.VFC = () => {
 
   return (
     <MailPageWrapper prefix={slug} title={title} breadcrumb={[{ name: title }]}>
-      <div className="flex gap-2 mb-2">
-        <TabButton active={tab === 'inquiry'} onClick={() => changeTab('inquiry')}>
-          問い合わせ
-        </TabButton>
-        <TabButton active={tab === 'ec'} onClick={() => changeTab('ec')}>
-          EC購入メール履歴
-        </TabButton>
-      </div>
-
       <BoxConditions
         onClickSearchButton={tab === 'inquiry' ? inquiry.onClickSearchButton : onClickEcSearch}
         onClickClearButton={tab === 'inquiry' ? inquiry.onClickClearButton : onClickEcClear}

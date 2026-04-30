@@ -17,4 +17,5 @@ export type ReceiveOrderStatus = {
   sales_completed: number;
   place_completed: number;
   answer_date: string | undefined;
+  mail_send_count?: number;
 };

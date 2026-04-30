@@ -14,11 +14,6 @@ class CouponStoreRequest extends CouponRequest
      */
     protected function failedValidation(Validator $validator)
     {
-        Log::warning('【クーポン登録バリデーションエラー】', [
-            'input'  => $this->all(),
-            'errors' => $validator->errors()->toArray(),
-        ]);
-
         // JSON で 422 を返す（必要に応じてフロント側でハンドリング）
         throw new HttpResponseException(
             response()->json([

@@ -140,12 +140,10 @@ class ReceiveOrderController extends BaseController
       // 親（値引・備考）
       $extra = DB::table('t_receive_orders')
         ->where('id', $orderId)
-        ->select('discount', 'remarks')
         ->first();
 
       if ($extra) {
-        $data['discount'] = $extra->discount;
-        $data['remarks']  = $extra->remarks;
+        $data = array_merge($data, (array)$extra);
       }
 
       // ★PDF用 明細：t_receive_order_details を生で取り直す（discount_amount を必ず含める）

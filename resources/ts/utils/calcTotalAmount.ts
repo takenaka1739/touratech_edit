@@ -8,11 +8,13 @@ export const calcTotalAmount: (
   shipping_amount: number,
   fee: number,
   discount: number,
-  fraction: number
-) => number = (details_aount, shipping_amount, fee, discount, fraction) => {
+  fraction: number,
+  additional_shipping_amount?: number
+) => number = (details_aount, shipping_amount, fee, discount, fraction, additional_shipping_amount = 0) => {
   let _details_amount = new BigNumber(details_aount);
   let total_amount = _details_amount
     .plus(shipping_amount)
+    .plus(additional_shipping_amount)
     .plus(fee)
     .minus(discount)
     .toNumber();

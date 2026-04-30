@@ -37,6 +37,9 @@ export const detailinitialState: CommonDataDetail = {
   sales_tax_rate: undefined,
   sales_tax: undefined,
   fraction: 1,
+  shipping_pay: undefined,
+  is_shipping_fee: false,
+  additional_shipping_fee: undefined,
 };
 
 interface CommonDataDetailPage extends CommonData {
@@ -118,7 +121,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
    * @returns
    */
   const toState: <V extends CommonDataDetailPage>(data: V) => any = data => {
-    const { shipping_amount, fee, discount, total_amount, details, ...props } = data;
+    const { shipping_amount, additional_shipping_amount, fee, discount, total_amount, details, ...props } = data;
     const safeDetails = Array.isArray(details) ? details : [];
     const normalizedDetails = safeDetails.map((d: any) => ({
       ...d,
@@ -132,6 +135,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     return {
       ...props,
       shipping_amount,
+      additional_shipping_amount,
       fee,
       discount,
       total_amount: toNumber(total_amount ?? 0),
@@ -163,6 +167,25 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     return getSalesTaxRate(date, config);
   };
 
+  const getItemShippingAmounts = (details: CommonDataDetail[], detailsAmount: number) => {
+    const baseShipping = getShippingAmount(detailsAmount, state.rate, config) ?? 0;
+    const itemShipping = details.reduce((sum, detail) => {
+      const quantity = toNumber(detail.quantity ?? 0);
+      const isShippingFee = detail.is_shipping_fee === true || toNumber(detail.is_shipping_fee ?? 0) === 1;
+      const shippingPay = isShippingFee ? toNumber(detail.shipping_pay ?? 0) : 0;
+      return sum + shippingPay * quantity;
+    }, 0);
+    const additional_shipping_amount = details.reduce((sum, detail) => {
+      const quantity = toNumber(detail.quantity ?? 0);
+      const additionalShippingFee = toNumber(detail.additional_shipping_fee ?? 0);
+      return sum + additionalShippingFee * quantity;
+    }, 0);
+
+    const shipping_amount = baseShipping + itemShipping;
+
+    return { shipping_amount, additional_shipping_amount };
+  };
+
   /**
    * stateの明細を更新する
    *
@@ -173,7 +196,8 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     details,
     details_amount
   ) => {
-    const shipping_amount = getShippingAmount(details_amount, state.rate, config);
+    const normalizedDetails = details as unknown as CommonDataDetail[];
+    const { shipping_amount, additional_shipping_amount } = getItemShippingAmounts(normalizedDetails, details_amount);
     const fee =
       state.corporate_class === CorporateClass.CashOnDelivery
         ? getCodAmount(details_amount, config)
@@ -183,9 +207,10 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       shipping_amount ?? 0,
       fee ?? 0,
       state.discount ?? 0,
-      state.fraction
+      state.fraction,
+      additional_shipping_amount ?? 0
     );
-    setState({ ...state, details, shipping_amount, fee, total_amount, details_amount });
+    setState({ ...state, details: details as any, shipping_amount, additional_shipping_amount, fee, total_amount, details_amount });
     setErrors({ ...errors, details: '' });
   };
 
@@ -288,7 +313,17 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     if (res.status === 200) {
       dispatch(AppActions.success());
       if (res.data.success) {
-        const { id, item_number, name, name_note, sales_unit_price, is_set_item } = res.data.data;
+        const {
+          id,
+          item_number,
+          name,
+          name_note,
+          sales_unit_price,
+          is_set_item,
+          shipping_pay,
+          is_shipping_fee,
+          additional_shipping_fee,
+        } = res.data.data;
         const unit_price = calcUnitPrice(sales_unit_price ?? 0, state.rate ?? 0, state.fraction);
         const ret = calcAmount(unit_price, 1, state.sales_tax_rate ?? 0, state.fraction);
 
@@ -307,6 +342,9 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
             sales_tax_rate: state.sales_tax_rate,
             fraction: state.fraction,
             discount: 0,
+            shipping_pay: toNumber(shipping_pay ?? 0),
+            is_shipping_fee,
+            additional_shipping_fee: toNumber(additional_shipping_fee ?? 0),
             ...ret,
           } as CommonDataDetail,
         ];
@@ -316,7 +354,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
         const details_amount = details.reduce((x, y) => {
           return x + toNumber(y.amount ?? 0);
         }, 0);
-        const shipping_amount = getShippingAmount(details_amount, state.rate, config);
+        const { shipping_amount, additional_shipping_amount } = getItemShippingAmounts(details, details_amount);
         const fee =
           state.corporate_class === CorporateClass.CashOnDelivery
             ? getCodAmount(details_amount, config)
@@ -326,13 +364,15 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
           shipping_amount ?? 0,
           fee ?? 0,
           state.discount ?? 0,
-          state.fraction
+          state.fraction,
+          additional_shipping_amount ?? 0
         );
         setState({
           ...state,
           details,
           details_amount,
           shipping_amount,
+          additional_shipping_amount,
           fee,
           total_amount,
           barcode: undefined,
@@ -369,7 +409,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     const details_amount = details.reduce((x, y) => {
       return x + toNumber(y.amount ?? 0);
     }, 0);
-    const shipping_amount = getShippingAmount(details_amount, state.rate, config);
+    const { shipping_amount, additional_shipping_amount } = getItemShippingAmounts(details, details_amount);
     const fee =
       state.corporate_class === CorporateClass.CashOnDelivery
         ? getCodAmount(details_amount, config)
@@ -379,13 +419,15 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       shipping_amount ?? 0,
       fee ?? 0,
       state.discount ?? 0,
-      state.fraction
+      state.fraction,
+      additional_shipping_amount ?? 0
     );
     setState({
       ...state,
       details,
       details_amount,
       shipping_amount,
+      additional_shipping_amount,
       fee,
       total_amount,
       barcode: undefined,
@@ -438,9 +480,23 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       shipping_amount,
       state.fee ?? 0,
       state.discount ?? 0,
-      state.fraction
+      state.fraction,
+      state.additional_shipping_amount ?? 0
     );
     setState({ ...state, [name]: shipping_amount, total_amount });
+  };
+
+  const onChangeAdditionalShippingAmount = (name: string, value: string | number | boolean | undefined) => {
+    const additional_shipping_amount = toNumber(value);
+    const total_amount = calcTotalAmount(
+      state.details_amount,
+      state.shipping_amount ?? 0,
+      state.fee ?? 0,
+      state.discount ?? 0,
+      state.fraction,
+      additional_shipping_amount
+    );
+    setState({ ...state, [name]: additional_shipping_amount, total_amount });
   };
 
   /**
@@ -456,7 +512,8 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       state.shipping_amount ?? 0,
       fee,
       state.discount ?? 0,
-      state.fraction
+      state.fraction,
+      state.additional_shipping_amount ?? 0
     );
     setState({ ...state, [name]: fee, total_amount });
   };
@@ -474,7 +531,8 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
       state.shipping_amount ?? 0,
       state.fee ?? 0,
       discount,
-      state.fraction
+      state.fraction,
+      state.additional_shipping_amount ?? 0
     );
     setState({ ...state, [name]: discount, total_amount });
   };
@@ -553,6 +611,7 @@ export const useCommonDataDetailPage = <T extends CommonDataDetailPage>(
     onChangeDateWidthCalc,
     onChange,
     onChangeShippingAmount,
+    onChangeAdditionalShippingAmount,
     onChangeFee,
     onChangeDiscount,
     onClickSave,

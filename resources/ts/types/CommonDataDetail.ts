@@ -19,6 +19,9 @@
  * @param sales_tax - 消費税
  * @param fraction - 端数処理
  * @param answer_date - 回答納期
+ * @param shipping_pay - 商品別送料
+ * @param is_shipping_fee - 商品別送料適用
+ * @param additional_shipping_fee - 別途追加送料
  */
 export interface CommonDataDetail {
   id: number | undefined;
@@ -38,4 +41,7 @@ export interface CommonDataDetail {
   sales_tax: number | undefined;
   fraction: number;
   answer_date?: string | undefined;
+  shipping_pay?: number | undefined;
+  is_shipping_fee?: boolean | number | undefined;
+  additional_shipping_fee?: number | undefined;
 }

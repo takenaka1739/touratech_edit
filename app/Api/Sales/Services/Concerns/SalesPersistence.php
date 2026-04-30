@@ -403,6 +403,9 @@ trait SalesPersistence
         if ($this->hasColumnSafe('t_sales', 'shipping_amount') && $data->has('shipping_amount')) {
             $sales->shipping_amount = $data->get('shipping_amount');
         }
+        if ($this->hasColumnSafe('t_sales', 'additional_shipping_amount') && $data->has('additional_shipping_amount')) {
+            $sales->additional_shipping_amount = $data->get('additional_shipping_amount');
+        }
         if ($this->hasColumnSafe('t_sales', 'fee') && $data->has('fee')) {
             $sales->fee = $data->get('fee');
         }
@@ -541,12 +544,11 @@ trait SalesPersistence
         $disc = (float)($this->resolveDetailDiscount($detail) ?? $m->discount ?? 0);
 
         $subtotal = $unitPrice * $qty;
-        $taxable  = max($subtotal - $disc, 0);
+        $amount = max($subtotal - $disc, 0);
 
         // ★ float誤差で 4999.999999... になり得るので、まず0桁に丸める
-        $taxable = round($taxable, 0);
+        $amount = round($amount, 0);
 
-        $taxRaw = ($taxable * (float)$taxRate) / 100;
 
         /**
          * ★丸め区分の決定順（重要）
@@ -602,12 +604,8 @@ trait SalesPersistence
          * ★ユーザー指定のマッピング:
          * 1: 切り捨て / 2: 切り上げ / 3: 四捨五入
          */
-        $salesTax = ($fraction === 3)
-            ? round($taxRaw)
-            : (($fraction === 2) ? ceil($taxRaw) : floor($taxRaw));
-
-        $amount = $taxable + $salesTax;
         $amount = (int)round($amount, 0);
+        $salesTax = get_sales_tax($amount, (int)$taxRate, (int)$fraction);
 
         if ($hasTax) {
             $m->sales_tax = (int)round($salesTax, 0);

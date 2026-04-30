@@ -46,11 +46,12 @@ class InvoiceListPdfService
     $data = new Collection($data);
     $invoice_month = $data->get('invoice_month');
     $rows = $data->get('data');
+    $user_name = $data->get('user_name', '');
 
     $title = "請求一覧（{$invoice_month}）";
     $this->pdf = new PdfWrapper($title);
 
-    $this->write($title, $rows);
+    $this->write($title, $rows, $user_name);
 
     $prefix = Carbon::now()->format('Ymd');
     $file_id = $this->getFileId($prefix);
@@ -86,7 +87,7 @@ class InvoiceListPdfService
    * @param string $title
    * @param array $rows
    */
-  protected function write(string $title, array $rows)
+  protected function write(string $title, array $rows, string $user_name = '')
   {
     $this->pdf->SetFont('msgothic');
 
@@ -94,7 +95,7 @@ class InvoiceListPdfService
     $max_page = Ceil($count / $this::PER_PAGE);
 
     for ($i = 1; $i <= $max_page; $i++) {
-      $this->writePage($title, $rows, $i, $max_page);
+      $this->writePage($title, $rows, $i, $max_page, $user_name);
     }
   }
 
@@ -110,7 +111,8 @@ class InvoiceListPdfService
     string $title,
     array $rows,
     int $page,
-    int $max_page
+    int $max_page,
+    string $user_name = ''
     )
   {
     $rows = new Collection($rows);
@@ -122,6 +124,8 @@ class InvoiceListPdfService
     // タイトル
     $this->pdf->SetFontSize(10);
     $this->pdf->Text(0, 8, $title, false, false, true, 0, 0, "C");
+    $this->pdf->SetFontSize(8);
+    $this->pdf->Text(160, 8, '担当者：' . $user_name);
 
     $this->pdf->setLineStyleWidthNormal(0.2);
     $this->pdf->LineNormal();

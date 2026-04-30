@@ -63,6 +63,7 @@ class SalesUpdateRequest extends FormRequest
             'customer_id'      => ['nullable', 'integer'],
             'user_id'          => ['nullable', 'integer'],
             'shipping_amount'  => ['nullable', 'numeric'],
+            'additional_shipping_amount' => ['nullable', 'numeric'],
             'fee'              => ['nullable', 'numeric'],
             'discount'         => ['nullable', 'numeric'],
             'total_amount'     => ['nullable', 'numeric'],

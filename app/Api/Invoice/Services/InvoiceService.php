@@ -264,11 +264,13 @@ class InvoiceService
     $configs = Config::getSelf();
 
     $data = [];
+    $currentUserName = Auth::user()?->name ?? '';
     foreach ($rows as $row) {
       $d = $row->toArray();
       $d["details"] = $row->details->toArray();
       $d["config_data"] = $configs;
       $d["customer_data"] = Customer::find($row->customer_id);
+      $d["user_name"] = $currentUserName;
 
       $data[] = $d;
     }
@@ -277,6 +279,7 @@ class InvoiceService
       'invoice_month' => $invoice_month,
       'data' => $data,
       'config_data' => $configs->toArray(),
+      'user_name' => $currentUserName,
     ];
   }
 
@@ -300,6 +303,7 @@ class InvoiceService
     return [
       'invoice_month' => $invoice_month,
       'data' => $query->get()->toArray(),
+      'user_name' => Auth::user()?->name ?? '',
     ];
   }
 
@@ -506,6 +510,22 @@ class InvoiceService
         'sales_tax_rate' => $sales_tax_rate,
         'sales_tax' => get_sales_tax2($s->shipping_amount ?? 0, $sales_tax_rate, 1),
       ];
+
+      // 別途追加送料
+      if (($s->additional_shipping_amount ?? 0) != 0) {
+        $details[] = [
+          'job_date' => $s->sales_at,
+          'detail_kind' => 1,
+          'item_kind' => null,
+          'item_id' => null,
+          'item_name' => '別途追加送料',
+          'unit_price' => null,
+          'quantity' => null,
+          'amount' => $s->additional_shipping_amount,
+          'sales_tax_rate' => $sales_tax_rate,
+          'sales_tax' => get_sales_tax2($s->additional_shipping_amount ?? 0, $sales_tax_rate, 1),
+        ];
+      }
 
       // 手数料
       $details[] = [

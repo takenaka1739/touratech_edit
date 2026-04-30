@@ -47,10 +47,14 @@ class ReceiveOrderStatusService
       'rd.item_kind',
       'i.item_number',
       'i.domestic_stocks',
+      DB::raw('COALESCE(mail_counts.send_count, 0) AS mail_send_count'),
     )
     ->from('t_receive_orders AS r')
     ->join('t_receive_order_details AS rd', 'rd.receive_order_id', '=', 'r.id')
     ->join('m_items AS i', 'i.id', '=', 'rd.item_id')
+    ->leftJoinSub($this->buildMailCountQuery(), 'mail_counts', function ($join) {
+      $join->on('mail_counts.receive_order_id', '=', 'r.id');
+    })
     ->whereIn('rd.item_kind', [1, 2])
     ->where(function ($q) {
       $q->where('rd.sales_completed', '<>', 1)
@@ -60,12 +64,26 @@ class ReceiveOrderStatusService
     $query = $this->setCondition($query, $cond);
 
     $rows = $query
-      ->orderBy('r.receive_order_date', 'desc')
-      ->orderBy('r.id')
+      ->orderBy('r.created_at', 'desc')
+      ->orderBy('r.id', 'desc')
       ->orderBy('rd.id')
       ->get();
 
     return $rows;
+  }
+
+  private function buildMailCountQuery()
+  {
+    $query = DB::table('t_mail_messages')
+      ->selectRaw('receive_order_id, COUNT(*) AS send_count')
+      ->whereNotNull('receive_order_id')
+      ->groupBy('receive_order_id');
+
+    if (DB::getSchemaBuilder()->hasColumn('t_mail_messages', 'deleted_at')) {
+      $query->whereNull('deleted_at');
+    }
+
+    return $query;
   }
   
   /**

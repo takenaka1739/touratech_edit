@@ -45,6 +45,7 @@ class SalesDetailRequest extends FormRequest
 
             'user_id'         => ['sometimes', 'integer'],
             'shipping_amount' => ['sometimes', 'numeric'],
+            'additional_shipping_amount' => ['sometimes', 'numeric'],
             'fee'             => ['sometimes', 'numeric'],
             'discount'        => ['sometimes', 'numeric'],
             'total_amount'    => ['sometimes', 'numeric'],

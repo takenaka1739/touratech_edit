@@ -26,6 +26,7 @@ class Estimate extends Model
     'user_id',
     'order_no',
     'shipping_amount',
+    'additional_shipping_amount',
     'fee',
     'discount',
     'total_amount',

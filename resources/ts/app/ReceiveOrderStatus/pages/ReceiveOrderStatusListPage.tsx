@@ -38,6 +38,11 @@ export const ReceiveOrderStatusListPage: React.VFC = () => {
             <td className="w-16 text-right">{numberFormat(r.quantity, 0)}</td>
             <td className="w-20 text-right">{numberFormat(r.domestic_stocks ?? 0, 0)}</td>
             <td className="col-btn">
+              <Link to={`/inquiry_mail/receive_order/${r.id}`}>
+                {numberFormat(r.mail_send_count ?? 0, 0)}件
+              </Link>
+            </td>
+            <td className="col-btn">
               {r.place_completed != 1 && (
                 <Link to={`/place_order/detail_by_receive_id/${r.id}`}>発注</Link>
               )}
@@ -176,6 +181,7 @@ export const ReceiveOrderStatusListPage: React.VFC = () => {
                 <th className="w-28">回答納期</th>
                 <th className="w-16 col-quantity">注文数</th>
                 <th className="w-20">在庫数</th>
+                <th className="col-btn">メール</th>
                 <th className="col-btn">発注</th>
                 <th className="col-btn">売上</th>
               </tr>

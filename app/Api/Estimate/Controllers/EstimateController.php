@@ -165,12 +165,10 @@ class EstimateController extends BaseController
       // 親（値引・備考）
       $extra = DB::table('t_estimates')
         ->where('id', $estimateId)
-        ->select('discount', 'remarks')
         ->first();
 
       if ($extra) {
-        $data['discount'] = $extra->discount;
-        $data['remarks']  = $extra->remarks;
+        $data = array_merge($data, (array)$extra);
       }
 
       // ★明細：discount_amount を必ずキーとして返す（NULLでも0で返す）

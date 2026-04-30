@@ -38,6 +38,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
     onChange,
     onChangeDateWidthCalc,
     onChangeShippingAmount,
+    onChangeAdditionalShippingAmount,
     onChangeFee,
     onChangeDiscount,
     onClickAddDetail,
@@ -88,6 +89,27 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
   // Square 決済ボタン表示条件
   const canShowSquareActions =
     !!id && !!state?.square_payment_id && state?.square_status === 'authorized';
+  const canShowCardOnFileCharge =
+    !!id &&
+    state?.square_payment_flow === 'card_on_file' &&
+    state?.square_payment_status !== 'charged' &&
+    state?.square_status !== 'captured';
+  const isCardOnFileOrder = state?.square_payment_flow === 'card_on_file';
+
+  const squarePaymentStatusLabel = (() => {
+    switch (state?.square_payment_status) {
+      case 'pending':
+        return '決済待ち';
+      case 'charged':
+        return '決済済み';
+      case 'failed':
+        return '決済失敗';
+      case 'canceled':
+        return 'キャンセル';
+      default:
+        return state?.square_payment_status ?? '';
+    }
+  })();
 
   // Square 決済実行（キャプチャ）
   const handleSquarePayment = useCallback(async () => {
@@ -124,6 +146,45 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
       alert('通信エラーが発生しました。');
     }
   }, [id]);
+
+  const handleSquareCardOnFileCharge = useCallback(async () => {
+    if (!id) {
+      alert('IDが不明なため、カード決済を実行できません。');
+      return;
+    }
+    if (!state?.customer_payment_id) {
+      alert('保存カード情報が受注に紐づいていません。');
+      return;
+    }
+    if (!window.confirm('保存済みカードで決済を実行しますか？')) return;
+
+    try {
+      const csrf =
+        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+
+      const res = await fetch(`/api/receive_order/${id}/square/charge`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrf,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.success === false) {
+        alert(data?.message ?? 'カード決済の実行に失敗しました。');
+        window.location.reload();
+        return;
+      }
+
+      alert(data?.message ?? 'カード決済を実行しました。');
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      alert('通信エラーが発生しました。');
+    }
+  }, [id, state?.customer_payment_id]);
 
   // Square オーソリキャンセル
   const handleSquareCancel = useCallback(async () => {
@@ -383,6 +444,38 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
           maxLength={20}
         />
 
+        {isCardOnFileOrder && (
+          <div className="max-w-4xl border border-gray-300 bg-gray-50 p-3 mb-4">
+            <div className="font-bold mb-2">カード後日決済</div>
+            <div className="flex flex-wrap text-sm">
+              <div className="mr-6 mb-1">
+                状態: <span className="font-bold">{squarePaymentStatusLabel || '未設定'}</span>
+              </div>
+              {state.square_card && (
+                <div className="mr-6 mb-1">
+                  カード: {state.square_card.brand ?? ''} ****{state.square_card.last4 ?? ''}
+                  {state.square_card.expiry ? ` / ${state.square_card.expiry}` : ''}
+                  {state.square_card.account_name ? ` / ${state.square_card.account_name}` : ''}
+                </div>
+              )}
+              {state.square_payment_id && (
+                <div className="mr-6 mb-1">Square決済ID: {state.square_payment_id}</div>
+              )}
+            </div>
+            {state.square_payment_error && (
+              <div className="text-red-600 text-sm mt-1">エラー: {state.square_payment_error}</div>
+            )}
+            {!!state.square_payment_attempts?.length && (
+              <div className="text-xs mt-2">
+                最終実行: {state.square_payment_attempts[0].attempted_at ?? ''}
+                {state.square_payment_attempts[0].square_status
+                  ? ` / ${state.square_payment_attempts[0].square_status}`
+                  : ''}
+              </div>
+            )}
+          </div>
+        )}
+
         <hr className="border-dashed border-gray-400 mt-6" />
 
         <div className="p-6">
@@ -426,6 +519,7 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
                 <th className="w-16">掛率</th>
                 <th className="w-24">単価</th>
                 <th className="w-16">数量</th>
+                <th className="w-20">売上</th>
                 {/* ★追加：明細割引 */}
                 <th className="w-24">割引</th>
                 <th className="w-28">金額</th>
@@ -445,6 +539,13 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
                   <td className="text-right">{r.rate}</td>
                   <td className="text-right">{numberFormat(r.unit_price, 2)}</td>
                   <td className="text-right">{r.quantity}</td>
+                  <td className="text-center">
+                    {(r as any).is_sales_registered && (
+                      <span className="bg-yellow-100 border border-yellow-500 text-yellow-700 px-2 text-xs">
+                        済み
+                      </span>
+                    )}
+                  </td>
 
                   {/* ★追加：割引 */}
                   <td className="text-right">{numberFormat((r as any).discount ?? 0, 0)}</td>
@@ -503,6 +604,21 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
         <div className="flex">
           <div className="w-1/2">
             <Forms.FormGroupInputNumber
+              labelText="別途追加送料"
+              name="additional_shipping_amount"
+              value={state.additional_shipping_amount}
+              error={errors?.additional_shipping_amount}
+              onChange={onChangeAdditionalShippingAmount}
+              precision={2}
+              className="max-w-8 text-right"
+              min={0}
+            />
+          </div>
+        </div>
+
+        <div className="flex">
+          <div className="w-1/2">
+            <Forms.FormGroupInputNumber
               labelText="値引"
               name="discount"
               value={state.discount}
@@ -544,11 +660,9 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             <button className="btn" onClick={onClickSave} disabled={isDisabled}>
               保存
             </button>
-            {id && (
-              <button className="btn ml-6" onClick={onClickPrint}>
-                承り書発行
-              </button>
-            )}
+            <button className="btn ml-6" onClick={onClickPrint}>
+              承り書発行
+            </button>
 
             {canShowSquareActions && (
               <>
@@ -559,6 +673,11 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
                   注文キャンセル
                 </button>
               </>
+            )}
+            {canShowCardOnFileCharge && (
+              <button className="btn ml-6" onClick={handleSquareCardOnFileCharge}>
+                カード決済実行
+              </button>
             )}
           </div>
         </div>

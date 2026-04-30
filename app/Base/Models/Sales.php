@@ -23,6 +23,7 @@ class Sales extends Model
         'billing_at',
         'payment_at',
         'shipping_amount',
+        'additional_shipping_amount',
         'fee',
         'discount',
         'total_amount',

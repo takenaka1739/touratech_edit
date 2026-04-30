@@ -33,6 +33,7 @@ return [
     'square' => [
         'token' => env('SQUARE_TOKEN'),
         'env' => env('SQUARE_ENV', 'sandbox'),
+        'location_id' => env('SQUARE_LOCATION_ID'),
     ],
 
 ];

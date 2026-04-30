@@ -115,6 +115,7 @@ class EstimatePdfService
         // 最終ページに追加表示する「送料/代引手数料」行をカウント
         $extraRows = 0;
         if ((float)$d->get('shipping_amount', 0) > 0) $extraRows++;
+        if ((float)$d->get('additional_shipping_amount', 0) > 0) $extraRows++;
         if ((float)$d->get('fee', 0) > 0)             $extraRows++;
 
         // ★小計/値引/合計（3行）を必ず確保
@@ -250,6 +251,7 @@ class EstimatePdfService
         $this->pdf->Text(122.421, 70.954, $config->get('address1'));
         $this->pdf->Text(122.421, 75.657, 'TEL:' . $config->get('tel') . '  FAX:' . $config->get('fax'));
         $this->pdf->Text(122.421, 80.36, '登録番号 ' . config('const.invoice_no'));
+        $this->pdf->Text(122.421, 85.063, '担当者：' . (string)$data->get('user_name', ''));
 
         // -----------------------------
         // 明細テーブル枠
@@ -431,6 +433,20 @@ class EstimatePdfService
                 }
             }
 
+            $additional_shipping_amount = (float) $data->get('additional_shipping_amount', 0);
+            if ($additional_shipping_amount > 0) {
+                $next = $yExtra + self::ROW_HEIGHT;
+                if ($next < $ySummaryStart) {
+                    $yExtra = $next;
+                    $this->pdf->SetFontSize(10);
+                    $this->pdf->SetXY(self::X_LEFT, $yExtra + 3);
+                    $this->pdf->Cell(self::X_CONTENT_R - self::X_LEFT, 5.545, "別途追加送料");
+                    $this->pdf->SetFontSize(13);
+                    $this->pdf->SetXY(self::X_AMOUNT_L, $yExtra + 2.6);
+                    $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, number_format($additional_shipping_amount, 0), 0, 0, "R");
+                }
+            }
+
             $fee = (float) $data->get('fee', 0);
             if ($fee > 0) {
                 $next = $yExtra + self::ROW_HEIGHT;
@@ -482,17 +498,37 @@ class EstimatePdfService
             $this->pdf->SetXY(self::X_AMOUNT_L, $yTotal + 2);
             $this->pdf->Cell(self::X_RIGHT - self::X_AMOUNT_L, 5.945, number_format($total, 0), 0, 0, "R");
 
-            // 備考（フリー入力風：縦線なし）
-            $remarks = (string) ($data->get('remarks', '') ?? '');
+            $this->writeFooterNotes($data);
+        }
+    }
 
-            $this->pdf->SetFontSize(9);
-            $this->pdf->SetXY(21.771, self::TABLE_BOTTOM_Y + 1);
-            $this->pdf->Cell(12, 5.545, "備考");
+    private function writeFooterNotes(Collection $data): void
+    {
+        $remarks = (string) ($data->get('remarks', '') ?? '');
+        $ecNotices = $data->get('ec_notices', []);
+        if (!is_array($ecNotices)) {
+            $ecNotices = (array)$ecNotices;
+        }
 
+        $y = self::TABLE_BOTTOM_Y + 1;
+
+        $this->pdf->SetFontSize(8);
+        $this->pdf->SetXY(21.771, $y);
+        $this->pdf->Cell(12, 4, "備考");
+
+        if (!empty($ecNotices)) {
             if ($remarks !== '') {
-                $this->pdf->SetXY(33, self::TABLE_BOTTOM_Y + 1);
-                $this->pdf->MultiCell(160, 4, $remarks);
+                $this->pdf->SetXY(33, $y);
+                $this->pdf->MultiCell(69, 3.6, $remarks);
             }
+
+            $this->pdf->SetXY(106, $y);
+            $this->pdf->Cell(18, 4, "EC情報");
+            $this->pdf->SetXY(122, $y);
+            $this->pdf->MultiCell(74, 3.3, implode("\n", array_slice($ecNotices, 0, 5)));
+        } elseif ($remarks !== '') {
+            $this->pdf->SetXY(33, $y);
+            $this->pdf->MultiCell(self::X_RIGHT - 33, 3.6, $remarks);
         }
     }
 

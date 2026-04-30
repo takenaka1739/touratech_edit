@@ -6,6 +6,8 @@ use App\Base\Models\Sales;
 use App\Base\Models\SalesDetail;
 use App\Base\Models\ReceiveOrder;
 use App\Base\Models\Config;
+use App\Base\Models\Customer;
+use App\Api\Shared\Services\ReportEcNoticeBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -125,6 +127,7 @@ class SalesService
             $salesDateCol     => $today,
             'sales_date'      => $today,
             'shipping_amount' => null,
+            'additional_shipping_amount' => null,
             'fee'             => null,
             'discount'        => 0,
             'total_amount'    => null,
@@ -179,26 +182,21 @@ class SalesService
             $rate      = (float)$d->sales_tax_rate;
             $fraction  = (int)($d->fraction ?? 1);
 
-            $subtotal = $unitPrice * $qty;
-            $taxable  = max($subtotal - $d->discount, 0);
+            $amount = (int)round(max(($unitPrice * $qty) - $d->discount, 0), 0);
 
-            $taxRaw = ($taxable * $rate) / 100;
-            $salesTax = $fraction === 2
-                ? round($taxRaw)
-                : ($fraction === 3 ? ceil($taxRaw) : floor($taxRaw));
-
-            $d->sales_tax = (int)$salesTax;
-            $d->amount    = $taxable + $salesTax;
+            $d->amount    = $amount;
+            $d->sales_tax = get_sales_tax($amount, (int)$rate, $fraction);
         }
 
         $details_amount = (int)collect($details)->sum('amount');
         $shipping_amount = (float)($r->shipping_amount ?? 0);
+        $additional_shipping_amount = (float)($r->additional_shipping_amount ?? 0);
         $fee = (float)($r->fee ?? 0);
         $discount = (float)($r->discount ?? 0);
 
         $total_amount = function_exists('calc_total_amount')
-            ? calc_total_amount($shipping_amount, $fee, $discount, $details_amount)
-            : (int)round($details_amount + $shipping_amount + $fee - $discount, 0);
+            ? calc_total_amount($shipping_amount, $fee, $discount, $details_amount, $additional_shipping_amount)
+            : (int)round($details_amount + $shipping_amount + $additional_shipping_amount + $fee - $discount, 0);
 
         $user = Auth::user();
         $salesDateCol = $this->salesDateColumn();
@@ -221,6 +219,7 @@ class SalesService
             'user_id'          => $user?->id,
             'user_name'        => $user?->name,
             'shipping_amount'  => $shipping_amount,
+            'additional_shipping_amount' => $additional_shipping_amount,
             'fee'              => $fee,
             'discount'         => $discount,
             'total_amount'     => $total_amount,
@@ -533,7 +532,6 @@ class SalesService
 
     public function getPdfData(array $input): array
     {
-        // （以下はあなたの貼ってくれた既存実装のまま）
         $payload = $input['data'] ?? $input;
 
         if (!empty($payload['id'])) {
@@ -576,9 +574,49 @@ class SalesService
             }
         }
 
-        // config_data / customer_data / sales_tax_rate 補完は既存のまま…
-        // （省略せずそのまま運用している前提なら、この下は元ファイルを維持してください）
+        $payload['ec_notices'] = (new ReportEcNoticeBuilder())->buildForSales($payload);
+
+        $config = Config::getSelf();
+        $payload['config_data'] = $config ? $config->toArray() : [];
+
+        $customerData = [];
+        $customerId = (int)($payload['customer_id'] ?? 0);
+        if ($customerId > 0) {
+            $customer = Customer::find($customerId);
+            if ($customer) {
+                $customerData = $customer->toArray();
+            }
+        }
+
+        $payload['customer_data'] = $this->normalizeCustomerDataForPdf($customerData, $payload);
+
+        if (empty($payload['sales_tax_rate'])) {
+            $payload['sales_tax_rate'] = $this->resolveSalesTaxRate();
+        }
+
+        $payload['user_name'] = Auth::user()?->name ?? ($payload['user_name'] ?? '');
 
         return $payload;
+    }
+
+    private function normalizeCustomerDataForPdf(array $customerData, array $payload): array
+    {
+        $customerData['name'] = $customerData['name'] ?? ($payload['customer_name'] ?? '');
+        $customerData['zip_code'] = $customerData['zip_code'] ?? ($payload['zip_code'] ?? '');
+        $customerData['tel'] = $customerData['tel'] ?? ($payload['tel'] ?? '');
+        $customerData['fax'] = $customerData['fax'] ?? ($payload['fax'] ?? '');
+        $customerData['bank_class'] = $customerData['bank_class'] ?? 1;
+
+        if (empty($customerData['address1'])) {
+            $pref = (string)($customerData['prefectures'] ?? '');
+            $municipality = (string)($customerData['municipality'] ?? '');
+            $customerData['address1'] = trim($pref . $municipality) ?: ($payload['address1'] ?? '');
+        }
+
+        if (empty($customerData['address2'])) {
+            $customerData['address2'] = $customerData['number'] ?? ($payload['address2'] ?? '');
+        }
+
+        return $customerData;
     }
 }

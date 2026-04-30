@@ -46,7 +46,8 @@ class MailConversationService
                 // ★ 送信日付のみ（YYYY-MM-DD）
                 DB::raw('DATE(mm.sent_at) as created_at'),
             ])
-            ->orderBy('mm.id', 'asc')
+            ->orderByDesc('mm.sent_at')
+            ->orderByDesc('mm.id')
             ->get();
 
         \Log::info('[ShopMail][listOrderMessages][result]', [
@@ -120,13 +121,18 @@ class MailConversationService
         $existsSql = $hasHistoryDeleted
             ? "EXISTS (SELECT 1 FROM t_inquiries_history h WHERE h.inquiries_id = t_inquiries.id AND h.deleted_at IS NULL)"
             : "EXISTS (SELECT 1 FROM t_inquiries_history h WHERE h.inquiries_id = t_inquiries.id)";
+        $hasCreatedAt = Schema::hasColumn('t_inquiries', 'created_at');
 
-        $rows = $q
-            ->select([
-                't_inquiries.*',
-                DB::raw("CASE WHEN {$existsSql} THEN 1 ELSE 0 END as is_replied"),
-            ])
-            ->orderByDesc('id')
+        $q->select([
+            't_inquiries.*',
+            DB::raw("CASE WHEN {$existsSql} THEN 1 ELSE 0 END as is_replied"),
+        ]);
+
+        if ($hasCreatedAt) {
+            $q->orderByDesc('t_inquiries.created_at');
+        }
+
+        $rows = $q->orderByDesc('t_inquiries.id')
             ->offset($offset)
             ->limit($perPage)
             ->get();

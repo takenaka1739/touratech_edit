@@ -9,6 +9,7 @@ import { UserSearchDialog } from '@/app/User/components/UserSearchDialog';
 import { numberFormat } from '@/utils';
 import { useComposing } from '@/uses';
 import { useZipcodeAddress } from '@/app/App/uses/useZipcodeAddress';
+import toNumber from 'lodash/toNumber';
 
 export type EstimateDetailPageProps = {} & RouteComponentProps<{ id: string }>;
 
@@ -35,6 +36,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
     onChangeDateWidthCalc,
     onChange,
     onChangeShippingAmount,
+    onChangeAdditionalShippingAmount,
     onChangeFee,
     onChangeDiscount,
     onClickAddDetail,
@@ -61,6 +63,8 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
       setFieldValue('address1', address);
     }
   };
+
+   const customerRate = toNumber((state as any).customer_rate ?? (state as any).rate ?? 100);
 
   return (
     <PageWrapper
@@ -322,6 +326,7 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
             {...detailDialogProps}
             fraction={state.fraction}
             salesTaxRate={state.sales_tax_rate ?? 0}
+            customerRate={customerRate}
           />
         </div>
 
@@ -344,6 +349,20 @@ export const EstimateDetailPage: React.VFC<EstimateDetailPageProps> = () => {
               value={state.fee}
               error={errors?.fee}
               onChange={onChangeFee}
+              precision={2}
+              min={0}
+            />
+          </div>
+        </div>
+
+        <div className="flex max-w-2xl">
+          <div className="w-1/2">
+            <Forms.FormGroupInputNumber
+              labelText="別途追加送料"
+              name="additional_shipping_amount"
+              value={state.additional_shipping_amount}
+              error={errors?.additional_shipping_amount}
+              onChange={onChangeAdditionalShippingAmount}
               precision={2}
               min={0}
             />

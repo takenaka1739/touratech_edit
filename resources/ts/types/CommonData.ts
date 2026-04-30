@@ -18,6 +18,7 @@ import { CommonDataDetail } from './CommonDataDetail';
  * @param user_id - 担当者ID
  * @param user_name - 担当者名
  * @param shipping_amount - 送料
+ * @param additional_shipping_amount - 別途追加送料
  * @param fee - 手数料
  * @param discount - 値引
  * @param total_amount - 合計金額
@@ -43,6 +44,7 @@ export interface CommonData {
   user_id: number | undefined;
   user_name: string | undefined;
   shipping_amount: number | undefined;
+  additional_shipping_amount: number | undefined;
   fee: number | undefined;
   discount: number | undefined;
   total_amount: number;

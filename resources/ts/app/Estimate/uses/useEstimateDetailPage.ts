@@ -44,6 +44,7 @@ export const useEstimateDetailPage = (slug: string) => {
     user_id: undefined,
     user_name: undefined,
     shipping_amount: undefined,
+    additional_shipping_amount: undefined,
     fee: undefined,
     discount: undefined,
     total_amount: 0,

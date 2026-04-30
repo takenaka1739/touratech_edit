@@ -6,7 +6,6 @@ use App\Base\Pdf\PdfWrapper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Exception;
 
@@ -70,12 +69,6 @@ class ReceiveOrderPdfService
 
     public function createPdf(array $data)
     {
-        Log::debug('[ReceiveOrderPdf] createPdf input', [
-            'keys'     => array_keys($data),
-            'discount' => $data['discount'] ?? null,
-            'remarks'  => $data['remarks'] ?? null,
-        ]);
-
         $this->pdf = new PdfWrapper("ご注文承り書");
         $this->discountPrinted = false;
 
@@ -113,6 +106,7 @@ class ReceiveOrderPdfService
 
         $extraRows = 0;
         if ((float)$d->get('shipping_amount', 0) > 0) $extraRows++;
+        if ((float)$d->get('additional_shipping_amount', 0) > 0) $extraRows++;
         if ((float)$d->get('fee', 0) > 0)             $extraRows++;
 
         $totalRows = count($details) + $extraRows + self::SUMMARY_ROWS;
@@ -234,9 +228,10 @@ class ReceiveOrderPdfService
         $this->pdf->SetFontSize(11);
         $this->pdf->SetXY(24.373, 100.509);
         $this->pdf->Cell(23.054, 5.57, "合計金額", 0, 0, "", false, "", 4);
+        $pdfTotals = $this->calculatePdfTotals($data);
         $this->pdf->SetFontSize(16);
         $this->pdf->SetXY(50.915, 96.413);
-        $this->pdf->Cell(51.5, 12.764, '￥' . number_format((float)$data->get('total_amount', 0), 0), 0, 0, "R");
+        $this->pdf->Cell(51.5, 12.764, '￥' . number_format($pdfTotals['total'], 0), 0, 0, "R");
 
         // ロゴ・自社情報
         $this->pdf->Image(resource_path('images/logo.gif'), 122.421, 36.433, 75);
@@ -247,35 +242,38 @@ class ReceiveOrderPdfService
         $this->pdf->Text(122.421, 70.954, $config->get('address1'));
         $this->pdf->Text(122.421, 75.657, 'TEL:' . $config->get('tel') . '  FAX:' . $config->get('fax'));
         $this->pdf->Text(122.421, 80.36, '登録番号 ' . config('const.invoice_no'));
+        $this->pdf->Text(122.421, 85.063, '担当者：' . (string)$data->get('user_name', ''));
 
-        // 口座
-        $bank_name      = $config->get('bank_name1', '');
-        $branch_name    = $config->get('branch_name1', '');
-        $account_type   = $config->get('account_type1', '');
-        $account_number = $config->get('account_number1', '');
-        $account_name   = $config->get('account_name1');
-        if ($data->get('customer_bank_class') == 2) {
-            $bank_name      = $config->get('bank_name2', '');
-            $branch_name    = $config->get('branch_name2', '');
-            $account_type   = $config->get('account_type2', '');
-            $account_number = $config->get('account_number2', '');
-            $account_name   = $config->get('account_name2');
+        if ((int)$data->get('corporate_class') === 4) {
+            // 口座
+            $bank_name      = $config->get('bank_name1', '');
+            $branch_name    = $config->get('branch_name1', '');
+            $account_type   = $config->get('account_type1', '');
+            $account_number = $config->get('account_number1', '');
+            $account_name   = $config->get('account_name1');
+            if ($data->get('customer_bank_class') == 2) {
+                $bank_name      = $config->get('bank_name2', '');
+                $branch_name    = $config->get('branch_name2', '');
+                $account_type   = $config->get('account_type2', '');
+                $account_number = $config->get('account_number2', '');
+                $account_name   = $config->get('account_name2');
+            }
+            $this->pdf->Text(122.421, 92, '　　　振込口座：' . $bank_name . $branch_name);
+            $this->pdf->Text(122.421, 96.5, '　　　　　　　　' . $account_type . '　' . $account_number);
+            $this->pdf->Text(122.421, 101, '振込先口座名義：' . $account_name);
+            $y    = "";
+            $m    = "";
+            $d    = "";
+            $date = $data->get('receive_order_date');
+            if ($date) {
+                $dt = new Carbon($date);
+                $dt = $dt->addMonth();
+                $y  = $dt->year;
+                $m  = $dt->month;
+                $d  = $dt->day;
+            }
+            $this->pdf->Text(122.421, 105.5, '　　お支払期限：' . $y . "/" . $m . "/" . $d);
         }
-        $this->pdf->Text(122.421, 92, '　　　振込口座：' . $bank_name . $branch_name);
-        $this->pdf->Text(122.421, 96.5, '　　　　　　　　' . $account_type . '　' . $account_number);
-        $this->pdf->Text(122.421, 101, '振込先口座名義：' . $account_name);
-        $y    = "";
-        $m    = "";
-        $d    = "";
-        $date = $data->get('receive_order_date');
-        if ($date) {
-            $dt = new Carbon($date);
-            $dt = $dt->addMonth();
-            $y  = $dt->year;
-            $m  = $dt->month;
-            $d  = $dt->day;
-        }
-        $this->pdf->Text(122.421, 105.5, '　　お支払期限：' . $y . "/" . $m . "/" . $d);
 
         // 明細の外枠
         $this->pdf->lineBold();
@@ -441,6 +439,20 @@ class ReceiveOrderPdfService
                 }
             }
 
+            $additional_shipping_amount = (float) $data->get('additional_shipping_amount', 0);
+            if ($additional_shipping_amount > 0) {
+                $next = $yExtra + self::ROW_HEIGHT;
+                if ($next < $ySummaryStart) {
+                    $yExtra = $next;
+                    $this->pdf->SetFontSize(10);
+                    $this->pdf->SetXY(self::X_CONTENT_L, $yExtra + 3);
+                    $this->pdf->Cell(self::X_CONTENT_R - self::X_CONTENT_L, 5.545, "別途追加送料");
+                    $this->pdf->SetFontSize(13);
+                    $this->pdf->SetXY(self::X_AMOUNT_L, $yExtra + 2.6);
+                    $this->pdf->Cell(self::X_AMOUNT_R - self::X_AMOUNT_L, 5.945, number_format($additional_shipping_amount, 0), 0, 0, "R");
+                }
+            }
+
             $fee = (float) $data->get('fee', 0);
             if ($fee > 0) {
                 $next = $yExtra + self::ROW_HEIGHT;
@@ -455,9 +467,10 @@ class ReceiveOrderPdfService
                 }
             }
 
-            $headerDiscount = (float) $data->get('discount', 0);
-            $total = (float) $data->get('total_amount', 0);
-            $subtotal = $total + $headerDiscount;
+            $totals = $this->calculatePdfTotals($data);
+            $headerDiscount = $totals['discount'];
+            $subtotal = $totals['subtotal'];
+            $total = $totals['total'];
 
             // 小計
             $this->pdf->SetFontSize(10);
@@ -483,15 +496,41 @@ class ReceiveOrderPdfService
             $this->pdf->SetXY(self::X_AMOUNT_L, $yTotal + 2);
             $this->pdf->Cell(self::X_AMOUNT_R - self::X_AMOUNT_L, 5.945, number_format($total, 0), 0, 0, "R");
 
-            // 備考
-            $remarks = (string) ($data->get('remarks', '') ?? '');
-            $this->pdf->SetFontSize(9);
-            $this->pdf->SetXY(21.771, self::TABLE_BOTTOM_Y + 1);
-            $this->pdf->Cell(10, 5.545, "備考");
-            if ($remarks !== '') {
-                $this->pdf->SetXY(30, self::TABLE_BOTTOM_Y + 1);
-                $this->pdf->MultiCell(160, 4, $remarks);
-            }
+            $this->writeFooterNotes($data);
+        }
+    }
+
+    private function calculatePdfTotals(Collection $data): array
+    {
+        $details = new Collection($data->get('details', []));
+        $detailsAmount = $details->sum(function ($detail) {
+            return (float) (is_array($detail) ? ($detail['amount'] ?? 0) : ($detail->amount ?? 0));
+        });
+
+        $subtotal = $detailsAmount
+            + (float)$data->get('shipping_amount', 0)
+            + (float)$data->get('additional_shipping_amount', 0)
+            + (float)$data->get('fee', 0);
+        $discount = (float)$data->get('discount', 0);
+
+        return [
+            'subtotal' => $subtotal,
+            'discount' => $discount,
+            'total' => max($subtotal - $discount, 0),
+        ];
+    }
+
+    private function writeFooterNotes(Collection $data): void
+    {
+        $remarks = (string) ($data->get('remarks', '') ?? '');
+        $y = self::TABLE_BOTTOM_Y + 1;
+
+        $this->pdf->SetFontSize(8);
+        $this->pdf->SetXY(21.771, $y);
+        $this->pdf->Cell(10, 4, "備考");
+        if ($remarks !== '') {
+            $this->pdf->SetXY(30, $y);
+            $this->pdf->MultiCell(self::X_AMOUNT_R - 30, 3.6, $remarks);
         }
     }
 

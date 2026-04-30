@@ -24,6 +24,33 @@ type SalesDetailPageState = Sales & {
 const to01 = (v: any): 0 | 1 => (Number(v) === 1 || v === true ? 1 : 0);
 const toBool = (v: any): boolean => to01(v) === 1;
 
+const normalizeDetailFromReceiveOrder = (x: any) => {
+  const receiveOrderDetailId =
+    x?.receive_order_detail_id != null && x.receive_order_detail_id !== ''
+      ? Number(x.receive_order_detail_id)
+      : x?.id != null && x.id !== ''
+      ? Number(x.id)
+      : undefined;
+
+  return {
+    ...x,
+    id: null,
+    receive_order_detail_id: receiveOrderDetailId,
+    discount: x?.discount != null && x.discount !== '' ? Number(x.discount) : 0,
+    amount: x?.amount != null && x.amount !== '' ? Number(x.amount) : 0,
+    sales_tax: x?.sales_tax != null && x.sales_tax !== '' ? Number(x.sales_tax) : 0,
+    sales_tax_rate:
+      x?.sales_tax_rate != null && x.sales_tax_rate !== '' ? Number(x.sales_tax_rate) : undefined,
+    unit_price: x?.unit_price != null && x.unit_price !== '' ? Number(x.unit_price) : undefined,
+    quantity: x?.quantity != null && x.quantity !== '' ? Number(x.quantity) : undefined,
+    rate: x?.rate != null && x.rate !== '' ? Number(x.rate) : x?.rate,
+    sales_unit_price:
+      x?.sales_unit_price != null && x.sales_unit_price !== ''
+        ? Number(x.sales_unit_price)
+        : x?.sales_unit_price,
+  };
+};
+
 // 空文字も null 扱いしたい用途向け
 const normStr = (v: any): string => (v === null || v === undefined ? '' : String(v).trim());
 
@@ -119,6 +146,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       user_id: undefined,
       user_name: undefined,
       shipping_amount: undefined,
+      additional_shipping_amount: undefined,
       fee: undefined,
       discount: undefined,
       total_amount: 0,
@@ -262,6 +290,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       details,
 
       shipping_amount,
+      additional_shipping_amount,
       fee,
       discount,
       total_amount,
@@ -288,7 +317,9 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
       const isSend01 = to01(send_flg);
       const isSendBool = toBool(send_flg);
 
-      const nextDetails = Array.isArray(details) ? details : [];
+      const nextDetails = Array.isArray(details)
+        ? details.map((x: any) => normalizeDetailFromReceiveOrder(x))
+        : [];
 
       // ★受注選択時点で receive_order_detail_id を記憶
       rememberReceiveDetailIds(nextDetails);
@@ -310,6 +341,7 @@ export const useSalesDetailPage = (slug: string, from_receive: boolean) => {
         corporate_class,
         details: nextDetails,
         shipping_amount,
+        additional_shipping_amount,
         fee,
         discount,
         total_amount,

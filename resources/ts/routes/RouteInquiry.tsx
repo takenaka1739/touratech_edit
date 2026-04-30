@@ -12,6 +12,7 @@ const RouteShopMail: React.VFC = () => (
   <Switch>
 
     <AdminRoute exact path="/inquiry" component={InquiryReplyListPage} />
+    <AdminRoute exact path="/inquiry_mail" component={InquiryReplyListPage} />
 
     <AdminRoute
       exact

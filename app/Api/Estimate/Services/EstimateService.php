@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 見積データサービス
@@ -84,10 +85,6 @@ class EstimateService
       ->first();
 
     if (!$model) {
-      \Log::warning('[EstimateService@get] not found', [
-        'estimate_id' => $estimate_id,
-        'table' => $est,
-      ]);
       return [];
     }
 
@@ -135,6 +132,7 @@ class EstimateService
     $m = new Estimate();
     $m->estimate_date = Carbon::today()->format('Y/m/d');
     $m->shipping_amount = null;
+    $m->additional_shipping_amount = null;
     $m->fee = null;
     $m->total_amount = null;
     $data = $m->toArray();
@@ -179,7 +177,7 @@ class EstimateService
       })->toArray(),
     ]);
 
-    $data = new Collection($input);
+    $data = $this->prepareHeaderData(new Collection($input));
     return DB::transaction(function () use ($data) {
       $m = Estimate::create($data->toArray());
 
@@ -216,7 +214,7 @@ class EstimateService
       })->toArray(),
     ]);
 
-    $data = new Collection($input);
+    $data = $this->prepareHeaderData(new Collection($input));
     DB::transaction(function () use ($estimate_id, $data) {
       $m = Estimate::find($estimate_id);
       $m->estimate_date = $data->get('estimate_date');
@@ -233,6 +231,9 @@ class EstimateService
       $m->corporate_class = $data->get('corporate_class');
       $m->user_id = $data->get('user_id');
       $m->shipping_amount = $data->get('shipping_amount');
+      if (Schema::hasColumn('t_estimates', 'additional_shipping_amount')) {
+        $m->additional_shipping_amount = $data->get('additional_shipping_amount');
+      }
       $m->fee = $data->get('fee');
       $m->discount = $data->get('discount');
       $m->total_amount = $data->get('total_amount');
@@ -248,6 +249,15 @@ class EstimateService
     });
   }
 
+  private function prepareHeaderData(Collection $data): Collection
+  {
+    if (!Schema::hasColumn('t_estimates', 'additional_shipping_amount')) {
+      $data->forget('additional_shipping_amount');
+    }
+
+    return $data;
+  }
+
   /** 削除 */
   public function delete(int $estimate_id)
   {
@@ -261,6 +271,7 @@ class EstimateService
   {
     $config = Config::getSelf();
     $data['config_data'] = $config->toArray();
+    $data['user_name'] = Auth::user()?->name ?? ($data['user_name'] ?? '');
     return $data;
   }
 

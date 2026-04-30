@@ -165,6 +165,8 @@ class InvoicePdfService
     $this->pdf->Text(170, 18, 'No.');
     $this->pdf->TextRight(192.91, 18, $data->get('id'));
     $this->pdf->LineW(169.29, 21.58, 31.17);
+    $this->pdf->SetFontSize(8);
+    $this->pdf->Text(170, 24.2, '担当者：' . (string)$data->get('user_name', ''));
 
     // 自社名
     $this->pdf->SetFontSize(14);

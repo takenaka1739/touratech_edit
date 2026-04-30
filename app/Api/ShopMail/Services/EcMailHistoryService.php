@@ -25,6 +25,7 @@ class EcMailHistoryService
         $hasShippedAt    = Schema::hasColumn('t_sales', 'shipped_at');
         $hasInvoiceNo    = Schema::hasColumn('t_sales', 'invoice_number');
         $hasSendStatus   = Schema::hasColumn('t_mail_messages', 'send_status');
+        $hasReceiveOrderCreatedAt = Schema::hasColumn('t_receive_orders', 'created_at');
 
         // =========================================================
         // 母集団：t_mail_messages を receive_order_id 単位で集計
@@ -247,6 +248,10 @@ class EcMailHistoryService
             'lrs.sales_id',
         ]);
 
+        if ($hasReceiveOrderCreatedAt) {
+            $q->groupBy('ro.created_at');
+        }
+
         if ($hasCustomerId && $hasCustomerMail) {
             $q->groupBy('cu.email_main');
         }
@@ -288,6 +293,9 @@ class EcMailHistoryService
                 : DB::raw('ro.order_no as slip_no'),
             DB::raw('ro.total_amount as total_amount'),
             DB::raw('ro.receive_order_date as invoice_date'),
+            $hasReceiveOrderCreatedAt
+                ? DB::raw('ro.created_at as receive_order_created_at')
+                : DB::raw('null as receive_order_created_at'),
             DB::raw('s.payment_at as paid_date'),
             DB::raw('ro.customer_name as member_name'),
             DB::raw('ro.customer_name as buyer_name'),
@@ -326,10 +334,15 @@ class EcMailHistoryService
 
         $q->select($selects);
 
-        $q->orderByDesc('mmc.last_sent_at')
-          ->orderByDesc('ro.id')
-          ->offset($offset)
-          ->limit($perPage);
+        if ($hasReceiveOrderCreatedAt) {
+            $q->orderByDesc(DB::raw('COALESCE(mmc.last_sent_at, ro.created_at)'));
+        } else {
+            $q->orderByDesc('mmc.last_sent_at');
+        }
+
+        $q->orderByDesc('ro.id')
+            ->offset($offset)
+            ->limit($perPage);
 
         $rows = $q->get();
 

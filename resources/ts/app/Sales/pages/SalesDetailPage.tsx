@@ -5,7 +5,7 @@ import { CommonDataDetailDialog } from '@/app/App/components/CommonDataDetailDia
 import { useSalesDetailPage } from '../uses/useSalesDetailPage';
 import { CustomerSearchDialog } from '@/app/Customer/components/CustomerSearchDialog';
 import { UserSearchDialog } from '@/app/User/components/UserSearchDialog';
-import { ReceiveOrderSearchDialog } from '@/app/ReceiveOrder/components/ReceiveOrderSearchDialog';
+import { ReceiveOrderSearchDialog } from '@/app/Sales/components/ReceiveOrderSearchDialog';
 import { numberFormat, getItemKindName } from '@/utils';
 import { useComposing } from '@/uses';
 import classNames from 'classnames';
@@ -36,7 +36,9 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
     openUserDialog,
     openReceiveOrderDialog,
     onChange,
+    onChangeDateWidthCalc,
     onChangeShippingAmount,
+    onChangeAdditionalShippingAmount,
     onChangeFee,
     onChangeDiscount,
     onClickAddDetail,
@@ -227,7 +229,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               name="sales_at"
               value={state.sales_at ? state.sales_at.substring(0, 10).replace(/-/g, '/') : ''}
               error={errors?.sales_at}
-              onChange={onChange}
+              onChange={onChangeDateWidthCalc}
               groupClassName="mt-0"
               required
             />
@@ -537,6 +539,21 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
               value={state.fee}
               error={errors?.fee}
               onChange={onChangeFee}
+              precision={2}
+              className="max-w-8 text-right"
+              min={0}
+            />
+          </div>
+        </div>
+
+        <div className="flex">
+          <div className="w-1/2">
+            <Forms.FormGroupInputNumber
+              labelText="別途追加送料"
+              name="additional_shipping_amount"
+              value={state.additional_shipping_amount}
+              error={errors?.additional_shipping_amount}
+              onChange={onChangeAdditionalShippingAmount}
               precision={2}
               className="max-w-8 text-right"
               min={0}

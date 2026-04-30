@@ -70,7 +70,6 @@ class CouponUpdateRequest extends CouponRequest
                     in_array($rule['condition_type'], ['category_id', 'item_id']) &&
                     !is_array($rules[$i]['condition_value'])
                 ) {
-                    Log::error('❌ condition_valueが配列ではない', ['index' => $i]);
                     $validator->errors()->add("rules.$i.condition_value", '値が配列である必要があります');
                 }
 

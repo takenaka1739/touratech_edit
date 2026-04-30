@@ -234,8 +234,8 @@ if (!function_exists('calc_total_amount')) {
    * @param int $details_amount 合計金額
    * @return 合計金額
    */
-  function calc_total_amount(float $shipping_amount, float $fee, float $discount, int $details_amount) {
-    return bcadd(bcsub(bcadd($shipping_amount, $fee), $discount), $details_amount);
+  function calc_total_amount(float $shipping_amount, float $fee, float $discount, int $details_amount, float $additional_shipping_amount = 0) {
+    return bcadd(bcsub(bcadd(bcadd($shipping_amount, $additional_shipping_amount), $fee), $discount), $details_amount);
   }
 }
 

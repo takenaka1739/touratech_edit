@@ -14,11 +14,9 @@ export interface CommonDetailDialogProps<T> {
   slug: string;
   isShown: boolean;
   state: T;
-
-  // propsとしては残すが、計算は「常に切上げ」で固定
   fraction: number;
-
   salesTaxRate: number;
+  customerRate?: number;
   showAnswerDate?: boolean;
   receiveOrderDate?: string | undefined;
   updateState: <K extends keyof CommonDataDetail>(props: { [key in K]: CommonDataDetail[K] }) => void;
@@ -32,20 +30,12 @@ type DataDetailDialog = <T extends CommonDataDetail>(
   props: CommonDetailDialogProps<T>
 ) => React.ReactElement<CommonDetailDialogProps<T>>;
 
-/**
- * sometimes丸めは「常に切上げ」に固定
- */
 const roundTaxAlwaysCeil = (v: number): number => {
   if (!Number.isFinite(v)) return 0;
   return Math.ceil(v);
 };
 
-/**
- * 外税計算（常に切上げ）
- * - unit_price は税抜単価
- * - amount は税込金額
- */
-const calcAmountExternalTaxAlwaysCeil = (
+const calcAmountIncludedTaxAlwaysCeil = (
   unitPriceAny: any,
   quantityAny: any,
   discountAny: any,
@@ -57,14 +47,12 @@ const calcAmountExternalTaxAlwaysCeil = (
   const taxRate = toNumber(salesTaxRateAny ?? 0);
 
   const subtotal = unitPrice * quantity;
-  const taxableRaw = subtotal - discount;
-  const taxable = taxableRaw > 0 ? taxableRaw : 0;
+  const amountRaw = subtotal - discount;
+  const amount = Math.round(amountRaw > 0 ? amountRaw : 0);
 
-  const taxRaw = (taxable * taxRate) / 100;
-  const sales_tax = roundTaxAlwaysCeil(taxRaw);
-
-  // 税込（円運用：最終は整数）
-  const amount = Math.round(taxable + sales_tax);
+  const sales_tax = taxRate > 0
+    ? roundTaxAlwaysCeil((amount * taxRate) / (100 + taxRate))
+    : 0;
 
   return {
     amount,
@@ -80,6 +68,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   state,
   fraction,
   salesTaxRate,
+  customerRate,
   showAnswerDate,
   receiveOrderDate,
   updateState,
@@ -90,31 +79,12 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
 }) => {
   const { errors, setErrors, save } = useCommonDataDetailDialog(slug);
 
-  // sometimesログは常時出す（後で消す前提）
-  console.log('[CommonDataDetailDialog] opened', {
-    slug,
-    fraction_prop: fraction,
-    salesTaxRate,
-    rounding: 'ALWAYS_CEIL',
-    state_snapshot: state,
-  });
-
-  /**
-   * 🔽 再計算を1か所に集約（常に切上げ）
-   */
   const recalc = (
     unitPrice: number | undefined,
     quantity: number | undefined,
     discount: number | undefined
   ) => {
-    const out = calcAmountExternalTaxAlwaysCeil(unitPrice, quantity, discount, salesTaxRate);
-
-    console.log('[CommonDataDetailDialog][recalc]', {
-      in: { unitPrice, quantity, discount, salesTaxRate },
-      out,
-    });
-
-    return out;
+    return calcAmountIncludedTaxAlwaysCeil(unitPrice, quantity, discount, salesTaxRate);
   };
 
   const { open: openItemDialog, searchDialogProps: itemSearchDialogProps } =
@@ -127,44 +97,28 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
         const domesticStocks: number = toNumber(p.domestic_stocks ?? p.domestic_stock ?? p.domesticStock ?? 0);
         const overseasStocks: number = toNumber(p.overseas_stocks ?? p.overseas_stock ?? p.overseasStock ?? 0);
 
-        // ✅ 既存の項目名(sales_unit_price等)は維持し、値だけ仕入単価を採用する
-        // - props側の purchase_unit_price を優先して salesUnitPriceNum に入れる
-        // - purchase_unit_price が無い場合は従来通り sales_unit_price にフォールバック
-        const { id, name, name_note, purchase_unit_price, sales_unit_price, is_set_item } = p;
+        const {
+          id,
+          name,
+          name_note,
+          sales_price,
+          sales_unit_price,
+          is_set_item,
+          shipping_pay,
+          is_shipping_fee,
+          additional_shipping_fee,
+        } = p;
 
-        // ======================================================
-        // sometimes要望対応:
-        // 商品選択時は「定価=単価=sales_unit_price」にする
-        // → ただし今回は “渡す値” を仕入単価に差し替える
-        // ======================================================
-        const salesUnitPriceNum = toNumber(
-          purchase_unit_price !== undefined && purchase_unit_price !== null
-            ? purchase_unit_price
-            : (sales_unit_price ?? 0)
-        );
-
-        const rateForCalc = 100; // sometimes固定
-        const unit_price = salesUnitPriceNum; // sometimes固定（掛率を通さない）
-        const ret = recalc(unit_price, 1, (state as any).discount ?? 0);
+        const salesUnitPriceNum = toNumber(sales_price ?? sales_unit_price ?? 0);
+        const rateForCalc = toNumber((state as any).rate ?? customerRate ?? 100);
+        const unit_price = Math.round(((salesUnitPriceNum * rateForCalc) / 100) * 100) / 100;
+        const discount = toNumber((state as any).discount ?? 0);
+        const ret = recalc(unit_price, 1, discount);
 
         let answer_date: string | undefined = undefined;
         if (showAnswerDate) {
           answer_date = getAnswerDate(receiveOrderDate, domesticStocks, overseasStocks);
         }
-
-        console.log('[CommonDataDetailDialog][item selected]', {
-          id,
-          itemNumber,
-          // デバッグ上は両方出して、採用した値を明示
-          purchase_unit_price: toNumber(purchase_unit_price ?? 0),
-          sales_unit_price: toNumber(sales_unit_price ?? 0),
-          adopted_sales_unit_price: salesUnitPriceNum,
-          rateForCalc,
-          unit_price,
-          rounding: 'ALWAYS_CEIL',
-          salesTaxRate,
-          ret,
-        });
 
         updateState({
           item_kind: is_set_item ? 2 : 1,
@@ -173,18 +127,19 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
           item_name: name,
           item_name_jp: name_note,
 
-          // ✅ ここは項目名を変えず、値だけ仕入単価に差し替え
           sales_unit_price: salesUnitPriceNum,
           rate: rateForCalc,
           unit_price,
 
           quantity: 1,
-          discount: (state as any).discount ?? 0,
+          discount,
 
-          // sometimes重複回避: sales_tax_rate は ret 側で返すのでここでは指定しない
           ...ret,
 
           answer_date,
+          shipping_pay: toNumber(shipping_pay ?? 0),
+          is_shipping_fee,
+          additional_shipping_fee: toNumber(additional_shipping_fee ?? 0),
         } as any);
 
         setErrors(undefined);
@@ -194,7 +149,18 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     );
 
   useEffect(() => {
-    if (isShown) setErrors(undefined);
+    if (!isShown) return;
+
+    setErrors(undefined);
+
+    const initialRate = toNumber(customerRate ?? 100);
+
+    if (
+      !(state as any).no &&
+      ((state as any).rate === undefined || (state as any).rate === null || (state as any).rate === '')
+    ) {
+      updateState({ rate: initialRate } as any);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isShown]);
 
@@ -204,6 +170,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       setErrors({ ...(errors as any), [name]: '' });
       return;
     }
+
     if (
       (name === 'item_name' || name === 'item_name_jp') &&
       (typeof value === 'string' || typeof value === 'undefined')
@@ -216,23 +183,11 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   const onChangeRate = (name: string, value: string | number | boolean | undefined) => {
     const rate = value === '' || value === undefined ? undefined : toNumber(value);
 
-    // rate変更時は「定価×掛率」で単価を作り直す（手動調整向け）
     const s = toNumber((state as any).sales_unit_price ?? 0);
     const r = rate ?? 100;
     const unit_price = Math.round(((s * r) / 100) * 100) / 100;
 
     const ret = recalc(unit_price, (state as any).quantity as any, (state as any).discount as any);
-
-    console.log('[CommonDataDetailDialog][onChangeRate]', {
-      name,
-      value,
-      parsed_rate: rate,
-      sales_unit_price: (state as any).sales_unit_price,
-      unit_price,
-      quantity: (state as any).quantity,
-      discount: (state as any).discount,
-      ret,
-    });
 
     updateState({ [name]: rate, unit_price, ...ret } as any);
     if (errors && (errors as any)[name]) setErrors({ ...(errors as any), [name]: '' });
@@ -242,15 +197,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const unitPrice = value === '' || value === undefined ? undefined : toNumber(value);
     const ret = recalc(unitPrice, (state as any).quantity as any, (state as any).discount as any);
 
-    console.log('[CommonDataDetailDialog][onChangeUnitPrice]', {
-      name,
-      value,
-      parsed_unitPrice: unitPrice,
-      quantity: (state as any).quantity,
-      discount: (state as any).discount,
-      ret,
-    });
-
     updateState({ [name]: unitPrice, ...ret } as any);
     setErrors({ ...(errors as any), unit_price: '' });
   };
@@ -259,15 +205,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
     const quantity = value === '' || value === undefined ? undefined : toNumber(value);
     const ret = recalc((state as any).unit_price as any, quantity as any, (state as any).discount as any);
 
-    console.log('[CommonDataDetailDialog][onChangeQuantity]', {
-      name,
-      value,
-      parsed_quantity: quantity,
-      unit_price: (state as any).unit_price,
-      discount: (state as any).discount,
-      ret,
-    });
-
     updateState({ [name]: quantity, ...ret } as any);
     setErrors({ ...(errors as any), quantity: '' });
   };
@@ -275,15 +212,6 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
   const onChangeDetailDiscount = (name: string, value: string | number | boolean | undefined) => {
     const discount = value === '' || value === undefined ? 0 : toNumber(value);
     const ret = recalc((state as any).unit_price as any, (state as any).quantity as any, discount);
-
-    console.log('[CommonDataDetailDialog][onChangeDiscount]', {
-      name,
-      value,
-      parsed_discount: discount,
-      unit_price: (state as any).unit_price,
-      quantity: (state as any).quantity,
-      ret,
-    });
 
     updateState({ [name]: discount, ...ret } as any);
     setErrors({ ...(errors as any), discount: '' });
@@ -314,6 +242,7 @@ export const CommonDataDetailDialog: DataDetailDialog = ({
       setErrors(nextErrors);
       return false;
     }
+
     return true;
   };
 

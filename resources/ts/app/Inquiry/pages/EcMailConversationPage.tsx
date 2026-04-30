@@ -335,13 +335,13 @@ export const EcMailConversationPage: React.VFC = () => {
       prefix="shop-mail"
       title="個別返信メール送信"
       breadcrumb={[
-        { name: 'お問い合わせ一覧', url: '/inquiry?tab=ec' },
+        { name: 'EC購入メール履歴', url: '/inquiry_mail' },
         { name: 'メール履歴詳細' },
       ]}
     >
       <div className="mb-2 flex items-center justify-between">
         <div className="flex gap-2">
-          <Link className="btn" to="/inquiry?tab=ec">
+          <Link className="btn" to="/inquiry_mail">
             一覧へ戻る
           </Link>
           <button className="btn" type="button" onClick={fetchData} disabled={loading}>

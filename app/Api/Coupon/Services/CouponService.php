@@ -92,18 +92,9 @@ class CouponService
      */
     public function store(array $data): void
     {
-        //  入口ログ
-        Log::debug('【クーポン登録開始】', [
-            'raw_input' => $data,
-        ]);
-
         try {
             DB::transaction(function () use ($data) {
                 $rules = $data['rules'] ?? [];
-
-                Log::debug('【クーポン登録】整形前ルール一覧', [
-                    'rules' => $rules,
-                ]);
 
                 if (blank($data['details'] ?? null)) {
                     $data['details'] = $this->generateDetailsFromRules($rules);
@@ -115,22 +106,9 @@ class CouponService
 
                 unset($data['rules']);
 
-                Log::debug('【クーポン登録】Coupon::create 実行前', [
-                    'coupon_payload' => $data,
-                ]);
-
                 $coupon = Coupon::create($data);
 
-                Log::debug('【クーポン登録】クーポン作成完了', [
-                    'coupon_id' => $coupon->id,
-                ]);
-
                 foreach ($rules as $idx => $rule) {
-                    Log::debug('【クーポン登録】ルール整形前', [
-                        'index' => $idx,
-                        'rule'  => $rule,
-                    ]);
-
                     // benefit_value の整形
                     if (isset($rule['benefit_value']) && is_string($rule['benefit_value'])) {
                         $decoded = json_decode($rule['benefit_value'], true);
@@ -206,27 +184,12 @@ class CouponService
                         'benefit_value'   => $rule['benefit_value'] ?? [],
                     ];
 
-                    Log::debug('【クーポン登録】CouponRule::create 実行前', [
-                        'index'                 => $idx,
-                        'payload'               => $payload,
-                        'condition_value_type'  => gettype($conditionValue),
-                        'condition_type'        => $rule['condition_type'] ?? null,
-                    ]);
-
                     CouponRule::create($payload);
 
-                    Log::debug('【クーポン登録】CouponRule::create 実行後', [
-                        'index'      => $idx,
-                        'coupon_id'  => $coupon->id,
-                    ]);
                 }
 
-                Log::debug('【クーポン登録】全ルール登録完了', [
-                    'coupon_id' => $coupon->id,
-                ]);
             });
 
-            Log::debug('【クーポン登録完了】トランザクション正常終了');
         } catch (\Throwable $e) {
             Log::error('【クーポン登録エラー】', [
                 'message' => $e->getMessage(),

@@ -26,6 +26,7 @@ class ReceiveOrder extends Model
     'user_id',
     'order_no',
     'shipping_amount',
+    'additional_shipping_amount',
     'fee',
     'discount',
     'total_amount',
@@ -35,6 +36,13 @@ class ReceiveOrder extends Model
     //  Square 関連（テーブルに追加済みのカラム）
     'square_payment_id',
     'square_status',
+    'square_payment_flow',
+    'customer_payment_id',
+    'square_payment_status',
+    'square_payment_requested_at',
+    'square_payment_captured_at',
+    'square_payment_failed_at',
+    'square_payment_error',
   ];
 
   protected $hidden = [
