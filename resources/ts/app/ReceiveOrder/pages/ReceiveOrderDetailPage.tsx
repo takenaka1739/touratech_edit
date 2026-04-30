@@ -663,17 +663,6 @@ export const ReceiveOrderDetailPage: React.VFC<ReceiveOrderDetailPageProps> = ()
             <button className="btn ml-6" onClick={onClickPrint}>
               承り書発行
             </button>
-
-            {canShowSquareActions && (
-              <>
-                <button className="btn ml-6" onClick={handleSquarePayment}>
-                  支払い実行
-                </button>
-                <button className="btn-delete ml-2" onClick={handleSquareCancel}>
-                  注文キャンセル
-                </button>
-              </>
-            )}
             {canShowCardOnFileCharge && (
               <button className="btn ml-6" onClick={handleSquareCardOnFileCharge}>
                 カード決済実行
