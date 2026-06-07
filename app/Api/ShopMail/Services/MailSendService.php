@@ -57,14 +57,21 @@ class MailSendService
         $createdBy = Auth::id();
         $sendStatus = 1;
         $error = null;
+        $from = $this->resolveFromAddress();
+
+        if ($from === '') {
+            return ['ok' => false, 'message' => '送信元メールアドレスが設定されていません'];
+        }
 
         try {
             if ($bodyHtml !== null) {
-                Mail::html($bodyHtml, function ($m) use ($to, $subject) {
+                Mail::html($bodyHtml, function ($m) use ($to, $subject, $from) {
+                    $this->applyFrom($m, $from);
                     $m->to($to)->subject($subject);
                 });
             } else {
-                Mail::raw($bodyText, function ($m) use ($to, $subject) {
+                Mail::raw($bodyText, function ($m) use ($to, $subject, $from) {
+                    $this->applyFrom($m, $from);
                     $m->to($to)->subject($subject);
                 });
             }
@@ -139,9 +146,15 @@ class MailSendService
 
         $sendStatus = 1;
         $error = null;
+        $from = $this->resolveFromAddress();
+
+        if ($from === '') {
+            return ['ok' => false, 'message' => '送信元メールアドレスが設定されていません'];
+        }
 
         try {
-            Mail::raw($body, function ($m) use ($to, $subject) {
+            Mail::raw($body, function ($m) use ($to, $subject, $from) {
+                $this->applyFrom($m, $from);
                 $m->to($to)->subject($subject);
             });
         } catch (\Throwable $e) {
@@ -176,6 +189,27 @@ class MailSendService
             'to'      => $to,
             'error'   => $error,
         ];
+    }
+
+    private function resolveFromAddress(): string
+    {
+        $from = trim((string) config('mail.from.address', ''));
+        if ($from !== '') {
+            return $from;
+        }
+
+        return trim((string) config('mail.mailers.smtp.username', ''));
+    }
+
+    private function resolveFromName(): string
+    {
+        $name = trim((string) config('mail.from.name', ''));
+        return $name !== '' ? $name : config('app.name', 'Touratech');
+    }
+
+    private function applyFrom($message, string $from): void
+    {
+        $message->from($from, $this->resolveFromName());
     }
 
     private function composeFromTemplateText(int $receiveOrderId, object $tpl, array $payload): string

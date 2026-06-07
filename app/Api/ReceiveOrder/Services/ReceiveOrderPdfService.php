@@ -14,7 +14,7 @@ use Exception;
  */
 class ReceiveOrderPdfService
 {
-    const PER_PAGE = 18;
+    const PER_PAGE = 14;
 
     /** @var \App\Base\Pdf\PdfWrapper */
     protected $pdf;
@@ -26,7 +26,8 @@ class ReceiveOrderPdfService
 
     /** 明細枠内の固定値 */
     private const TABLE_TOP_Y = 115.559;
-    private const TABLE_BOTTOM_Y = 275.709;
+    private const TABLE_BOTTOM_Y = 245.709;
+    private const REMARKS_BOTTOM_Y = 291.000;
     private const ROW_HEIGHT = 8.545;
     private const ROW_BASE_Y = 113.395;
 
@@ -277,9 +278,9 @@ class ReceiveOrderPdfService
 
         // 明細の外枠
         $this->pdf->lineBold();
-        $this->pdf->Rect(21.541, 115.505, 174.864, 168.092);
+        $this->pdf->Rect(21.541, 115.505, 174.864, self::TABLE_BOTTOM_Y - 115.505);
         $this->pdf->lineW(21.771, 121.941, 174.864);
-        $this->pdf->lineW(21.771, 275.709, 174.864);
+        $this->pdf->lineW(21.771, self::TABLE_BOTTOM_Y, 174.864);
 
         // 明細部の縦線（新レイアウト）
         $this->pdf->lineNormal();
@@ -524,14 +525,74 @@ class ReceiveOrderPdfService
     {
         $remarks = (string) ($data->get('remarks', '') ?? '');
         $y = self::TABLE_BOTTOM_Y + 1;
+        $boxHeight = self::REMARKS_BOTTOM_Y - self::TABLE_BOTTOM_Y;
+
+        $this->pdf->lineBold();
+        $this->pdf->Rect(21.541, self::TABLE_BOTTOM_Y, 174.864, $boxHeight);
+        $this->pdf->lineNormal();
 
         $this->pdf->SetFontSize(8);
         $this->pdf->SetXY(21.771, $y);
         $this->pdf->Cell(10, 4, "備考");
         if ($remarks !== '') {
             $this->pdf->SetXY(30, $y);
-            $this->pdf->MultiCell(self::X_AMOUNT_R - 30, 3.6, $remarks);
+            $lineHeight = 3.2;
+            $maxLines = (int) floor((self::REMARKS_BOTTOM_Y - $y - 1) / $lineHeight);
+            $this->pdf->MultiCell(
+                self::X_AMOUNT_R - 31,
+                $lineHeight,
+                $this->fitTextLines($remarks, $maxLines, 92)
+            );
         }
+    }
+
+    private function fitTextLines(string $text, int $maxLines, int $maxWidth): string
+    {
+        $lines = [];
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+
+        foreach (explode("\n", $text) as $sourceLine) {
+            $line = (string) $sourceLine;
+
+            if ($line === '') {
+                $lines[] = '';
+                if (count($lines) >= $maxLines) {
+                    break;
+                }
+                continue;
+            }
+
+            while ($line !== '') {
+                $segment = '';
+                $length = mb_strlen($line);
+
+                for ($i = 0; $i < $length; $i++) {
+                    $candidate = $segment . mb_substr($line, $i, 1);
+                    if (mb_strwidth($candidate) > $maxWidth) {
+                        break;
+                    }
+                    $segment = $candidate;
+                }
+
+                if ($segment === '') {
+                    $segment = mb_substr($line, 0, 1);
+                }
+
+                $lines[] = $segment;
+                $line = mb_substr($line, mb_strlen($segment));
+
+                if (count($lines) >= $maxLines) {
+                    break 2;
+                }
+            }
+        }
+
+        if (count($lines) >= $maxLines && mb_strlen(implode("\n", $lines)) < mb_strlen($text)) {
+            $last = array_pop($lines) ?? '';
+            $lines[] = mb_strimwidth($last, 0, max(0, $maxWidth - 3), '') . '...';
+        }
+
+        return implode("\n", $lines);
     }
 
     private function getFileId(string $prefix)

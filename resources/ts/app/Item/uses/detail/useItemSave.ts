@@ -180,8 +180,12 @@ const buildImageInfo = (
 
       // payload 生成
       const images = buildImageInfo(state.imageList, state.variItems);
+      const nameNote = state.is_name_note_editable === true
+        ? state.name_note
+        : state.name;
       const payload: ItemPayload = { 
         ...state, 
+        name_note: nameNote,
         images,
         variItems: filledVariItems,
       };

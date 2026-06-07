@@ -256,7 +256,19 @@
 
   /* 購入者氏名 */
   .shop-mail-col-buyer-name {
-    width: 120px;
+    width: 160px;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
+
+  .shop-mail-buyer-address {
+    margin-top: 2px;
+    font-size: 10px;
+    color: #4b5563;
+    word-break: break-all;
   }
 
   /* 支払種別 */

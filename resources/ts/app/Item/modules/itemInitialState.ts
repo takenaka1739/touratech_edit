@@ -13,6 +13,7 @@ export const itemInitialState: Item & { selected: number[] | undefined } ={
   explanation: '',
   explanation_details: '',
   name_note: '',
+  is_name_note_editable: false,
   name_label: '',
   is_sell: true,
   purchase_price: undefined,

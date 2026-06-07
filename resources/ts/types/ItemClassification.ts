@@ -13,6 +13,7 @@ export interface ItemClassification {
   parent_name: string | undefined;
   name: string | undefined;
   remarks: string | undefined;
+  sort_order?: number | null;
   image: string;
   image_id: number | string | undefined;
 }

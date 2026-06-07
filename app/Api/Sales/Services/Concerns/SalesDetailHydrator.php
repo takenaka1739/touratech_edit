@@ -303,14 +303,6 @@ trait SalesDetailHydrator
             ->where('rd.receive_order_id', $receive_order_id)
             ->whereIn('rd.item_kind', [1, 2]);
 
-        if ($this->hasColumnSafe($rd, 'sales_completed')) {
-            $q->where('rd.sales_completed', '<>', 1);
-        }
-
-        if ($this->hasColumnSafe($mi, $stockCol)) {
-            $q->where("i.{$stockCol}", '<>', 0);
-        }
-
         return $q->orderBy('rd.receive_order_id')->orderBy('rd.no')->get();
     }
 }

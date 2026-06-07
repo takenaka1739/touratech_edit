@@ -25,6 +25,9 @@ export const ItemListPage: React.VFC = () => {
     onChangePage,
     addDetail,
     onClickOutput,
+    onClickImportPrices,
+    onChangeImportPricesFile,
+    importPricesInputRef,
     changeStockDisplay,
     isDisabled,
   } = useItemListPage(slug);
@@ -166,6 +169,16 @@ export const ItemListPage: React.VFC = () => {
           <button className="btn ml-6" onClick={onClickOutput} disabled={isDisabled}>
             エクセル出力
           </button>
+          <button className="btn ml-6" onClick={onClickImportPrices} disabled={isDisabled}>
+            取込み
+          </button>
+          <input
+            ref={importPricesInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={onChangeImportPricesFile}
+            style={{ display: 'none' }}
+          />
         </div>
 
         {isAdmin && (

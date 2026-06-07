@@ -28,6 +28,7 @@ Route::group([
     Route::post('output', [ItemController::class, 'output']);
     Route::post('get_id', [ItemController::class, 'get_id']);
     Route::post('/output_excel', [ItemController::class, 'output_excel']);
+    Route::post('/import_prices', [ItemController::class, 'import_prices']);
 
     Route::post('image_store', [ImageController::class, 'store']);
     Route::put('/image_update/{id}', [ImageController::class, 'update']);

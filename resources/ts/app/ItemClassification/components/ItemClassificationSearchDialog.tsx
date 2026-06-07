@@ -3,6 +3,7 @@ import { ItemClassification } from '@/types';
 import { TableWrapper, BoxConditions, DialogWrapper, Forms } from '@/components';
 import { useCommonSearchDialog } from '@/app/App/uses/useCommonSearchDialog';
 import { useComposing } from '@/uses';
+import { useFlatItemClassification } from '@/app/ItemClassification/uses/useFlatItemClassification';
 
 type ItemClassificationSearchDialogProps = {
   isShown: boolean;
@@ -55,6 +56,7 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
 
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const PER_PAGE = 20;
 
   useEffect(() => {
     if (!isShown) {
@@ -70,15 +72,33 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
     setSelectedIds([]);
   }, [isShown, currentCategoryId]);
 
-  const filteredRows = useMemo(() => {
-    return state.rows.filter((r: ItemClassification) => r.id != null && !excludeIds.includes(r.id));
-  }, [state.rows, excludeIds]);
+  const flatRows = useFlatItemClassification(state.rows);
+
+  const pagedRows = useMemo(() => {
+    const start = (conditions.page - 1) * PER_PAGE;
+    return flatRows.slice(start, start + PER_PAGE);
+  }, [flatRows, conditions.page]);
+
+  const pager = useMemo(() => {
+    const total = flatRows.length;
+    const currentPage = conditions.page;
+    const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
+
+    return {
+      total,
+      perPage: PER_PAGE,
+      currentPage,
+      lastPage,
+      from: total === 0 ? 0 : (currentPage - 1) * PER_PAGE + 1,
+      to: Math.min(total, currentPage * PER_PAGE),
+    };
+  }, [flatRows.length, conditions.page]);
 
   const allVisibleIds = useMemo(() => {
-    return filteredRows
-      .map((r: ItemClassification) => r.id)
-      .filter((id): id is number => id != null);
-  }, [filteredRows]);
+    return pagedRows
+      .map(r => r.id)
+      .filter((id): id is number => id != null && !excludeIds.includes(id));
+  }, [pagedRows, excludeIds]);
 
   const isAllChecked = useMemo(() => {
     return allVisibleIds.length > 0 && allVisibleIds.every(id => selectedIds.includes(id));
@@ -127,40 +147,78 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
       return;
     }
 
-    const selectedItems = filteredRows.filter(
-      (r: ItemClassification) => r.id != null && selectedIds.includes(r.id)
-    );
+    const selectedItems = flatRows
+      .filter(r => r.id != null && selectedIds.includes(r.id))
+      .map(r => r as ItemClassification);
 
     onSelectedMultiple(selectedItems);
     setSelectedIds([]);
     onCancel();
-  }, [onSelectedMultiple, selectedIds, filteredRows, onCancel]);
+  }, [onSelectedMultiple, selectedIds, flatRows, onCancel]);
 
   const tables = useMemo(() => {
-    const tbody = filteredRows.map(r => {
+    const tbody = pagedRows.map(r => {
       const checked = r.id != null && selectedIds.includes(r.id);
+      const isExcluded = r.id != null && excludeIds.includes(r.id);
+      const isDisplay = Number(r.is_display) === 1;
+      const isTop = r.level === 0;
+      const isChild = r.level >= 1;
 
       return (
-        <tr key={r.id}>
+        <tr
+          key={r.id}
+          className={
+            r.hiddenByParent
+              ? 'row-hidden'
+              : isChild
+              ? 'row-child'
+              : undefined
+          }
+        >
           <td className="w-12 text-center">
             {r.id != null && (
               <input
                 type="checkbox"
                 checked={checked}
+                disabled={isExcluded}
                 onChange={e => toggleChecked(r.id as number, e.target.checked)}
               />
             )}
           </td>
           <td>
-            <span className="link" onClick={() => handleSingleSelect(r)}>
-              {r.name}
-            </span>
+            <div className="name-cell-wrapper">
+              {isChild && <span aria-hidden className="child-guide" />}
+              <div className="name-cell">
+                <span
+                  className="indent"
+                  style={{ width: 20 * r.level, minWidth: 20 * r.level }}
+                />
+                {isTop ? (
+                  <span className="icon-parent">P</span>
+                ) : (
+                  <span className="icon-child">{'↳'.repeat(r.level)}</span>
+                )}
+                {isExcluded ? (
+                  <span className={isTop ? 'name-parent' : 'name-child'}>{r.name}</span>
+                ) : (
+                  <span
+                    className={`link ${isTop ? 'name-parent' : 'name-child'}`}
+                    onClick={() => handleSingleSelect(r as ItemClassification)}
+                  >
+                    {r.name}
+                  </span>
+                )}
+              </div>
+            </div>
           </td>
+          <td>{r.code ?? ''}</td>
+          <td>{isDisplay ? '公開' : '非公開'}</td>
           <td className="col-btn">
             <button
               type="button"
               className="btn-link"
-              onClick={() => handleSingleSelect(r)}
+              disabled={isExcluded}
+              onClick={() => handleSingleSelect(r as ItemClassification)}
             >
               選択
             </button>
@@ -181,13 +239,15 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
               />
             </th>
             <th>商品分類名</th>
+            <th>分類コード</th>
+            <th>公開設定</th>
             <th className="col-btn">選択</th>
           </tr>
         </thead>
         <tbody>{tbody}</tbody>
       </table>
     );
-  }, [filteredRows, selectedIds, isAllChecked, toggleChecked, toggleAllChecked, handleSingleSelect]);
+  }, [pagedRows, selectedIds, excludeIds, isAllChecked, toggleChecked, toggleAllChecked, handleSingleSelect]);
 
   return (
     <DialogWrapper
@@ -228,9 +288,11 @@ export const ItemClassificationSearchDialog: React.VFC<ItemClassificationSearchD
         </button>
       </div>
 
-      <TableWrapper pager={state.pager} onChangePage={onChangePage} isLoading={isLoading}>
-        {tables}
-      </TableWrapper>
+      <div className="item-classification-list-page">
+        <TableWrapper pager={pager} onChangePage={onChangePage} isLoading={isLoading}>
+          {tables}
+        </TableWrapper>
+      </div>
     </DialogWrapper>
   );
 };

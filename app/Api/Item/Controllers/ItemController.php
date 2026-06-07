@@ -8,6 +8,7 @@ use App\Api\Item\Requests\ItemUpdateRequest;
 use App\Api\Item\Requests\ItemOutputRequest;
 use App\Api\Item\Requests\ItemGetIdRequest;
 use App\Api\Item\Requests\ItemGetDetailRequest;
+use App\Api\Item\Requests\ItemPriceImportRequest;
 use App\Api\Item\Services\ItemService;
 use App\Api\Item\Services\ItemPdfService;
 use App\Api\Item\Services\ItemExcelService;
@@ -177,6 +178,23 @@ class ItemController extends BaseController
     return $this->success([
       'file_id' => $file_id,
     ]);
+  }
+
+  /**
+   * 単価取込
+   */
+  public function import_prices(ItemPriceImportRequest $request)
+  {
+    try {
+      $result = $this->service->importPricesFromExcel($request->file('file')->getRealPath());
+      return $this->success($result);
+    } catch (\Throwable $e) {
+      Log::warning('[ItemController] price import failed', [
+        'message' => $e->getMessage(),
+      ]);
+
+      return $this->error($e->getMessage());
+    }
   }
 
   /**

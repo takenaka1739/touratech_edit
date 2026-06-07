@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Forms } from '@/components';
 
 type Props = {
@@ -24,6 +24,12 @@ export const ItemBasicInfoSection: React.VFC<Props> = ({
     (state.name_note ?? '') !== '' && (state.name_note ?? '') !== (state.name ?? '')
   );
 
+  useEffect(() => {
+    const editable = (state.name_note ?? '') !== '' && (state.name_note ?? '') !== (state.name ?? '');
+    setIsNameNoteEditable(editable);
+    onChange('is_name_note_editable', editable);
+  }, [state.id]);
+
   const onChangeNameNoteEditable = (
     _name: string,
     value: string | number | boolean | undefined
@@ -36,6 +42,7 @@ export const ItemBasicInfoSection: React.VFC<Props> = ({
       onChange('name_note', state.name ?? '');
     }
 
+    onChange('is_name_note_editable', checked);
     setIsNameNoteEditable(checked);
   };
 

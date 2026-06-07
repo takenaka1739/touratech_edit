@@ -148,8 +148,11 @@ export const validateItemState = (state: Item): Record<string, string> => {
   if (state.name === null || state.name === undefined || state.name === '')
     errors.name = '商品名を入力してください';
 
-  // 商品名（納品書）
-  if (state.name_note === null || state.name_note === undefined || state.name_note === '')
+  // 商品名（納品書）：個別設定時のみ必須
+  if (
+    state.is_name_note_editable === true &&
+    (state.name_note === null || state.name_note === undefined || state.name_note === '')
+  )
     errors.name_note = '商品名（納品書）を入力してください';
 
   // 商品分類

@@ -151,7 +151,8 @@ class SalesService
             $salesTaxRate = $this->resolveSalesTaxRate();
         }
 
-        $details = $this->getDetailsByReceiveId($receive_order_id);
+        $isFullySold = $this->getReceiveOrderHasSalesValue($receive_order_id) === 1;
+        $details = $isFullySold ? collect() : $this->getDetailsByReceiveId($receive_order_id);
 
         $groups = ReceiveOrder::getSalesQuantityGroups($receive_order_id);
 
@@ -159,6 +160,9 @@ class SalesService
         foreach ($details as $d) {
             $id = $d->receive_order_detail_id;
             $d->no = $no++;
+            $originalQuantity = (int)($d->quantity ?? 0);
+            $originalAmount = $d->amount;
+            $originalSalesTax = $d->sales_tax;
 
             $salesQty = $groups->has($id)
                 ? (int)$groups->get($id)->sum('s_quantity')
@@ -182,17 +186,34 @@ class SalesService
             $rate      = (float)$d->sales_tax_rate;
             $fraction  = (int)($d->fraction ?? 1);
 
-            $amount = (int)round(max(($unitPrice * $qty) - $d->discount, 0), 0);
+            if ($originalAmount !== null && $originalAmount !== '' && $originalQuantity > 0) {
+                $amount = $originalQuantity === $qty
+                    ? (float)$originalAmount
+                    : $this->roundByFraction(((float)$originalAmount / $originalQuantity) * $qty, $fraction);
 
-            $d->amount    = $amount;
-            $d->sales_tax = get_sales_tax($amount, (int)$rate, $fraction);
+                $salesTax = $originalSalesTax !== null && $originalSalesTax !== ''
+                    ? (
+                        $originalQuantity === $qty
+                            ? (float)$originalSalesTax
+                            : $this->roundByFraction(((float)$originalSalesTax / $originalQuantity) * $qty, $fraction)
+                    )
+                    : get_sales_tax((int)round($amount, 0), (int)$rate, $fraction);
+            } else {
+                [$amount, $salesTax] = calc_amount($unitPrice, $qty, (int)$rate, $fraction);
+            }
+
+            $d->amount    = (int)$amount;
+            $d->sales_tax = (int)$salesTax;
         }
+        $details = collect($details)
+            ->filter(fn($d) => (int)($d->quantity ?? 0) > 0)
+            ->values();
 
         $details_amount = (int)collect($details)->sum('amount');
-        $shipping_amount = (float)($r->shipping_amount ?? 0);
-        $additional_shipping_amount = (float)($r->additional_shipping_amount ?? 0);
-        $fee = (float)($r->fee ?? 0);
-        $discount = (float)($r->discount ?? 0);
+        $shipping_amount = $isFullySold ? 0 : (float)($r->shipping_amount ?? 0);
+        $additional_shipping_amount = $isFullySold ? 0 : (float)($r->additional_shipping_amount ?? 0);
+        $fee = $isFullySold ? 0 : (float)($r->fee ?? 0);
+        $discount = $isFullySold ? 0 : (float)($r->discount ?? 0);
 
         $total_amount = function_exists('calc_total_amount')
             ? calc_total_amount($shipping_amount, $fee, $discount, $details_amount, $additional_shipping_amount)
@@ -234,6 +255,28 @@ class SalesService
             'receive_order_id' => (int)$r->id,
             'details'          => collect($details)->map(fn($x) => (array)$x)->toArray(),
         ];
+    }
+
+    private function roundByFraction(float $value, int $fraction): float
+    {
+        return match ($fraction) {
+            1 => floor($value),
+            2 => ceil($value),
+            3 => round($value),
+            default => round($value),
+        };
+    }
+
+    private function getReceiveOrderHasSalesValue(int $receive_order_id): int
+    {
+        $table = $this->receiveOrderHasSalesTable();
+        if (!$table) {
+            return 0;
+        }
+
+        return (int)(DB::table($table)
+            ->where('receive_order_id', $receive_order_id)
+            ->value('has_sales') ?? 0);
     }
 
     /* =========================================================================

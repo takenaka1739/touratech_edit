@@ -459,7 +459,7 @@ export const SalesDetailPage: React.VFC<DetailPageProps> = ({ from_receive }) =>
             </thead>
 
             <tbody>
-              {details.length === 0 && (
+              {details.length === 0 && !state.receive_order_id && (
                 <tr>
                   <td colSpan={9} className="text-center py-4 text-sm text-gray-500">
                     明細がありません。バーコード入力または「新規追加」から追加してください。

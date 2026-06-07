@@ -3,10 +3,12 @@
 namespace App\Base\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 class SpecialSale extends Model
 {
+  use SoftDeletes;
 
   protected $table = 't_special_sales';
 

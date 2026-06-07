@@ -26,6 +26,32 @@ class EcMailHistoryService
         $hasInvoiceNo    = Schema::hasColumn('t_sales', 'invoice_number');
         $hasSendStatus   = Schema::hasColumn('t_mail_messages', 'send_status');
         $hasReceiveOrderCreatedAt = Schema::hasColumn('t_receive_orders', 'created_at');
+        $hasReceiveOrderName = Schema::hasColumn('t_receive_orders', 'name');
+        $hasReceiveOrderEmail = Schema::hasColumn('t_receive_orders', 'email');
+        $hasReceiveOrderAddress1 = Schema::hasColumn('t_receive_orders', 'address1');
+        $hasReceiveOrderAddress2 = Schema::hasColumn('t_receive_orders', 'address2');
+
+        $buyerNameExpr = $hasReceiveOrderName
+            ? "COALESCE(NULLIF(ro.name, ''), NULLIF(ro.customer_name, ''), ro.customer_name)"
+            : 'ro.customer_name';
+        $buyerAddressParts = array_values(array_filter([
+            $hasReceiveOrderAddress1 ? "NULLIF(ro.address1, '')" : null,
+            $hasReceiveOrderAddress2 ? "NULLIF(ro.address2, '')" : null,
+        ]));
+        $buyerAddressExpr = !empty($buyerAddressParts)
+            ? "COALESCE(CONCAT_WS(' ', " . implode(', ', $buyerAddressParts) . "), '')"
+            : "''";
+        $buyerEmailExpr = $hasReceiveOrderEmail
+            ? (
+                $hasCustomerId && $hasCustomerMail
+                    ? "COALESCE(NULLIF(ro.email, ''), cu.email_main)"
+                    : 'ro.email'
+            )
+            : (
+                $hasCustomerId && $hasCustomerMail
+                    ? 'cu.email_main'
+                    : 'null'
+            );
 
         // =========================================================
         // 母集団：t_mail_messages を receive_order_id 単位で集計
@@ -95,12 +121,28 @@ class EcMailHistoryService
         // キーワード検索
         // =========================================================
         if ($keyword !== '') {
-            $q->where(function ($w) use ($keyword, $hasCustomerId, $hasCustomerMail, $hasInvoiceNo) {
+            $q->where(function ($w) use ($keyword, $hasCustomerId, $hasCustomerMail, $hasInvoiceNo, $hasReceiveOrderName, $hasReceiveOrderEmail, $hasReceiveOrderAddress1, $hasReceiveOrderAddress2) {
                 $w->where('ro.customer_name', 'like', "%{$keyword}%")
                   ->orWhere('ro.tel', 'like', "%{$keyword}%");
 
+                if ($hasReceiveOrderName) {
+                    $w->orWhere('ro.name', 'like', "%{$keyword}%");
+                }
+
+                if ($hasReceiveOrderAddress1) {
+                    $w->orWhere('ro.address1', 'like', "%{$keyword}%");
+                }
+
+                if ($hasReceiveOrderAddress2) {
+                    $w->orWhere('ro.address2', 'like', "%{$keyword}%");
+                }
+
                 if ($hasCustomerId && $hasCustomerMail) {
                     $w->orWhere('cu.email_main', 'like', "%{$keyword}%");
+                }
+
+                if ($hasReceiveOrderEmail) {
+                    $w->orWhere('ro.email', 'like', "%{$keyword}%");
                 }
 
                 if ($hasInvoiceNo) {
@@ -124,12 +166,27 @@ class EcMailHistoryService
         }
 
         if ($c->get('buyer_name')) {
-            $q->where('ro.customer_name', 'like', '%' . $c->get('buyer_name') . '%');
+            $nameKeyword = '%' . $c->get('buyer_name') . '%';
+            $q->where(function ($w) use ($nameKeyword, $hasReceiveOrderName) {
+                $w->where('ro.customer_name', 'like', $nameKeyword);
+                if ($hasReceiveOrderName) {
+                    $w->orWhere('ro.name', 'like', $nameKeyword);
+                }
+            });
         }
 
         if ($c->get('buyer_email')) {
-            if ($hasCustomerId && $hasCustomerMail) {
-                $q->where('cu.email_main', 'like', '%' . $c->get('buyer_email') . '%');
+            if (($hasCustomerId && $hasCustomerMail) || $hasReceiveOrderEmail) {
+                $emailKeyword = '%' . $c->get('buyer_email') . '%';
+                $q->where(function ($w) use ($emailKeyword, $hasCustomerId, $hasCustomerMail, $hasReceiveOrderEmail) {
+                    if ($hasCustomerId && $hasCustomerMail) {
+                        $w->where('cu.email_main', 'like', $emailKeyword);
+                    }
+                    if ($hasReceiveOrderEmail) {
+                        $method = $hasCustomerId && $hasCustomerMail ? 'orWhere' : 'where';
+                        $w->{$method}('ro.email', 'like', $emailKeyword);
+                    }
+                });
             } else {
                 $q->whereRaw('1 = 0');
             }
@@ -252,6 +309,22 @@ class EcMailHistoryService
             $q->groupBy('ro.created_at');
         }
 
+        if ($hasReceiveOrderName) {
+            $q->groupBy('ro.name');
+        }
+
+        if ($hasReceiveOrderEmail) {
+            $q->groupBy('ro.email');
+        }
+
+        if ($hasReceiveOrderAddress1) {
+            $q->groupBy('ro.address1');
+        }
+
+        if ($hasReceiveOrderAddress2) {
+            $q->groupBy('ro.address2');
+        }
+
         if ($hasCustomerId && $hasCustomerMail) {
             $q->groupBy('cu.email_main');
         }
@@ -298,16 +371,15 @@ class EcMailHistoryService
                 : DB::raw('null as receive_order_created_at'),
             DB::raw('s.payment_at as paid_date'),
             DB::raw('ro.customer_name as member_name'),
-            DB::raw('ro.customer_name as buyer_name'),
+            DB::raw("{$buyerNameExpr} as buyer_name"),
+            DB::raw("{$buyerAddressExpr} as buyer_address"),
             DB::raw('ro.sales_form as sales_form'),
 
             $paymentIdCol
                 ? DB::raw('pay.name as payment_name')
                 : DB::raw('null as payment_name'),
 
-            $hasCustomerId && $hasCustomerMail
-                ? DB::raw('cu.email_main as buyer_email')
-                : DB::raw('null as buyer_email'),
+            DB::raw("{$buyerEmailExpr} as buyer_email"),
 
             DB::raw('ro.tel as buyer_tel'),
 

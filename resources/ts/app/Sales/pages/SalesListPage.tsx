@@ -26,9 +26,12 @@ export const SalesListPage: React.VFC = () => {
   const { composing, onCompositionStart, onCompositionEnd } = useComposing();
 
   const tables = useMemo(() => {
+    const formatSalesDate = (value?: string | null) =>
+      value ? value.substring(0, 10).replace(/-/g, '/') : '';
+
     const tbody = state.rows.map(r => (
       <tr key={r.id}>
-        <td className="text-center">{r.sales_at}</td>
+        <td className="text-center">{formatSalesDate(r.sales_at)}</td>
         <td>{r.customer_name ?? '上様'}</td>
         <td>{r.personnel_name}</td>
         <td className="text-right">{numberFormat(r.total_amount, 0)}</td>

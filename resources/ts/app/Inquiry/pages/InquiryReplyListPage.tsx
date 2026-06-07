@@ -19,6 +19,7 @@ type EcRow = {
   paid_date: string | null;
   member_name: string | null;
   buyer_name: string | null;
+  buyer_address?: string | null;
 
   payment_name?: string | null;
   payment_type?: any;
@@ -454,7 +455,10 @@ export const InquiryReplyListPage: React.VFC = () => {
           {r.member_name ?? ''}
         </td>
         <td className="shop-mail-cell-name-one-line shop-mail-col-buyer-name">
-          {r.buyer_name ?? ''}
+          <div>{r.buyer_name ?? ''}</div>
+          {r.buyer_address && (
+            <div className="shop-mail-buyer-address">{r.buyer_address}</div>
+          )}
         </td>
         <td className="shop-mail-cell-name-one-line shop-mail-col-payment-name">
           {r.payment_name ?? ''}

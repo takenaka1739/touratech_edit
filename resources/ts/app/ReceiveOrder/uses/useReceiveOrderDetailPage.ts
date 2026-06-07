@@ -389,13 +389,13 @@ export const useReceiveOrderDetailPage = (slug: string) => {
   };
 
   const onClickPrint: () => void = async () => {
-    const savedState = await save();
+    const targetState = id && (state.has_sales ?? 0) !== 0 ? { ...state, id } : await save();
 
-    if (!savedState) {
+    if (!targetState) {
       return;
     }
 
-    if (await output(savedState)) {
+    if (await output(targetState)) {
       rest.backPage();
     } else {
       window.scrollTo(0, 0);

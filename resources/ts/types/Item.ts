@@ -112,6 +112,7 @@ export interface Item {
   explanation?: string | undefined;
   explanation_details?: string | undefined;
   name_note?: string | undefined;
+  is_name_note_editable?: boolean | undefined;
   name_label?: string | undefined;
   is_sell?: boolean | undefined;
   purchase_price?: number | undefined;
@@ -154,10 +155,10 @@ export interface Item {
 
   item_id: number | undefined;
   is_sales_members_only: boolean | undefined;
-  start_at?: string | undefined;
-  end_at?: string | undefined;
-  special_sale_price?: number | undefined;
-  refund_rate?: number | undefined;
+  start_at?: string | null | undefined;
+  end_at?: string | null | undefined;
+  special_sale_price?: number | null | undefined;
+  refund_rate?: number | null | undefined;
 
   categoryList: any[];
   categoryListAll: any[];

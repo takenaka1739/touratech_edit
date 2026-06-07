@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ChangeEvent, useRef, useState } from 'react';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -26,6 +26,7 @@ export type ItemPageState = {
 export const useItemListPage = (slug: string) => {
   const dispatch = useDispatch();
   const [isDisabled, setDisabled] = useState(false);
+  const importPricesInputRef = useRef<HTMLInputElement | null>(null);
   const initialConditions = itemInitialState.conditions;
 
   const setConditions = useCallback(
@@ -96,6 +97,71 @@ export const useItemListPage = (slug: string) => {
     setDisabled(false);
   };
 
+  const getImportErrorMessage = (data: any): string => {
+    if (data?.errMsg) {
+      return String(data.errMsg);
+    }
+
+    const errors = data?.errors;
+    if (errors && typeof errors === 'object') {
+      return Object.values(errors).flat().join('\n');
+    }
+
+    return '取込に失敗しました。';
+  };
+
+  const onClickImportPrices = async (): Promise<void> => {
+    if (isDisabled) {
+      return;
+    }
+
+    importPricesInputRef.current?.click();
+  };
+
+  const onChangeImportPricesFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    const result = await appConfirm('Excelファイルから売上単価・仕入単価を取込みますか？');
+    if (!result) {
+      await appAlert('キャンセルしました');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setDisabled(true);
+    dispatch(AppActions.request());
+
+    try {
+      const res = await axios.post(`/api/${slug}/import_prices`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (res.status === 200 && res.data.success) {
+        dispatch(AppActions.success());
+        const updatedCount = res.data.data?.updated_count ?? 0;
+        await appAlert(`${updatedCount}件の単価を更新しました。`);
+        onClickSearchButton();
+      } else {
+        dispatch(AppActions.failed('取込に失敗しました。'));
+        await appAlert(getImportErrorMessage(res.data), 'error');
+      }
+    } catch (error) {
+      dispatch(AppActions.failed('取込に失敗しました。'));
+      await appAlert('取込に失敗しました。', 'error');
+    } finally {
+      setDisabled(false);
+    }
+  };
+
   const changeStockDisplay = async (value: number): Promise<void> => {
     const result = await appConfirm('在庫表示を一括変更しますか？');
 
@@ -126,6 +192,9 @@ export const useItemListPage = (slug: string) => {
     onChangePage,
     addDetail,
     onClickOutput,
+    onClickImportPrices,
+    onChangeImportPricesFile,
+    importPricesInputRef,
     changeStockDisplay,
     isDisabled,
   };

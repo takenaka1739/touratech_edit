@@ -52,29 +52,26 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
   };
 
   const clickCancel = () => {
-    initialState.specialSalesDelFlag = false;
-    onChange('is_sales_members_only', state.is_sales_members_only);
-    onChange('start_at', state.start_at);
-    onChange('end_at', state.end_at);
-    onChange('special_sale_price', state.special_sale_price);
-    onChange('refund_rate', state.refund_rate);
+    setState({
+      ...state,
+      specialSalesDelFlag: false,
+    });
     onClickCancel();
   } 
 
   const onDeleteClick = () => {
-    initialState.specialSalesDelFlag = true;
-    //onChange('is_sales_members_only', false);
-    //onChange('start_at', undefined);
-    //onChange('end_at', undefined);
-    //onChange('special_sale_price', 0);
-    //onChange('refund_rate', 0);
+    const deletedState = {
+      ...initialState,
+      specialSalesDelFlag: true,
+      is_sales_members_only: false,
+      start_at: null,
+      end_at: null,
+      special_sale_price: null,
+      refund_rate: null,
+    };
 
-    initialState.is_sales_members_only = false;
-    initialState.start_at = undefined;
-    initialState.end_at = undefined;
-    initialState.special_sale_price = undefined;
-    initialState.refund_rate = undefined;
-
+    setState(deletedState);
+    onValueChange(deletedState);
     onClickCancel();
   }
 
@@ -164,4 +161,3 @@ export const SpecialSalesDialog: React.VFC<SpecialSalesProps> = ({
     </DialogWrapper>
   )
 };
-

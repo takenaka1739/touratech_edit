@@ -43,26 +43,28 @@ class ItemExcelService
 
     $sheet = $spreadsheet->getActiveSheet();
 
-    $sheet->setCellValue('A1', '品番');
-    $sheet->setCellValue('B1', '商品名');
-    $sheet->setCellValue('C1', '商品名（納品書）');
-    $sheet->setCellValue('D1', '売上単価');
-    $sheet->setCellValue('E1', '仕入単価');
-    $sheet->setCellValue('F1', '国内在庫');
-    $sheet->setCellValue('G1', '国外在庫');
+    $sheet->setCellValue('A1', 'ID');
+    $sheet->setCellValue('B1', '品番');
+    $sheet->setCellValue('C1', '商品名');
+    $sheet->setCellValue('D1', '商品名（納品書）');
+    $sheet->setCellValue('E1', '売上単価');
+    $sheet->setCellValue('F1', '仕入単価');
+    $sheet->setCellValue('G1', '国内在庫');
+    $sheet->setCellValue('H1', '国外在庫');
 
     $y = 2;
     foreach ($rows as $row)
     {
       $row = new Collection($row);
 
-      $sheet->setCellValue('A'.$y, $row->get("item_number"));
-      $sheet->setCellValue('B'.$y, $row->get("name", ''));
-      $sheet->setCellValue('C'.$y, $row->get("name_note", ''));
-      $sheet->setCellValue('D'.$y, $row->get('sales_unit_price'));
-      $sheet->setCellValue('E'.$y, $row->get('purchase_unit_price'));
-      $sheet->setCellValue('F'.$y, $row->get('domestic_stocks'));
-      $sheet->setCellValue('G'.$y, $row->get('overseas_stocks'));
+      $sheet->setCellValue('A'.$y, $row->get('id'));
+      $sheet->setCellValue('B'.$y, $row->get("item_number"));
+      $sheet->setCellValue('C'.$y, $row->get("name", ''));
+      $sheet->setCellValue('D'.$y, $row->get("name_note", ''));
+      $sheet->setCellValue('E'.$y, $row->get('sales_price'));
+      $sheet->setCellValue('F'.$y, $row->get('purchase_unit_price'));
+      $sheet->setCellValue('G'.$y, $row->get('domestic_stocks'));
+      $sheet->setCellValue('H'.$y, $row->get('overseas_stocks'));
 
       $y++;
     }

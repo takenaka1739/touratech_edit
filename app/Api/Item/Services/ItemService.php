@@ -9,8 +9,11 @@ use App\Base\Models\Category;
 use App\Base\Models\Document;
 use App\Base\Models\DocumentLink;
 use App\Base\Models\SpecialSale;
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * 商品マスタサービス
@@ -521,6 +524,7 @@ foreach ($idList as $id) {
       'm_items.id',
       'm_items.code',
       'm_items.name',
+      'm_items.name_note',
       'm_items.item_number',
       'm_items.sales_price',
       'm_items.sales_unit_price',
@@ -528,6 +532,7 @@ foreach ($idList as $id) {
       'm_items.shipping_pay',
       'm_items.is_shipping_fee',
       'm_items.additional_shipping_fee',
+      'm_items.is_set_item',
       'm_categories.name AS item_classification_name',
     )
       ->leftJoin('m_categories', 'm_categories.id', '=', 'm_items.item_number')
@@ -558,9 +563,9 @@ foreach ($idList as $id) {
       $m->sales_price = $data->get('sales_price');
       $m->display_status = $data->get('display_status');
       $m->additional_shipping_fee = $data->get('additional_shipping_fee');
-      $m->purchase_price = $data->get('purchase_price');
+      $m->purchase_price = $data->get('purchase_unit_price') ?? $data->get('purchase_price') ?? 0;
       $m->is_set_item = $data->get('is_set_item');
-      $m->sales_unit_price = $data->get('sales_unit_price') ?? 0;
+      $m->sales_unit_price = $data->get('sales_price') ?? $data->get('sales_unit_price') ?? 0;
       $m->purchase_unit_price = $data->get('purchase_unit_price') ?? 0;
       $m->sample_price = $data->get('sample_price');
       $m->supplier_id = $data->get('supplier_id');
@@ -631,7 +636,7 @@ foreach ($idList as $id) {
       'item_number',
       'name',
       'name_note',
-      'sales_unit_price',
+      'sales_price',
       'purchase_unit_price',
       'domestic_stocks',
       'overseas_stocks',
@@ -639,6 +644,226 @@ foreach ($idList as $id) {
     $query = $this->setCondition($query, $cond);
     $query->orderBy('code', 'asc');
     return $query->get();
+  }
+
+  /**
+   * Excelから売上単価・仕入単価を更新する。
+   *
+   * @param string $path
+   * @return array
+   * @throws Exception
+   */
+  public function importPricesFromExcel(string $path): array
+  {
+    $spreadsheet = IOFactory::load($path);
+    $sheet = $spreadsheet->getSheet(0);
+    $columns = $this->findPriceImportColumns($sheet);
+    $highestRow = $sheet->getHighestRow();
+
+    $updates = [];
+    $errors = [];
+
+    for ($rowIndex = 2; $rowIndex <= $highestRow; $rowIndex++) {
+      $idValue = $this->getSheetCellValue($sheet, $columns['id'], $rowIndex);
+      $salesValue = $this->getSheetCellValue($sheet, $columns['sales_price'], $rowIndex);
+      $purchaseValue = $this->getSheetCellValue($sheet, $columns['purchase_unit_price'], $rowIndex);
+
+      if ($this->isBlankCellValue($idValue) && $this->isBlankCellValue($salesValue) && $this->isBlankCellValue($purchaseValue)) {
+        continue;
+      }
+
+      if ($this->isBlankCellValue($idValue)) {
+        $errors[] = "{$rowIndex}行目: IDが空です。";
+        continue;
+      }
+
+      try {
+        $id = $this->parseItemPriceImportId($idValue);
+        $salesUnitPrice = $this->parseNullablePriceValue($salesValue, "{$rowIndex}行目: 売上単価");
+        $purchaseUnitPrice = $this->parseNullablePriceValue($purchaseValue, "{$rowIndex}行目: 仕入単価");
+      } catch (Exception $e) {
+        $message = $e->getMessage();
+        $errors[] = str_contains($message, '行目') ? $message : "{$rowIndex}行目: {$message}";
+        continue;
+      }
+
+      if (isset($updates[$id])) {
+        $errors[] = "{$rowIndex}行目: ID {$id} が重複しています。";
+        continue;
+      }
+
+      $values = [];
+      if ($salesUnitPrice !== null) {
+        $values['sales_price'] = $salesUnitPrice;
+        $values['sales_unit_price'] = $salesUnitPrice;
+      }
+      if ($purchaseUnitPrice !== null) {
+        $values['purchase_price'] = $purchaseUnitPrice;
+        $values['purchase_unit_price'] = $purchaseUnitPrice;
+      }
+
+      if (!empty($values)) {
+        $updates[$id] = $values;
+      }
+    }
+
+    if (!empty($updates)) {
+      $existingIds = Item::whereIn('id', array_keys($updates))
+        ->pluck('id')
+        ->map(fn ($id) => (int) $id)
+        ->all();
+      $missingIds = array_diff(array_keys($updates), $existingIds);
+
+      foreach ($missingIds as $missingId) {
+        $errors[] = "ID {$missingId}: 商品が存在しません。";
+      }
+    }
+
+    if (!empty($errors)) {
+      throw new Exception("取込ファイルにエラーがあります。\n" . implode("\n", array_slice($errors, 0, 20)));
+    }
+
+    DB::transaction(function () use ($updates) {
+      foreach ($updates as $id => $values) {
+        Item::where('id', $id)->update($values);
+      }
+    });
+
+    return [
+      'updated_count' => count($updates),
+    ];
+  }
+
+  /**
+   * 単価取込用の列位置を取得する。
+   *
+   * @param mixed $sheet
+   * @return array
+   * @throws Exception
+   */
+  private function findPriceImportColumns($sheet): array
+  {
+    $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+    $columns = [];
+
+    for ($col = 1; $col <= $highestColumnIndex; $col++) {
+      $header = $this->normalizePriceImportHeader($this->getSheetCellValue($sheet, $col, 1));
+
+      if ($header === 'ID') {
+        $columns['id'] = $col;
+      } elseif ($header === '売上単価') {
+        $columns['sales_price'] = $col;
+      } elseif ($header === '仕入単価' || $header === '仕入れ単価') {
+        $columns['purchase_unit_price'] = $col;
+      }
+    }
+
+    $missing = [];
+    if (empty($columns['id'])) {
+      $missing[] = 'ID';
+    }
+    if (empty($columns['sales_price'])) {
+      $missing[] = '売上単価';
+    }
+    if (empty($columns['purchase_unit_price'])) {
+      $missing[] = '仕入単価';
+    }
+
+    if (!empty($missing)) {
+      throw new Exception('取込ファイルに必要な列がありません: ' . implode('、', $missing));
+    }
+
+    return $columns;
+  }
+
+  /**
+   * @param mixed $sheet
+   * @param int $column
+   * @param int $row
+   * @return mixed
+   */
+  private function getSheetCellValue($sheet, int $column, int $row)
+  {
+    $address = Coordinate::stringFromColumnIndex($column) . $row;
+    return $sheet->getCell($address)->getCalculatedValue();
+  }
+
+  /**
+   * @param mixed $value
+   * @return string
+   */
+  private function normalizePriceImportHeader($value): string
+  {
+    return preg_replace('/\s/u', '', trim((string) $value));
+  }
+
+  /**
+   * @param mixed $value
+   * @return bool
+   */
+  private function isBlankCellValue($value): bool
+  {
+    return trim((string) $value) === '';
+  }
+
+  /**
+   * @param mixed $value
+   * @return int
+   * @throws Exception
+   */
+  private function parseItemPriceImportId($value): int
+  {
+    $normalized = $this->normalizeNumericText($value);
+    if ($normalized === '' || !preg_match('/^\d+$/', $normalized)) {
+      throw new Exception('IDは整数で入力してください。');
+    }
+
+    return (int) $normalized;
+  }
+
+  /**
+   * @param mixed $value
+   * @param string $label
+   * @return int|float|null
+   * @throws Exception
+   */
+  private function parseNullablePriceValue($value, string $label)
+  {
+    if ($this->isBlankCellValue($value)) {
+      return null;
+    }
+
+    $normalized = $this->normalizeNumericText($value);
+    if ($normalized === '' || !preg_match('/^\d+(\.\d+)?$/', $normalized)) {
+      throw new Exception("{$label}に数値以外が入力されています。");
+    }
+
+    return str_contains($normalized, '.') ? (float) $normalized : (int) $normalized;
+  }
+
+  /**
+   * @param mixed $value
+   * @return string
+   */
+  private function normalizeNumericText($value): string
+  {
+    $text = trim((string) $value);
+    $text = strtr($text, [
+      '０' => '0',
+      '１' => '1',
+      '２' => '2',
+      '３' => '3',
+      '４' => '4',
+      '５' => '5',
+      '６' => '6',
+      '７' => '7',
+      '８' => '8',
+      '９' => '9',
+      '．' => '.',
+      '，' => ',',
+    ]);
+
+    return str_replace([',', ' ', '　', '¥', '￥', '円'], '', $text);
   }
 
   /**
@@ -702,9 +927,9 @@ foreach ($idList as $id) {
       'name_note'              => $data['name_note'] ?? null,
       'name_label'             => $data['name_label'] ?? null,
       'is_sell'                => $data['is_sell'] ?? false,
-      'purchase_price'         => $data['purchase_price'] ?? 0,
+      'purchase_price'         => $data['purchase_unit_price'] ?? $data['purchase_price'] ?? 0,
       // sales_price はバリエーションの有無により取得先が異なる
-      'sales_unit_price'       => $data['sales_unit_price'] ?? 0,
+      'sales_unit_price'       => $data['sales_price'] ?? $data['sales_unit_price'] ?? 0,
       'purchase_unit_price'    => $data['purchase_unit_price'] ?? 0,
       'sample_price'           => $data['sample_price'] ?? 0,
       'discontinued_at'        => $data['discontinued_at'] ?? null,
@@ -761,7 +986,7 @@ foreach ($idList as $id) {
       }
     }
 
-    return $base + [
+    $attributes = $base + [
       'variations1' => $resolved[1],
       'variations2' => $resolved[2],
       'variations3' => $resolved[3],
@@ -770,6 +995,10 @@ foreach ($idList as $id) {
       'sales_price' => $variation[6] ?? 0,
       'is_sell_variation' => $variation[7] ?? '0',
     ];
+
+    $attributes['sales_unit_price'] = $attributes['sales_price'];
+
+    return $attributes;
   }
 
   /**
@@ -878,7 +1107,7 @@ foreach ($idList as $id) {
     }
 
     // 特売設定の登録 (start_at(特売開始日)がnullだったら登録しない, Itemごとに1件)
-    if($data['start_at'] !== null) {
+    if (empty($data['specialSalesDelFlag']) && !empty($data['start_at'])) {
       SpecialSale::create($this->buildSpecialSaleAttributes($item->id, $data));
     }
   }
@@ -970,11 +1199,16 @@ foreach ($idList as $id) {
     }
 
     // 特売設定の更新／新規作成 (1つの Item に1件)
-    if (!empty($data['start_at'])) {
-      SpecialSale::updateOrCreate(
+    if (!empty($data['specialSalesDelFlag'])) {
+      SpecialSale::where('item_id', $item->id)->delete();
+    } elseif (!empty($data['start_at'])) {
+      $specialSale = SpecialSale::withTrashed()->updateOrCreate(
         ['item_id' => $item->id],
         $this->buildSpecialSaleAttributes($item->id, $data)
       );
+      if ($specialSale->trashed()) {
+        $specialSale->restore();
+      }
     } else {
       SpecialSale::where('item_id', $item->id)->delete();
     }
@@ -1049,23 +1283,27 @@ foreach ($idList as $id) {
       if (empty($data['variItems']) || count($data['variItems']) <= 1) {
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
-          $item = Item::create($base + [
+          $salesPrice = $data['variItems'][0][6] ?? 0;
+          $item = Item::create(array_merge($base, [
             'variations1' => $data['variItems'][0][1] ?? null,
             'variations2' => $data['variItems'][0][2] ?? null,
             'variations3' => $data['variItems'][0][3] ?? null,
             'variations4' => $data['variItems'][0][4] ?? null,
             'item_number' => $data['variItems'][0][5] ?? null,
-            'sales_price' => $data['variItems'][0][6] ?? 0,
+            'sales_price' => $salesPrice,
+            'sales_unit_price' => $salesPrice,
             'is_sell_variation' => $data['variItems'][0][7] ?? '0',
-          ]);
+          ]));
         }
         else
         {
-          $item = Item::create($base + [
+          $salesPrice = $data['sales_price'] ?? 0;
+          $item = Item::create(array_merge($base, [
             'item_number' => $data['item_number'] ?? null,
-            'sales_price' => $data['sales_price'] ?? 0,
+            'sales_price' => $salesPrice,
+            'sales_unit_price' => $salesPrice,
             'is_sell_variation' => $data['variItems'][0][7] ?? '0',
-          ]);
+          ]));
         }
 
         $ids[] = $item->id;
@@ -1118,27 +1356,31 @@ foreach ($idList as $id) {
 
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
-          $item->update($base + [
+          $salesPrice = $data['variItems'][0][6] ?? 0;
+          $item->update(array_merge($base, [
             'variations1' => $data['variItems'][0][1] ?? null,
             'variations2' => $data['variItems'][0][2] ?? null,
             'variations3' => $data['variItems'][0][3] ?? null,
             'variations4' => $data['variItems'][0][4] ?? null,
             'item_number' => $data['variItems'][0][5] ?? null,
-            'sales_price' => $data['variItems'][0][6] ?? 0,
+            'sales_price' => $salesPrice,
+            'sales_unit_price' => $salesPrice,
             'is_sell_variation' => $data['variItems'][0][7] ?? '0',
-          ]);
+          ]));
         }
         else
         {
-          $item->update($base + [
+          $salesPrice = $data['sales_price'] ?? 0;
+          $item->update(array_merge($base, [
             'variations1' => null,
             'variations2' => null,
             'variations3' => null,
             'variations4' => null,
             'item_number' => $data['item_number'] ?? null,
-            'sales_price' => $data['sales_price'] ?? 0,
+            'sales_price' => $salesPrice,
+            'sales_unit_price' => $salesPrice,
             'is_sell_variation' => $data['variItems'][0][7] ?? '0',
-          ]);
+          ]));
         }
 
         $ids[] = $item->id;

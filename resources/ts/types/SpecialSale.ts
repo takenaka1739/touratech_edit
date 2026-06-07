@@ -13,8 +13,9 @@ export type SpecialSale = {
     id: number | undefined;
     item_id: number | undefined;
     is_sales_members_only:boolean | undefined ;
-    start_at?: string | undefined;
-    end_at?: string | undefined;
-    special_sale_price: number | undefined ;
-    refund_rate:number | undefined ;
+    start_at?: string | null | undefined;
+    end_at?: string | null | undefined;
+    special_sale_price: number | null | undefined ;
+    refund_rate:number | null | undefined ;
+    specialSalesDelFlag?: boolean | undefined;
 };

@@ -467,7 +467,7 @@ trait SalesPersistence
      *
      * 仕様:
      * - sales_tax_rate が無い/0 の場合は defaultSalesTaxRate() を使う
-     * - taxable = unit_price * quantity - discount（マイナスにならないよう max）
+     * - amount = unit_price * quantity（受注詳細画面の計算と同じ）
      * - tax の丸めは fraction で決める（★得意先fractionをfallbackで採用）
      *
      * ★修正:
@@ -541,15 +541,6 @@ trait SalesPersistence
         $unitPrice = (float)($detail->get('unit_price') ?? $m->unit_price ?? 0);
         $qty       = (float)($detail->get('quantity') ?? $m->quantity ?? 0);
 
-        $disc = (float)($this->resolveDetailDiscount($detail) ?? $m->discount ?? 0);
-
-        $subtotal = $unitPrice * $qty;
-        $amount = max($subtotal - $disc, 0);
-
-        // ★ float誤差で 4999.999999... になり得るので、まず0桁に丸める
-        $amount = round($amount, 0);
-
-
         /**
          * ★丸め区分の決定順（重要）
          * 1) payload details.fraction（画面側が指定してきた場合）
@@ -604,14 +595,13 @@ trait SalesPersistence
          * ★ユーザー指定のマッピング:
          * 1: 切り捨て / 2: 切り上げ / 3: 四捨五入
          */
-        $amount = (int)round($amount, 0);
-        $salesTax = get_sales_tax($amount, (int)$taxRate, (int)$fraction);
+        [$amount, $salesTax] = calc_amount($unitPrice, (int)$qty, (int)$taxRate, (int)$fraction);
 
         if ($hasTax) {
             $m->sales_tax = (int)round($salesTax, 0);
         }
         if ($hasAmount) {
-            $m->amount = $amount;
+            $m->amount = (int)$amount;
         }
     }
 

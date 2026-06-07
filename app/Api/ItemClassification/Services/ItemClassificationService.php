@@ -21,10 +21,31 @@ class ItemClassificationService
    */
   public function dialog(array $cond)
   {
-    $query = ItemClassification::select('id', 'name');
+    $query = ItemClassification::select(
+      'id',
+      'name',
+      'code',
+      'parent_code',
+      'is_display',
+      'sort_order'
+    );
     $query = $this->setCondition($query, $cond);
-    $query->orderBy('name', 'asc');
-    return $query->paginate(config('const.paginate.per_page'))->toArray();
+    $query->orderBy('sort_order', 'asc')
+      ->orderBy('name', 'asc');
+
+    $rows = $this->appendAncestorRowsForSearch($query->get(), $cond)->toArray();
+
+    return [
+      'rows'  => $rows,
+      'pager' => [
+        'currentPage' => 1,
+        'lastPage'    => 1,
+        'perPage'     => count($rows),
+        'from'        => count($rows) > 0 ? 1 : 0,
+        'to'          => count($rows),
+        'total'       => count($rows),
+      ],
+    ];
   }
 
   /**
@@ -51,7 +72,7 @@ class ItemClassificationService
       $query->orderBy('sort_order', 'asc')
             ->orderBy('name', 'asc');
 
-      $rows = $query->get()->toArray();
+      $rows = $this->appendAncestorRowsForSearch($query->get(), $cond)->toArray();
 
       return [
           'rows'  => $rows,
@@ -451,6 +472,91 @@ class ItemClassificationService
     }
 
     return $ids;
+  }
+
+  /**
+   * 検索で子分類だけがヒットした場合でも、ツリー表示に必要な親分類を結果へ追加する。
+   *
+   * @param \Illuminate\Support\Collection<int, \App\Base\Models\ItemClassification> $rows
+   * @param array $cond
+   * @return \Illuminate\Support\Collection<int, \App\Base\Models\ItemClassification>
+   */
+  private function appendAncestorRowsForSearch(Collection $rows, array $cond): Collection
+  {
+    $keyword = trim((string) (new Collection($cond))->get('c_keyword', ''));
+    if ($keyword === '' || $rows->isEmpty()) {
+      return $rows;
+    }
+
+    $byId = $rows->keyBy('id');
+    $knownCodes = $rows
+      ->pluck('code')
+      ->filter(fn($code) => $code !== null && $code !== '')
+      ->map(fn($code) => (string) $code)
+      ->flip();
+
+    $queue = $rows
+      ->pluck('parent_code')
+      ->filter(fn($code) => $code !== null && $code !== '')
+      ->map(fn($code) => (string) $code)
+      ->reject(fn($code) => isset($knownCodes[$code]))
+      ->unique()
+      ->values();
+
+    while ($queue->isNotEmpty()) {
+      $parents = ItemClassification::select(
+          'id',
+          'name',
+          'code',
+          'parent_code',
+          'is_display',
+          'sort_order'
+        )
+        ->whereIn('code', $queue->all())
+        ->orderBy('sort_order', 'asc')
+        ->orderBy('name', 'asc')
+        ->get();
+
+      if ($parents->isEmpty()) {
+        break;
+      }
+
+      $queue = collect();
+
+      foreach ($parents as $parent) {
+        $parentId = (int) $parent->id;
+        $parentCode = (string) ($parent->code ?? '');
+        $parentParentCode = (string) ($parent->parent_code ?? '');
+
+        if (!$byId->has($parentId)) {
+          $byId->put($parentId, $parent);
+        }
+
+        if ($parentCode !== '') {
+          $knownCodes->put($parentCode, true);
+        }
+
+        if (
+          $parentParentCode !== '' &&
+          $parentParentCode !== $parentCode &&
+          !$knownCodes->has($parentParentCode)
+        ) {
+          $queue->push($parentParentCode);
+        }
+      }
+
+      $queue = $queue->unique()->values();
+    }
+
+    return $byId
+      ->values()
+      ->sort(function ($a, $b) {
+        $order = ((int) ($a->sort_order ?? 0)) <=> ((int) ($b->sort_order ?? 0));
+        return $order !== 0
+          ? $order
+          : strcmp((string) ($a->name ?? ''), (string) ($b->name ?? ''));
+      })
+      ->values();
   }
 
   /**
