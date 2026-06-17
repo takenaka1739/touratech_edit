@@ -447,6 +447,27 @@ class ItemService
     $sss = [];
     $ssss = [];
     $preId = -1;
+    $commonImages = [];
+
+    if (!empty($selectItems['code'])) {
+      foreach (
+        Image::whereNull('category_id')
+          ->whereNull('item_id')
+          ->where('item_code', $selectItems['code'])
+          ->whereNull('deleted_at')
+          ->orderBy('order_by')
+          ->orderBy('id')
+          ->get() as $commonImage
+      ) {
+        if (empty($commonImage->name)) continue;
+
+        if (preg_match('/https?:\/\/(www\.)?youtube\.com\/embed\//', $commonImage->name)) {
+          $commonImages[] = $commonImage->name;
+        } else {
+          $commonImages[] = '/images/' . $commonImage->name;
+        }
+      }
+    }
 
 foreach ($idList as $id) {
   $ss = [];
@@ -498,6 +519,7 @@ foreach ($idList as $id) {
     $selectItems['backVariItems'] = $backVariItems;
     $selectItems['imageList'] = $sss;
     $selectItems['preImageList'] = $ssss;
+    $selectItems['commonImageList'] = $commonImages;
     $selectItems['combIdList'] = $d;
     //$selectItems['is_display'] = $selectItems['is_display'] !== true ? false : $selectItems['is_display'];
     $selectItems['document_url'] = $selectItems['file_name'] !== '' ? '/files/' . $selectItems['file_name'] : '';
@@ -1002,6 +1024,48 @@ foreach ($idList as $id) {
   }
 
   /**
+   * 同じ品番の削除済み商品がある場合は、新規登録扱いとして復活させる。
+   */
+  private function createOrRestoreItem(array $attributes): Item
+  {
+    $itemNumber = trim((string)($attributes['item_number'] ?? ''));
+
+    if ($itemNumber !== '') {
+      $trashedItem = Item::onlyTrashed()
+        ->where('item_number', $itemNumber)
+        ->orderByDesc('id')
+        ->first();
+
+      if ($trashedItem) {
+        $now = now();
+
+        $trashedItem->fill($attributes);
+        $trashedItem->created_at = $now;
+        $trashedItem->updated_at = $now;
+        $trashedItem->deleted_at = null;
+        $trashedItem->save();
+        $this->resetItemRelationsForFreshRegistration($trashedItem->id);
+
+        return $trashedItem;
+      }
+    }
+
+    return Item::create($attributes);
+  }
+
+  /**
+   * 削除済み商品を新規登録扱いで復活するため、過去の個別関連情報を外す。
+   */
+  private function resetItemRelationsForFreshRegistration(int $itemId): void
+  {
+    Image::where('item_id', $itemId)->delete();
+    ItemCategoryCombination::where('item_id', $itemId)->delete();
+    Document::where('item_id', $itemId)->delete();
+    DocumentLink::where('item_id', $itemId)->delete();
+    SpecialSale::where('item_id', $itemId)->delete();
+  }
+
+  /**
    * バリエーションの前回値保持用の配列を初期化する。
    */
   private function initPrevVariations(): array
@@ -1065,6 +1129,74 @@ foreach ($idList as $id) {
       'refund_rate'           => $data['refund_rate'] ?? 0,
     ];
   }
+
+  private function normalizeImageName(mixed $name): string
+  {
+    if ($name === null) return '';
+
+    $name = trim((string) $name);
+    if ($name === '') return '';
+
+    if (str_contains($name, '/images/')) {
+      return basename($name);
+    }
+
+    return $name;
+  }
+
+  private function syncCommonImages(array $data): void
+  {
+    $itemCode = trim((string)($data['code'] ?? ''));
+    if ($itemCode === '') return;
+
+    $oldItemCode = trim((string)($data['initialCode'] ?? ''));
+    if ($oldItemCode !== '' && $oldItemCode !== $itemCode) {
+      Image::whereNull('category_id')
+        ->whereNull('item_id')
+        ->where('item_code', $oldItemCode)
+        ->delete();
+    }
+
+    $afterFileNames = array_values(array_filter(array_map(
+      fn($name) => $this->normalizeImageName($name),
+      $data['commonImages'] ?? []
+    )));
+
+    $beforeImages = Image::whereNull('category_id')
+      ->whereNull('item_id')
+      ->where('item_code', $itemCode)
+      ->get();
+
+    $deletedImages = $beforeImages->reject(fn($img) => in_array($img->name, $afterFileNames, true));
+    foreach ($deletedImages as $deleteImage) {
+      $deleteImage->delete();
+    }
+
+    foreach ($afterFileNames as $order => $fileName) {
+      $image = Image::withTrashed()
+        ->whereNull('item_id')
+        ->where('item_code', $itemCode)
+        ->where('name', $fileName)
+        ->first();
+
+      if (!$image) {
+        $image = new Image([
+          'item_id'   => null,
+          'item_code' => $itemCode,
+          'name'      => $fileName,
+        ]);
+      }
+
+      $image->category_id = null;
+      $image->order_by = $order + 1;
+
+      if ($image->trashed()) {
+        $image->restore();
+      }
+
+      $image->save();
+    }
+  }
   
   /**
    * t_items 関連のサブテーブル（商品画像・商品分類・取扱説明書・特売設定）への新規登録
@@ -1079,8 +1211,9 @@ foreach ($idList as $id) {
       foreach (array_values(array_slice($imageRow, 1)) as $order => $fileName) {
         Image::create([
           'item_id'     => $item->id,
+          'item_code'   => $item->code,
           'category_id' => null,
-          'name'        => $fileName,
+          'name'        => $this->normalizeImageName($fileName),
           'order_by'    => $order,
         ]);
       }
@@ -1129,12 +1262,7 @@ foreach ($idList as $id) {
       if (empty($name)) return $name;
 
       // /images を含む場合は basename に変換
-      if (str_contains($name, '/images/')) {
-        return basename($name);
-      }
-
-      // YouTubeリンクやその他のURLはそのまま
-      return $name;
+      return $this->normalizeImageName($name);
     }, $afterFileNamesRaw);
 
     // 削除対象（DBに存在 → 更新後に存在しない）
@@ -1148,6 +1276,7 @@ foreach ($idList as $id) {
         Image::updateOrCreate(
             ['item_id' => $item->id, 'name' => $fileName],
             [
+                'item_code'   => $item->code,
                 'category_id' => null,
                 'order_by'    => $order + 1,
             ]
@@ -1284,7 +1413,7 @@ foreach ($idList as $id) {
         if (!empty($data['variItems'][0][1]) && !empty($data['variItems'][0][5]) && !empty($data['variItems'][0][6]))
         {
           $salesPrice = $data['variItems'][0][6] ?? 0;
-          $item = Item::create(array_merge($base, [
+          $item = $this->createOrRestoreItem(array_merge($base, [
             'variations1' => $data['variItems'][0][1] ?? null,
             'variations2' => $data['variItems'][0][2] ?? null,
             'variations3' => $data['variItems'][0][3] ?? null,
@@ -1298,7 +1427,7 @@ foreach ($idList as $id) {
         else
         {
           $salesPrice = $data['sales_price'] ?? 0;
-          $item = Item::create(array_merge($base, [
+          $item = $this->createOrRestoreItem(array_merge($base, [
             'item_number' => $data['item_number'] ?? null,
             'sales_price' => $salesPrice,
             'sales_unit_price' => $salesPrice,
@@ -1319,7 +1448,7 @@ foreach ($idList as $id) {
         foreach ($data['variItems'] as $index => $variation) {
           // バリエーション関連
           $variationAttributes = $this->buildVariationAttributes($variation, $prevVariations, $base);
-          $item = Item::create($variationAttributes);                 // 新規バリエーションのため m_items 新規登録
+          $item = $this->createOrRestoreItem($variationAttributes);    // 新規バリエーションのため m_items 新規登録
           $this->updatePrevVariations($prevVariations, $variation);   // バリエーションの前回値の更新
           $ids[] = $item->id;                                         // m_items の新規登録ID
 
@@ -1327,6 +1456,8 @@ foreach ($idList as $id) {
           $this->storeItemRelations($item, $data, $index);
         }
       }
+
+      $this->syncCommonImages($data);
 
       return $ids;
     });
@@ -1403,7 +1534,7 @@ foreach ($idList as $id) {
 
           if ($isNew) {
             // 新規バリエーション：新規 Item 作成 + 関連も「新規登録」として扱う
-            $item = Item::create($variationAttributes);
+            $item = $this->createOrRestoreItem($variationAttributes);
 
             // 商品画像・商品分類・取扱説明書・特売設定（新規）
             $this->storeItemRelations($item, $data, $index);
@@ -1417,7 +1548,7 @@ foreach ($idList as $id) {
             } else {
               // 想定外キーは安全側で新規扱いに
               \Log::warning("Unexpected variation key; treating as new. key=" . var_export($key, true));
-              $item = Item::create($variationAttributes);
+              $item = $this->createOrRestoreItem($variationAttributes);
 
               // 想定外キーだが、新規として扱う以上は関連も新規登録
               $this->storeItemRelations($item, $data, $index);
@@ -1435,6 +1566,8 @@ foreach ($idList as $id) {
           $ids[] = $item->id;
         }
       }
+
+      $this->syncCommonImages($data);
       
       return $ids;
     });

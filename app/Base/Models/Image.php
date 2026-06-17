@@ -14,6 +14,7 @@ class Image extends Model
     protected $fillable = [
         'category_id',
         'item_id',
+        'item_code',
         'name',
         'order_by',
     ];

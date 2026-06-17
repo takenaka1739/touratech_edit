@@ -152,6 +152,7 @@ export interface Item {
   remarks?: string | undefined;
   is_set_item: boolean | undefined;
   imageList: any[][];
+  commonImageList?: any[];
 
   item_id: number | undefined;
   is_sales_members_only: boolean | undefined;

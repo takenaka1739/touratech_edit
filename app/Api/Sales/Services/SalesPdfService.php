@@ -2,6 +2,7 @@
 
 namespace App\Api\Sales\Services;
 
+use App\Api\Shared\Services\ReportItemVariationTrait;
 use App\Base\Pdf\PdfWrapper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Log;
  */
 class SalesPdfService
 {
+  use ReportItemVariationTrait;
+
   // レイアウト上 1ページ9行の罫線を引いているため9に統一
   const PER_PAGE = 9;
 
@@ -414,6 +417,7 @@ class SalesPdfService
       if ($itemName  === '') {
         $itemName  = (string)($row->get('item_name', '') ?? '');
       }
+      $itemName = $this->appendVariationToItemName(trim($itemName), $row);
 
       // 掛率
       $rate = $row->get('rate', null);

@@ -25,8 +25,14 @@ export const useItemSave = ({
   // ==============================================================
 const buildImageInfo = (
   imageList: (File | string | Record<string, any>)[][],
-  variItems: any[]
+  variItems: any[],
+  commonImageList: (File | string | Record<string, any>)[] = []
 ): string[][] => {
+  const commonKeys = new Set(
+    commonImageList
+      .filter(Boolean)
+      .map(item => item instanceof File ? item.name : String(item).replace('/images/', ''))
+  );
 
   // imageList を variId → row の辞書に変換
   const map: Record<string, (File | string | Record<string, any>)[]> = {};
@@ -53,10 +59,31 @@ const buildImageInfo = (
 
     const fileNames = files.map(file =>
       file instanceof File ? file.name : file
-    );
+    ).map(fileName =>
+      typeof fileName === 'string' && fileName.startsWith('/images/')
+        ? fileName.replace('/images/', '')
+        : fileName
+    ).filter(fileName => !commonKeys.has(String(fileName)));
 
     return [variId, ...fileNames];
   });
+};
+
+const buildCommonImageInfo = (
+  commonImageList: (File | string | Record<string, any>)[] = []
+): string[] => {
+  return commonImageList
+    .filter((item): item is File | string => {
+      if (item instanceof File) return true;
+      if (typeof item === 'string' && item.trim() !== '') return true;
+      return false;
+    })
+    .map(file => file instanceof File ? file.name : file)
+    .map(fileName =>
+      typeof fileName === 'string' && fileName.startsWith('/images/')
+        ? fileName.replace('/images/', '')
+        : fileName
+    );
 };
 
 
@@ -147,7 +174,13 @@ const buildImageInfo = (
   const handleSave = async (mode: 'new' | 'edit') => {
     try {
       // 画像アップロード
-      await uploadImages(state.imageList, state.pdf);
+      await uploadImages(
+        [
+          ...(Array.isArray(state.imageList) ? state.imageList : []),
+          ['common', ...(Array.isArray(state.commonImageList) ? state.commonImageList : [])],
+        ],
+        state.pdf
+      );
 
       // 保存前にバリエーションの null を埋める（variItems を加工）
       let lastValid: any[] = [];
@@ -179,7 +212,8 @@ const buildImageInfo = (
       });
 
       // payload 生成
-      const images = buildImageInfo(state.imageList, state.variItems);
+      const commonImages = buildCommonImageInfo(state.commonImageList);
+      const images = buildImageInfo(state.imageList, state.variItems, state.commonImageList);
       const nameNote = state.is_name_note_editable === true
         ? state.name_note
         : state.name;
@@ -187,6 +221,7 @@ const buildImageInfo = (
         ...state, 
         name_note: nameNote,
         images,
+        commonImages,
         variItems: filledVariItems,
       };
 

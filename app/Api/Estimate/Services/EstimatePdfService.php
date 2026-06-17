@@ -2,6 +2,7 @@
 
 namespace App\Api\Estimate\Services;
 
+use App\Api\Shared\Services\ReportItemVariationTrait;
 use App\Base\Pdf\PdfWrapper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -14,7 +15,9 @@ use Exception;
  */
 class EstimatePdfService
 {
-    const PER_PAGE = 18;
+    use ReportItemVariationTrait;
+
+    const PER_PAGE = 14;
 
     /** @var \App\Base\Pdf\PdfWrapper */
     protected $pdf;
@@ -30,7 +33,8 @@ class EstimatePdfService
 
     /** 明細枠内の固定値（既存レイアウトに合わせた座標） */
     private const TABLE_TOP_Y = 115.559;
-    private const TABLE_BOTTOM_Y = 275.709;
+    private const TABLE_BOTTOM_Y = 245.709;
+    private const REMARKS_BOTTOM_Y = 291.000;
     private const ROW_HEIGHT = 8.545;
     private const ROW_BASE_Y = 113.395; // ループ内で y+=ROW_HEIGHT して1行目が121.94になる基準
 
@@ -257,9 +261,9 @@ class EstimatePdfService
         // 明細テーブル枠
         // -----------------------------
         $this->pdf->lineBold();
-        $this->pdf->Rect(21.541, 115.505, 174.864, 168.092);
+        $this->pdf->Rect(21.541, 115.505, 174.864, self::TABLE_BOTTOM_Y - 115.505);
         $this->pdf->lineW(21.771, 121.941, 174.864); // ヘッダ下
-        $this->pdf->lineW(21.771, 275.709, 174.864); // 明細部と備考の境界
+        $this->pdf->lineW(21.771, self::TABLE_BOTTOM_Y, 174.864); // 明細部と備考の境界
 
         // 縦線（備考枠には伸ばさない）
         $this->pdf->lineNormal();
@@ -357,6 +361,7 @@ class EstimatePdfService
             if ($name === '') {
                 $name = trim((string) $row->get('item_name', ''));
             }
+            $name = $this->appendVariationToItemName($name, $row);
 
             $this->pdf->Cell(
                 self::X_CONTENT_R - self::X_LEFT,
@@ -511,25 +516,80 @@ class EstimatePdfService
         }
 
         $y = self::TABLE_BOTTOM_Y + 1;
+        $boxHeight = self::REMARKS_BOTTOM_Y - self::TABLE_BOTTOM_Y;
+        $text = trim($remarks);
+
+        if (!empty($ecNotices)) {
+            $ecText = implode("\n", array_slice($ecNotices, 0, 5));
+            $text = trim($text . ($text !== '' ? "\n" : '') . "EC情報\n" . $ecText);
+        }
+
+        $this->pdf->lineBold();
+        $this->pdf->Rect(21.541, self::TABLE_BOTTOM_Y, 174.864, $boxHeight);
+        $this->pdf->lineNormal();
 
         $this->pdf->SetFontSize(8);
         $this->pdf->SetXY(21.771, $y);
         $this->pdf->Cell(12, 4, "備考");
+        if ($text !== '') {
+            $this->pdf->SetXY(33, $y);
+            $lineHeight = 3.2;
+            $maxLines = (int) floor((self::REMARKS_BOTTOM_Y - $y - 1) / $lineHeight);
+            $this->pdf->MultiCell(
+                self::X_RIGHT - 33,
+                $lineHeight,
+                $this->fitTextLines($text, $maxLines, 92)
+            );
+        }
+    }
 
-        if (!empty($ecNotices)) {
-            if ($remarks !== '') {
-                $this->pdf->SetXY(33, $y);
-                $this->pdf->MultiCell(69, 3.6, $remarks);
+    private function fitTextLines(string $text, int $maxLines, int $maxWidth): string
+    {
+        $lines = [];
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+
+        foreach (explode("\n", $text) as $sourceLine) {
+            $line = (string) $sourceLine;
+
+            if ($line === '') {
+                $lines[] = '';
+                if (count($lines) >= $maxLines) {
+                    break;
+                }
+                continue;
             }
 
-            $this->pdf->SetXY(106, $y);
-            $this->pdf->Cell(18, 4, "EC情報");
-            $this->pdf->SetXY(122, $y);
-            $this->pdf->MultiCell(74, 3.3, implode("\n", array_slice($ecNotices, 0, 5)));
-        } elseif ($remarks !== '') {
-            $this->pdf->SetXY(33, $y);
-            $this->pdf->MultiCell(self::X_RIGHT - 33, 3.6, $remarks);
+            while ($line !== '') {
+                $segment = '';
+                $length = mb_strlen($line);
+
+                for ($i = 0; $i < $length; $i++) {
+                    $candidate = $segment . mb_substr($line, $i, 1);
+                    if (mb_strwidth($candidate) > $maxWidth) {
+                        break;
+                    }
+                    $segment = $candidate;
+                }
+
+                if ($segment === '') {
+                    $segment = mb_substr($line, 0, 1);
+                }
+
+                $lines[] = $segment;
+                $line = mb_substr($line, mb_strlen($segment));
+
+                if (count($lines) >= $maxLines) {
+                    break 2;
+                }
+            }
         }
+
+        if (count($lines) >= $maxLines && mb_strlen(implode("\n", $lines)) < mb_strlen($text)) {
+            $last = array_pop($lines) ?? '';
+            $lines[] = mb_strimwidth($last, 0, max(0, $maxWidth - 3), '') . '...';
+        }
+
+        return implode("\n", $lines);
     }
 
     private function getFileId(string $prefix)

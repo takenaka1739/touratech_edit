@@ -14,6 +14,7 @@ class MImage extends Model
     protected $fillable = [
         'category_id',
         'item_id',
+        'item_code',
         'name',
         'order_by',
     ];
@@ -21,6 +22,7 @@ class MImage extends Model
     protected $casts = [
         'category_id' => 'integer',
         'item_id'     => 'integer',
+        'item_code'   => 'string',
         'order_by'    => 'integer',
     ];
 

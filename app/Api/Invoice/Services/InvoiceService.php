@@ -2,6 +2,7 @@
 
 namespace App\Api\Invoice\Services;
 
+use App\Api\Shared\Services\ReportItemVariationTrait;
 use App\Base\Models\Config;
 use App\Base\Models\Customer;
 use App\Base\Models\Invoice;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Log;
  */
 class InvoiceService
 {
+  use ReportItemVariationTrait;
+
   /**
    * 一覧データを取得する
    *
@@ -483,12 +486,14 @@ class InvoiceService
       $ds = $this->getSalesDetails($s->id);
 
       foreach ($ds as $d) {
+        $itemName = $this->appendVariationToItemName(trim((string)($d->item_name ?? '')), $d);
+
         $details[] = [
           'job_date' => $s->sales_at,
           'detail_kind' => 1,
           'item_kind' => $d->item_kind,
           'item_id' => $d->item_id,
-          'item_name' => trim(($d->item_name ?? '') . ' ' . ($d->parent_item_name ?? '')),
+          'item_name' => trim($itemName . ' ' . ($d->parent_item_name ?? '')),
           'unit_price' => $d->unit_price,
           'quantity' => $d->quantity,
           'amount' => $d->amount,

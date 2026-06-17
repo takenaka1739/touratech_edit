@@ -41,7 +41,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   variChangeItem,
 }) => {
   type Props = {
-    file: File;
+    file: any;
   };
 
   // 画像・動画一覧をUI表示用の形式に変換
@@ -86,6 +86,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   };
 
   const attachRef = useRef<HTMLInputElement>(null);
+  const wasShownRef = useRef(false);
   const [settingMode, setSettingMode] = useState<SettingMode>("common");
   const [itemNameInput, setItemNameInput] = useState("");
   const [salesPriceInput, setSalesPriceInput] = useState("");
@@ -97,13 +98,26 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   const [, setDropErea] = useState("");
   const [selectImageSrc, setSelectImageSrc] = useState("");
   const [selectImageType, setSelectImageType] = useState(-1);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
+  const [selectedMediaItem, setSelectedMediaItem] = useState<any>(null);
   const [files, setFiles] = useState<any[]>(Array.isArray(imageItem) ? imageItem[0] : [""]);
+  const [commonFiles, setCommonFiles] = useState<any[]>([]);
   const [clicked, setClicked] = useState(false);
   const [, setSelectImage] = useState("");
   const [selectId, setSelectId] = useState(Array.isArray(imageItem) && imageItem.length > 0 ? imageItem[0][0] : null);
   const [selectIndex, setSelectIndex] = useState(0);
   const [isImageEdited, setIsImageEdited] = useState(false);
   const [individualEditedIds, setIndividualEditedIds] = useState<any[]>([]);
+
+  const getCurrentShopImageSelection = (
+    mode: SettingMode = settingMode,
+    index: number = selectIndex,
+    id: any = selectId
+  ) => ({
+    shopImageSettingMode: mode,
+    shopImageSelectIndex: index,
+    shopImageSelectId: id,
+  });
 
   const initialMatrix = buildInitialImageMatrix(variItems, preState.preImageList);
 
@@ -158,15 +172,85 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     });
   };
 
+  const normalizeStandaloneImageFiles = (row: any[] | undefined) => {
+    if (!Array.isArray(row)) return [];
+
+    return row.map((fileName: any) => {
+      if (fileName instanceof File) return fileName;
+
+      if (typeof fileName === "string") {
+        if (fileName.includes("youtube.com/embed")) return fileName;
+        if (fileName.startsWith("/images/")) return fileName;
+        return `/images/${fileName}`;
+      }
+
+      return fileName;
+    });
+  };
+
+  const getMediaKey = (file: any) => {
+    if (file instanceof File) {
+      return `file:${file.name}:${file.size}:${file.lastModified}`;
+    }
+
+    if (file instanceof Blob) {
+      return `blob:${file.size}:${file.type}`;
+    }
+
+    if (typeof file === "string") {
+      if (file.includes("youtube.com/embed")) return file;
+      if (file.startsWith("/images/")) return file;
+      return `/images/${file}`;
+    }
+
+    return String(file);
+  };
+
+  const isCommonLockedMedia = (file: any) => {
+    if (isCommonMode) return false;
+    const commonKeys = new Set(commonFiles.filter(Boolean).map(getMediaKey));
+    return commonKeys.has(getMediaKey(file));
+  };
+
+  const filterOutCommonFiles = (sourceFiles: any[], baseCommonFiles: any[]) => {
+    const commonKeys = new Set(baseCommonFiles.filter(Boolean).map(getMediaKey));
+    return sourceFiles.filter((file: any) => !commonKeys.has(getMediaKey(file)));
+  };
+
+  const getVisibleFiles = (
+    mode: SettingMode = settingMode,
+    targetId: any = selectId,
+    matrix: any[][] = edtImageItems,
+    common: any[] = commonFiles
+  ) => {
+    if (mode === "common") return common;
+
+    const row = matrix.find((imageRow: any) => imageRow[0] === targetId);
+    return [
+      ...common,
+      ...filterOutCommonFiles(normalizeImageFiles(row), common),
+    ];
+  };
+
   const updateImageItemsByFiles = (newFiles: any[]) => {
     const targetIds = getTargetVariationIds();
+    const commonCompareFiles = isCommonMode
+      ? [...commonFiles, ...newFiles]
+      : commonFiles;
+    const individualFiles = filterOutCommonFiles(newFiles, commonCompareFiles);
 
     const updatedMatrix = variKindItem.map((row: any) => {
       const variId = row[0];
       const exists = edtImageItems.find((imageRow: any) => imageRow[0] === variId);
 
+      if (isCommonMode) {
+        const existingFiles = normalizeImageFiles(exists);
+        const preservedIndividualFiles = filterOutCommonFiles(existingFiles, commonCompareFiles);
+        return [variId, ...preservedIndividualFiles];
+      }
+
       if (targetIds.includes(variId)) {
-        return [variId, ...newFiles];
+        return [variId, ...individualFiles];
       }
 
       return exists ?? [variId];
@@ -178,15 +262,28 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
       ));
     }
 
-    setFiles(newFiles);
+    if (isCommonMode) {
+      setCommonFiles(newFiles);
+    }
+
+    setFiles(isCommonMode ? newFiles : [...commonFiles, ...individualFiles]);
     setEdtImageItems(updatedMatrix);
     setIsImageEdited(true);
 
     onChangeShopImage({
       isImageEdited: true,
       edtImageItems: updatedMatrix,
+      commonImageList: isCommonMode ? newFiles : commonFiles,
+      ...getCurrentShopImageSelection(),
     });
   };
+
+  useEffect(() => {
+    if (!isShown) return;
+    if (!wasShownRef.current) return;
+
+    setFiles(getVisibleFiles());
+  }, [isShown, settingMode, selectId, edtImageItems, commonFiles]);
 
   const updateVariationPrice = (targetIds: any[], price: string) => {
     const fixedTargetIds = targetIds;
@@ -245,10 +342,23 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
   // ダイアログオープン時に最新の値を反映する
   useEffect(() => {
-    if (!isShown) return;
+    if (!isShown) {
+      wasShownRef.current = false;
+      return;
+    }
+    if (wasShownRef.current) return;
+    wasShownRef.current = true;
     if (variItems.length === 0) return;
 
-    const initialIndex = 0;
+    const restoredMode: SettingMode = preState.shopImageSettingMode === "variation" ? "variation" : "common";
+    const restoredIndex =
+      Number.isInteger(preState.shopImageSelectIndex) &&
+      preState.shopImageSelectIndex >= 0 &&
+      preState.shopImageSelectIndex < variItems.length
+        ? preState.shopImageSelectIndex
+        : 0;
+    const restoredSelectId = preState.shopImageSelectId ?? variItems[restoredIndex]?.[0] ?? null;
+    const initialIndex = restoredIndex;
     const initialPrice =
       variItems[initialIndex]?.[6] != null && variItems[initialIndex]?.[6] !== ""
         ? Number(variItems[initialIndex][6])
@@ -256,7 +366,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
           ? Number(preState.sales_price)
           : null;
 
-    setSettingMode("common");
+    setSettingMode(restoredMode);
     setItemNameInput(preState.name ?? "");
     setSalesPriceInput(initialPrice !== null ? String(initialPrice) : "");
     setPoint(initialPrice !== null ? String(Math.floor(initialPrice / 100)) : "0");
@@ -267,7 +377,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     setVariChangeItemState(variChangeItem ?? []);
 
     setSelectIndex(initialIndex);
-    setSelectId(variItems[initialIndex]?.[0] ?? null);
+    setSelectId(restoredSelectId);
 
     const initial = variItems.map((v) => {
       const row = initialMatrix.find(r => r[0] === v[0]);
@@ -276,16 +386,17 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
     setEdtImageItems(initial);
 
-    if (initial[initialIndex]) {
-      setFiles(normalizeImageFiles(initial[initialIndex]));
-    } else {
-      setFiles([]);
-    }
+    const initialCommonFiles = normalizeStandaloneImageFiles(preState.commonImageList);
+    setCommonFiles(initialCommonFiles);
+    setFiles(getVisibleFiles(restoredMode, restoredSelectId, initial, initialCommonFiles));
 
     setSelectImageSrc("");
     setSelectImageType(-1);
+    setSelectedMediaIndex(null);
+    setSelectedMediaItem(null);
     setIsImageEdited(false);
-  }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details]);
+    setIndividualEditedIds([]);
+  }, [isShown, variItems, preState.id, preState.name, preState.sales_price, preState.explanation_details, preState.commonImageList, preState.shopImageSettingMode, preState.shopImageSelectIndex, preState.shopImageSelectId]);
 
   const inputPriceFocusOut = () => {
     const targetIds = isCommonMode
@@ -346,15 +457,31 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
+    if (!isCommonMode && isCommonLockedMedia(files[result.source.index])) return;
 
-    const newFiles = [...files];
-    const [removed] = newFiles.splice(result.source.index, 1);
-    newFiles.splice(result.destination.index, 0, removed);
+    let newFiles = [...files];
+
+    if (!isCommonMode) {
+      const lockedFiles = newFiles.filter(isCommonLockedMedia);
+      const editableFiles = newFiles.filter((file: any) => !isCommonLockedMedia(file));
+      const lockedCount = lockedFiles.length;
+      const sourceIndex = result.source.index - lockedCount;
+      const destinationIndex = Math.max(0, result.destination.index - lockedCount);
+
+      if (sourceIndex < 0) return;
+
+      const [removed] = editableFiles.splice(sourceIndex, 1);
+      editableFiles.splice(destinationIndex, 0, removed);
+      newFiles = [...lockedFiles, ...editableFiles];
+    } else {
+      const [removed] = newFiles.splice(result.source.index, 1);
+      newFiles.splice(result.destination.index, 0, removed);
+    }
 
     updateImageItemsByFiles(newFiles);
   };
 
-  const handleClick = (src: string, type: number, fileName: string) => {
+  const handleClick = (src: string, type: number, fileName: string, index: number, mediaItem: any) => {
     if (type !== 2) {
       if (src.includes("blob:")) {
         setSelectImage(fileName);
@@ -362,6 +489,8 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     }
     setSelectImageSrc(src);
     setSelectImageType(type);
+    setSelectedMediaIndex(index);
+    setSelectedMediaItem(mediaItem);
     setClicked(true);
   };
 
@@ -377,6 +506,8 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
       isImageEdited,
       edtImageItems,
       variChangeItem: variChangeItemState,
+      commonImageList: commonFiles,
+      ...getCurrentShopImageSelection(),
     });
 
     onClickCancel();
@@ -418,21 +549,22 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     setMovieUrl("");
   };
 
-  const removeFileByName = (targetName: string) => {
-    const newFiles = files.filter((file: any) => {
-      if (targetName.includes("blob:")) {
-        if (file instanceof File) {
-          const blobUrl = URL.createObjectURL(file);
-          return blobUrl !== targetName;
-        }
-        return true;
-      }
+  const removeSelectedFile = () => {
+    if (!selectImageSrc) return;
+    if (selectedMediaItem !== null && isCommonLockedMedia(selectedMediaItem)) return;
+    if (selectedMediaIndex !== null && isCommonLockedMedia(files[selectedMediaIndex])) return;
 
-      return file !== targetName;
-    });
+    const newFiles = selectedMediaItem !== null
+      ? files.filter((file: any) => file !== selectedMediaItem)
+      : selectedMediaIndex !== null
+      ? files.filter((_: any, index: number) => index !== selectedMediaIndex)
+      : files.filter((file: any) => file !== selectImageSrc);
 
     updateImageItemsByFiles(newFiles);
     setSelectImageSrc("");
+    setSelectImageType(-1);
+    setSelectedMediaIndex(null);
+    setSelectedMediaItem(null);
   };
 
   const clickCommonSetting = () => {
@@ -446,17 +578,21 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     setSalesPriceInput(String(commonPrice));
     setPoint(commonPrice !== "" ? String(Math.floor(Number(commonPrice) / 100)) : "0");
 
-    const firstRow = edtImageItems.find((row: any) => row[0] === variKindItem[0]?.[0]);
-    setFiles(normalizeImageFiles(firstRow));
+    setFiles(getVisibleFiles("common"));
     setSelectImageSrc("");
     setSelectImageType(-1);
+    setSelectedMediaIndex(null);
+    setSelectedMediaItem(null);
+
+    onChangeShopImage(getCurrentShopImageSelection("common"));
   };
 
   const clickVariItem = (index: number) => {
+    const variId = variKindItem[index][0];
     setSettingMode("variation");
     setSelectIndex(index);
     setSalesPriceInput(variKindItem[index][6]);
-    setSelectId(variKindItem[index][0]);
+    setSelectId(variId);
 
     const price = variKindItem[index][6];
     if (price !== "") {
@@ -467,15 +603,59 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
     setSelectImageSrc("");
     setSelectImageType(-1);
+    setSelectedMediaIndex(null);
+    setSelectedMediaItem(null);
 
-    const variId = variKindItem[index][0];
-    const row = edtImageItems.find(r => r[0] === variId);
-    setFiles(normalizeImageFiles(row));
+    setFiles(getVisibleFiles("variation", variId));
+
+    onChangeShopImage(getCurrentShopImageSelection("variation", index, variId));
   };
 
-  const Image = ({ file }: Props) => {
+  const Image = ({ file, index }: Props & { index: number }) => {
     const fileType = typeof file;
     const isBlobLike = file instanceof Blob;
+    const isLocked = isCommonLockedMedia(file);
+    const frameStyle = {
+      height: "80px",
+      width: "80px",
+      margin: "10px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      position: "relative" as const,
+    };
+    const mediaStyle = isLocked
+      ? { opacity: 0.45, filter: "grayscale(20%) brightness(1.25)" }
+      : {};
+    const lockOverlay = isLocked ? (
+      <>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(255, 255, 255, 0.45)",
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "4px",
+            left: "4px",
+            padding: "1px 5px",
+            borderRadius: "3px",
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            border: "1px solid #9aa8b8",
+            color: "#3f4a5a",
+            fontSize: "11px",
+            lineHeight: "16px",
+            pointerEvents: "none",
+          }}
+        >
+          共通
+        </div>
+      </>
+    ) : null;
 
     if (fileType === "object" && isBlobLike && typeof file !== "string") {
       const isVideo = typeof file.type === "string" && file.type.indexOf("video") !== -1;
@@ -483,22 +663,24 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
 
       if (!isVideo) {
         return (
-          <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <img key={src} src={src} onClick={() => handleClick(src, -1, file.name)} alt={file.name} />
+          <div style={frameStyle}>
+            <img key={src} src={src} onClick={() => handleClick(src, -1, file.name, index, file)} alt={file.name} style={mediaStyle} />
+            {lockOverlay}
           </div>
         );
       }
 
       return (
-        <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+        <div style={frameStyle}>
           <div
-            onClick={() => handleClick(src, 1, file.name)}
+            onClick={() => handleClick(src, 1, file.name, index, file)}
             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 2 }}
           />
 
-          <video muted style={{ pointerEvents: "none", width: "100%", height: "100%", objectFit: "cover" }}>
+          <video muted style={{ pointerEvents: "none", width: "100%", height: "100%", objectFit: "cover", ...mediaStyle }}>
             <source src={src} type="video/mp4" />
           </video>
+          {lockOverlay}
         </div>
       );
     }
@@ -511,43 +693,46 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
     if (src !== "") {
       if (isImage) {
         return (
-          <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <img key={src} src={src} onClick={() => handleClick(src, -1, "")} />
+          <div style={frameStyle}>
+            <img key={src} src={src} onClick={() => handleClick(src, -1, "", index, file)} style={mediaStyle} />
+            {lockOverlay}
           </div>
         );
       }
 
       if (isVideo) {
         return (
-          <div style={{ height: "80px", width: "80px", margin: "10px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+          <div style={frameStyle}>
             <div
-              onClick={() => handleClick(src, 1, "")}
+              onClick={() => handleClick(src, 1, "", index, file)}
               style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 2 }}
             />
 
-            <video muted style={{ pointerEvents: "none", width: "100%", height: "100%", objectFit: "cover" }}>
+            <video muted style={{ pointerEvents: "none", width: "100%", height: "100%", objectFit: "cover", ...mediaStyle }}>
               <source src={src} type="video/mp4" />
             </video>
+            {lockOverlay}
           </div>
         );
       }
 
       return (
-        <div style={{ margin: "10px", position: "relative" }}>
+        <div style={{ ...frameStyle }}>
           <iframe
             width="80px"
             height="80px"
             src={src}
-            style={{ pointerEvents: "none" }}
+            style={{ pointerEvents: "none", ...mediaStyle }}
             title="YouTube video player"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
           />
           <div
-            onClick={() => handleClick(src, 2, "")}
+            onClick={() => handleClick(src, 2, "", index, file)}
             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 10 }}
           />
+          {lockOverlay}
         </div>
       );
     }
@@ -556,6 +741,12 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
   };
 
   const hasVisibleFiles = Array.isArray(files) && files.filter(Boolean).length > 0;
+  const isSelectedMediaLocked =
+    !isCommonMode &&
+    (
+      (selectedMediaItem !== null && isCommonLockedMedia(selectedMediaItem)) ||
+      (selectedMediaIndex !== null && isCommonLockedMedia(files[selectedMediaIndex]))
+    );
 
   const getTargetVariationIds = () => {
     if (!isCommonMode) {
@@ -611,8 +802,18 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
           <div id="image-area">
             <button
               className="btn-delete"
-              style={{ marginLeft: "495px", marginBottom: "5px", height: "26px", paddingTop: "0px", paddingBottom: "0px", whiteSpace: "nowrap" }}
-              onClick={() => removeFileByName(selectImageSrc)}
+              style={{
+                marginLeft: "495px",
+                marginBottom: "5px",
+                height: "26px",
+                paddingTop: "0px",
+                paddingBottom: "0px",
+                whiteSpace: "nowrap",
+                opacity: isSelectedMediaLocked ? 0.45 : 1,
+                cursor: isSelectedMediaLocked ? "not-allowed" : "pointer",
+              }}
+              onClick={removeSelectedFile}
+              disabled={isSelectedMediaLocked}
             >
               削除
             </button>
@@ -714,7 +915,12 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
                         }}
                       >
                         {files.map((f, index) => (
-                          <Draggable key={String(index)} draggableId={String(index)} index={index}>
+                          <Draggable
+                            key={String(index)}
+                            draggableId={String(index)}
+                            index={index}
+                            isDragDisabled={isCommonLockedMedia(f)}
+                          >
                             {(provided) => (
                               <div
                                 key={index}
@@ -723,7 +929,7 @@ export const ShopImageDialog: React.FC<ShopImageDialogProps> = ({
                                 ref={provided.innerRef}
                               >
                                 <div {...provided.dragHandleProps}>
-                                  <Image file={f} />
+                                  <Image file={f} index={index} />
                                 </div>
                               </div>
                             )}

@@ -2,6 +2,7 @@
 
 namespace App\Api\ReceiveOrder\Services;
 
+use App\Api\Shared\Services\ReportItemVariationTrait;
 use App\Base\Pdf\PdfWrapper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -14,6 +15,8 @@ use Exception;
  */
 class ReceiveOrderPdfService
 {
+    use ReportItemVariationTrait;
+
     const PER_PAGE = 14;
 
     /** @var \App\Base\Pdf\PdfWrapper */
@@ -362,6 +365,7 @@ class ReceiveOrderPdfService
             if ($name === '') {
                 $name = trim((string) $row->get('item_name', ''));
             }
+            $name = $this->appendVariationToItemName($name, $row);
 
             $this->pdf->SetFontSize(10);
             $this->pdf->SetXY(self::X_CONTENT_L, $yRowTop + 3);
