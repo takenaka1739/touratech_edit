@@ -129,6 +129,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
           value={state.start_at ? new Date(state.start_at) : null}
           error={errors?.start_at}
           onChange={onChangeDate}
+          autoComplete="off"
           required
         />
         <Forms.FormGroupInputDate
@@ -137,6 +138,7 @@ export const CouponDetailPage: React.VFC<CouponDetailPageProps> = ({ match }) =>
           value={state.end_at ? new Date(state.end_at) : null}
           error={errors?.end_at}
           onChange={onChangeDate}
+          autoComplete="off"
           required
         />
 

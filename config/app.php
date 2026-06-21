@@ -207,6 +207,7 @@ return [
         App\Api\SimpleSearch\SimpleSearchServiceProvider::class,
         App\Api\ShipmentPlanImport\ShipmentPlanImportServiceProvider::class,
         App\Api\ShipmentPlan\ShipmentPlanServiceProvider::class,
+        App\Api\ShippingRate\ShippingRateServiceProvider::class,
         App\Api\PickupRanking\PickupRankingServiceProvider::class,
         App\Api\ShopMail\ShopMailProvider::class,
 

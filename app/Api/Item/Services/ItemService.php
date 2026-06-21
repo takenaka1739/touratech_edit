@@ -1431,7 +1431,7 @@ foreach ($idList as $id) {
             'item_number' => $data['item_number'] ?? null,
             'sales_price' => $salesPrice,
             'sales_unit_price' => $salesPrice,
-            'is_sell_variation' => $data['variItems'][0][7] ?? '0',
+            'is_sell_variation' => $data['variItems'][0][7] ?? '1',
           ]));
         }
 
@@ -1510,7 +1510,7 @@ foreach ($idList as $id) {
             'item_number' => $data['item_number'] ?? null,
             'sales_price' => $salesPrice,
             'sales_unit_price' => $salesPrice,
-            'is_sell_variation' => $data['variItems'][0][7] ?? '0',
+            'is_sell_variation' => $data['variItems'][0][7] ?? '1',
           ]));
         }
 

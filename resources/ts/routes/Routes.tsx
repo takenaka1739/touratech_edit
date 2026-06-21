@@ -26,6 +26,7 @@ const RouteSales = React.lazy(() => import('./RouteSales'));
 const RouteSetItem = React.lazy(() => import('./RouteSetItem'));
 const RouteShipmentPlanImport = React.lazy(() => import('./RouteShipmentPlanImport'));
 const RouteShipmentPlan = React.lazy(() => import('./RouteShipmentPlan'));
+const RouteShippingRate = React.lazy(() => import('./RouteShippingRate'));
 const RouteSupplier = React.lazy(() => import('./RouteSupplier'));
 const RouteUser = React.lazy(() => import('./RouteUser'));
 const RouteCoupon = React.lazy(() => import('./RouteCoupon'));
@@ -69,6 +70,7 @@ const Routes: React.VFC = () => {
         <Route path="/set_item" component={RouteSetItem} />
         <Route path="/shipment_plan_import" component={RouteShipmentPlanImport} />
         <Route path="/shipment_plan" component={RouteShipmentPlan} />
+        <Route path="/shipping_rate" component={RouteShippingRate} />
         <Route path="/supplier" component={RouteSupplier} />
         <Route path="/TopImage" component={RouteTopimage} />
         <Route path="/user" component={RouteUser} />

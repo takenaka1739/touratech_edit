@@ -272,34 +272,6 @@ export const ConfigDetailPage: React.VFC = () => {
           required
         />
 
-        <div className="flex max-w-xl">
-          <div className="w-1/2">
-            <Forms.FormGroupInputNumber
-              labelText="送料（業者向け）"
-              name="send_trader"
-              value={state.send_trader}
-              error={errors?.send_trader}
-              onChange={onChange}
-              precision={0}           // 円なら0桁、小数を許可したいなら 2 に変更
-              className="max-w-8"
-              labelUnitText="円"
-              min={0}
-            />
-          </div>
-          <div className="w-1/2">
-            <Forms.FormGroupInputNumber
-              labelText="送料（一般向け）"
-              name="send_personal"
-              value={state.send_personal}
-              error={errors?.send_personal}
-              onChange={onChange}
-              precision={0}           // 円なら0桁
-              className="max-w-8"
-              labelUnitText="円"
-              min={0}
-            />
-          </div>
-        </div>
         <hr className="border-dashed border-gray-400 mt-6" />
         <div className="p-6">
           <p className="flex items-center text-sm">

@@ -23193,6 +23193,40 @@ th.col-btn, td.col-btn {
   }
 }
 
+.shipping_rate-page .shipping-rate-tabs {
+  display: flex;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.shipping_rate-page .shipping-rate-tabs__button {
+  padding: 0.5rem 1rem;
+}
+
+.shipping_rate-page .shipping-rate-tabs__button--active {
+  border-bottom: 2px solid #63b3ed;
+  font-weight: 700;
+}
+
+.shipping_rate-page .shipping-rate-remote-table__group {
+  width: 105px;
+  min-width: 105px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.shipping_rate-page .shipping-rate-threshold__description {
+  margin-top: 0.5rem;
+  color: #4a5568;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.shipping_rate-page .shipping-rate-threshold__fields {
+  margin-top: 1rem;
+  max-width: 760px;
+}
+
 @media (min-width: 640px){
   .sm\:container{
     width: 100%;

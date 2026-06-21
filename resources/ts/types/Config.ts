@@ -25,8 +25,8 @@ import { ConfigCod } from '@/types';
  * @param sales_tax_rate - 消費税率
  * @param pre_tax_rate - 変更前消費税
  * @param tax_rate_change_at - 税率変更日
- * @param send_trader - 送料（業者）
- * @param send_personal - 送料（個人）
+ * @param send_trader - 送料無料判定金額（業者向け）
+ * @param send_personal - 送料無料判定金額（一般向け）
  * @param send_price - 送料
  * @param currencies - 通貨換算
  * @param cods - 代引手数料

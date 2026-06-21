@@ -10,6 +10,7 @@ type FormInputDateProps = FormProps & {
   placeholder?: string | undefined;
   readOnly?: boolean | undefined;
   autoFocus?: boolean | undefined;
+  autoComplete?: string | undefined;
 };
 
 export const FormInputDate: React.VFC<FormInputDateProps> = ({
@@ -19,6 +20,7 @@ export const FormInputDate: React.VFC<FormInputDateProps> = ({
   error,
   readOnly,
   autoFocus,
+  autoComplete,
   onChange,
   ...props
 }) => {
@@ -49,6 +51,7 @@ export const FormInputDate: React.VFC<FormInputDateProps> = ({
       placeholderText={placeholder}
       readOnly={readOnly}
       autoFocus={autoFocus}
+      autoComplete={autoComplete}
       renderCustomHeader={(props) => (
         <div>
           <button
