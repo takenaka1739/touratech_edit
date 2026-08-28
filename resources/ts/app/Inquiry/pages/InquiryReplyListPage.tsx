@@ -77,6 +77,13 @@ const salesFormLabel = (v: any): string => {
   return '';
 };
 
+const inquiryTypeShortLabel = (v: any): string => {
+  const n = Number(v);
+  if (n === 1) return '商品';
+  if (n === 2) return '納期';
+  return (v ?? '').toString();
+};
+
 const renderSlipNo2Lines = (slipNo: string) => {
   const s = (slipNo ?? '').toString();
   if (!s) return '';
@@ -394,7 +401,7 @@ export const InquiryReplyListPage: React.VFC = () => {
   const inquiryTable = useMemo(() => {
     const tbody = (inquiry.state.rows ?? []).map((r: any) => (
       <tr key={r.id}>
-        <td className="shop-mail-cell-center-nowrap">{r.content ?? ''}</td>
+        <td className="shop-mail-cell-center-nowrap">{inquiryTypeShortLabel(r.content)}</td>
         <td className="shop-mail-cell-center-nowrap">{toYmd(r.created_at ?? '')}</td>
         <td className="shop-mail-cell-center">{r.customer_name ?? ''}</td>
         <td className="shop-mail-cell-center">{r.email ?? ''}</td>

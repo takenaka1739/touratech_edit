@@ -55,6 +55,66 @@ const applyPlaceholders = (text: string, _ctx: any) => {
     .replaceAll('{INQUIRY_BODY}', '');
 };
 
+const friendlyMailError = (value: any): string => {
+  const raw = (value ?? '').toString().trim();
+  const lower = raw.toLowerCase();
+
+  if (!raw) return 'メールを送信できませんでした。時間をおいて再度お試しください。';
+
+  if (raw.includes('送信元メールアドレス') || raw.includes('宛先メールアドレス')) {
+    return raw;
+  }
+
+  if (
+    lower.includes('connection could not be established') ||
+    lower.includes('connection refused') ||
+    lower.includes('timed out') ||
+    lower.includes('stream_socket_client') ||
+    lower.includes('network is unreachable') ||
+    lower.includes('could not connect')
+  ) {
+    return 'メールサーバーに接続できませんでした。メール設定またはネットワーク状況を確認してください。';
+  }
+
+  if (
+    lower.includes('authentication') ||
+    lower.includes('authenticate') ||
+    lower.includes('username') ||
+    lower.includes('password') ||
+    lower.includes('535')
+  ) {
+    return 'メールサーバーへのログインに失敗しました。メールアカウントまたはパスワードを確認してください。';
+  }
+
+  if (
+    lower.includes('invalid address') ||
+    lower.includes('address in mailbox') ||
+    lower.includes('rfc') ||
+    lower.includes('syntax')
+  ) {
+    return 'メールアドレスの形式に問題があります。宛先または送信元メールアドレスを確認してください。';
+  }
+
+  if (
+    lower.includes('recipient address rejected') ||
+    lower.includes('user unknown') ||
+    lower.includes('no such user') ||
+    lower.includes('550')
+  ) {
+    return '宛先メールアドレスが存在しない、または受信側に拒否されました。宛先を確認してください。';
+  }
+
+  if (lower.includes('relay access denied') || lower.includes('relaying denied')) {
+    return 'メールサーバーが送信を許可していません。送信元メール設定を確認してください。';
+  }
+
+  if (lower.includes('quota') || lower.includes('rate') || lower.includes('too many')) {
+    return 'メール送信数の制限に達している可能性があります。しばらく時間をおいて再度お試しください。';
+  }
+
+  return 'メールを送信できませんでした。メール設定または宛先を確認してください。';
+};
+
 const statusBadgeStyle = (send_status: any): React.CSSProperties => {
   const n = Number(send_status);
   const ok = n === 1 || n === 200;
@@ -175,6 +235,12 @@ export const EcMailConversationPage: React.VFC = () => {
   const [bodyText, setBodyText] = useState('');
   const [sendLoading, setSendLoading] = useState(false);
 
+  const defaultSubject = useMemo(() => {
+    return receiveOrderId
+      ? `Re: ご注文関連のお問い合わせ [受注ID:${receiveOrderId}]`
+      : 'Re: ご注文関連のお問い合わせ';
+  }, [receiveOrderId]);
+
   const fetchData = useCallback(async () => {
     if (!receiveOrderId || Number.isNaN(receiveOrderId)) return;
 
@@ -231,11 +297,8 @@ export const EcMailConversationPage: React.VFC = () => {
   }, [templateId, templates]);
 
   useEffect(() => {
-    const base = receiveOrderId
-      ? `Re: ご注文関連のお問い合わせ [受注ID:${receiveOrderId}]`
-      : 'Re: ご注文関連のお問い合わせ';
-    setSubject(base);
-  }, [receiveOrderId]);
+    setSubject(defaultSubject);
+  }, [defaultSubject]);
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -285,12 +348,12 @@ export const EcMailConversationPage: React.VFC = () => {
       if (res.data?.ok || res.data?.success) {
         alert('送信しました');
       } else {
-        alert(`送信失敗: ${res.data?.error ?? res.data?.message ?? ''}`);
+        alert(`送信失敗: ${friendlyMailError(res.data?.error ?? res.data?.message)}`);
       }
 
       await fetchData();
     } catch (e: any) {
-      alert(`送信失敗: ${e?.response?.data?.message ?? e?.message ?? e}`);
+      alert(`送信失敗: ${friendlyMailError(e?.response?.data?.error ?? e?.response?.data?.message ?? e?.message ?? e)}`);
       await fetchData();
     } finally {
       setSendLoading(false);
@@ -365,7 +428,14 @@ export const EcMailConversationPage: React.VFC = () => {
                 value={templateId}
                 onChange={(e) => {
                   const v = e.target.value;
-                  setTemplateId(v === '' ? '' : Number(v));
+                  if (v === '') {
+                    setTemplateId('');
+                    setSubject(defaultSubject);
+                    setBodyText('');
+                    return;
+                  }
+
+                  setTemplateId(Number(v));
                 }}
                 disabled={tplLoading}
               >
@@ -472,7 +542,7 @@ export const EcMailConversationPage: React.VFC = () => {
                 }}
               >
                 <div style={{ fontWeight: 800, marginBottom: 4 }}>送信失敗理由</div>
-                {openRow.error_message}
+                {friendlyMailError(openRow.error_message)}
               </div>
             ) : null}
 

@@ -1,5 +1,5 @@
 // 更新: resources/ts/app/Inquiry/pages/InquiryReplyDetailPage.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { MailPageWrapper } from '../components/detail/MailPageWrapper';
@@ -44,9 +44,23 @@ const toYmd = (v: any): string => {
   return `${m[1]}/${m[2]}/${m[3]}`;
 };
 
+/** YYYY/MM/DD HH:mm だけに整形（ISO/DB timestamp でもOK） */
+const toYmdHm = (v: any): string => {
+  const s = (v ?? '').toString().trim();
+  if (!s) return '';
+  const m = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if (!m) return s;
+  const ymd = `${m[1]}/${m[2]}/${m[3]}`;
+  if (m[4] && m[5]) return `${ymd} ${m[4]}:${m[5]}`;
+  return ymd;
+};
+
 const inquiryTypeLabel = (v: any): string => {
   if (v === null || v === undefined) return '';
-  return String(v);
+  const s = String(v);
+  if (s === '1') return '商品に関するお問い合わせ';
+  if (s === '2') return '納期に関するお問い合わせ';
+  return s;
 };
 
 const publicLabel = (v: any): string => {
@@ -67,6 +81,105 @@ const applyPlaceholders = (text: string, inquiry: any) => {
     .replaceAll('{EMAIL}', email)
     .replaceAll('{INQUIRY_SUBJECT}', inqType)
     .replaceAll('{INQUIRY_BODY}', details);
+};
+
+const buildInquiryReference = (inquiry: any): string => {
+  const inqType = inquiryTypeLabel(inquiry?.content ?? '').trim();
+  const details = (inquiry?.details ?? '').toString().trim();
+  const inquiredAt = toYmdHm(inquiry?.created_at ?? '').trim();
+
+  if (!inquiredAt && !inqType && !details) return '';
+
+  return [
+    '【お問い合わせ内容】',
+    inquiredAt ? `お問い合わせ日時：${inquiredAt}` : '',
+    inqType ? `お問い合わせ種別：${inqType}` : '',
+    details ? ['お問い合わせ本文：', details].join('\n') : '',
+  ]
+    .filter((v) => v !== '')
+    .join('\n');
+};
+
+const DEFAULT_INQUIRY_REPLY_FOOTER = `△▲△▲△▲ < TOURATECH JAPAN > △▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲
+『ツアラテックジャパン』  〒252-0157 　神奈川県相模原市緑区中野988
+TEL: 042-850-4790 　/ 　FAX: 042-850-4792 　/ 　Mail： info@touratechjapan.com
+営業時間：10:00-19:00　　店舗営業日：土/日/祝　　定休日：毎週火曜水曜
+公式HP ： http://www.touratechjapan.com
+公式ネットショップ：https://www.touratechjapan.com/e-commex/cgi-bin/ex_index.cgi
+△▲△▲△▲< made for adventure > △▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲△▲`;
+
+const buildDefaultReplyBody = (_inquiry: any): string => '';
+
+const buildDefaultReplyFooter = (inquiry: any): string => {
+  return [buildInquiryReference(inquiry), DEFAULT_INQUIRY_REPLY_FOOTER]
+    .filter((v) => (v ?? '').toString().trim() !== '')
+    .join('\n\n');
+};
+
+const composeReplyBody = (header: string, body: string, footer: string): string => {
+  return [header, body, footer]
+    .filter((v) => (v ?? '').toString().trim() !== '')
+    .join('\n\n');
+};
+
+const friendlyMailError = (value: any): string => {
+  const raw = (value ?? '').toString().trim();
+  const lower = raw.toLowerCase();
+
+  if (!raw) return 'メールを送信できませんでした。時間をおいて再度お試しください。';
+
+  if (raw.includes('送信元メールアドレス') || raw.includes('宛先メールアドレス')) {
+    return raw;
+  }
+
+  if (
+    lower.includes('connection could not be established') ||
+    lower.includes('connection refused') ||
+    lower.includes('timed out') ||
+    lower.includes('stream_socket_client') ||
+    lower.includes('network is unreachable') ||
+    lower.includes('could not connect')
+  ) {
+    return 'メールサーバーに接続できませんでした。メール設定またはネットワーク状況を確認してください。';
+  }
+
+  if (
+    lower.includes('authentication') ||
+    lower.includes('authenticate') ||
+    lower.includes('username') ||
+    lower.includes('password') ||
+    lower.includes('535')
+  ) {
+    return 'メールサーバーへのログインに失敗しました。メールアカウントまたはパスワードを確認してください。';
+  }
+
+  if (
+    lower.includes('invalid address') ||
+    lower.includes('address in mailbox') ||
+    lower.includes('rfc') ||
+    lower.includes('syntax')
+  ) {
+    return 'メールアドレスの形式に問題があります。宛先または送信元メールアドレスを確認してください。';
+  }
+
+  if (
+    lower.includes('recipient address rejected') ||
+    lower.includes('user unknown') ||
+    lower.includes('no such user') ||
+    lower.includes('550')
+  ) {
+    return '宛先メールアドレスが存在しない、または受信側に拒否されました。宛先を確認してください。';
+  }
+
+  if (lower.includes('relay access denied') || lower.includes('relaying denied')) {
+    return 'メールサーバーが送信を許可していません。送信元メール設定を確認してください。';
+  }
+
+  if (lower.includes('quota') || lower.includes('rate') || lower.includes('too many')) {
+    return 'メール送信数の制限に達している可能性があります。しばらく時間をおいて再度お試しください。';
+  }
+
+  return 'メールを送信できませんでした。メール設定または宛先を確認してください。';
 };
 
 // ===== styles =====
@@ -113,6 +226,11 @@ const textareaStyle: React.CSSProperties = {
   resize: 'vertical',
 };
 
+const textareaCompactStyle: React.CSSProperties = {
+  ...textareaStyle,
+  minHeight: 120,
+};
+
 const badgeBase: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -144,6 +262,16 @@ const statusLabel = (sendStatus: any): string => {
   return String(sendStatus ?? '');
 };
 
+const sendErrorNoticeStyle: React.CSSProperties = {
+  whiteSpace: 'pre-wrap',
+  background: '#fff7ed',
+  border: '1px solid #fed7aa',
+  borderRadius: 8,
+  padding: 10,
+  fontSize: 13,
+  color: '#9a3412',
+};
+
 export const InquiryReplyDetailPage: React.VFC = () => {
   const params = useParams<{ id?: string }>();
   const id = Number(params.id);
@@ -172,18 +300,42 @@ export const InquiryReplyDetailPage: React.VFC = () => {
   const [templateId, setTemplateId] = useState<number | ''>('');
   const [toEmail, setToEmail] = useState('');
   const [subject, setSubject] = useState('');
+  const [headerText, setHeaderText] = useState('');
   const [bodyText, setBodyText] = useState('');
+  const [footerText, setFooterText] = useState('');
   const [sendLoading, setSendLoading] = useState(false);
+  const [sendErrorText, setSendErrorText] = useState('');
+  const lastAppliedTemplateKeyRef = useRef('');
+  const isDefaultBodyManagedRef = useRef(true);
+  const isDefaultFooterManagedRef = useRef(true);
+
+  const defaultSubject = useMemo(() => {
+    const typeText = inquiryTypeLabel(inquiry?.content ?? '');
+    const base = typeText ? `Re: お問い合わせ（${typeText}）` : 'Re: お問い合わせ';
+    return inquiry?.id ? `${base} [${inquiry.id}]` : base;
+  }, [inquiry?.content, inquiry?.id]);
+
+  const defaultBody = useMemo(() => buildDefaultReplyBody(inquiry), [inquiry?.content, inquiry?.created_at, inquiry?.details]);
+  const defaultFooter = useMemo(() => buildDefaultReplyFooter(inquiry), [inquiry?.content, inquiry?.created_at, inquiry?.details]);
 
   // 初期値（問い合わせが取れたら）
   useEffect(() => {
     setToEmail((inquiry?.email ?? '').toString());
+    setSubject(defaultSubject);
+  }, [inquiry?.email, defaultSubject]);
 
-    const typeText = inquiryTypeLabel(inquiry?.content ?? '');
-    const base = typeText ? `Re: お問い合わせ（${typeText}）` : 'Re: お問い合わせ';
-    const withId = inquiry?.id ? `${base} [${inquiry.id}]` : base;
-    setSubject(withId);
-  }, [inquiry?.email, inquiry?.content, inquiry?.id]);
+  useEffect(() => {
+    if (templateId !== '') return;
+    if (!isDefaultBodyManagedRef.current) return;
+    setBodyText(defaultBody);
+  }, [templateId, defaultBody]);
+
+  useEffect(() => {
+    if (templateId !== '') return;
+    if (!isDefaultFooterManagedRef.current) return;
+    setHeaderText('');
+    setFooterText(defaultFooter);
+  }, [templateId, defaultFooter]);
 
   // テンプレ取得（API 形式: { success, data: { rows } }）
   useEffect(() => {
@@ -213,7 +365,14 @@ export const InquiryReplyDetailPage: React.VFC = () => {
 
   // テンプレ反映（subject/body）
   useEffect(() => {
-    if (!selectedTemplate) return;
+    if (!selectedTemplate) {
+      lastAppliedTemplateKeyRef.current = '';
+      return;
+    }
+
+    const templateKey = `${selectedTemplate.id}:${inquiry?.id ?? ''}`;
+    if (lastAppliedTemplateKeyRef.current === templateKey) return;
+    lastAppliedTemplateKeyRef.current = templateKey;
 
     const tplSubject = applyPlaceholders(pickTplSubject(selectedTemplate), inquiry);
     const tplBodyBase = pickTplBody(selectedTemplate);
@@ -222,15 +381,20 @@ export const InquiryReplyDetailPage: React.VFC = () => {
     const header = (selectedTemplate.header_template ?? '').toString().trim();
     const footer = (selectedTemplate.footer_template ?? '').toString().trim();
 
-    const composed = [header, tplBodyBase, footer]
-      .filter((v) => (v ?? '').toString().trim() !== '')
-      .join('\n\n');
-
-    const tplBody = applyPlaceholders(composed, inquiry);
+    const tplBody = applyPlaceholders(tplBodyBase, inquiry);
+    const tplFooter = composeReplyBody(
+      applyPlaceholders(footer, inquiry),
+      buildInquiryReference(inquiry),
+      ''
+    );
 
     if (tplSubject.trim()) setSubject(tplSubject);
+    isDefaultBodyManagedRef.current = false;
+    isDefaultFooterManagedRef.current = false;
+    setHeaderText(applyPlaceholders(header, inquiry));
     setBodyText(tplBody);
-  }, [selectedTemplate, inquiry]);
+    setFooterText(tplFooter);
+  }, [selectedTemplate, inquiry?.id]);
 
   const onSend = async () => {
     if (!id) return;
@@ -238,34 +402,58 @@ export const InquiryReplyDetailPage: React.VFC = () => {
     const to = toEmail.trim();
     const subj = subject.trim();
     const body = bodyText;
+    const composedBody = composeReplyBody(headerText, body, footerText);
+    const draft = {
+      templateId,
+      toEmail,
+      subject,
+      headerText,
+      bodyText,
+      footerText,
+    };
+
+    const restoreDraft = () => {
+      setTemplateId(draft.templateId);
+      setToEmail(draft.toEmail);
+      setSubject(draft.subject);
+      setHeaderText(draft.headerText);
+      setBodyText(draft.bodyText);
+      setFooterText(draft.footerText);
+    };
 
     if (!to) return alert('宛先メールアドレスが空です');
     if (!subj) return alert('件名が空です');
-    if (!body) return alert('本文が空です');
+    if (!composedBody) return alert('本文が空です');
 
     if (!confirm('この内容で送信しますか？')) return;
 
     setSendLoading(true);
+    setSendErrorText('');
     try {
       const payload = {
         mail_template_id: templateId === '' ? null : templateId,
         to_email: to,
         subject: subj,
-        body_text: body,
+        body_text: composedBody,
       };
 
       const res = await axios.post(`/api/shop-mail/inquiries/${id}/send`, payload);
 
       if (res.data?.ok) {
         alert('送信しました');
+        await reload();
       } else {
-        alert(`送信失敗: ${res.data?.error ?? res.data?.message ?? ''}`);
+        const friendly = friendlyMailError(res.data?.error ?? res.data?.message);
+        setSendErrorText(friendly);
+        alert(`送信失敗: ${friendly}`);
+        await reload();
+        restoreDraft();
       }
-
-      await reload();
     } catch (e: any) {
-      alert(`送信失敗: ${e?.response?.data?.message ?? e?.message ?? e}`);
-      await reload();
+      const friendly = friendlyMailError(e?.response?.data?.error ?? e?.response?.data?.message ?? e?.message ?? e);
+      setSendErrorText(friendly);
+      alert(`送信失敗: ${friendly}`);
+      restoreDraft();
     } finally {
       setSendLoading(false);
     }
@@ -351,7 +539,7 @@ export const InquiryReplyDetailPage: React.VFC = () => {
                       color: '#9a3412',
                     }}
                   >
-                    {String(r.error_message)}
+                    {friendlyMailError(r.error_message)}
                   </div>
                 </div>
               ) : null}
@@ -450,7 +638,21 @@ export const InquiryReplyDetailPage: React.VFC = () => {
                 value={templateId}
                 onChange={(e) => {
                   const v = e.target.value;
-                  setTemplateId(v === '' ? '' : Number(v));
+                  if (v === '') {
+                    setTemplateId('');
+                    setSubject(defaultSubject);
+                    isDefaultBodyManagedRef.current = true;
+                    isDefaultFooterManagedRef.current = true;
+                    setHeaderText('');
+                    setBodyText(defaultBody);
+                    setFooterText(defaultFooter);
+                    setSendErrorText('');
+                    return;
+                  }
+
+                  isDefaultBodyManagedRef.current = false;
+                  isDefaultFooterManagedRef.current = false;
+                  setTemplateId(Number(v));
                 }}
                 disabled={tplLoading}
                 style={inputStyle}
@@ -479,8 +681,38 @@ export const InquiryReplyDetailPage: React.VFC = () => {
             </div>
 
             <div>
+              <div className="form-label-text">ヘッダー</div>
+              <textarea
+                value={headerText}
+                onChange={(e) => {
+                  setHeaderText(e.target.value);
+                }}
+                style={textareaCompactStyle}
+              />
+            </div>
+
+            <div>
               <div className="form-label-text">本文</div>
-              <textarea value={bodyText} onChange={(e) => setBodyText(e.target.value)} style={textareaStyle} />
+              <textarea
+                value={bodyText}
+                onChange={(e) => {
+                  isDefaultBodyManagedRef.current = false;
+                  setBodyText(e.target.value);
+                }}
+                style={textareaStyle}
+              />
+            </div>
+
+            <div>
+              <div className="form-label-text">フッター</div>
+              <textarea
+                value={footerText}
+                onChange={(e) => {
+                  isDefaultFooterManagedRef.current = false;
+                  setFooterText(e.target.value);
+                }}
+                style={textareaCompactStyle}
+              />
             </div>
 
             <div className="flex gap-2">
@@ -488,6 +720,14 @@ export const InquiryReplyDetailPage: React.VFC = () => {
                 {sendLoading ? '送信中...' : '送信'}
               </button>
             </div>
+
+            {sendErrorText ? (
+              <div style={sendErrorNoticeStyle}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>送信できませんでした</div>
+                <div>{sendErrorText}</div>
+                <div style={{ marginTop: 4 }}>入力した本文は残しています。</div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -559,7 +799,7 @@ export const InquiryReplyDetailPage: React.VFC = () => {
                     color: '#9a3412',
                   }}
                 >
-                  {(openRow as any).error_message}
+                  {friendlyMailError((openRow as any).error_message)}
                 </div>
               </div>
             ) : null}

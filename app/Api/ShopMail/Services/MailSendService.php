@@ -32,7 +32,8 @@ class MailSendService
 
         // subject/body を決定（テンプレ優先、無ければ手入力）
         $subject = trim((string)($payload['subject'] ?? ''));
-        $bodyText = (string)($payload['body'] ?? ($payload['body_text'] ?? ''));
+        $payloadBody = (string)($payload['body'] ?? ($payload['body_text'] ?? ''));
+        $bodyText = $payloadBody;
         $bodyHtml = null;
 
         if ($templateId) {
@@ -43,11 +44,15 @@ class MailSendService
             $subject = $payloadSubject !== '' ? $payloadSubject : trim((string)($tpl->subject_template ?? ''));
             if ($subject === '') $subject = '（件名未設定）';
 
-            // テキスト版（履歴保存用）
-            $bodyText = $this->composeFromTemplateText($receiveOrderId, $tpl, $payload);
-
-            // HTML版（送信用）：等幅 + 金額内訳はtableで右揃え
-            $bodyHtml = $this->composeFromTemplateHtml($receiveOrderId, $tpl, $payload);
+            if (trim($payloadBody) === '') {
+                // 本文が送られていない旧形式だけ、テンプレから本文を組み立てる。
+                $bodyText = $this->composeFromTemplateText($receiveOrderId, $tpl, $payload);
+                $bodyHtml = $this->composeFromTemplateHtml($receiveOrderId, $tpl, $payload);
+            } else {
+                // 個別返信画面では、テンプレ選択後に編集済み本文が送られる。
+                // その場合もテンプレ側の明細表示などの設定だけは反映する。
+                $bodyText = $this->applyTemplateAddonsToPayloadBody($receiveOrderId, $tpl, $payload, $payloadBody);
+            }
         }
 
         if ($subject === '') return ['ok' => false, 'message' => '件名が空です'];
@@ -128,14 +133,8 @@ class MailSendService
             $tpl = DB::table('m_mail_templates')->where('id', $templateId)->whereNull('deleted_at')->first();
             if (!$tpl) return ['ok' => false, 'message' => 'テンプレートが存在しません'];
 
-            $subject = trim((string)($tpl->subject_template ?? ''));
-
-            $center = (string)($payload['body_text'] ?? ($payload['body'] ?? ''));
-            $body = trim(implode("\n\n", array_filter([
-                (string)($tpl->header_template ?? ''),
-                (string)$center,
-                (string)($tpl->footer_template ?? ''),
-            ], fn($v) => trim((string)$v) !== '')));
+            $payloadSubject = trim((string)($payload['subject'] ?? ''));
+            $subject = $payloadSubject !== '' ? $payloadSubject : trim((string)($tpl->subject_template ?? ''));
         }
 
         if ($subject === '') return ['ok' => false, 'message' => '件名が空です'];
@@ -301,6 +300,81 @@ class MailSendService
         return implode("\n", array_filter($partsHtml, fn($v) => trim((string)$v) !== ''));
     }
 
+    private function applyTemplateAddonsToPayloadBody(int $receiveOrderId, object $tpl, array $payload, string $body): string
+    {
+        $body = $this->normalizeLineEndings($body);
+        $addons = [];
+
+        $includeDetails = array_key_exists('include_details', $payload)
+            ? (bool)$payload['include_details']
+            : ((int)($tpl->detail_mode ?? 0) === 1);
+
+        if ($includeDetails && !$this->bodyAlreadyHasOrderDetails($body)) {
+            $addons[] = $this->renderOrderDetailsTextBySettings($receiveOrderId);
+        }
+
+        $paymentUrl = trim((string)($payload['payment_url'] ?? ''));
+        if (((int)($tpl->payment_url_enabled ?? 0) === 1) && $paymentUrl !== '') {
+            $paymentBlock = "▼お支払いページ\n" . $paymentUrl;
+            if (!str_contains($body, $paymentBlock)) {
+                $addons[] = $paymentBlock;
+            }
+        }
+
+        $shippingText = trim($this->normalizeLineEndings((string)($tpl->shipping_text ?? '')));
+        if ($shippingText !== '' && !str_contains($body, $shippingText)) {
+            $addons[] = $shippingText;
+        }
+
+        if ($addons === []) {
+            return $body;
+        }
+
+        Log::info('[ShopMail][sendOrderMail] apply template addons to payload body', [
+            'receive_order_id' => $receiveOrderId,
+            'include_details' => $includeDetails,
+            'addon_count' => count($addons),
+        ]);
+
+        $addonText = trim(implode("\n\n", array_filter($addons, fn($v) => trim((string)$v) !== '')));
+        return $this->insertBeforeTemplateFooter($body, (string)($tpl->footer_template ?? ''), $addonText);
+    }
+
+    private function insertBeforeTemplateFooter(string $body, string $footer, string $insertText): string
+    {
+        $body = rtrim($this->normalizeLineEndings($body));
+        $footer = rtrim($this->normalizeLineEndings($footer));
+        $insertText = trim($this->normalizeLineEndings($insertText));
+
+        if ($insertText === '') {
+            return $body;
+        }
+
+        if ($footer !== '') {
+            $pos = strrpos($body, $footer);
+            if ($pos !== false && ($pos + strlen($footer)) === strlen($body)) {
+                $before = rtrim(substr($body, 0, $pos));
+                $after = ltrim(substr($body, $pos));
+
+                return trim(implode("\n\n", array_filter([$before, $insertText, $after], fn($v) => trim((string)$v) !== '')));
+            }
+        }
+
+        return trim(implode("\n\n", array_filter([$body, $insertText], fn($v) => trim((string)$v) !== '')));
+    }
+
+    private function bodyAlreadyHasOrderDetails(string $body): bool
+    {
+        return str_contains($body, '■ ご注文商品')
+            || str_contains($body, '■ ご注文情報')
+            || str_contains($body, '■ 金額内訳');
+    }
+
+    private function normalizeLineEndings(string $value): string
+    {
+        return str_replace(["\r\n", "\r"], "\n", $value);
+    }
+
     /**
      * 明細（ShopMail側）も EC と同一レイアウトに寄せる：
      * - m_mail_detail_settings の is_display=1 & display_label で表示制御
@@ -406,7 +480,7 @@ class MailSendService
 
         $shipping = (int)round((float)($order->shipping_amount ?? 0));
         $codFee   = (int)round((float)($order->fee ?? 0));
-        $extraShipping = 0;
+        $extraShipping = (int)round((float)($order->additional_shipping_amount ?? 0));
 
         // 商品合計（税込）= 明細 amount 合計
         $itemsTotalInc = 0;

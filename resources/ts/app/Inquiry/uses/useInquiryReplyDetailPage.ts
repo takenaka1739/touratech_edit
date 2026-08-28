@@ -106,9 +106,7 @@ export const useInquiryReplyDetailPage = (inquiryId: number) => {
     fetchTemplates();
   }, [fetchTemplates]);
 
-  const reload = useCallback(() => {
-    fetchDetail();
-  }, [fetchDetail]);
+  const reload = useCallback(() => fetchDetail(), [fetchDetail]);
 
   const sendReply = useCallback(
     async (payload: SendPayload) => {

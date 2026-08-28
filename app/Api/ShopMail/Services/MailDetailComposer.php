@@ -91,8 +91,9 @@ class MailDetailComposer
 
         $itemsSubtotal = $details->sum(fn($d) => (int)($d->amount ?? 0));
         $shipping = (int)($order->shipping_amount ?? 0);
+        $extraShipping = (int)($order->additional_shipping_amount ?? 0);
         $fee = (int)($order->fee ?? 0);
-        $grand = (int)($order->total_amount ?? $itemsSubtotal + $shipping + $fee);
+        $grand = (int)($order->total_amount ?? $itemsSubtotal + $shipping + $extraShipping + $fee);
 
         // ============================================
         // 出力組み立て
@@ -132,6 +133,7 @@ class MailDetailComposer
         $out[] = "■ 金額内訳";
         $out[] = "お買い上げ金額(税込)  " . $yen($itemsSubtotal);
         if ($shipping !== 0) $out[] = "送料(税込)  " . $yen($shipping);
+        if ($extraShipping !== 0) $out[] = "別途追加送料(税込)  " . $yen($extraShipping);
         if ($fee !== 0)      $out[] = "代引き手数料(税込)  " . $yen($fee);
         $out[] = "合計(税込)  " . $yen($grand);
         $out[] = str_repeat('-', $LINE_W);
